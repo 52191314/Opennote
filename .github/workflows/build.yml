@@ -1,0 +1,85 @@
+name: Build Opennote
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Android APK — works on any runner
+  # ─────────────────────────────────────────────
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: Opennote
+
+      - name: Setup Flutter (beta)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: beta
+
+      - name: pub get
+        run: flutter pub get
+        working-directory: Opennote
+
+      - name: Build release APK
+        run: flutter build apk --release
+        working-directory: Opennote
+
+      - name: Rename artifact
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk \
+             Opennote-OptionB.apk
+        working-directory: Opennote
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Opennote-Android
+          path: Opennote/Opennote-OptionB.apk
+
+  # ─────────────────────────────────────────────
+  # iOS unsigned .ipa  — needs macOS (Xcode)
+  # Install via SideStore / AltStore / LiveContainer
+  # ─────────────────────────────────────────────
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: Opennote
+
+      - name: Setup Flutter (beta)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: beta
+
+      - name: pub get
+        run: flutter pub get
+        working-directory: Opennote
+
+      - name: CocoaPods
+        run: pod install --repo-update
+        working-directory: Opennote/ios
+
+      - name: Build unsigned release .app
+        run: flutter build ios --release --no-codesign
+        working-directory: Opennote
+
+      - name: Package unsigned .ipa
+        run: |
+          mkdir -p build/ios/ipa/Payload
+          cp -R build/ios/Release-iphoneos/Runner.app Payload/
+          zip -r Opennote-iOS.ipa Payload/
+          rm -rf Payload
+        working-directory: Opennote
+
+      - name: Upload .ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: Opennote-iOS
+          path: Opennote/Opennote-iOS.ipa
