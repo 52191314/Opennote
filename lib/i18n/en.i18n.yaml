@@ -283,6 +283,7 @@ editor:
     pencil: Pencil
     shapePen: Shape pen
     laserPointer: Laser pointer
+    ruler: Ruler
   penOptions:
     size: Size
   colors:

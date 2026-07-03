@@ -1094,6 +1094,9 @@ class Translations$editor$pens$en {
 
 	/// en: 'Laser pointer'
 	String get laserPointer => 'Laser pointer';
+
+	/// en: 'Ruler'
+	String get ruler => 'Ruler';
 }
 
 // Path: editor.penOptions
