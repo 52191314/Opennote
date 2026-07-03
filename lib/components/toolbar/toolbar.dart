@@ -482,7 +482,7 @@ class _ToolbarState extends State<Toolbar> {
                 child: const FaIcon(FontAwesomeIcons.eraser, size: 16),
               ),
               ToolbarIconButton(
-                tooltip: t.editor.toolbar.ruler,
+                tooltip: t.editor.pens.ruler,
                 selected: widget.currentTool is Ruler,
                 enabled: !widget.readOnly,
                 onPressed: () {
