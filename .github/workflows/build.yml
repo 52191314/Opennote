@@ -42,15 +42,18 @@ jobs:
           pod repo update
           flutter precache --ios
 
-      - name: Build iOS (simulator)
-        run: flutter build ios --debug --simulator 2>&1
+      - name: Build iOS (release, unsigned)
+        run: flutter build ios --release --no-codesign 2>&1
 
-      - name: Build iOS (device)
-        run: flutter build ios --release --no-codesign --verbose 2>&1
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p build/ios/ipa/Payload
+          cp -r build/ios/iphoneos/Runner.app build/ios/ipa/Payload/
+          cd build/ios/ipa
+          zip -r ../../Opennote.ipa Payload/
 
-      - name: Upload iOS build
-        if: success()
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: Opennote-iOS
-          path: build/ios/iphoneos/Runner.app
+          path: build/Opennote.ipa
