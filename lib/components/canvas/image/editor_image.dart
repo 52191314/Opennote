@@ -22,6 +22,8 @@ import 'package:saber/pages/editor/editor.dart';
 part 'png_editor_image.dart';
 part 'pdf_editor_image.dart';
 part 'svg_editor_image.dart';
+part 'sticky_note_image.dart';
+part 'sticker_image.dart';
 
 /// The data for an image in the editor.
 /// This is listenable for changes to the image's position ([dstRect]).
@@ -48,7 +50,23 @@ sealed class EditorImage extends ChangeNotifier {
   void Function()? onMiscChange;
   final VoidCallback? onLoad;
 
-  Rect srcRect = .zero;
+  Rect _srcRect = .zero;
+  Rect get srcRect => _srcRect;
+  set srcRect(Rect value) {
+    _srcRect = value;
+    notifyListeners();
+  }
+
+  var _cropMode = false;
+
+  /// Whether the image is in crop mode.
+  /// When true, resize handles on the canvas modify [srcRect] instead of [dstRect].
+  bool get cropMode => _cropMode;
+  set cropMode(bool value) {
+    if (_cropMode == value) return;
+    _cropMode = value;
+    notifyListeners();
+  }
 
   late var _dstRect = Rect.fromLTWH(
     0,
@@ -107,9 +125,10 @@ sealed class EditorImage extends ChangeNotifier {
     this.onLoad,
     this.newImage = true,
     this._dstRect = .zero,
-    this.srcRect = .zero,
+    Rect? srcRect,
     this._isThumbnail = false,
-  }) : assert(extension.startsWith('.'));
+  }) : _srcRect = srcRect ?? .zero,
+       assert(extension.startsWith('.'));
 
   factory EditorImage.fromJson(
     Map<String, dynamic> json, {
@@ -129,6 +148,22 @@ sealed class EditorImage extends ChangeNotifier {
       );
     } else if (extension == '.pdf') {
       return PdfEditorImage.fromJson(
+        json,
+        inlineAssets: inlineAssets,
+        isThumbnail: isThumbnail,
+        sbnPath: sbnPath,
+        assetCache: assetCache,
+      );
+    } else if (extension == '.sticky') {
+      return StickyNoteImage.fromJson(
+        json,
+        inlineAssets: inlineAssets,
+        isThumbnail: isThumbnail,
+        sbnPath: sbnPath,
+        assetCache: assetCache,
+      );
+    } else if (extension == '.sticker') {
+      return StickerImage.fromJson(
         json,
         inlineAssets: inlineAssets,
         isThumbnail: isThumbnail,

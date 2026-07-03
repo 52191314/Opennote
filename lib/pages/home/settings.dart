@@ -34,6 +34,8 @@ import 'package:saber/data/tools/shape_pen.dart';
 import 'package:saber/i18n/strings.g.dart';
 import 'package:stow/stow.dart';
 
+/// 🤖 Generated with DeepSeek v4 Flash
+
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
@@ -96,6 +98,83 @@ abstract class _SettingsStows {
     (AxisDirection value) => value.index,
     (int value) => AxisDirection.values[value],
   );
+}
+
+class _PressureCurveSetting extends StatefulWidget {
+  @override
+  State<_PressureCurveSetting> createState() => _PressureCurveSettingState();
+}
+
+class _PressureCurveSettingState extends State<_PressureCurveSetting> {
+  @override
+  void initState() {
+    super.initState();
+    stows.penPressureCurve.addListener(onChanged);
+  }
+
+  void onChanged() {
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = ColorScheme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Pen Pressure Curve',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontStyle: stows.penPressureCurve.value !=
+                            stows.penPressureCurve.defaultValue
+                        ? FontStyle.italic
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Adjust how stylus pressure maps to stroke width',
+                  style: TextStyle(fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Text(
+            stows.penPressureCurve.value.toStringAsFixed(1),
+            style: TextStyle(
+              fontSize: 14,
+              color: colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+          SizedBox(
+            width: 150,
+            child: Slider(
+              value: stows.penPressureCurve.value,
+              min: 0.3,
+              max: 3.0,
+              divisions: 27,
+              onChanged: (value) {
+                stows.penPressureCurve.value = value;
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    stows.penPressureCurve.removeListener(onChanged);
+    super.dispose();
+  }
 }
 
 class _SettingsPageState extends State<SettingsPage> {
@@ -421,6 +500,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     );
                   },
                 ),
+
+                _PressureCurveSetting(),
 
                 SettingsSubtitle(subtitle: t.settings.prefCategories.editor),
                 SettingsSelection(

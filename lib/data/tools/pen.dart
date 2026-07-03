@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
@@ -96,6 +98,9 @@ class Pen extends Tool {
     Offset snappedPosition = position;
     if (stows.snapToGrid.value && stows.gridSize.value > 0) {
       snappedPosition = Stroke.snapPointToGrid(position, stows.gridSize.value);
+    }
+    if (pressure != null && stows.penPressureCurve.value != 1.0) {
+      pressure = pow(pressure, stows.penPressureCurve.value).toDouble();
     }
     currentStroke?.addPoint(snappedPosition, pressure);
   }

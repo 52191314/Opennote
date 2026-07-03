@@ -1,9 +1,10 @@
 import 'dart:convert';
 
-import 'package:flutter/cupertino.dart' show CupertinoIcons;
+import 'package:flutter/cupertino.dart' show CupertinoDialogAction, CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
+import 'package:saber/components/theming/adaptive_alert_dialog.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
 import 'package:saber/components/theming/adaptive_switch.dart';
 import 'package:saber/components/theming/saber_theme.dart';
@@ -42,10 +43,110 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
     widget.redrawImage();
   });
 
+  /// The preset colors available for sticky notes.
+  static const List<Color> stickyNoteColors = [
+    Color(0xFFFFF59D), // yellow
+    Color(0xFFFFCDD2), // pink
+    Color(0xFFC8E6C9), // green
+    Color(0xFFBBDEFB), // blue
+    Color(0xFFFFE0B2), // orange
+    Color(0xFFE1BEE7), // purple
+    Color(0xFFB2EBF2), // cyan
+    Color(0xFFD7CCC8), // brown
+  ];
+
+  /// Shows a dialog to edit the sticky note text content and color.
+  void _showStickyNoteEditor() {
+    final sticky = widget.image as StickyNoteImage;
+    final controller = TextEditingController(text: sticky.text);
+    Color selectedColor = sticky.color;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AdaptiveAlertDialog(
+              title: const Text('Edit Sticky Note'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Text:'),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: controller,
+                    autofocus: true,
+                    maxLines: 5,
+                    minLines: 1,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: 'Type your note here...',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Color:'),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: stickyNoteColors.map((color) {
+                      final isSelected = color == selectedColor;
+                      return GestureDetector(
+                        onTap: () => setDialogState(() => selectedColor = color),
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: isSelected
+                                  ? Colors.black
+                                  : Colors.grey.shade400,
+                              width: isSelected ? 2.5 : 1,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  onPressed: () {
+                    sticky.text = controller.text;
+                    sticky.color = selectedColor;
+                    sticky.onMiscChange?.call();
+                    widget.redrawImage();
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final platform = Theme.of(context).platform;
     final children = <Widget>[
+      if (widget.image is StickyNoteImage)
+        _CanvasImageDialogItem(
+          onTap: () {
+            _showStickyNoteEditor();
+          },
+          title: 'Edit Text',
+          child: const Icon(Icons.edit),
+        ),
       MergeSemantics(
         child: _CanvasImageDialogItem(
           onTap: stows.editorAutoInvert.value ? setInvertible : null,
@@ -105,6 +206,24 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
                   'Unknown image provider type',
                 );
               }
+            case final StickyNoteImage image:
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Sticky notes cannot be downloaded'),
+                ),
+              );
+              Navigator.of(context).pop();
+              return;
+            case final StickerImage image:
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Stickers cannot be downloaded'),
+                ),
+              );
+              Navigator.of(context).pop();
+              return;
           }
           if (!context.mounted) return;
           FileManager.exportFile(

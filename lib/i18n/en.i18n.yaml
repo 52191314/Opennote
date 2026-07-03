@@ -49,6 +49,11 @@ home:
     renamedTo: Note will be renamed to $newName
     multipleRenamedTo: "The following notes will be renamed:"
     numberRenamedTo: $n notes will be renamed to avoid conflicts
+  search:
+    hint: Search notes
+    scanning: Scanning...
+    resultsFound: $n results found
+    noResults: No results found
   deleteNote: Delete note
   deleteNoteDialog:
     deleteNotes: Delete $n notes
@@ -318,6 +323,7 @@ editor:
     delete: Delete
     duplicate: Duplicate
   menu:
+    templates: Templates
     clearPage: Clear page $page/$totalPages
     clearAllPages: Clear all pages
     insertPage: Insert page below

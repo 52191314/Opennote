@@ -24,6 +24,7 @@ import 'package:saber/components/canvas/canvas_image.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/components/editor/outline_overlay.dart';
+import 'package:saber/components/editor/presentation_mode.dart';
 import 'package:saber/components/editor/read_only_banner.dart';
 import 'package:saber/components/theming/adaptive_alert_dialog.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
@@ -1616,6 +1617,41 @@ class EditorState extends State<Editor> {
     autosaveAfterDelay();
   }
 
+  void _addSticker(String emoji) {
+    if (coreInfo.readOnly) return;
+    final currentPageIndex = this.currentPageIndex;
+
+    // Use the Select tool so that the user can move the new image
+    currentTool = Select.currentSelect;
+
+    const double size = 64;
+
+    final image = StickerImage(
+      id: coreInfo.nextImageId++,
+      assetCache: coreInfo.assetCache,
+      emoji: emoji,
+      pageIndex: currentPageIndex,
+      pageSize: coreInfo.pages[currentPageIndex].size,
+      onMoveImage: onMoveImage,
+      onDeleteImage: onDeleteImage,
+      onMiscChange: autosaveAfterDelay,
+      onLoad: () => setState(() {}),
+      dstRect: Rect.fromLTWH(20, 20, size, size),
+    );
+
+    history.recordChange(
+      EditorHistoryItem(
+        type: .draw,
+        pageIndex: currentPageIndex,
+        strokes: [],
+        images: [image],
+      ),
+    );
+    createPage(currentPageIndex);
+    coreInfo.pages[currentPageIndex].images.add(image);
+    autosaveAfterDelay();
+  }
+
   Future<List<_PhotoInfo>> _pickPhotosWithFilePicker() async {
     final FilePickerResult? result = await FilePicker.pickFiles(
       type: FileType.custom,
@@ -2360,6 +2396,43 @@ class EditorState extends State<Editor> {
                   ),
                   IconButton(
                     icon: const AdaptiveIcon(
+                      icon: Icons.present_to_all,
+                      cupertinoIcon: CupertinoIcons.rectangle_on_rectangle,
+                    ),
+                    tooltip: 'Present',
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PresentationMode(
+                            coreInfo: coreInfo,
+                            initialPageIndex: currentPageIndex,
+                          ),
+                          fullscreenDialog: true,
+                        ),
+                      );
+                    },
+                  ),
+                  IconButton(
+                    icon: const AdaptiveIcon(
+                      icon: Icons.auto_stories,
+                      cupertinoIcon: CupertinoIcons.book,
+                    ),
+                    tooltip: 'Flashcards',
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PresentationMode(
+                            coreInfo: coreInfo,
+                            initialPageIndex: currentPageIndex,
+                            mode: DisplayMode.flashcard,
+                          ),
+                          fullscreenDialog: true,
+                        ),
+                      );
+                    },
+                  ),
+                  IconButton(
+                    icon: const AdaptiveIcon(
                       icon: Icons.more_vert,
                       cupertinoIcon: CupertinoIcons.ellipsis_vertical,
                     ),
@@ -2470,6 +2543,7 @@ class EditorState extends State<Editor> {
       importPdf: importPdf,
       canRasterPdf: Editor.canRasterPdf,
       addStickyNote: _addStickyNote,
+      addSticker: _addSticker,
       getIsWatchingServer: () => _watchServerTimer?.isActive ?? false,
       setIsWatchingServer: (bool watch) {
         if (watch) {

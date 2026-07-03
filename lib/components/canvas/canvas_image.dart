@@ -72,6 +72,7 @@ class _CanvasImageState extends State<CanvasImage> {
   Brightness imageBrightness = .light;
 
   Rect panStartRect = .zero;
+  Rect panStartSrcRect = .zero;
   Offset panStartPosition = .zero;
 
   @override
@@ -208,16 +209,19 @@ class _CanvasImageState extends State<CanvasImage> {
           ),
           if (widget.selected) // tint image if selected
             ColoredBox(color: colorScheme.primary.withValues(alpha: 0.5)),
+          if (widget.image.cropMode)
+            _CropOverlay(image: widget.image),
           if (!widget.readOnly)
             for (double x = -20; x <= 20; x += 20)
               for (double y = -20; y <= 20; y += 20)
                 if (x != 0 || y != 0) // ignore (0,0)
                   _CanvasImageResizeHandle(
-                    active: active,
+                    active: active || widget.image.cropMode,
                     position: Offset(x, y),
                     image: widget.image,
                     parent: this,
                     afterDrag: () => setState(() {}),
+                    cropMode: widget.image.cropMode,
                   ),
         ],
       ),
@@ -286,6 +290,7 @@ class _CanvasImageResizeHandle extends StatelessWidget {
     required this.image,
     required this.parent,
     required this.afterDrag,
+    this.cropMode = false,
   });
 
   final bool active;
@@ -293,13 +298,40 @@ class _CanvasImageResizeHandle extends StatelessWidget {
   final EditorImage image;
   final _CanvasImageState parent;
   final void Function() afterDrag;
+  final bool cropMode;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.of(context);
+
+    final double handleLeft, handleTop;
+    if (cropMode) {
+      // In crop mode, handles are positioned at the edges of the source
+      // crop rectangle (srcRect), which is centered within dstRect.
+      final cropOffsetX = (image.dstRect.width - image.srcRect.width) / 2;
+      final cropOffsetY = (image.dstRect.height - image.srcRect.height) / 2;
+      if (position.dx < 0) {
+        handleLeft = cropOffsetX;
+      } else if (position.dx > 0) {
+        handleLeft = cropOffsetX + image.srcRect.width;
+      } else {
+        handleLeft = cropOffsetX + image.srcRect.width / 2;
+      }
+      if (position.dy < 0) {
+        handleTop = cropOffsetY;
+      } else if (position.dy > 0) {
+        handleTop = cropOffsetY + image.srcRect.height;
+      } else {
+        handleTop = cropOffsetY + image.srcRect.height / 2;
+      }
+    } else {
+      handleLeft = (position.dx.sign + 1) / 2 * image.dstRect.width;
+      handleTop = (position.dy.sign + 1) / 2 * image.dstRect.height;
+    }
+
     return Positioned(
-      left: (position.dx.sign + 1) / 2 * image.dstRect.width - 20,
-      top: (position.dy.sign + 1) / 2 * image.dstRect.height - 20,
+      left: handleLeft - 20,
+      top: handleTop - 20,
       child: DeferPointer(
         paintOnTop: true,
         child: MouseRegion(
@@ -330,7 +362,11 @@ class _CanvasImageResizeHandle extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             onPanStart: active
                 ? (details) {
-                    parent.panStartRect = parent.widget.image.dstRect;
+                    if (cropMode) {
+                      parent.panStartSrcRect = parent.widget.image.srcRect;
+                    } else {
+                      parent.panStartRect = parent.widget.image.dstRect;
+                    }
                     parent.panStartPosition = details.localPosition;
                   }
                 : null,
@@ -339,64 +375,135 @@ class _CanvasImageResizeHandle extends StatelessWidget {
                     final Offset delta =
                         details.localPosition - parent.panStartPosition;
 
-                    double newWidth;
-                    if (position.dx < 0) {
-                      newWidth = parent.panStartRect.width - delta.dx;
-                    } else if (position.dx > 0) {
-                      newWidth = parent.panStartRect.width + delta.dx;
-                    } else {
-                      newWidth = parent.panStartRect.width;
-                    }
-
-                    double newHeight;
-                    if (position.dy < 0) {
-                      newHeight = parent.panStartRect.height - delta.dy;
-                    } else if (position.dy > 0) {
-                      newHeight = parent.panStartRect.height + delta.dy;
-                    } else {
-                      newHeight = parent.panStartRect.height;
-                    }
-
-                    if (newWidth <= 0 || newHeight <= 0) return;
-
-                    // preserve aspect ratio if diagonal
-                    if (position.dx != 0 && position.dy != 0) {
-                      // if diagonal
-                      final aspectRatio =
-                          image.dstRect.width / image.dstRect.height;
-                      if (newWidth / newHeight > aspectRatio) {
-                        newHeight = newWidth / aspectRatio;
+                    if (cropMode) {
+                      double newWidth;
+                      if (position.dx < 0) {
+                        newWidth = parent.panStartSrcRect.width - delta.dx;
+                      } else if (position.dx > 0) {
+                        newWidth = parent.panStartSrcRect.width + delta.dx;
                       } else {
-                        newWidth = newHeight * aspectRatio;
+                        newWidth = parent.panStartSrcRect.width;
                       }
-                    }
 
-                    // resize from the correct corner
-                    double left = image.dstRect.left, top = image.dstRect.top;
-                    if (position.dx < 0) {
-                      left = image.dstRect.right - newWidth;
-                    }
-                    if (position.dy < 0) {
-                      top = image.dstRect.bottom - newHeight;
-                    }
+                      double newHeight;
+                      if (position.dy < 0) {
+                        newHeight = parent.panStartSrcRect.height - delta.dy;
+                      } else if (position.dy > 0) {
+                        newHeight = parent.panStartSrcRect.height + delta.dy;
+                      } else {
+                        newHeight = parent.panStartSrcRect.height;
+                      }
 
-                    image.dstRect = .fromLTWH(left, top, newWidth, newHeight);
+                      if (newWidth <= 0 || newHeight <= 0) return;
+
+                      // Clamp to natural size
+                      if (image.naturalSize.width > 0) {
+                        newWidth = newWidth.clamp(
+                          1.0,
+                          image.naturalSize.width,
+                        );
+                      }
+                      if (image.naturalSize.height > 0) {
+                        newHeight = newHeight.clamp(
+                          1.0,
+                          image.naturalSize.height,
+                        );
+                      }
+
+                      // resize from the correct corner
+                      double left = image.srcRect.left,
+                          top = image.srcRect.top;
+                      if (position.dx < 0) {
+                        left = image.srcRect.right - newWidth;
+                      }
+                      if (position.dy < 0) {
+                        top = image.srcRect.bottom - newHeight;
+                      }
+
+                      double right = left + newWidth;
+                      double bottom = top + newHeight;
+
+                      // Clamp to natural size bounds
+                      if (image.naturalSize.width > 0) {
+                        left = left.clamp(0.0, image.naturalSize.width - 1);
+                        right = right.clamp(1.0, image.naturalSize.width);
+                      }
+                      if (image.naturalSize.height > 0) {
+                        top = top.clamp(0.0, image.naturalSize.height - 1);
+                        bottom = bottom.clamp(1.0, image.naturalSize.height);
+                      }
+
+                      image.srcRect = Rect.fromLTRB(left, top, right, bottom);
+                    } else {
+                      double newWidth;
+                      if (position.dx < 0) {
+                        newWidth = parent.panStartRect.width - delta.dx;
+                      } else if (position.dx > 0) {
+                        newWidth = parent.panStartRect.width + delta.dx;
+                      } else {
+                        newWidth = parent.panStartRect.width;
+                      }
+
+                      double newHeight;
+                      if (position.dy < 0) {
+                        newHeight = parent.panStartRect.height - delta.dy;
+                      } else if (position.dy > 0) {
+                        newHeight = parent.panStartRect.height + delta.dy;
+                      } else {
+                        newHeight = parent.panStartRect.height;
+                      }
+
+                      if (newWidth <= 0 || newHeight <= 0) return;
+
+                      // preserve aspect ratio if diagonal
+                      if (position.dx != 0 && position.dy != 0) {
+                        final aspectRatio =
+                            image.dstRect.width / image.dstRect.height;
+                        if (newWidth / newHeight > aspectRatio) {
+                          newHeight = newWidth / aspectRatio;
+                        } else {
+                          newWidth = newHeight * aspectRatio;
+                        }
+                      }
+
+                      // resize from the correct corner
+                      double left = image.dstRect.left,
+                          top = image.dstRect.top;
+                      if (position.dx < 0) {
+                        left = image.dstRect.right - newWidth;
+                      }
+                      if (position.dy < 0) {
+                        top = image.dstRect.bottom - newHeight;
+                      }
+
+                      image.dstRect = .fromLTWH(
+                        left,
+                        top,
+                        newWidth,
+                        newHeight,
+                      );
+                    }
                     afterDrag();
                   }
                 : null,
             onPanEnd: active
                 ? (details) {
-                    if (parent.panStartRect == image.dstRect) return;
-                    image.onMoveImage?.call(
-                      image,
-                      .fromLTRB(
-                        image.dstRect.left - parent.panStartRect.left,
-                        image.dstRect.top - parent.panStartRect.top,
-                        image.dstRect.right - parent.panStartRect.right,
-                        image.dstRect.bottom - parent.panStartRect.bottom,
-                      ),
-                    );
-                    parent.panStartRect = .zero;
+                    if (cropMode) {
+                      if (parent.panStartSrcRect == image.srcRect) return;
+                      parent.panStartSrcRect = .zero;
+                    } else {
+                      if (parent.panStartRect == image.dstRect) return;
+                      image.onMoveImage?.call(
+                        image,
+                        .fromLTRB(
+                          image.dstRect.left - parent.panStartRect.left,
+                          image.dstRect.top - parent.panStartRect.top,
+                          image.dstRect.right - parent.panStartRect.right,
+                          image.dstRect.bottom - parent.panStartRect.bottom,
+                        ),
+                      );
+                      parent.panStartRect = .zero;
+                    }
                   }
                 : null,
             child: AnimatedOpacity(
@@ -416,5 +523,79 @@ class _CanvasImageResizeHandle extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Draws a semi-transparent overlay outside the crop rectangle
+/// when the image is in crop mode.
+class _CropOverlay extends StatelessWidget {
+  const _CropOverlay({required this.image});
+
+  final EditorImage image;
+
+  @override
+  Widget build(BuildContext context) {
+    final cropRect = calculateCropRect();
+    return Stack(
+      children: [
+        // Top bar
+        Positioned(
+          left: 0,
+          top: 0,
+          right: 0,
+          height: cropRect.top,
+          child: ColoredBox(
+            color: Colors.black.withValues(alpha: 0.5),
+          ),
+        ),
+        // Bottom bar
+        Positioned(
+          left: 0,
+          bottom: 0,
+          right: 0,
+          top: cropRect.bottom,
+          child: ColoredBox(
+            color: Colors.black.withValues(alpha: 0.5),
+          ),
+        ),
+        // Left bar
+        Positioned(
+          left: 0,
+          top: cropRect.top,
+          width: cropRect.left,
+          height: cropRect.height,
+          child: ColoredBox(
+            color: Colors.black.withValues(alpha: 0.5),
+          ),
+        ),
+        // Right bar
+        Positioned(
+          right: 0,
+          top: cropRect.top,
+          left: cropRect.right,
+          height: cropRect.height,
+          child: ColoredBox(
+            color: Colors.black.withValues(alpha: 0.5),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Calculates the position of the crop rectangle (srcRect)
+  /// within the widget's bounding box (dstRect).
+  ///
+  /// The crop area (srcRect) is centered within the destination area (dstRect)
+  /// because the rendering uses Center + SizedOverflowBox.
+  Rect calculateCropRect() {
+    final double dstW = image.dstRect.width;
+    final double dstH = image.dstRect.height;
+    final double srcW = image.srcRect.width;
+    final double srcH = image.srcRect.height;
+
+    final double cropX = (dstW - srcW) / 2;
+    final double cropY = (dstH - srcH) / 2;
+
+    return Rect.fromLTWH(cropX, cropY, srcW, srcH);
   }
 }

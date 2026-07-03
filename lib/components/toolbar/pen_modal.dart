@@ -11,6 +11,8 @@ import 'package:saber/data/tools/pencil.dart';
 import 'package:saber/data/tools/shape_pen.dart';
 import 'package:saber/i18n/strings.g.dart';
 
+/// 🤖 Generated with DeepSeek v4 Flash
+
 class PenModal extends StatefulWidget {
   const PenModal({super.key, required this.getTool, required this.setTool});
 
@@ -38,6 +40,10 @@ class _PenModalState extends State<PenModal> {
       mainAxisAlignment: .center,
       children: [
         SizePicker(axis: axis, pen: currentPen),
+        if (currentPen.pressureEnabled) ...[
+          const SizedBox.square(dimension: 8),
+          _PressureCurveSlider(axis: axis),
+        ],
         if (currentPen is! Highlighter && currentPen is! Pencil) ...[
           const SizedBox.square(dimension: 8),
           IconButton(
@@ -115,7 +121,91 @@ class _PenModalState extends State<PenModal> {
             icon: const FaIcon(ShapePen.shapePenIcon),
           ),
         ],
+        if (currentPen is! Pencil) ...[
+          const SizedBox.square(dimension: 8),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                stows.scribbleToErase.value = !stows.scribbleToErase.value;
+              });
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: stows.scribbleToErase.value
+                  ? ColorScheme.of(context).secondary
+                  : ColorScheme.of(context).onSurface,
+              backgroundColor: stows.scribbleToErase.value
+                  ? Theme.of(context)
+                      .colorScheme
+                      .secondary
+                      .withValues(alpha: 0.1)
+                  : Colors.transparent,
+              shape: const CircleBorder(),
+            ),
+            tooltip: stows.scribbleToErase.value
+                ? 'Scribble to Erase: ON'
+                : 'Scribble to Erase: OFF',
+            icon: const FaIcon(FontAwesomeIcons.repeat),
+          ),
+        ],
       ],
     );
+  }
+}
+
+class _PressureCurveSlider extends StatefulWidget {
+  const _PressureCurveSlider({required this.axis});
+
+  final Axis axis;
+
+  @override
+  State<_PressureCurveSlider> createState() => _PressureCurveSliderState();
+}
+
+class _PressureCurveSliderState extends State<_PressureCurveSlider> {
+  @override
+  void initState() {
+    super.initState();
+    stows.penPressureCurve.addListener(onChanged);
+  }
+
+  void onChanged() {
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = ColorScheme.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Curve',
+          style: TextStyle(
+            color: colorScheme.onSurface.withValues(alpha: 0.8),
+            fontSize: 10,
+            height: 1,
+          ),
+        ),
+        Text(stows.penPressureCurve.value.toStringAsFixed(1)),
+        SizedBox(
+          width: 80,
+          child: Slider(
+            value: stows.penPressureCurve.value,
+            min: 0.3,
+            max: 3.0,
+            divisions: 27,
+            onChanged: (value) {
+              stows.penPressureCurve.value = value;
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    stows.penPressureCurve.removeListener(onChanged);
+    super.dispose();
   }
 }

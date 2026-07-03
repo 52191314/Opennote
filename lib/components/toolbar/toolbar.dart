@@ -12,6 +12,7 @@ import 'package:saber/components/theming/adaptive_icon.dart';
 import 'package:saber/components/theming/dynamic_material_app.dart';
 import 'package:saber/components/theming/uni_icon.dart';
 import 'package:saber/components/toolbar/color_bar.dart';
+import 'package:saber/components/toolbar/eraser_size_popup.dart';
 import 'package:saber/components/toolbar/export_bar.dart';
 import 'package:saber/components/toolbar/pen_modal.dart';
 import 'package:saber/components/toolbar/selection_bar.dart';
@@ -48,8 +49,13 @@ class Toolbar extends StatefulWidget {
     required this.pickPhoto,
     required this.pickShape,
     required this.paste,
+    required this.copySelection,
+    required this.pasteSelection,
     required this.duplicateSelection,
     required this.deleteSelection,
+    this.cropPossible = false,
+    this.cropActive = false,
+    this.toggleCrop,
     required this.exportAsSba,
     required this.exportAsPdf,
     required this.exportAsPng,
@@ -78,8 +84,14 @@ class Toolbar extends StatefulWidget {
 
   final VoidCallback paste;
 
+  final VoidCallback copySelection;
+  final VoidCallback pasteSelection;
+
   final VoidCallback duplicateSelection;
   final VoidCallback deleteSelection;
+  final bool cropPossible;
+  final bool cropActive;
+  final VoidCallback? toggleCrop;
 
   final Future Function(BuildContext)? exportAsSba;
   final Future Function(BuildContext)? exportAsPdf;
@@ -157,7 +169,7 @@ class _ToolbarState extends State<Toolbar> {
 
   void toggleEraser() {
     toolOptionsType.value = .hide;
-    widget.setTool(Eraser()); // this toggles eraser
+    widget.setTool(Eraser(size: stows.eraserSize.value)); // this toggles eraser
   }
 
   void toggleColorOptions() {
@@ -248,8 +260,13 @@ class _ToolbarState extends State<Toolbar> {
                 setTool: widget.setTool,
               ),
               .select => SelectionBar(
+                copySelection: widget.copySelection,
+                pasteSelection: widget.pasteSelection,
                 duplicateSelection: widget.duplicateSelection,
                 deleteSelection: widget.deleteSelection,
+                cropPossible: widget.cropPossible,
+                cropActive: widget.cropActive,
+                toggleCrop: widget.toggleCrop,
               ),
             },
           );
@@ -457,6 +474,10 @@ class _ToolbarState extends State<Toolbar> {
                 selected: widget.currentTool is Eraser,
                 enabled: !widget.readOnly,
                 onPressed: toggleEraser,
+                onLongPress: () => showDialog(
+                  context: context,
+                  builder: (_) => const EraserSizePopup(),
+                ),
                 padding: buttonPadding,
                 child: const FaIcon(FontAwesomeIcons.eraser, size: 16),
               ),

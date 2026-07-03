@@ -131,6 +131,39 @@ class PolygonStroke extends Stroke {
   }
 
   @override
+  void rotateAround(double angleRadians, Offset center) {
+    if (angleRadians == 0) return;
+
+    final cosA = cos(angleRadians);
+    final sinA = sin(angleRadians);
+
+    for (int i = 0; i < vertices.length; i++) {
+      final v = vertices[i];
+      final dx = v.dx - center.dx;
+      final dy = v.dy - center.dy;
+      vertices[i] = Offset(
+        center.dx + dx * cosA - dy * sinA,
+        center.dy + dx * sinA + dy * cosA,
+      );
+    }
+
+    super.rotateAround(angleRadians, center);
+  }
+
+  @override
+  void scaleAround(double scaleX, double scaleY, Offset pivot) {
+    if (scaleX == 0 || scaleY == 0) return;
+    for (int i = 0; i < vertices.length; i++) {
+      final v = vertices[i];
+      vertices[i] = Offset(
+        pivot.dx + (v.dx - pivot.dx) * scaleX,
+        pivot.dy + (v.dy - pivot.dy) * scaleY,
+      );
+    }
+    super.scaleAround(scaleX, scaleY, pivot);
+  }
+
+  @override
   void addPoint(Offset point, [double? pressure]) {
     throw UnsupportedError('Cannot add points to a polygon stroke.');
   }

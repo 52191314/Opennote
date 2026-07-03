@@ -128,6 +128,32 @@ class CircleStroke extends Stroke {
   }
 
   @override
+  void rotateAround(double angleRadians, Offset center) {
+    if (angleRadians == 0) return;
+
+    final cosA = cos(angleRadians);
+    final sinA = sin(angleRadians);
+    final dx = this.center.dx - center.dx;
+    final dy = this.center.dy - center.dy;
+    this.center = Offset(
+      center.dx + dx * cosA - dy * sinA,
+      center.dy + dx * sinA + dy * cosA,
+    );
+
+    super.rotateAround(angleRadians, center);
+  }
+
+  @override
+  void scaleAround(double scaleX, double scaleY, Offset pivot) {
+    if (scaleX == 0 || scaleY == 0) return;
+    final newDx = (center.dx - pivot.dx) * scaleX;
+    final newDy = (center.dy - pivot.dy) * scaleY;
+    center = Offset(pivot.dx + newDx, pivot.dy + newDy);
+    radius *= (scaleX + scaleY) / 2;
+    super.scaleAround(scaleX, scaleY, pivot);
+  }
+
+  @override
   @Deprecated('We already know the shape is a circle.')
   RecognizedUnistroke detectShape() {
     return RecognizedUnistroke(

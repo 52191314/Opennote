@@ -22,7 +22,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
   static const defaultSize = Size(defaultWidth, defaultHeight);
 
   @override
-  final Size size;
+  Size size;
 
   late final CanvasKey innerCanvasKey = CanvasKey();
   RenderBox? _renderBox;
@@ -63,6 +63,38 @@ class EditorPage extends ChangeNotifier implements HasSize {
 
   /// The index of the currently active layer for drawing operations.
   int activeLayerIndex;
+
+  /// Position of the eraser cursor on this page (in page-local coordinates).
+  /// When non-null, a semi-transparent circle is painted at this position.
+  Offset? eraserCursorPosition;
+
+  /// Radius of the eraser cursor circle.
+  double? eraserCursorRadius;
+
+  /// Hit-test rect for the delete button on the selection bounding box.
+  /// Set by [CanvasPainter._drawSelection] on each frame where a selection exists.
+  Rect? selectionDeleteButtonRect;
+
+  /// Center of the rotation handle (above the selection bounding box).
+  /// Set by [CanvasPainter._drawSelection] on each frame where a selection exists.
+  Offset? selectionRotationHandleCenter;
+
+  /// Positions of the 8 resize handles around the selection bounding box.
+  /// Order: topLeft, topCenter, topRight, middleRight,
+  ///        bottomRight, bottomCenter, bottomLeft, middleLeft.
+  List<Offset>? selectionResizeHandles;
+
+  /// Whether this page is bookmarked/favorited by the user.
+  bool bookmarked = false;
+
+  /// Position for the pen preview circle (shown when hovering/ready to draw).
+  Offset? penPreviewPosition;
+
+  /// Radius of the pen preview circle (pen stroke width / 2).
+  double? penPreviewRadius;
+
+  /// Color of the pen preview circle.
+  Color? penPreviewColor;
 
   EditorImage? backgroundImage;
 
@@ -125,6 +157,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
     QuillStruct? quill,
     this.backgroundImage,
     this.activeLayerIndex = 0,
+    this.bookmarked = false,
   }) : assert(
          (size == null) || (width == null && height == null),
          "size and width/height shouldn't both be specified",
@@ -159,6 +192,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
       final layersList = json['l'] as List;
       return EditorPage(
         size: size,
+        bookmarked: json['bm'] as bool? ?? false,
         layers: layersList.map((layerJson) => Layer.fromJson(
           layerJson as Map<String, dynamic>,
           fileVersion: fileVersion,
@@ -197,6 +231,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
     // Legacy format: strokes stored in 's' key
     return EditorPage(
       size: size,
+      bookmarked: json['bm'] as bool? ?? false,
       strokes: parseStrokesJson(
         json['s'] as List?,
         page: hasisPage,
@@ -235,6 +270,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
   Map<String, dynamic> toJson(OrderedAssetCache assets) => {
     'w': size.width,
     'h': size.height,
+    if (bookmarked) 'bm': bookmarked,
     if (layers.isNotEmpty)
       'l': layers.map((layer) => layer.toJson()).toList(),
     if (images.isNotEmpty)
@@ -400,6 +436,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
     QuillStruct? quill,
     EditorImage? backgroundImage,
     int? activeLayerIndex,
+    bool? bookmarked,
   }) => EditorPage(
     size: size ?? this.size,
     strokes: strokes,
@@ -408,6 +445,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
     quill: quill ?? this.quill,
     backgroundImage: backgroundImage ?? this.backgroundImage,
     activeLayerIndex: activeLayerIndex ?? this.activeLayerIndex,
+    bookmarked: bookmarked ?? this.bookmarked,
   );
 
   /// Clones this page for use in a screenshot.

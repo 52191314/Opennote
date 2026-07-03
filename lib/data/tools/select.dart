@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
+import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
 import 'package:sbn/tool_id.dart';
 
+/// 🤖 Modified with DeepSeek v4 Flash
 class Select extends Tool {
   Select._();
 
@@ -14,6 +16,9 @@ class Select extends Tool {
   /// for it to be selected.
   static const minPercentInside = 0.7;
 
+  /// The tap radius in pixels for hit-testing strokes on tap.
+  static const double tapRadius = 15.0;
+
   var selectResult = SelectResult(
     pageIndex: -1,
     strokes: const [],
@@ -22,10 +27,17 @@ class Select extends Tool {
   );
   var doneSelecting = false;
 
+  /// The starting position of the current drag (used for rectangle selection).
+  Offset? _dragStartPosition;
+
   @override
   ToolId get toolId => .select;
 
   void unselect() {
+    // Exit crop mode on all previously selected images
+    for (final image in selectResult.images) {
+      image.cropMode = false;
+    }
     doneSelecting = false;
     selectResult.pageIndex = -1;
   }
@@ -51,18 +63,38 @@ class Select extends Tool {
 
   void onDragStart(Offset position, int pageIndex) {
     doneSelecting = false;
+    _dragStartPosition = position;
     selectResult = SelectResult(
       pageIndex: pageIndex,
       strokes: [],
       images: [],
       path: Path(),
     );
-    selectResult.path.moveTo(position.dx, position.dy);
-    onDragUpdate(position);
+    _updateSelectionPath(position);
   }
 
   void onDragUpdate(Offset position) {
-    selectResult.path.lineTo(position.dx, position.dy);
+    _updateSelectionPath(position);
+  }
+
+  void _updateSelectionPath(Offset position) {
+    final start = _dragStartPosition;
+    if (start == null) {
+      selectResult.path.lineTo(position.dx, position.dy);
+      return;
+    }
+
+    if (stows.selectionRectMode.value) {
+      // Rectangle selection
+      selectResult.path = Path()
+        ..addRRect(RRect.fromRectAndRadius(
+          Rect.fromPoints(start, position),
+          const Radius.circular(4),
+        ));
+    } else {
+      // Lasso selection (freeform)
+      selectResult.path.lineTo(position.dx, position.dy);
+    }
   }
 
   /// Adds the indices of any [strokes] that are inside the selection area
@@ -119,6 +151,108 @@ class Select extends Tool {
       }
     }
     return pointsInside / polygon.length;
+  }
+
+  /// Taps at the given [position] to select the nearest stroke or image.
+  ///
+  /// If the tap is within [tapRadius] pixels of any stroke vertex, that stroke
+  /// is selected. Otherwise, if the tap is inside an image's [dstRect],
+  /// that image is selected. If neither is found, the selection is cleared.
+  void tapSelect(
+    Offset position,
+    List<Stroke> strokes,
+    List<EditorImage> images,
+    int pageIndex,
+  ) {
+    doneSelecting = true;
+
+    // Check strokes first (more precise targeting)
+    for (final stroke in strokes) {
+      if (_isPointNearStroke(position, stroke, tapRadius)) {
+        selectResult = SelectResult(
+          pageIndex: pageIndex,
+          strokes: [stroke],
+          images: [],
+          path: _createTightSelectionPath(stroke.lowQualityPolygon),
+        );
+        return;
+      }
+    }
+
+    // Then check images
+    for (final image in images) {
+      if (image.dstRect.contains(position)) {
+        selectResult = SelectResult(
+          pageIndex: pageIndex,
+          strokes: [],
+          images: [image],
+          path: _createRectSelectionPath(image.dstRect),
+        );
+        return;
+      }
+    }
+
+    // Nothing found, clear selection
+    unselect();
+  }
+
+  /// Returns true if [point] is within [radius] of any vertex
+  /// in [stroke]'s low-quality polygon.
+  static bool _isPointNearStroke(
+    Offset point,
+    Stroke stroke,
+    double radius,
+  ) {
+    final polygon = stroke.lowQualityPolygon;
+    if (polygon.isEmpty) return false;
+
+    final sqrRadius = radius * radius;
+
+    // Skip checking every few vertices for performance
+    final int verticesToSkip = switch (polygon.length) {
+      < 100 => 0,
+      < 1000 => 1,
+      _ => 2,
+    };
+
+    for (int i = 0; i < polygon.length; i += verticesToSkip + 1) {
+      final dx = polygon[i].dx - point.dx;
+      final dy = polygon[i].dy - point.dy;
+      if (dx * dx + dy * dy <= sqrRadius) return true;
+    }
+    return false;
+  }
+
+  /// Creates a tight rounded-rect selection path around [polygon],
+  /// inflated by a small margin so the selection boundary is visible.
+  static Path _createTightSelectionPath(List<Offset> polygon) {
+    if (polygon.isEmpty) return Path();
+
+    double minX = double.infinity, minY = double.infinity;
+    double maxX = double.negativeInfinity, maxY = double.negativeInfinity;
+
+    for (final point in polygon) {
+      if (point.dx < minX) minX = point.dx;
+      if (point.dy < minY) minY = point.dy;
+      if (point.dx > maxX) maxX = point.dx;
+      if (point.dy > maxY) maxY = point.dy;
+    }
+
+    final bounds = Rect.fromLTRB(minX, minY, maxX, maxY);
+    return Path()
+      ..addRRect(RRect.fromRectAndRadius(
+        bounds.inflate(8),
+        const Radius.circular(4),
+      ));
+  }
+
+  /// Creates a selection path around [rect], inflated by a small margin.
+  static Path _createRectSelectionPath(Rect rect) {
+    return Path()
+      ..addRRect(RRect.fromRectAndRadius(
+        rect.inflate(8),
+        const Radius.circular(4),
+      ));
   }
 }
 

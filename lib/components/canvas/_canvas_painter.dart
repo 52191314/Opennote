@@ -57,7 +57,9 @@ class CanvasPainter extends CustomPainter {
     for (final stroke in laserStrokes) _drawLaserStroke(canvas, stroke);
     _drawCurrentStroke(canvas);
     _drawDetectedShape(canvas);
+    _drawPenPreview(canvas);
     _drawSelection(canvas);
+    _drawEraserCursor(canvas);
     _drawPageIndicator(canvas, size);
   }
 
@@ -271,6 +273,25 @@ class CanvasPainter extends CustomPainter {
     }
   }
 
+  /// The size of the square delete button shown on the selection bounding box.
+  static const double deleteButtonSize = 24;
+
+  /// The hit-test radius for the delete button.
+  static const double deleteButtonHitRadius = 20;
+
+  /// The radius of the rotation handle circle.
+  static const double rotationHandleRadius = 10;
+
+  /// The distance from the selection bounds top edge
+  /// to the rotation handle center.
+  static const double rotationHandleOffset = 30;
+
+  /// The size of each resize corner handle (half-width).
+  static const double resizeHandleSize = 8;
+
+  /// The hit-test distance for resize handles.
+  static const double resizeHandleHitRadius = 16;
+
   void _drawSelection(Canvas canvas) {
     if (currentSelection == null) return;
 
@@ -290,6 +311,177 @@ class CanvasPainter extends CustomPainter {
         ..color = primaryColor
         ..strokeWidth = 3
         ..style = .stroke,
+    );
+
+    final bounds = currentSelection!.path.getBounds();
+    if (bounds.isEmpty) return;
+
+    final center = bounds.center;
+
+    // Draw rotation handle (circle above selection center)
+    final rotationHandleCenter = Offset(center.dx, bounds.top - rotationHandleOffset);
+
+    // Store rotation handle position on page for hit-testing
+    page.selectionRotationHandleCenter = rotationHandleCenter;
+
+    // Draw connector line from handle to selection top
+    canvas.drawLine(
+      Offset(center.dx, bounds.top),
+      rotationHandleCenter,
+      Paint()
+        ..color = primaryColor
+        ..strokeWidth = 2
+        ..style = PaintingStyle.stroke,
+    );
+
+    // Draw rotation handle circle
+    canvas.drawCircle(
+      rotationHandleCenter,
+      rotationHandleRadius,
+      Paint()
+        ..color = primaryColor
+        ..style = PaintingStyle.fill,
+    );
+    canvas.drawCircle(
+      rotationHandleCenter,
+      rotationHandleRadius,
+      Paint()
+        ..color = Colors.white
+        ..strokeWidth = 1.5
+        ..style = PaintingStyle.stroke,
+    );
+
+    // Draw a small curved arrow inside the handle
+    final arrowPaint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+    canvas.drawArc(
+      Rect.fromCenter(
+        center: rotationHandleCenter,
+        width: rotationHandleRadius * 1.2,
+        height: rotationHandleRadius * 1.2,
+      ),
+      -0.8,
+      1.6,
+      false,
+      arrowPaint,
+    );
+
+    // Draw delete button (X) at top-right corner of selection bounds
+    final deleteCenterX = bounds.right;
+    final deleteCenterY = bounds.top;
+    final halfSize = deleteButtonSize / 2;
+    final buttonRect = Rect.fromCenter(
+      center: Offset(deleteCenterX, deleteCenterY),
+      width: deleteButtonSize,
+      height: deleteButtonSize,
+    );
+
+    // Store the delete button rect on the page for hit-testing
+    page.selectionDeleteButtonRect = buttonRect;
+
+    // Draw background circle
+    canvas.drawCircle(
+      buttonRect.center,
+      halfSize + 2,
+      Paint()
+        ..color = Colors.red
+        ..style = PaintingStyle.fill,
+    );
+
+    // Draw white X
+    final xPaint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
+
+    final inset = halfSize * 0.3;
+    canvas.drawLine(
+      Offset(deleteCenterX - inset, deleteCenterY - inset),
+      Offset(deleteCenterX + inset, deleteCenterY + inset),
+      xPaint,
+    );
+    canvas.drawLine(
+      Offset(deleteCenterX + inset, deleteCenterY - inset),
+      Offset(deleteCenterX - inset, deleteCenterY + inset),
+      xPaint,
+    );
+
+    // Draw resize handles at corners and midpoints
+    final handlePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    final handleBorderPaint = Paint()
+      ..color = primaryColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    final half = resizeHandleSize;
+    final handlePositions = <Offset>[
+      Offset(bounds.left, bounds.top),          // topLeft
+      Offset(center.dx, bounds.top),            // topCenter
+      Offset(bounds.right, bounds.top),         // topRight
+      Offset(bounds.right, center.dy),          // middleRight
+      Offset(bounds.right, bounds.bottom),       // bottomRight
+      Offset(center.dx, bounds.bottom),          // bottomCenter
+      Offset(bounds.left, bounds.bottom),        // bottomLeft
+      Offset(bounds.left, center.dy),            // middleLeft
+    ];
+
+    page.selectionResizeHandles = handlePositions;
+
+    for (final pos in handlePositions) {
+      final handleRect = Rect.fromLTWH(pos.dx - half, pos.dy - half, half * 2, half * 2);
+      canvas.drawRect(handleRect, handlePaint);
+      canvas.drawRect(handleRect, handleBorderPaint);
+    }
+  }
+
+  void _drawPenPreview(Canvas canvas) {
+    final pos = page.penPreviewPosition;
+    final radius = page.penPreviewRadius;
+    final color = page.penPreviewColor;
+    if (pos == null || radius == null || color == null || radius <= 0) return;
+
+    canvas.drawCircle(
+      pos,
+      radius,
+      Paint()
+        ..color = color.withValues(alpha: 0.3)
+        ..style = PaintingStyle.fill,
+    );
+
+    canvas.drawCircle(
+      pos,
+      radius,
+      Paint()
+        ..color = color.withValues(alpha: 0.7)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+  }
+
+  void _drawEraserCursor(Canvas canvas) {
+    final position = page.eraserCursorPosition;
+    final radius = page.eraserCursorRadius;
+    if (position == null || radius == null || radius <= 0) return;
+
+    canvas.drawCircle(
+      position,
+      radius,
+      Paint()
+        ..color = Colors.grey.withValues(alpha: 0.25)
+        ..style = PaintingStyle.fill,
+    );
+
+    canvas.drawCircle(
+      position,
+      radius,
+      Paint()
+        ..color = Colors.black.withValues(alpha: 0.5)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
     );
   }
 
@@ -313,7 +505,7 @@ class CanvasPainter extends CustomPainter {
           fontFamilyFallback: defaultTextStyle.fontFamilyFallback,
         ),
       )
-      ..addText('${pageIndex + 1} / $totalPages');
+      ..addText('${page.bookmarked ? '★ ' : ''}${pageIndex + 1} / $totalPages');
 
     final paragraph = builder.build();
     paragraph.layout(

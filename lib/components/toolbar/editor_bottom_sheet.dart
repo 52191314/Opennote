@@ -1,12 +1,18 @@
+import 'dart:math' show min;
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:saber/components/canvas/canvas_background_preview.dart';
 import 'package:saber/components/canvas/canvas_image_dialog.dart';
 import 'package:saber/components/canvas/inner_canvas.dart';
+import 'package:saber/components/editor/layer_manager.dart';
+import 'package:saber/components/editor/sticker_picker.dart';
+import 'package:saber/components/editor/template_picker_dialog.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/extensions/list_extensions.dart';
 import 'package:saber/data/prefs.dart';
+import 'package:saber/data/tools/page_templates.dart';
 import 'package:saber/i18n/extensions/box_fit_localized.dart';
 import 'package:saber/i18n/extensions/canvas_background_pattern_localized.dart';
 import 'package:saber/i18n/strings.g.dart';
@@ -28,9 +34,12 @@ class EditorBottomSheet extends StatefulWidget {
     required this.redrawAndSave,
     required this.pickPhotos,
     required this.importPdf,
+    required this.addStickyNote,
+    required this.addSticker,
     required this.canRasterPdf,
     required this.getIsWatchingServer,
     required this.setIsWatchingServer,
+    this.setPageSize,
   });
 
   final bool invert;
@@ -39,6 +48,7 @@ class EditorBottomSheet extends StatefulWidget {
   final void Function(CanvasBackgroundPattern) setBackgroundPattern;
   final void Function(int) setLineHeight;
   final void Function(int) setLineThickness;
+  final void Function(Size)? setPageSize;
   final VoidCallback removeBackgroundImage;
   final VoidCallback redrawImage;
   final VoidCallback clearPage;
@@ -46,6 +56,8 @@ class EditorBottomSheet extends StatefulWidget {
   final VoidCallback redrawAndSave;
   final Future<int> Function() pickPhotos;
   final Future<bool> Function() importPdf;
+  final VoidCallback addStickyNote;
+  final void Function(String emoji) addSticker;
   final bool canRasterPdf;
   final bool Function() getIsWatchingServer;
   final void Function(bool) setIsWatchingServer;
@@ -56,6 +68,31 @@ class EditorBottomSheet extends StatefulWidget {
 
 class _EditorBottomSheetState extends State<EditorBottomSheet> {
   static const imageBoxFits = <BoxFit>[.fill, .cover, .contain];
+
+  void _showTemplatePicker() {
+    showDialog(
+      context: context,
+      builder: (_) => TemplatePickerDialog(
+        coreInfo: widget.coreInfo,
+        currentPageIndex: widget.currentPageIndex,
+        invert: widget.invert,
+        onTemplateSelected: (PageTemplate template) {
+          widget.setBackgroundPattern(template.backgroundPattern);
+          widget.setLineHeight(template.lineHeight);
+          widget.setLineThickness(template.lineThickness);
+
+          if (template.initialContent != null) {
+            final page = widget.coreInfo.pages
+                .getOrNull(widget.currentPageIndex ?? -1);
+            if (page != null) {
+              page.quill.controller
+                  .replaceText(0, 0, template.initialContent!, null);
+            }
+          }
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +119,27 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
             Wrap(
               spacing: 8,
               children: [
+                ElevatedButton(
+                  onPressed: () {
+                    final page = widget.coreInfo.pages
+                        .getOrNull(widget.currentPageIndex ?? -1);
+                    if (page == null) return;
+                    showDialog(
+                      context: context,
+                      builder: (_) => LayerManager(
+                        page: page,
+                        onChanged: widget.redrawAndSave,
+                      ),
+                    );
+                  },
+                  child: const Wrap(
+                    children: [
+                      Icon(Icons.layers),
+                      SizedBox(width: 8),
+                      Text('Layers'),
+                    ],
+                  ),
+                ),
                 ElevatedButton(
                   onPressed: widget.coreInfo.isNotEmpty
                       ? () {
@@ -116,6 +174,16 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
                       const Icon(Icons.cleaning_services),
                       const SizedBox(width: 8),
                       Text(t.editor.menu.clearAllPages),
+                    ],
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () => _showTemplatePicker(),
+                  child: Wrap(
+                    children: [
+                      const Icon(Icons.auto_awesome),
+                      const SizedBox(width: 8),
+                      Text(t.editor.menu.templates),
                     ],
                   ),
                 ),
@@ -287,6 +355,129 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
             ),
             const SizedBox(height: 16),
             Text(
+              'Bookmark',
+              style: TextTheme.of(context).titleMedium,
+            ),
+            Row(
+              children: [
+                Switch(
+                  value: page?.bookmarked ?? false,
+                  onChanged: !widget.coreInfo.readOnly
+                      ? (bool value) {
+                          if (page == null) return;
+                          page!.bookmarked = value;
+                          page!.notifyListeners();
+                          widget.redrawAndSave();
+                        }
+                      : null,
+                ),
+                const SizedBox(width: 8),
+                Text(page?.bookmarked ?? false
+                    ? 'Page is bookmarked'
+                    : 'Not bookmarked'),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (widget.setPageSize != null) ...[
+              Text(
+                'Page Size',
+                style: TextTheme.of(context).titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      decoration: const InputDecoration(
+                        labelText: 'Width',
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                      controller: TextEditingController(
+                        text: page?.size.width.toInt().toString() ?? '',
+                      ),
+                      onSubmitted: (value) {
+                        final parsed = double.tryParse(value);
+                        if (parsed == null || parsed < 200 || parsed > 2000) {
+                          return;
+                        }
+                        if (page == null) return;
+                        final newSize = Size(
+                          parsed.roundToDouble(),
+                          page.size.height,
+                        );
+                        widget.setPageSize?.call(newSize);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextField(
+                      decoration: const InputDecoration(
+                        labelText: 'Height',
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                      controller: TextEditingController(
+                        text: page?.size.height.toInt().toString() ?? '',
+                      ),
+                      onSubmitted: (value) {
+                        final parsed = double.tryParse(value);
+                        if (parsed == null || parsed < 200 || parsed > 2000) {
+                          return;
+                        }
+                        if (page == null) return;
+                        final newSize = Size(
+                          page.size.width,
+                          parsed.roundToDouble(),
+                        );
+                        widget.setPageSize?.call(newSize);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  ActionChip(
+                    label: const Text('1:1'),
+                    onPressed: () {
+                      if (page == null) return;
+                      final size = page.size;
+                      final side = min(size.width, size.height);
+                      widget.setPageSize?.call(Size(side, side));
+                    },
+                  ),
+                  ActionChip(
+                    label: const Text('3:4'),
+                    onPressed: () {
+                      if (page == null) return;
+                      widget.setPageSize?.call(Size(750, 1000));
+                    },
+                  ),
+                  ActionChip(
+                    label: const Text('A4'),
+                    onPressed: () {
+                      if (page == null) return;
+                      widget.setPageSize?.call(Size(842, 1191));
+                    },
+                  ),
+                  ActionChip(
+                    label: const Text('Square'),
+                    onPressed: () {
+                      if (page == null) return;
+                      widget.setPageSize?.call(Size(1000, 1000));
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+            Text(
               t.editor.menu.import,
               style: TextTheme.of(context).titleMedium,
             ),
@@ -314,6 +505,36 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
                     },
                     child: const Text('PDF'),
                   ),
+                ElevatedButton(
+                  onPressed: () {
+                    widget.addStickyNote();
+                    Navigator.pop(context);
+                  },
+                  child: const Wrap(
+                    children: [
+                      Icon(Icons.note_add),
+                      SizedBox(width: 8),
+                      Text('Sticky Note'),
+                    ],
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => StickerPickerDialog(
+                        onStickerSelected: widget.addSticker,
+                      ),
+                    );
+                  },
+                  child: const Wrap(
+                    children: [
+                      Icon(Icons.emoji_emotions),
+                      SizedBox(width: 8),
+                      Text('Sticker'),
+                    ],
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),

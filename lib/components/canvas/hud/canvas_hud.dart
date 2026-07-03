@@ -21,6 +21,8 @@ class CanvasHud extends HookWidget {
     required this.setAxisAlignedPanLock,
     this.showProtractor = false,
     this.setShowProtractor,
+    this.bookmarked = false,
+    this.onToggleBookmarked,
   });
 
   final TransformationController transformationController;
@@ -33,6 +35,8 @@ class CanvasHud extends HookWidget {
   final ValueChanged<bool> setAxisAlignedPanLock;
   final bool showProtractor;
   final ValueChanged<bool>? setShowProtractor;
+  final bool bookmarked;
+  final VoidCallback? onToggleBookmarked;
 
   @override
   Widget build(BuildContext context) {
@@ -114,6 +118,17 @@ class CanvasHud extends HookWidget {
                   tooltip: showProtractor
                       ? 'Hide protractor'
                       : 'Show protractor',
+                ),
+              ),
+            if (onToggleBookmarked != null)
+              Positioned(
+                top: 5,
+                right: 50,
+                child: CanvasGestureLockBtn(
+                  lock: bookmarked,
+                  setLock: (_) => onToggleBookmarked!(),
+                  icon: bookmarked ? Icons.star : Icons.star_border,
+                  tooltip: bookmarked ? 'Remove bookmark' : 'Bookmark page',
                 ),
               ),
             Positioned(

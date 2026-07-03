@@ -231,6 +231,44 @@ class DimensionStroke extends Stroke {
   }
 
   @override
+  void rotateAround(double angleRadians, Offset center) {
+    if (angleRadians == 0) return;
+
+    final cosA = cos(angleRadians);
+    final sinA = sin(angleRadians);
+
+    final startDx = start.dx - center.dx;
+    final startDy = start.dy - center.dy;
+    start = Offset(
+      center.dx + startDx * cosA - startDy * sinA,
+      center.dy + startDx * sinA + startDy * cosA,
+    );
+
+    final endDx = end.dx - center.dx;
+    final endDy = end.dy - center.dy;
+    end = Offset(
+      center.dx + endDx * cosA - endDy * sinA,
+      center.dy + endDx * sinA + endDy * cosA,
+    );
+
+    super.rotateAround(angleRadians, center);
+  }
+
+  @override
+  void scaleAround(double scaleX, double scaleY, Offset pivot) {
+    if (scaleX == 0 || scaleY == 0) return;
+    start = Offset(
+      pivot.dx + (start.dx - pivot.dx) * scaleX,
+      pivot.dy + (start.dy - pivot.dy) * scaleY,
+    );
+    end = Offset(
+      pivot.dx + (end.dx - pivot.dx) * scaleX,
+      pivot.dy + (end.dy - pivot.dy) * scaleY,
+    );
+    super.scaleAround(scaleX, scaleY, pivot);
+  }
+
+  @override
   void addPoint(Offset point, [double? pressure]) {
     throw UnsupportedError('Cannot add points to a dimension stroke.');
   }

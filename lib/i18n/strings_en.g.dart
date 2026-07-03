@@ -98,6 +98,7 @@ class Translations$home$en {
 	late final Translations$home$newFolder$en newFolder = Translations$home$newFolder$en.internal(_root);
 	late final Translations$home$renameNote$en renameNote = Translations$home$renameNote$en.internal(_root);
 	late final Translations$home$moveNote$en moveNote = Translations$home$moveNote$en.internal(_root);
+	late final Translations$home$search$en search = Translations$home$search$en.internal(_root);
 
 	/// en: 'Delete note'
 	String get deleteNote => 'Delete note';
@@ -480,6 +481,27 @@ class Translations$home$moveNote$en {
 
 	/// en: '$n notes will be renamed to avoid conflicts'
 	String numberRenamedTo({required Object n}) => '${n} notes will be renamed to avoid conflicts';
+}
+
+// Path: home.search
+class Translations$home$search$en {
+	Translations$home$search$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Search notes'
+	String get hint => 'Search notes';
+
+	/// en: 'Scanning...'
+	String get scanning => 'Scanning...';
+
+	/// en: '$n results found'
+	String resultsFound({required Object n}) => '${n} results found';
+
+	/// en: 'No results found'
+	String get noResults => 'No results found';
 }
 
 // Path: home.deleteNoteDialog
@@ -1022,9 +1044,6 @@ class Translations$editor$toolbar$en {
 	/// en: 'Toggle eraser (Ctrl E)'
 	String get toggleEraser => 'Toggle eraser (Ctrl E)';
 
-	/// en: 'Ruler'
-	String get ruler => 'Ruler';
-
 	/// en: 'Images'
 	String get photo => 'Images';
 
@@ -1225,6 +1244,9 @@ class Translations$editor$menu$en {
 	final Translations _root; // ignore: unused_field
 
 	// Translations
+
+	/// en: 'Templates'
+	String get templates => 'Templates';
 
 	/// en: 'Clear page $page/$totalPages'
 	String clearPage({required Object page, required Object totalPages}) => 'Clear page ${page}/${totalPages}';

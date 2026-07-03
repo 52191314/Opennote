@@ -74,6 +74,96 @@ class Stroke {
     _highQualityPath = _highQualityPath?.shift(offset);
   }
 
+  /// Rotates all vertices by [angleRadians] radians around [center].
+  void rotateAround(double angleRadians, Offset center) {
+    if (angleRadians == 0) return;
+
+    final cosA = cos(angleRadians);
+    final sinA = sin(angleRadians);
+
+    Offset transformPoint(Offset point) {
+      final dx = point.dx - center.dx;
+      final dy = point.dy - center.dy;
+      return Offset(
+        center.dx + dx * cosA - dy * sinA,
+        center.dy + dx * sinA + dy * cosA,
+      );
+    }
+
+    // Rotate raw points
+    for (int i = 0; i < points.length; i++) {
+      final p = points[i];
+      final dx = p.x - center.dx;
+      final dy = p.y - center.dy;
+      points[i] = PointVector(
+        center.dx + dx * cosA - dy * sinA,
+        center.dy + dx * sinA + dy * cosA,
+        p.pressure,
+      );
+    }
+
+    // Rotate cached polygons
+    if (_lowQualityPolygon != null) {
+      for (int i = 0; i < _lowQualityPolygon!.length; i++) {
+        _lowQualityPolygon![i] = transformPoint(_lowQualityPolygon![i]);
+      }
+    }
+    if (_highQualityPolygon != null) {
+      for (int i = 0; i < _highQualityPolygon!.length; i++) {
+        _highQualityPolygon![i] = transformPoint(_highQualityPolygon![i]);
+      }
+    }
+
+    // Rebuild paths from rotated polygons
+    _lowQualityPath = _lowQualityPolygon != null
+        ? getPath(_lowQualityPolygon!, smooth: false)
+        : null;
+    _highQualityPath = _highQualityPolygon != null
+        ? getPath(_highQualityPolygon!)
+        : null;
+  }
+
+  /// Scales all vertices by [scaleX]/[scaleY] around [pivot].
+  void scaleAround(double scaleX, double scaleY, Offset pivot) {
+    if (scaleX == 1 && scaleY == 1) return;
+
+    Offset transformPoint(Offset point) {
+      final newX = pivot.dx + (point.dx - pivot.dx) * scaleX;
+      final newY = pivot.dy + (point.dy - pivot.dy) * scaleY;
+      return Offset(newX, newY);
+    }
+
+    // Scale raw points
+    for (int i = 0; i < points.length; i++) {
+      final p = points[i];
+      points[i] = PointVector(
+        pivot.dx + (p.x - pivot.dx) * scaleX,
+        pivot.dy + (p.y - pivot.dy) * scaleY,
+        p.pressure,
+      );
+    }
+
+    // Scale cached polygons
+    if (_lowQualityPolygon != null) {
+      for (int i = 0; i < _lowQualityPolygon!.length; i++) {
+        _lowQualityPolygon![i] = transformPoint(_lowQualityPolygon![i]);
+      }
+    }
+    if (_highQualityPolygon != null) {
+      for (int i = 0; i < _highQualityPolygon!.length; i++) {
+        _highQualityPolygon![i] = transformPoint(_highQualityPolygon![i]);
+      }
+    }
+
+    // Rebuild paths
+    _lowQualityPath = _lowQualityPolygon != null
+        ? getPath(_lowQualityPolygon!, smooth: false)
+        : null;
+    _highQualityPath = _highQualityPolygon != null
+        ? getPath(_highQualityPolygon!)
+        : null;
+  }
+
   void markPolygonNeedsUpdating() {
     _lowQualityPolygon = null;
     _highQualityPolygon = null;

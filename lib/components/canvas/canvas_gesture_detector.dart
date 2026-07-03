@@ -37,9 +37,11 @@ class CanvasGestureDetector extends StatefulWidget {
     required this.pageBuilder,
     required this.placeholderPageBuilder,
     required this.isTextEditing,
+    this.bookmarked = false,
+    this.onToggleBookmarked,
     TransformationController? transformationController,
   }) : _transformationController =
-           transformationController ?? TransformationController();
+            transformationController ?? TransformationController();
 
   final String filePath;
 
@@ -67,6 +69,8 @@ class CanvasGestureDetector extends StatefulWidget {
   placeholderPageBuilder;
 
   final bool Function() isTextEditing;
+  final bool bookmarked;
+  final VoidCallback? onToggleBookmarked;
 
   late final TransformationController _transformationController;
 
@@ -569,6 +573,8 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
             setShowProtractor: (bool visible) => setState(() {
               showProtractor = visible;
             }),
+            bookmarked: widget.bookmarked,
+            onToggleBookmarked: widget.onToggleBookmarked,
           ),
         ),
       ],

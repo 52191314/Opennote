@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart';
 import 'package:one_dollar_unistroke_recognizer/one_dollar_unistroke_recognizer.dart';
@@ -137,6 +139,57 @@ class RectangleStroke extends Stroke {
   void shift(Offset offset) {
     rect = rect.shift(offset);
     super.shift(offset);
+  }
+
+  @override
+  void rotateAround(double angleRadians, Offset center) {
+    if (angleRadians == 0) return;
+
+    final cosA = cos(angleRadians);
+    final sinA = sin(angleRadians);
+
+    Offset _rotatePoint(Offset p) {
+      final dx = p.dx - center.dx;
+      final dy = p.dy - center.dy;
+      return Offset(
+        center.dx + dx * cosA - dy * sinA,
+        center.dy + dx * sinA + dy * cosA,
+      );
+    }
+
+    final topLeft = _rotatePoint(rect.topLeft);
+    final topRight = _rotatePoint(rect.topRight);
+    final bottomRight = _rotatePoint(rect.bottomRight);
+    final bottomLeft = _rotatePoint(rect.bottomLeft);
+
+    final newLeft = min(topLeft.dx, min(topRight.dx, min(bottomRight.dx, bottomLeft.dx)));
+    final newTop = min(topLeft.dy, min(topRight.dy, min(bottomRight.dy, bottomLeft.dy)));
+    final newRight = max(topLeft.dx, max(topRight.dx, max(bottomRight.dx, bottomLeft.dx)));
+    final newBottom = max(topLeft.dy, max(topRight.dy, max(bottomRight.dy, bottomLeft.dy)));
+
+    rect = Rect.fromLTRB(newLeft, newTop, newRight, newBottom);
+
+    super.rotateAround(angleRadians, center);
+  }
+
+  @override
+  void scaleAround(double scaleX, double scaleY, Offset pivot) {
+    if (scaleX == 0 || scaleY == 0) return;
+    Offset scalePoint(Offset p) => Offset(
+      pivot.dx + (p.dx - pivot.dx) * scaleX,
+      pivot.dy + (p.dy - pivot.dy) * scaleY,
+    );
+    final topLeft = scalePoint(rect.topLeft);
+    final topRight = scalePoint(rect.topRight);
+    final bottomRight = scalePoint(rect.bottomRight);
+    final bottomLeft = scalePoint(rect.bottomLeft);
+    rect = Rect.fromLTRB(
+      min(topLeft.dx, min(topRight.dx, min(bottomRight.dx, bottomLeft.dx))),
+      min(topLeft.dy, min(topRight.dy, min(bottomRight.dy, bottomLeft.dy))),
+      max(topLeft.dx, max(topRight.dx, max(bottomRight.dx, bottomLeft.dx))),
+      max(topLeft.dy, max(topRight.dy, max(bottomRight.dy, bottomLeft.dy))),
+    );
+    super.scaleAround(scaleX, scaleY, pivot);
   }
 
   @override

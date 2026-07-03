@@ -199,6 +199,25 @@ class Stows {
     false,
     volatile: !_isOnMainIsolate,
   );
+
+  final eraserSize = PlainStow(
+    'eraserSize',
+    30.0,
+    volatile: !_isOnMainIsolate,
+  );
+
+  final scribbleToErase = PlainStow(
+    'scribbleToErase',
+    false,
+    volatile: !_isOnMainIsolate,
+  );
+
+  final selectionRectMode = PlainStow(
+    'selectionRectMode',
+    false,
+    volatile: !_isOnMainIsolate,
+  );
+
   final hideFingerDrawingToggle = PlainStow(
     'hideFingerDrawingToggle',
     false,
@@ -210,6 +229,14 @@ class Stows {
   final autoDisableFingerDrawingWhenStylusDetected = PlainStow(
     'autoDisableFingerDrawingWhenStylusDetected',
     true,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Pen pressure curve exponent.
+  /// 1.0 = linear, >1 = more sensitive at high pressure, <1 = more sensitive at low pressure.
+  final penPressureCurve = PlainStow<double>(
+    'penPressureCurve',
+    1.0,
     volatile: !_isOnMainIsolate,
   );
 

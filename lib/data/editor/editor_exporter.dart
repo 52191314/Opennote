@@ -30,23 +30,38 @@ abstract class EditorExporter {
 
   static Future<pw.Document> generatePdf(
     EditorCoreInfo coreInfo,
-    BuildContext context,
-  ) async {
-    if (coreInfo.pages.isNotEmpty && coreInfo.pages.last.isEmpty) {
-      // don't export the empty last page
-      coreInfo = coreInfo.copyWith(
-        pages: coreInfo.pages.toList()..removeLast(),
-      );
+    BuildContext context, {
+    Set<int>? pageIndices,
+  }) async {
+    if (pageIndices == null) {
+      if (coreInfo.pages.isNotEmpty && coreInfo.pages.last.isEmpty) {
+        // don't export the empty last page
+        coreInfo = coreInfo.copyWith(
+          pages: coreInfo.pages.toList()..removeLast(),
+        );
+      }
     }
 
     final pdf = pw.Document();
+
+    // Determine which pages to export
+    final exportIndices = (pageIndices ?? List.generate(
+      coreInfo.pages.length, (i) => i,
+    )).toList();
+
+    // Remove trailing empty page only when exporting all
+    var pages = coreInfo.pages;
+    if (pageIndices == null && pages.isNotEmpty && pages.last.isEmpty) {
+      pages = pages.toList()..removeLast();
+    }
 
     // screenshot each page
     final pool = Pool((Platform.numberOfProcessors ~/ 2).clamp(1, 4));
     final pageScreenshots = await Future.wait(
       List.generate(
-        coreInfo.pages.length,
-        (pageIndex) => pool.withResource(() async {
+        exportIndices.length,
+        (i) => pool.withResource(() async {
+          final pageIndex = exportIndices[i];
           final uiImage = await screenshotPage(
             coreInfo: coreInfo,
             pageIndex: pageIndex,
@@ -70,8 +85,8 @@ abstract class EditorExporter {
       ),
     );
 
-    for (int pageIndex = 0; pageIndex < pageScreenshots.length; ++pageIndex) {
-      final page = coreInfo.pages[pageIndex];
+    for (int i = 0; i < pageScreenshots.length; ++i) {
+      final page = pages[exportIndices[i]];
       final pageSize = page.size;
       pdf.addPage(
         pw.Page(
@@ -165,8 +180,8 @@ abstract class EditorExporter {
                     }
                   }
                 },
-                child: pw.Image(
-                  pw.ImageImage(pageScreenshots[pageIndex]),
+                  child: pw.Image(
+                  pw.ImageImage(pageScreenshots[i]),
                   width: pageSize.width,
                   height: pageSize.height,
                 ),
