@@ -12,9 +12,9 @@ import 'package:saber/data/tools/eraser.dart';
 ///
 /// Algorithm:
 /// 1. Buffer the last [windowSize] pen positions
-/// 2. Count direction reversals (angle change > 90°) between consecutive segments
+/// 2. Subsample points to reduce noise, then count direction-quadrant changes
 /// 3. Measure the bounding box diagonal of the window
-/// 4. If [minReversals]+ reversals within a tight cluster → scribbling mode
+/// 4. If >= [minDirectionChanges] direction changes within a moderate cluster → scribbling mode
 /// 5. Once mode is determined (drawing/erasing), stay in that mode for the gesture
 class ScribbleDetector {
   /// Current state of the detection for the active gesture.
@@ -24,11 +24,18 @@ class ScribbleDetector {
   final List<Stroke> _erasedStrokes = [];
   Eraser? _eraser;
 
-  static const int windowSize = 15;
-  static const int minPoints = 10;
-  static const int minReversals = 5;
-  static const double boundingBoxMultiplier = 5.0;
-  static const double angleThresholdDeg = 90;
+  /// Number of recent positions to keep in the sliding window.
+  static const int windowSize = 20;
+
+  /// Minimum points needed before attempting detection.
+  static const int minPoints = 8;
+
+  /// Minimum direction-quadrant changes to classify as scribbling.
+  static const int minDirectionChanges = 4;
+
+  /// Bounding-box diagonal multiplier relative to pen stroke width.
+  /// Scribbling over a stroke typically spans 10-30× the pen width.
+  static const double boundingBoxMultiplier = 20.0;
 
   /// Reset the detector for a new gesture.
   void start(Offset firstPoint) {
@@ -103,14 +110,36 @@ class ScribbleDetector {
 
   /// Analyze the buffered points to determine if the user is scribbling.
   bool _isScribbling(List<Offset> points, double penStrokeWidth) {
-    // Count direction reversals
-    int reversals = 0;
-    for (int i = 2; i < points.length; i++) {
-      final prev = points[i - 1] - points[i - 2];
-      final curr = points[i] - points[i - 1];
-      if (_angleBetween(prev, curr) > angleThresholdDeg) {
-        reversals++;
+    if (points.length < 8) return false;
+
+    // Subsample points to reduce natural jitter
+    final step = (points.length / 6).ceil().clamp(1, 3);
+    final sampled = <Offset>[];
+    for (int i = 0; i < points.length; i += step) {
+      sampled.add(points[i]);
+    }
+
+    // Count direction-quadrant changes
+    int directionChanges = 0;
+    int? lastQuadrant;
+    for (int i = 1; i < sampled.length; i++) {
+      final dx = sampled[i].dx - sampled[i - 1].dx;
+      final dy = sampled[i].dy - sampled[i - 1].dy;
+
+      // Skip tiny movements (natural jitter)
+      if (dx.abs() < 3 && dy.abs() < 3) continue;
+
+      final int quadrant;
+      if (dx.abs() > dy.abs()) {
+        quadrant = dx > 0 ? 0 : 2; // moving right (0) or left (2)
+      } else {
+        quadrant = dy > 0 ? 1 : 3; // moving down (1) or up (3)
       }
+
+      if (lastQuadrant != null && quadrant != lastQuadrant) {
+        directionChanges++;
+      }
+      lastQuadrant = quadrant;
     }
 
     // Measure bounding box diagonal
@@ -124,8 +153,8 @@ class ScribbleDetector {
     }
     final diagonal = Offset(maxX - minX, maxY - minY).distance;
 
-    // Scribbling requires many reversals within a tight cluster
-    return reversals >= minReversals &&
+    // Scribbling requires frequent direction changes within a moderate area
+    return directionChanges >= minDirectionChanges &&
         diagonal < boundingBoxMultiplier * penStrokeWidth;
   }
 

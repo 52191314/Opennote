@@ -35,7 +35,7 @@ class _PenModalState extends State<PenModal> {
       return const SizedBox();
     }
 
-    return Flex(
+    final content = Flex(
       direction: axis,
       mainAxisAlignment: .center,
       children: [
@@ -149,6 +149,14 @@ class _PenModalState extends State<PenModal> {
         ],
       ],
     );
+
+    if (axis == Axis.horizontal) {
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: content,
+      );
+    }
+    return content;
   }
 }
 
