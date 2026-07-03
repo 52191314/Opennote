@@ -842,6 +842,13 @@ class EditorState extends State<Editor> {
             height: rect.height * scaleY,
           );
         }
+        // Handle text resize: scale text offset relative to pivot
+        if (select.selectResult.textSelected) {
+          page.textContentOffset = Offset(
+            pivot.dx + (page.textContentOffset.dx - pivot.dx) * scaleX,
+            pivot.dy + (page.textContentOffset.dy - pivot.dy) * scaleY,
+          );
+        }
         // Update selection path bounds
         final newCenter = Offset(
           pivot.dx + (newBounds.center.dx - pivot.dx) * scaleX,
@@ -882,6 +889,10 @@ class EditorState extends State<Editor> {
             height: rect.height,
           );
         }
+        // Handle text rotation
+        if (select.selectResult.textSelected) {
+          page.textContentRotation += deltaAngle;
+        }
 
         // Update the selection path bounds
         select.selectResult.path = _rotatePath(
@@ -894,6 +905,9 @@ class EditorState extends State<Editor> {
         }
         for (final image in select.selectResult.images) {
           image.dstRect = image.dstRect.shift(offset);
+        }
+        if (select.selectResult.textSelected) {
+          page.textContentOffset += offset;
         }
         select.selectResult.path = select.selectResult.path.shift(offset);
       } else {
@@ -975,6 +989,7 @@ class EditorState extends State<Editor> {
         );
       } else if (currentTool is Select) {
         final select = currentTool as Select;
+        final textRect = page.computeTextContentRect(coreInfo.lineHeight);
 
         // Detect tap (no drag, no resize, no rotate)
         if (moveOffset == .zero && !_isRotating && !_isResizing) {
@@ -988,6 +1003,7 @@ class EditorState extends State<Editor> {
                 page.strokes,
                 page.images,
                 dragPageIndex!,
+                textRect: textRect,
               );
               shouldSave = false;
 
@@ -1028,7 +1044,8 @@ class EditorState extends State<Editor> {
               return;
             }
           }
-          return; // tap on existing selection or very tiny lasso
+          if (select.doneSelecting) return; // tap on existing selection
+          // Otherwise fall through to finalize the lasso selection
         }
 
         if (select.doneSelecting) {
@@ -1050,7 +1067,7 @@ class EditorState extends State<Editor> {
           );
         } else {
           shouldSave = false;
-          select.onDragEnd(page.strokes, page.images);
+          select.onDragEnd(page.strokes, page.images, textRect: textRect);
 
           if (select.selectResult.isEmpty) {
             Select.currentSelect.unselect();

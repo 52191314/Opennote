@@ -40,6 +40,7 @@ class Select extends Tool {
     }
     doneSelecting = false;
     selectResult.pageIndex = -1;
+    selectResult.textSelected = false;
   }
 
   Color? getDominantStrokeColor() {
@@ -97,9 +98,13 @@ class Select extends Tool {
     }
   }
 
-  /// Adds the indices of any [strokes] that are inside the selection area
-  /// to [selectResult.indices].
-  void onDragEnd(List<Stroke> strokes, List<EditorImage> images) {
+  /// Adds the indices of any [strokes] or [images] inside the selection area.
+  /// [textRect] is the bounding rect of text content ([Rect.zero] if none).
+  void onDragEnd(
+    List<Stroke> strokes,
+    List<EditorImage> images, {
+    Rect textRect = Rect.zero,
+  }) {
     selectResult.path.close();
     doneSelecting = true;
 
@@ -119,6 +124,14 @@ class Select extends Tool {
       final percentInside = rectPercentInside(selectResult.path, image.dstRect);
       if (percentInside >= minPercentInside) {
         selectResult.images.add(image);
+      }
+    }
+
+    // Check text overlap
+    if (textRect != Rect.zero) {
+      final percentInside = rectPercentInside(selectResult.path, textRect);
+      if (percentInside >= minPercentInside) {
+        selectResult.textSelected = true;
       }
     }
   }
@@ -153,20 +166,21 @@ class Select extends Tool {
     return pointsInside / polygon.length;
   }
 
-  /// Taps at the given [position] to select the nearest stroke or image.
+  /// Taps at the given [position] to select the nearest stroke, image,
+  /// or text region.
   ///
-  /// If the tap is within [tapRadius] pixels of any stroke vertex, that stroke
-  /// is selected. Otherwise, if the tap is inside an image's [dstRect],
-  /// that image is selected. If neither is found, the selection is cleared.
+  /// [textRect] is the bounding rect of the text content on the page, or
+  /// [Rect.zero] if there is no text.
   void tapSelect(
     Offset position,
     List<Stroke> strokes,
     List<EditorImage> images,
-    int pageIndex,
-  ) {
+    int pageIndex, {
+    Rect textRect = Rect.zero,
+  }) {
     doneSelecting = true;
 
-    // Check strokes first (more precise targeting)
+    // Check strokes first (most precise)
     for (final stroke in strokes) {
       if (_isPointNearStroke(position, stroke, tapRadius)) {
         selectResult = SelectResult(
@@ -190,6 +204,18 @@ class Select extends Tool {
         );
         return;
       }
+    }
+
+    // Then check text region
+    if (textRect != Rect.zero && textRect.contains(position)) {
+      selectResult = SelectResult(
+        pageIndex: pageIndex,
+        strokes: [],
+        images: [],
+        textSelected: true,
+        path: _createRectSelectionPath(textRect),
+      );
+      return;
     }
 
     // Nothing found, clear selection
@@ -262,15 +288,19 @@ class SelectResult {
   final List<EditorImage> images;
   Path path;
 
+  /// Whether the text content on the page is also selected.
+  bool textSelected;
+
   SelectResult({
     required this.pageIndex,
     required this.strokes,
     required this.images,
     required this.path,
+    this.textSelected = false,
   });
 
   bool get isEmpty {
-    return strokes.isEmpty && images.isEmpty;
+    return strokes.isEmpty && images.isEmpty && !textSelected;
   }
 
   SelectResult copyWith({
@@ -278,12 +308,14 @@ class SelectResult {
     List<Stroke>? strokes,
     List<EditorImage>? images,
     Path? path,
+    bool? textSelected,
   }) {
     return SelectResult(
       pageIndex: pageIndex ?? this.pageIndex,
       strokes: strokes ?? this.strokes,
       images: images ?? this.images,
       path: path ?? this.path,
+      textSelected: textSelected ?? this.textSelected,
     );
   }
 }

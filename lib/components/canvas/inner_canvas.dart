@@ -58,6 +58,23 @@ class InnerCanvas extends StatefulWidget {
 
 class _InnerCanvasState extends State<InnerCanvas> {
   @override
+  void initState() {
+    super.initState();
+    widget.redrawPageListenable?.addListener(_onPageChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.redrawPageListenable?.removeListener(_onPageChanged);
+    super.dispose();
+  }
+
+  void _onPageChanged() {
+    // Rebuild to reflect text offset/rotation changes
+    if (mounted) setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -164,7 +181,16 @@ class _InnerCanvasState extends State<InnerCanvas> {
                   height: widget.height,
                   child: IgnorePointer(
                     ignoring: widget.coreInfo.readOnly || !widget.textEditing,
-                    child: quillEditor,
+                    child: Transform(
+                      transform: Matrix4.identity()
+                        ..translate(
+                          page.textContentOffset.dx,
+                          page.textContentOffset.dy,
+                        )
+                        ..rotateZ(page.textContentRotation),
+                      alignment: Alignment.topLeft,
+                      child: quillEditor,
+                    ),
                   ),
                 ),
                 for (int i = 0; i < page.images.length; i++)

@@ -87,6 +87,30 @@ class EditorPage extends ChangeNotifier implements HasSize {
   /// Whether this page is bookmarked/favorited by the user.
   bool bookmarked = false;
 
+  /// Offset applied to the text content from its default position.
+  Offset textContentOffset = Offset.zero;
+
+  /// Returns the bounding rect of the text content, computing it from
+  /// [quill] document length and the given [lineHeight].
+  Rect computeTextContentRect(double lineHeight) {
+    final isEmpty = quill.controller.document.isEmpty();
+    if (isEmpty) return Rect.zero;
+    final plainText = quill.controller.document.toPlainText();
+    final lines = plainText.split('\n').length;
+    final estimatedHeight = lines * lineHeight;
+    final left = lineHeight * 0.5;
+    final top = lineHeight * 1.2;
+    return Rect.fromLTWH(
+      left + textContentOffset.dx,
+      top + textContentOffset.dy,
+      size.width - lineHeight,
+      estimatedHeight,
+    );
+  }
+
+  /// Rotation angle (in radians) applied to the text content.
+  double textContentRotation = 0;
+
   /// Position for the pen preview circle (shown when hovering/ready to draw).
   Offset? penPreviewPosition;
 
