@@ -42,33 +42,14 @@ jobs:
           pod repo update
           flutter precache --ios
 
-      - name: Build iOS (release, unsigned)
-        run: |
-          # Create export options plist with no signing
-          mkdir -p ios/ExportOptions
-          cat > ios/ExportOptions/ExportOptions.plist << 'EOF'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>development</string>
-              <key>signingStyle</key>
-              <string>manual</string>
-              <key>signingCertificate</key>
-              <string>-</string>
-              <key>provisioningProfiles</key>
-              <dict/>
-              <key>generateLetMeSign</key>
-              <false/>
-          </dict>
-          </plist>
-          EOF
+      - name: Build iOS (simulator)
+        run: flutter build ios --debug --simulator 2>&1
 
-          # Build
-          flutter build ios --release --no-codesign 2>&1
+      - name: Build iOS (device)
+        run: flutter build ios --release --no-codesign --verbose 2>&1
 
       - name: Upload iOS build
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: Opennote-iOS
