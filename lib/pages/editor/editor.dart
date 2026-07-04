@@ -989,7 +989,7 @@ class EditorState extends State<Editor> {
         );
       } else if (currentTool is Select) {
         final select = currentTool as Select;
-        final textRect = page.computeTextContentRect(coreInfo.lineHeight);
+        final textRect = page.computeTextContentRect(coreInfo.lineHeight.toDouble());
 
         // Detect tap (no drag, no resize, no rotate)
         if (moveOffset == .zero && !_isRotating && !_isResizing) {
