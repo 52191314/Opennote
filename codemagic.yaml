@@ -6,12 +6,6 @@ workflows:
     environment:
       flutter: stable
       xcode: latest
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: main
-          include: true
     scripts:
       - name: Get dependencies
         script: |
