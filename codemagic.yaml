@@ -1,0 +1,34 @@
+workflows:
+  build-ios:
+    name: Build iOS IPA
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+    scripts:
+      - name: Get dependencies
+        script: |
+          flutter pub get
+          flutter pub get --directory=packages/sbn
+          flutter pub get --directory=packages/onyxsdk_pen
+      - name: Build iOS release
+        script: flutter build ios --release --no-codesign
+      - name: Package unsigned IPA
+        script: |
+          mkdir -p build/ios/ipa/Payload
+          cp -r build/ios/iphoneos/Runner.app build/ios/ipa/Payload/
+          cd build/ios/ipa
+          zip -r ../../Opennote.ipa Payload/
+    artifacts:
+      - build/Opennote.ipa
+    publishing:
+      email:
+        recipients:
+          - 52191314@qq.com
