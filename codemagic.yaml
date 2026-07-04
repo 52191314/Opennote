@@ -12,18 +12,29 @@ workflows:
           flutter pub get
           flutter pub get --directory=packages/sbn
           flutter pub get --directory=packages/onyxsdk_pen
-      - name: Build iOS release & package IPA
+      - name: Build iOS & package IPA
         script: |
           flutter build ios --release --no-codesign
-          echo "=== Creating IPA ==="
-          mkdir -p build/ios/ipa/Payload
-          cp -R build/ios/iphoneos/Runner.app build/ios/ipa/Payload/
-          cd build/ios/ipa
-          zip -r ../../../Opennote.ipa Payload/
-          cd ../../..
-          ls -lh build/Opennote.ipa
+          echo "=== Looking for Runner.app ==="
+          find . -name "Runner.app" -type d 2>/dev/null
+          APP="./build/ios/iphoneos/Runner.app"
+          if [ ! -d "$APP" ]; then
+            APP=$(find . -name "Runner.app" -type d | head -1)
+            echo "=== Found at: $APP ==="
+          fi
+          if [ ! -d "$APP" ]; then
+            echo "ERROR: Runner.app not found!"
+            exit 1
+          fi
+          echo "=== Packaging IPA from $APP ==="
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -r Opennote.ipa Payload/
+          rm -rf Payload/
+          ls -lh Opennote.ipa
+          echo "=== IPA created at $(pwd)/Opennote.ipa ==="
     artifacts:
-      - build/Opennote.ipa
+      - Opennote.ipa
     publishing:
       email:
         recipients:
