@@ -1,6 +1,7 @@
 /// 🤖 Generated with DeepSeek v4 Flash
 library;
 
+import 'package:flutter/material.dart';
 import 'package:sbn/canvas_background_pattern.dart';
 
 /// A pre-made page layout that sets the background pattern, line height,
@@ -12,6 +13,7 @@ class PageTemplate {
   /// [backgroundPattern] is the pattern applied to the page canvas.
   /// [lineHeight] defaults to 40 (pixels between lines).
   /// [lineThickness] defaults to 3 (pixels wide).
+  /// [backgroundColor] optional custom paper background color.
   /// [initialContent] is optional text inserted into the Quill editor
   /// when the template is applied (used for planners, to-do lists, etc.).
   const PageTemplate({
@@ -19,11 +21,22 @@ class PageTemplate {
     required this.backgroundPattern,
     this.lineHeight = 40,
     this.lineThickness = 3,
+    this.backgroundColor,
     this.initialContent,
   });
 
+  /// Paper color constants for quick styling.
+  static const paperColorPureWhite = Color(0xFFFFFFFF);
+  static const paperColorCleanWhite = Color(0xFFFCFCFC);
+  static const paperColorWarmCream = Color(0xFFFAF4E8);
+  static const paperColorLegalPad = Color(0xFFFFF9B0);
+  static const paperColorDarkSlate = Color(0xFF1E1E1E);
+
   /// Display name shown to the user.
   final String name;
+
+  /// Optional paper color for this template.
+  final Color? backgroundColor;
 
   /// The background pattern applied to the page canvas.
   final CanvasBackgroundPattern backgroundPattern;
@@ -65,6 +78,26 @@ class PageTemplate {
     PageTemplate(
       name: 'Cornell Notes',
       backgroundPattern: CanvasBackgroundPattern.cornell,
+    ),
+    PageTemplate(
+      name: 'Cornell Notes (Cream)',
+      backgroundPattern: CanvasBackgroundPattern.cornell,
+      backgroundColor: paperColorWarmCream,
+    ),
+    PageTemplate(
+      name: 'Legal Pad (Yellow)',
+      backgroundPattern: CanvasBackgroundPattern.lined,
+      backgroundColor: paperColorLegalPad,
+    ),
+    PageTemplate(
+      name: 'Lined (Warm Cream)',
+      backgroundPattern: CanvasBackgroundPattern.lined,
+      backgroundColor: paperColorWarmCream,
+    ),
+    PageTemplate(
+      name: 'Grid (Warm Cream)',
+      backgroundPattern: CanvasBackgroundPattern.grid,
+      backgroundColor: paperColorWarmCream,
     ),
     PageTemplate(
       name: 'Engineering Grid',

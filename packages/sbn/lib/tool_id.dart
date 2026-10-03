@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 import 'package:stow_codecs/stow_codecs.dart';
@@ -15,7 +18,10 @@ enum ToolId {
   select('Select'),
   textEditing('TextEditingTool'),
   laserPointer('LaserPointer'),
-  ruler('Ruler');
+  ruler('Ruler'),
+  arrow('ArrowTool'),
+  dimension('DimensionTool'),
+  studyTape('StudyTape');
 
   final String id;
   const ToolId(this.id);
@@ -51,4 +57,15 @@ enum ToolId {
     );
     return fallback;
   }
+}
+
+/// Z-index ordering for strokes rendered on the canvas.
+/// Highlighters render lowest (behind ink), normal pens in middle,
+/// and study tape renders on top to conceal notes.
+extension ToolIdZIndex on ToolId {
+  int get zIndex => switch (this) {
+    ToolId.highlighter => 0,
+    ToolId.studyTape => 2,
+    _ => 1,
+  };
 }

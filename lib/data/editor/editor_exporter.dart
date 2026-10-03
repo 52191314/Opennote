@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -8,7 +11,9 @@ import 'package:image/image.dart' as im;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pool/pool.dart';
+import 'package:saber/components/canvas/_arrow_stroke.dart';
 import 'package:saber/components/canvas/_circle_stroke.dart';
+import 'package:saber/components/canvas/_dimension_stroke.dart';
 import 'package:saber/components/canvas/_rectangle_stroke.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/canvas_preview.dart';
@@ -102,9 +107,13 @@ abstract class EditorExporter {
                         InnerCanvas.defaultBackgroundColor.toARGB32(),
                   ).flatten();
 
-                  final strokes = page.strokes.where(
-                    (stroke) => !shouldRasterizeStroke(stroke),
-                  );
+                  final strokes = [
+                    for (final layer in page.layers)
+                      if (layer.visible)
+                        ...layer.strokes.where(
+                          (stroke) => !shouldRasterizeStroke(stroke),
+                        ),
+                  ];
                   for (final stroke in strokes) {
                     final strokeColor = PdfColor.fromInt(
                       stroke.color.toARGB32(),
@@ -163,6 +172,9 @@ abstract class EditorExporter {
                         strokeSize / 4,
                         strokeSize / 4,
                       );
+                    } else if (stroke is ArrowStroke || stroke is DimensionStroke) {
+                      shouldFillShape = false;
+                      pdfGraphics.drawShape(stroke.toSvgPath());
                     } else {
                       shouldFillShape = true;
                       pdfGraphics.drawShape(stroke.toSvgPath());
@@ -177,6 +189,31 @@ abstract class EditorExporter {
                       pdfGraphics.setStrokeColor(strokeColor);
                       pdfGraphics.setLineWidth(stroke.options.size);
                       pdfGraphics.strokePath();
+                    }
+
+                    if (stroke is DimensionStroke && stroke.text.isNotEmpty) {
+                      final font = pdfGraphics.defaultFont;
+                      if (font != null) {
+                        try {
+                          const fontSize = 12.0;
+                          final textPos = stroke.textPosition;
+                          final textMetrics = font.stringMetrics(stroke.text);
+                          final textWidth = textMetrics.width * fontSize;
+                          final textX = textPos.dx - textWidth / 2;
+                          final textY = (pageSize.height - textPos.dy) -
+                              (textMetrics.ascent + textMetrics.descent) / 2 * fontSize;
+                          pdfGraphics.setFillColor(strokeColor);
+                          pdfGraphics.drawString(
+                            font,
+                            fontSize,
+                            stroke.text,
+                            textX,
+                            textY,
+                          );
+                        } catch (_) {
+                          // Fallback if font encoding fails
+                        }
+                      }
                     }
                   }
                 },

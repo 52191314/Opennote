@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:math';
 
 import 'package:fixnum/fixnum.dart';
@@ -71,17 +74,29 @@ class DimensionStroke extends Stroke {
         );
     }
 
+    final strokeOptionsJson = Map<String, dynamic>.from(json);
+    if (strokeOptionsJson['t'] is String) {
+      strokeOptionsJson.remove('t');
+    }
+
     return DimensionStroke(
       color: color,
       pressureEnabled: json['pe'] ?? Stroke.defaultPressureEnabled,
-      options: StrokeOptions.fromJson(json),
+      options: StrokeOptions.fromJson(strokeOptionsJson),
       pageIndex: pageIndex,
       page: page,
       toolId: .parsePenType(json['ty'], fallback: .shapePen),
-      start: Offset(json['sx'] ?? 0, json['sy'] ?? 0),
-      end: Offset(json['ex'] ?? 0, json['ey'] ?? 0),
+      start: Offset(
+        (json['sx'] as num?)?.toDouble() ?? 0,
+        (json['sy'] as num?)?.toDouble() ?? 0,
+      ),
+      end: Offset(
+        (json['ex'] as num?)?.toDouble() ?? 0,
+        (json['ey'] as num?)?.toDouble() ?? 0,
+      ),
       offset: (json['o'] as num?)?.toDouble() ?? 30.0,
-      text: json['t'] as String? ?? '',
+      text: (json['txt'] as String?) ??
+          (json['t'] is String ? json['t'] as String : ''),
       headLength: (json['hl'] as num?)?.toDouble() ?? 10.0,
       headAngle: (json['ha'] as num?)?.toDouble() ?? 0.4,
     );
@@ -100,6 +115,7 @@ class DimensionStroke extends Stroke {
       'ex': end.dx,
       'ey': end.dy,
       'o': offset,
+      if (text.isNotEmpty) 'txt': text,
       if (text.isNotEmpty) 't': text,
       'hl': headLength,
       'ha': headAngle,
@@ -109,7 +125,7 @@ class DimensionStroke extends Stroke {
   }
 
   /// Computes the unit direction and perpendicular vectors for the measured line.
-  (Offset dir, Offset perp) _computeVectors() {
+  (Offset dir, Offset perp) computeVectors() {
     final dir = (end - start);
     final length = dir.distance;
     if (length < 0.001) return (Offset.zero, Offset.zero);
@@ -124,13 +140,17 @@ class DimensionStroke extends Stroke {
 
   @override
   List<Offset> getPolygon({required StrokeQuality quality}) {
-    return [start, end]; // Minimal polygon for hit testing
+    final (_, perp) = computeVectors();
+    final dimOffset = perp * offset;
+    final dimStart = start + dimOffset;
+    final dimEnd = end + dimOffset;
+    return [start, dimStart, dimEnd, end, textPosition];
   }
 
   @override
   Path getPath(List<Offset> polygon, {bool smooth = true}) {
     final path = Path();
-    final (unitDir, perp) = _computeVectors();
+    final (unitDir, perp) = computeVectors();
     if (unitDir == Offset.zero) return path;
 
     final dimOffset = perp * offset;
@@ -170,7 +190,7 @@ class DimensionStroke extends Stroke {
 
   @override
   String toSvgPath() {
-    final (unitDir, perp) = _computeVectors();
+    final (unitDir, perp) = computeVectors();
     if (unitDir == Offset.zero) return '';
 
     final dimOffset = perp * offset;
@@ -179,33 +199,37 @@ class DimensionStroke extends Stroke {
     final headLen = headLength;
     final headAng = headAngle;
 
+    String toSvgPoint(Offset point) {
+      return '${point.dx} ${page.size.height - point.dy}';
+    }
+
     final buf = StringBuffer();
 
     // Extension lines
-    buf.write('M${start.dx},${start.dy} L${dimStart.dx},${dimStart.dy}');
-    buf.write(' M${end.dx},${end.dy} L${dimEnd.dx},${dimEnd.dy}');
+    buf.write('M${toSvgPoint(start)} L${toSvgPoint(dimStart)}');
+    buf.write(' M${toSvgPoint(end)} L${toSvgPoint(dimEnd)}');
 
     // Dimension line
-    buf.write(' M${dimStart.dx},${dimStart.dy} L${dimEnd.dx},${dimEnd.dy}');
+    buf.write(' M${toSvgPoint(dimStart)} L${toSvgPoint(dimEnd)}');
 
     // Arrowhead at dimStart
     final a1L = dimStart + unitDir * headLen + perp * headLen * headAng;
     final a1R = dimStart + unitDir * headLen - perp * headLen * headAng;
-    buf.write(' M${a1L.dx},${a1L.dy} L${dimStart.dx},${dimStart.dy}');
-    buf.write(' L${a1R.dx},${a1R.dy}');
+    buf.write(' M${toSvgPoint(a1L)} L${toSvgPoint(dimStart)}');
+    buf.write(' L${toSvgPoint(a1R)}');
 
     // Arrowhead at dimEnd
     final a2L = dimEnd - unitDir * headLen + perp * headLen * headAng;
     final a2R = dimEnd - unitDir * headLen - perp * headLen * headAng;
-    buf.write(' M${a2L.dx},${a2L.dy} L${dimEnd.dx},${dimEnd.dy}');
-    buf.write(' L${a2R.dx},${a2R.dy}');
+    buf.write(' M${toSvgPoint(a2L)} L${toSvgPoint(dimEnd)}');
+    buf.write(' L${toSvgPoint(a2R)}');
 
     return buf.toString();
   }
 
   /// Computes the text position (centered on the dimension line).
   Offset get textPosition {
-    final (_, perp) = _computeVectors();
+    final (_, perp) = computeVectors();
     final dimOffset = perp * offset;
     final dimStart = start + dimOffset;
     final dimEnd = end + dimOffset;
@@ -214,7 +238,7 @@ class DimensionStroke extends Stroke {
 
   @override
   double get maxY {
-    final (_, perp) = _computeVectors();
+    final (_, perp) = computeVectors();
     final dimOffset = perp * offset;
     final dimStart = start + dimOffset;
     final dimEnd = end + dimOffset;

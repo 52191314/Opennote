@@ -1,3 +1,8 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saber/components/canvas/_canvas_background_painter.dart';
@@ -67,21 +72,23 @@ void _testPatternWithLineHeight(
       );
     }
 
-    // Check we have 2 lineHeights of space at the top
-    for (final element in elements) {
-      if (element.secondaryColor) return; // ignore secondary elements
-      expect(
-        element.start.dy,
-        greaterThanOrEqualTo(lineHeight * 2),
-        reason:
-            'Elements should leave 2 lineHeights of space at the top, but element.start.dy was ${element.start.dy}',
-      );
-      expect(
-        element.end.dy,
-        greaterThanOrEqualTo(lineHeight * 2),
-        reason:
-            'Elements should leave 2 lineHeights of space at the top, but element.end.dy was ${element.end.dy}',
-      );
+    // Check we have 2 lineHeights of space at the top (except isometric which spans the canvas)
+    if (pattern != .isometric) {
+      for (final element in elements) {
+        if (element.secondaryColor) return; // ignore secondary elements
+        expect(
+          element.start.dy,
+          greaterThanOrEqualTo(lineHeight * 2),
+          reason:
+              'Elements should leave 2 lineHeights of space at the top, but element.start.dy was ${element.start.dy}',
+        );
+        expect(
+          element.end.dy,
+          greaterThanOrEqualTo(lineHeight * 2),
+          reason:
+              'Elements should leave 2 lineHeights of space at the top, but element.end.dy was ${element.end.dy}',
+        );
+      }
     }
 
     // Check all elements are lines or all elements are dots
@@ -94,52 +101,70 @@ void _testPatternWithLineHeight(
     );
 
     if (allLines) {
-      // Check spacing
-      double lastPosition = -1;
-      bool? lastWasHorizontal;
-      for (final element in elements) {
-        final isHorizontal = element.start.dy == element.end.dy;
-        final isVertical = element.start.dx == element.end.dx;
-        expect(
-          isHorizontal || isVertical,
-          true,
-          reason: 'Lines should be horizontal or vertical',
-        );
-
-        final position = isHorizontal ? element.start.dy : element.start.dx;
-
-        // ignore spacing between a horizontal and a vertical line
-        if (lastWasHorizontal != isHorizontal) {
-          lastPosition = position;
-          lastWasHorizontal = isHorizontal;
-          continue;
-        }
-
-        if (pattern != .cornell) {
-          // Cornell has two lines on the same row, so they shouldn't be spaced apart
-
+      if (pattern == .isometric) {
+        // Isometric lines must be vertical or diagonal with slope tan(30°) ≈ 1/√3
+        final expectedTan30 = 1 / sqrt(3);
+        for (final element in elements) {
+          final isVertical = (element.start.dx - element.end.dx).abs() < 1e-4;
+          if (isVertical) continue;
+          final dx = element.end.dx - element.start.dx;
+          final dy = element.end.dy - element.start.dy;
+          expect(dx.abs(), greaterThan(1e-4));
+          final slope = (dy / dx).abs();
           expect(
-            position != lastPosition,
-            true,
-            reason: 'Lines should be spaced apart',
+            slope,
+            closeTo(expectedTan30, 0.05),
+            reason: 'Isometric diagonal lines should have slope close to 1/√3',
           );
         }
+      } else {
+        // Check spacing for orthogonal patterns
+        double lastPosition = -1;
+        bool? lastWasHorizontal;
+        for (final element in elements) {
+          final isHorizontal = element.start.dy == element.end.dy;
+          final isVertical = element.start.dx == element.end.dx;
+          expect(
+            isHorizontal || isVertical,
+            true,
+            reason: 'Lines should be horizontal or vertical',
+          );
 
-        final spacing = (position - lastPosition).abs();
-        double diffFromALine = spacing % lineHeight;
-        if (diffFromALine > lineHeight / 2) {
-          diffFromALine = lineHeight - diffFromALine;
+          final position = isHorizontal ? element.start.dy : element.start.dx;
+
+          // ignore spacing between a horizontal and a vertical line
+          if (lastWasHorizontal != isHorizontal) {
+            lastPosition = position;
+            lastWasHorizontal = isHorizontal;
+            continue;
+          }
+
+          if (pattern != .cornell) {
+            // Cornell has two lines on the same row, so they shouldn't be spaced apart
+
+            expect(
+              position != lastPosition,
+              true,
+              reason: 'Lines should be spaced apart',
+            );
+          }
+
+          final spacing = (position - lastPosition).abs();
+          double diffFromALine = spacing % lineHeight;
+          if (diffFromALine > lineHeight / 2) {
+            diffFromALine = lineHeight - diffFromALine;
+          }
+          printOnFailure(
+            'spacing: $spacing, lineHeight: $lineHeight, diffFromALine: $diffFromALine',
+          );
+          expect(
+            diffFromALine,
+            lessThan(lineHeight / 1000),
+            reason: 'Lines should be spaced in intervals of lineHeight',
+          );
+
+          lastPosition = position;
         }
-        printOnFailure(
-          'spacing: $spacing, lineHeight: $lineHeight, diffFromALine: $diffFromALine',
-        );
-        expect(
-          diffFromALine,
-          lessThan(lineHeight / 1000),
-          reason: 'Lines should be spaced in intervals of lineHeight',
-        );
-
-        lastPosition = position;
       }
     }
   });

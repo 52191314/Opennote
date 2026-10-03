@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -10,7 +13,22 @@ import 'package:saber/data/tools/_tool.dart';
 import 'package:saber/data/tools/highlighter.dart';
 import 'package:saber/data/tools/pencil.dart';
 import 'package:saber/i18n/strings.g.dart';
+import 'package:sbn/canvas_background_pattern.dart';
 import 'package:sbn/tool_id.dart';
+
+/// Extension on [EditorPage] providing background pattern and line height
+/// access for grid snapping.
+extension EditorPageSnapExtension on EditorPage {
+  static final _patternExpando = Expando<CanvasBackgroundPattern>();
+  static final _lineHeightExpando = Expando<int>();
+
+  CanvasBackgroundPattern? get backgroundPattern => _patternExpando[this];
+  set backgroundPattern(CanvasBackgroundPattern? pattern) =>
+      _patternExpando[this] = pattern;
+
+  int? get lineHeight => _lineHeightExpando[this];
+  set lineHeight(int? height) => _lineHeightExpando[this] = height;
+}
 
 class Pen extends Tool {
   @protected
@@ -77,12 +95,15 @@ class Pen extends Tool {
     _currentPen = currentPen;
   }
 
+  EditorPage? _activePage;
+
   void onDragStart(
     Offset position,
     EditorPage page,
     int pageIndex,
     double? pressure,
   ) {
+    _activePage = page;
     currentStroke = Stroke(
       color: color,
       pressureEnabled: pressureEnabled,
@@ -96,8 +117,17 @@ class Pen extends Tool {
 
   void onDragUpdate(Offset position, double? pressure) {
     Offset snappedPosition = position;
-    if (stows.snapToGrid.value && stows.gridSize.value > 0) {
-      snappedPosition = Stroke.snapPointToGrid(position, stows.gridSize.value);
+    if (stows.snapToGrid.value) {
+      final lh = (_activePage?.lineHeight ?? 0) > 0
+          ? _activePage!.lineHeight!.toDouble()
+          : stows.gridSize.value;
+      if (lh > 0) {
+        if (_activePage?.backgroundPattern == CanvasBackgroundPattern.isometric) {
+          snappedPosition = Stroke.snapPointToIsometricGrid(position, lh);
+        } else {
+          snappedPosition = Stroke.snapPointToGrid(position, lh);
+        }
+      }
     }
     if (pressure != null && stows.penPressureCurve.value != 1.0) {
       pressure = pow(pressure, stows.penPressureCurve.value).toDouble();
@@ -108,6 +138,7 @@ class Pen extends Tool {
   Stroke? onDragEnd() {
     final stroke = currentStroke;
     currentStroke = null;
+    _activePage = null;
     if (stroke == null) return null;
 
     return stroke

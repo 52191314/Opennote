@@ -1,6 +1,10 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
+import 'package:saber/components/toolbar/lasso_filter_popup.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/i18n/strings.g.dart';
 
@@ -49,6 +53,19 @@ class SelectionBar extends StatelessWidget {
               stows.selectionRectMode.value ? Icons.crop_square : Icons.gesture,
             ),
           ),
+        ),
+        IconButton(
+          onPressed: () => showDialog(
+            context: context,
+            builder: (_) => const LassoFilterPopup(),
+          ),
+          style: TextButton.styleFrom(
+            foregroundColor: ColorScheme.of(context).secondary,
+            backgroundColor: Colors.transparent,
+            shape: const CircleBorder(),
+          ),
+          tooltip: 'Lasso Filters',
+          icon: const Icon(Icons.tune),
         ),
         if (cropPossible)
           IconButton(

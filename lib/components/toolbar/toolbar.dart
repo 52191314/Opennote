@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:io';
 
 import 'package:collapsible/collapsible.dart';
@@ -14,6 +17,7 @@ import 'package:saber/components/theming/uni_icon.dart';
 import 'package:saber/components/toolbar/color_bar.dart';
 import 'package:saber/components/toolbar/eraser_size_popup.dart';
 import 'package:saber/components/toolbar/export_bar.dart';
+import 'package:saber/components/toolbar/lasso_filter_popup.dart';
 import 'package:saber/components/toolbar/pen_modal.dart';
 import 'package:saber/components/toolbar/selection_bar.dart';
 import 'package:saber/components/toolbar/size_picker.dart';
@@ -22,6 +26,8 @@ import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
+import 'package:saber/data/tools/arrow.dart';
+import 'package:saber/data/tools/dimension.dart';
 import 'package:saber/data/tools/eraser.dart';
 import 'package:saber/data/tools/highlighter.dart';
 import 'package:saber/data/tools/laser_pointer.dart';
@@ -29,6 +35,7 @@ import 'package:saber/data/tools/pen.dart';
 import 'package:saber/data/tools/pencil.dart';
 import 'package:saber/data/tools/ruler.dart';
 import 'package:saber/data/tools/select.dart';
+import 'package:saber/data/tools/study_tape.dart';
 import 'package:saber/i18n/strings.g.dart';
 
 class Toolbar extends StatefulWidget {
@@ -439,9 +446,20 @@ class _ToolbarState extends State<Toolbar> {
                 selected: widget.currentTool is Select,
                 enabled: !widget.readOnly,
                 onPressed: () {
-                  toolOptionsType.value = .hide;
-                  widget.setTool(Select.currentSelect);
+                  if (widget.currentTool is Select) {
+                    showDialog(
+                      context: context,
+                      builder: (_) => const LassoFilterPopup(),
+                    );
+                  } else {
+                    toolOptionsType.value = .hide;
+                    widget.setTool(Select.currentSelect);
+                  }
                 },
+                onLongPress: () => showDialog(
+                  context: context,
+                  builder: (_) => const LassoFilterPopup(),
+                ),
                 padding: buttonPadding,
                 child: Icon(
                   CupertinoIcons.lasso,
@@ -491,6 +509,39 @@ class _ToolbarState extends State<Toolbar> {
                 },
                 padding: buttonPadding,
                 child: const FaIcon(Ruler.rulerIcon, size: 16),
+              ),
+              ToolbarIconButton(
+                tooltip: 'Arrow',
+                selected: widget.currentTool is ArrowTool,
+                enabled: !widget.readOnly,
+                onPressed: () {
+                  toolOptionsType.value = .hide;
+                  widget.setTool(ArrowTool());
+                },
+                padding: buttonPadding,
+                child: const Icon(Icons.arrow_right_alt, size: 18),
+              ),
+              ToolbarIconButton(
+                tooltip: 'Dimension',
+                selected: widget.currentTool is DimensionTool,
+                enabled: !widget.readOnly,
+                onPressed: () {
+                  toolOptionsType.value = .hide;
+                  widget.setTool(DimensionTool());
+                },
+                padding: buttonPadding,
+                child: const Icon(Icons.straighten, size: 16),
+              ),
+              ToolbarIconButton(
+                tooltip: 'Study Tape',
+                selected: widget.currentTool is StudyTapeTool,
+                enabled: !widget.readOnly,
+                onPressed: () {
+                  toolOptionsType.value = .hide;
+                  widget.setTool(StudyTapeTool());
+                },
+                padding: buttonPadding,
+                child: const Icon(Icons.view_headline_rounded, size: 16),
               ),
               ToolbarIconButton(
                 tooltip: 'Shapes',

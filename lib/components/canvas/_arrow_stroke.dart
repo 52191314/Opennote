@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:math';
 
 import 'package:fixnum/fixnum.dart';
@@ -73,8 +76,14 @@ class ArrowStroke extends Stroke {
       pageIndex: pageIndex,
       page: page,
       toolId: .parsePenType(json['ty'], fallback: .shapePen),
-      start: Offset(json['sx'] ?? 0, json['sy'] ?? 0),
-      end: Offset(json['ex'] ?? 0, json['ey'] ?? 0),
+      start: Offset(
+        (json['sx'] as num?)?.toDouble() ?? 0,
+        (json['sy'] as num?)?.toDouble() ?? 0,
+      ),
+      end: Offset(
+        (json['ex'] as num?)?.toDouble() ?? 0,
+        (json['ey'] as num?)?.toDouble() ?? 0,
+      ),
       arrowheadStyle: switch (json['ah'] as String?) {
         'none' => ArrowheadStyle.none,
         'double' => ArrowheadStyle.double,
@@ -187,16 +196,20 @@ class ArrowStroke extends Stroke {
     final unitDir = dir / length;
     final perp = Offset(-unitDir.dy, unitDir.dx);
 
+    String toSvgPoint(Offset point) {
+      return '${point.dx} ${page.size.height - point.dy}';
+    }
+
     final buffer = StringBuffer();
-    buffer.write('M${start.dx},${start.dy} L${end.dx},${end.dy}');
+    buffer.write('M${toSvgPoint(start)} L${toSvgPoint(end)}');
 
     // End arrowhead
     if (arrowheadStyle == .single || arrowheadStyle == .double) {
       final tip = end;
       final left = tip - unitDir * headLength + perp * headLength * headAngle;
       final right = tip - unitDir * headLength - perp * headLength * headAngle;
-      buffer.write(' M${left.dx},${left.dy} L${tip.dx},${tip.dy}');
-      buffer.write(' L${right.dx},${right.dy}');
+      buffer.write(' M${toSvgPoint(left)} L${toSvgPoint(tip)}');
+      buffer.write(' L${toSvgPoint(right)}');
     }
 
     // Start arrowhead
@@ -204,8 +217,8 @@ class ArrowStroke extends Stroke {
       final tip = start;
       final left = tip + unitDir * headLength + perp * headLength * headAngle;
       final right = tip + unitDir * headLength - perp * headLength * headAngle;
-      buffer.write(' M${left.dx},${left.dy} L${tip.dx},${tip.dy}');
-      buffer.write(' L${right.dx},${right.dy}');
+      buffer.write(' M${toSvgPoint(left)} L${toSvgPoint(tip)}');
+      buffer.write(' L${toSvgPoint(right)}');
     }
 
     return buffer.toString();

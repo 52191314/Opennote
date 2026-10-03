@@ -1,3 +1,8 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:saber/data/extensions/color_extensions.dart';
@@ -169,36 +174,106 @@ class CanvasBackgroundPainter extends CustomPainter {
           );
         }
       case .isometric:
-        final cellSize = lineHeight.toDouble();
-        final tan30 = 0.57735026919; // tan(30°)
-        // Vertical lines
-        for (double x = 0; x <= size.width; x += cellSize) {
-          yield PatternElement(Offset(x, 0), Offset(x, size.height));
+        if (lineHeight <= 0) return;
+        final l = lineHeight.toDouble();
+        final dx = l * (sqrt(3) / 2);
+        final tan30 = 1 / sqrt(3); // tan(30°) = 1/√3
+
+        // Vertical lines: x = col * dx
+        for (double x = 0; x <= size.width + 1e-6; x += dx) {
+          final clampedX = x.clamp(0.0, size.width);
+          yield PatternElement(Offset(clampedX, 0), Offset(clampedX, size.height));
         }
-        // +30° lines (right-leaning): y = tan30 * x + b
-        // Determine the range of b values that span the page
-        final bMin30 = -tan30 * size.width;
-        final bMax30 = size.height;
-        for (double b = bMin30; b <= bMax30; b += cellSize) {
-          final x1 = 0.0;
-          final y1 = b;
-          final x2 = size.width;
-          final y2 = tan30 * size.width + b;
-          yield PatternElement(Offset(x1, y1), Offset(x2, y2));
+
+        // +30° lines (right-leaning): y = tan30 * x + m * l, for integer m
+        final mMin = (-tan30 * size.width / l).floor();
+        final mMax = (size.height / l).ceil();
+        for (int m = mMin; m <= mMax; m++) {
+          final b = m * l;
+          final candidates = <Offset>[];
+
+          // Edge x = 0
+          if (b >= 0 && b <= size.height) {
+            candidates.add(Offset(0, b));
+          }
+          // Edge y = 0: x = -b / tan30
+          final xTop = -b / tan30;
+          if (xTop > 0 && xTop < size.width) {
+            candidates.add(Offset(xTop, 0));
+          }
+          // Edge x = size.width: y = tan30 * size.width + b
+          final yRight = tan30 * size.width + b;
+          if (yRight >= 0 && yRight <= size.height) {
+            candidates.add(Offset(size.width, yRight));
+          }
+          // Edge y = size.height: x = (size.height - b) / tan30
+          final xBottom = (size.height - b) / tan30;
+          if (xBottom > 0 && xBottom < size.width) {
+            candidates.add(Offset(xBottom, size.height));
+          }
+
+          if (candidates.length >= 2) {
+            candidates.sort((a, b) => a.dx.compareTo(b.dx));
+            final start = Offset(
+              candidates.first.dx.clamp(0.0, size.width),
+              candidates.first.dy.clamp(0.0, size.height),
+            );
+            final end = Offset(
+              candidates.last.dx.clamp(0.0, size.width),
+              candidates.last.dy.clamp(0.0, size.height),
+            );
+            if ((end.dx - start.dx).abs() > 1e-4 || (end.dy - start.dy).abs() > 1e-4) {
+              yield PatternElement(start, end);
+            }
+          }
         }
-        // -30° lines (left-leaning): y = -tan30 * x + b
-        for (double b = -tan30 * 0; b <= size.height + tan30 * size.width; b += cellSize) {
-          final x1 = 0.0;
-          final y1 = b;
-          final x2 = size.width;
-          final y2 = -tan30 * size.width + b;
-          yield PatternElement(Offset(x1, y1), Offset(x2, y2));
+
+        // -30° lines (left-leaning): y = -tan30 * x + k * l, for integer k
+        const kMin = 0;
+        final kMax = ((size.height + tan30 * size.width) / l).ceil();
+        for (int k = kMin; k <= kMax; k++) {
+          final c = k * l;
+          final candidates = <Offset>[];
+
+          // Edge x = 0
+          if (c >= 0 && c <= size.height) {
+            candidates.add(Offset(0, c));
+          }
+          // Edge y = 0: x = c / tan30
+          final xTop = c / tan30;
+          if (xTop > 0 && xTop < size.width) {
+            candidates.add(Offset(xTop, 0));
+          }
+          // Edge x = size.width: y = -tan30 * size.width + c
+          final yRight = -tan30 * size.width + c;
+          if (yRight >= 0 && yRight <= size.height) {
+            candidates.add(Offset(size.width, yRight));
+          }
+          // Edge y = size.height: x = (c - size.height) / tan30
+          final xBottom = (c - size.height) / tan30;
+          if (xBottom > 0 && xBottom < size.width) {
+            candidates.add(Offset(xBottom, size.height));
+          }
+
+          if (candidates.length >= 2) {
+            candidates.sort((a, b) => a.dx.compareTo(b.dx));
+            final start = Offset(
+              candidates.first.dx.clamp(0.0, size.width),
+              candidates.first.dy.clamp(0.0, size.height),
+            );
+            final end = Offset(
+              candidates.last.dx.clamp(0.0, size.width),
+              candidates.last.dy.clamp(0.0, size.height),
+            );
+            if ((end.dx - start.dx).abs() > 1e-4 || (end.dy - start.dy).abs() > 1e-4) {
+              yield PatternElement(start, end);
+            }
+          }
         }
       case .engineeringGrid:
-        final heavyStep = lineHeight * 10;
-        // Heavy grid lines
+        // Heavy grid lines every 10 lines calculated by integer index
         for (double y = lineHeight * 2; y < size.height; y += lineHeight) {
-          final isHeavy = y % heavyStep == 0;
+          final isHeavy = ((y - lineHeight * 2) / lineHeight).round() % 10 == 0;
           yield PatternElement(
             Offset(0, y),
             Offset(size.width, y),
@@ -206,7 +281,7 @@ class CanvasBackgroundPainter extends CustomPainter {
           );
         }
         for (double x = 0; x < size.width; x += lineHeight) {
-          final isHeavy = x % heavyStep == 0;
+          final isHeavy = (x / lineHeight).round() % 10 == 0;
           yield PatternElement(
             Offset(x, lineHeight * 2),
             Offset(x, size.height),
@@ -214,6 +289,7 @@ class CanvasBackgroundPainter extends CustomPainter {
           );
         }
       case .cornell:
+        final headerBottom = lineHeight * 3.5;
         // half-width line for name field
         yield PatternElement(
           Offset(lineHeight.toDouble(), lineHeight * 2),
@@ -233,12 +309,41 @@ class CanvasBackgroundPainter extends CustomPainter {
           isLine: true,
         );
 
-        // lines for main notes
-        final left = size.width * 0.35; // 35% width reserved for cues column
-        final bottom = size.height * 0.7; // 30% height reserved for summary
-        for (double y = lineHeight * 5; y < bottom; y += lineHeight) {
+        // Standard Cornell dimensions: Cue column (28% width), Summary section (75% height)
+        final cueRight = size.width * 0.28;
+        final summaryTop = size.height * 0.75;
+
+        // Vertical dividing line separating the Cue column from Main Notes
+        yield PatternElement(
+          Offset(cueRight, headerBottom),
+          Offset(cueRight, summaryTop),
+          isLine: true,
+          thickness: lineThickness * 1.5,
+          secondaryColor: true,
+        );
+
+        // Horizontal dividing line separating Notes from Summary
+        yield PatternElement(
+          Offset(lineHeight.toDouble(), summaryTop),
+          Offset(size.width - lineHeight, summaryTop),
+          isLine: true,
+          thickness: lineThickness * 1.5,
+          secondaryColor: true,
+        );
+
+        // Ruled lines for main notes
+        for (double y = lineHeight * 5; y < summaryTop; y += lineHeight) {
           yield PatternElement(
-            Offset(left, y),
+            Offset(cueRight, y),
+            Offset(size.width - lineHeight, y),
+            isLine: true,
+          );
+        }
+
+        // Ruled lines for bottom summary section
+        for (double y = summaryTop + lineHeight; y < size.height - lineHeight; y += lineHeight) {
+          yield PatternElement(
+            Offset(lineHeight.toDouble(), y),
             Offset(size.width - lineHeight, y),
             isLine: true,
           );

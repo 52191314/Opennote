@@ -80,6 +80,10 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
           widget.setBackgroundPattern(template.backgroundPattern);
           widget.setLineHeight(template.lineHeight);
           widget.setLineThickness(template.lineThickness);
+          if (template.backgroundColor != null) {
+            widget.coreInfo.backgroundColor = template.backgroundColor;
+            widget.redrawAndSave();
+          }
 
           if (template.initialContent != null) {
             final page = widget.coreInfo.pages

@@ -1,13 +1,13 @@
-import 'package:flutter/cupertino.dart' show CupertinoIcons;
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
 import 'package:saber/components/canvas/canvas_gesture_detector.dart';
-import 'package:saber/components/canvas/canvas_preview.dart';
-import 'package:saber/components/theming/adaptive_icon.dart';
-import 'package:saber/components/theming/saber_theme.dart';
+import 'package:saber/components/editor/page_grid_overview.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
-import 'package:saber/i18n/strings.g.dart';
 
-class EditorPageManager extends StatefulWidget {
+/// Page manager wrapper delegating to [PageGridOverviewDialog].
+class EditorPageManager extends StatelessWidget {
   const EditorPageManager({
     super.key,
     required this.coreInfo,
@@ -32,143 +32,21 @@ class EditorPageManager extends StatefulWidget {
   final TransformationController transformationController;
 
   @override
-  State<EditorPageManager> createState() => _EditorPageManagerState();
-}
-
-class _EditorPageManagerState extends State<EditorPageManager> {
-  void scrollToPage(int pageIndex) => CanvasGestureDetector.scrollToPage(
-    pageIndex: pageIndex,
-    pages: widget.coreInfo.pages,
-    screenWidth: MediaQuery.sizeOf(context).width,
-    transformationController: widget.transformationController,
-  );
-
-  @override
   Widget build(BuildContext context) {
-    final platform = Theme.of(context).platform;
-    final cupertino = platform.isCupertino;
-    return SizedBox(
-      width: cupertino ? null : 300,
-      height: cupertino ? 600 : null,
-      child: ReorderableListView.builder(
-        buildDefaultDragHandles: false,
-        itemCount: widget.coreInfo.pages.length,
-        itemBuilder: (context, pageIndex) {
-          final isEmptyLastPage =
-              pageIndex == widget.coreInfo.pages.length - 1 &&
-              widget.coreInfo.pages[pageIndex].isEmpty;
-          return InkWell(
-            key: ValueKey(pageIndex),
-            onTap: () => scrollToPage(pageIndex),
-            child: Padding(
-              padding: const .all(8),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: .spaceAround,
-                    children: [
-                      Text(
-                        '${pageIndex + 1} / ${widget.coreInfo.pages.length}',
-                      ),
-                      ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: cupertino ? 100 : 150,
-                          maxHeight: 250,
-                        ),
-                        child: FittedBox(
-                          child: CanvasPreview(
-                            pageIndex: pageIndex,
-                            height: null,
-                            coreInfo: widget.coreInfo,
-                          ),
-                        ),
-                      ),
-                      MouseRegion(
-                        cursor: SystemMouseCursors.resizeUpDown,
-                        child: ReorderableDragStartListener(
-                          index: pageIndex,
-                          child: const Padding(
-                            padding: .all(8),
-                            child: Icon(Icons.drag_handle),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisAlignment: .center,
-                    children: [
-                      IconButton(
-                        tooltip: t.editor.menu.insertPage,
-                        icon: const AdaptiveIcon(
-                          icon: Icons.insert_page_break,
-                          cupertinoIcon: CupertinoIcons.add,
-                        ),
-                        onPressed: () => setState(() {
-                          widget.insertPageAfter(pageIndex);
-                          scrollToPage(pageIndex + 1);
-                        }),
-                      ),
-                      IconButton(
-                        tooltip: t.editor.menu.duplicatePage,
-                        icon: const AdaptiveIcon(
-                          icon: Icons.content_copy,
-                          cupertinoIcon: CupertinoIcons.doc_on_clipboard,
-                        ),
-                        onPressed: () => setState(() {
-                          widget.duplicatePage(pageIndex);
-                          scrollToPage(pageIndex + 1);
-                        }),
-                      ),
-                      IconButton(
-                        tooltip: t.editor.menu.clearPage(
-                          page: pageIndex + 1,
-                          totalPages: widget.coreInfo.pages.length,
-                        ),
-                        icon: const Icon(Icons.cleaning_services),
-                        onPressed: isEmptyLastPage
-                            ? null
-                            : () => setState(() {
-                                widget.clearPage(pageIndex);
-                                scrollToPage(pageIndex);
-                              }),
-                      ),
-                      IconButton(
-                        tooltip: t.editor.menu.deletePage,
-                        icon: const AdaptiveIcon(
-                          icon: Icons.delete,
-                          cupertinoIcon: CupertinoIcons.delete,
-                        ),
-                        onPressed: isEmptyLastPage
-                            ? null
-                            : () => setState(() {
-                                widget.deletePage(pageIndex);
-                                scrollToPage(pageIndex);
-                              }),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-        onReorderItem: (oldIndex, newIndex) {
-          if (oldIndex == newIndex) return;
-          widget.coreInfo.pages.insert(
-            newIndex,
-            widget.coreInfo.pages.removeAt(oldIndex),
-          );
-
-          // reassign pageIndex of pages' strokes and images
-          for (int i = 0; i < widget.coreInfo.pages.length; i++) {
-            final page = widget.coreInfo.pages[i];
-            page.updatePageIndex(i);
-          }
-
-          widget.redrawAndSave();
-        },
+    return PageGridOverviewDialog(
+      coreInfo: coreInfo,
+      currentPageIndex: currentPageIndex ?? 0,
+      scrollToPage: (pageIndex) => CanvasGestureDetector.scrollToPage(
+        pageIndex: pageIndex,
+        pages: coreInfo.pages,
+        screenWidth: MediaQuery.sizeOf(context).width,
+        transformationController: transformationController,
       ),
+      redrawAndSave: redrawAndSave,
+      insertPageAfter: insertPageAfter,
+      duplicatePage: duplicatePage,
+      deletePage: deletePage,
+      clearPage: clearPage,
     );
   }
 }

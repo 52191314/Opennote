@@ -1,11 +1,17 @@
+/// 🤖 Modified with DeepSeek v4 Flash
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
+import 'package:saber/components/canvas/_arrow_stroke.dart';
+import 'package:saber/components/canvas/_dimension_stroke.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
+import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
 import 'package:sbn/tool_id.dart';
 
-/// 🤖 Modified with DeepSeek v4 Flash
 class Select extends Tool {
   Select._();
 
@@ -17,7 +23,7 @@ class Select extends Tool {
   static const minPercentInside = 0.7;
 
   /// The tap radius in pixels for hit-testing strokes on tap.
-  static const double tapRadius = 15.0;
+  static const tapRadius = 15.0;
 
   var selectResult = SelectResult(
     pageIndex: -1,
@@ -39,8 +45,12 @@ class Select extends Tool {
       image.cropMode = false;
     }
     doneSelecting = false;
-    selectResult.pageIndex = -1;
-    selectResult.textSelected = false;
+    selectResult = SelectResult(
+      pageIndex: -1,
+      strokes: [],
+      images: [],
+      path: Path(),
+    );
   }
 
   Color? getDominantStrokeColor() {
@@ -108,31 +118,67 @@ class Select extends Tool {
     selectResult.path.close();
     doneSelecting = true;
 
-    for (int i = 0; i < strokes.length; i++) {
-      final stroke = strokes[i];
-      final percentInside = polygonPercentInside(
-        selectResult.path,
-        stroke.lowQualityPolygon,
-      );
-      if (percentInside > minPercentInside) {
-        selectResult.strokes.add(stroke);
+    if (stows.lassoSelectHandwriting.value) {
+      for (int i = 0; i < strokes.length; i++) {
+        final stroke = strokes[i];
+        final percentInside = polygonPercentInside(
+          selectResult.path,
+          stroke.lowQualityPolygon,
+        );
+        if (percentInside > minPercentInside) {
+          selectResult.strokes.add(stroke);
+        }
       }
     }
 
-    for (int i = 0; i < images.length; i++) {
-      final image = images[i];
-      final percentInside = rectPercentInside(selectResult.path, image.dstRect);
-      if (percentInside >= minPercentInside) {
-        selectResult.images.add(image);
+    if (stows.lassoSelectImages.value) {
+      for (int i = 0; i < images.length; i++) {
+        final image = images[i];
+        final percentInside = rectPercentInside(selectResult.path, image.dstRect);
+        if (percentInside >= minPercentInside) {
+          selectResult.images.add(image);
+        }
       }
     }
 
     // Check text overlap
-    if (textRect != Rect.zero) {
+    if (stows.lassoSelectText.value && textRect != Rect.zero) {
       final percentInside = rectPercentInside(selectResult.path, textRect);
       if (percentInside >= minPercentInside) {
         selectResult.textSelected = true;
       }
+    }
+  }
+
+  /// Prunes any elements from the active selection whose filter is currently disabled.
+  void pruneDisabledFilters() {
+    if (!doneSelecting) return;
+
+    var strokes = selectResult.strokes;
+    var images = selectResult.images;
+    var textSelected = selectResult.textSelected;
+
+    if (!stows.lassoSelectHandwriting.value && strokes.isNotEmpty) {
+      strokes = [];
+    }
+    if (!stows.lassoSelectImages.value && images.isNotEmpty) {
+      for (final image in images) {
+        image.cropMode = false;
+      }
+      images = [];
+    }
+    if (!stows.lassoSelectText.value && textSelected) {
+      textSelected = false;
+    }
+
+    selectResult = selectResult.copyWith(
+      strokes: strokes,
+      images: images,
+      textSelected: textSelected,
+    );
+
+    if (selectResult.isEmpty) {
+      unselect();
     }
   }
 
@@ -181,33 +227,39 @@ class Select extends Tool {
     doneSelecting = true;
 
     // Check strokes first (most precise)
-    for (final stroke in strokes) {
-      if (_isPointNearStroke(position, stroke, tapRadius)) {
-        selectResult = SelectResult(
-          pageIndex: pageIndex,
-          strokes: [stroke],
-          images: [],
-          path: _createTightSelectionPath(stroke.lowQualityPolygon),
-        );
-        return;
+    if (stows.lassoSelectHandwriting.value) {
+      for (final stroke in strokes) {
+        if (_isPointNearStroke(position, stroke, tapRadius)) {
+          selectResult = SelectResult(
+            pageIndex: pageIndex,
+            strokes: [stroke],
+            images: [],
+            path: _createTightSelectionPath(stroke.lowQualityPolygon),
+          );
+          return;
+        }
       }
     }
 
     // Then check images
-    for (final image in images) {
-      if (image.dstRect.contains(position)) {
-        selectResult = SelectResult(
-          pageIndex: pageIndex,
-          strokes: [],
-          images: [image],
-          path: _createRectSelectionPath(image.dstRect),
-        );
-        return;
+    if (stows.lassoSelectImages.value) {
+      for (final image in images) {
+        if (image.dstRect.contains(position)) {
+          selectResult = SelectResult(
+            pageIndex: pageIndex,
+            strokes: [],
+            images: [image],
+            path: _createRectSelectionPath(image.dstRect),
+          );
+          return;
+        }
       }
     }
 
     // Then check text region
-    if (textRect != Rect.zero && textRect.contains(position)) {
+    if (stows.lassoSelectText.value &&
+        textRect != Rect.zero &&
+        textRect.contains(position)) {
       selectResult = SelectResult(
         pageIndex: pageIndex,
         strokes: [],
@@ -222,13 +274,42 @@ class Select extends Tool {
     unselect();
   }
 
+  static double _distanceToSegment(Offset p, Offset a, Offset b) {
+    final ab = b - a;
+    final lengthSq = ab.dx * ab.dx + ab.dy * ab.dy;
+    if (lengthSq < 0.0001) return (p - a).distance;
+    final t = ((p.dx - a.dx) * ab.dx + (p.dy - a.dy) * ab.dy) / lengthSq;
+    final clampedT = t.clamp(0.0, 1.0);
+    final projection = Offset(a.dx + clampedT * ab.dx, a.dy + clampedT * ab.dy);
+    return (p - projection).distance;
+  }
+
   /// Returns true if [point] is within [radius] of any vertex
-  /// in [stroke]'s low-quality polygon.
+  /// or segment of [stroke].
   static bool _isPointNearStroke(
     Offset point,
     Stroke stroke,
     double radius,
   ) {
+    if (stroke is ArrowStroke) {
+      return _distanceToSegment(point, stroke.start, stroke.end) <= radius;
+    }
+    if (stroke is DimensionStroke) {
+      final (unitDir, perp) = stroke.computeVectors();
+      if (unitDir == Offset.zero) {
+        return (point - stroke.start).distance <= radius;
+      }
+      final dimOffset = perp * stroke.offset;
+      final dimStart = stroke.start + dimOffset;
+      final dimEnd = stroke.end + dimOffset;
+      if (_distanceToSegment(point, stroke.start, stroke.end) <= radius) return true;
+      if (_distanceToSegment(point, dimStart, dimEnd) <= radius) return true;
+      if (_distanceToSegment(point, stroke.start, dimStart) <= radius) return true;
+      if (_distanceToSegment(point, stroke.end, dimEnd) <= radius) return true;
+      if ((point - stroke.textPosition).distance <= radius + 10) return true;
+      return false;
+    }
+
     final polygon = stroke.lowQualityPolygon;
     if (polygon.isEmpty) return false;
 
@@ -251,7 +332,7 @@ class Select extends Tool {
 
   /// Creates a tight rounded-rect selection path around [polygon],
   /// inflated by a small margin so the selection boundary is visible.
-  static Path _createTightSelectionPath(List<Offset> polygon) {
+  static Path createTightSelectionPath(List<Offset> polygon) {
     if (polygon.isEmpty) return Path();
 
     double minX = double.infinity, minY = double.infinity;
@@ -271,6 +352,9 @@ class Select extends Tool {
         const Radius.circular(4),
       ));
   }
+
+  static Path _createTightSelectionPath(List<Offset> polygon) =>
+      createTightSelectionPath(polygon);
 
   /// Creates a selection path around [rect], inflated by a small margin.
   static Path _createRectSelectionPath(Rect rect) {
@@ -303,6 +387,18 @@ class SelectResult {
     return strokes.isEmpty && images.isEmpty && !textSelected;
   }
 
+  /// Returns endpoint vertex handles when a single drafting primitive is selected.
+  List<Offset> get vertexHandles {
+    if (strokes.length != 1) return const [];
+    final stroke = strokes.first;
+    if (stroke is ArrowStroke) {
+      return [stroke.start, stroke.end];
+    } else if (stroke is DimensionStroke) {
+      return [stroke.start, stroke.end, stroke.textPosition];
+    }
+    return const [];
+  }
+
   SelectResult copyWith({
     int? pageIndex,
     List<Stroke>? strokes,
@@ -318,4 +414,13 @@ class SelectResult {
       textSelected: textSelected ?? this.textSelected,
     );
   }
+}
+
+/// Extension on [EditorPage] providing vertex handles for drafting primitives.
+extension EditorPageVertexHandlesExtension on EditorPage {
+  static final _vertexHandlesExpando = Expando<List<Offset>>();
+
+  List<Offset>? get selectionVertexHandles => _vertexHandlesExpando[this];
+  set selectionVertexHandles(List<Offset>? handles) =>
+      _vertexHandlesExpando[this] = handles;
 }

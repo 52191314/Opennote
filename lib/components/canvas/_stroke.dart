@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:math';
 
 import 'package:collection/collection.dart';
@@ -11,6 +14,7 @@ import 'package:saber/components/canvas/_circle_stroke.dart';
 import 'package:saber/components/canvas/_dimension_stroke.dart';
 import 'package:saber/components/canvas/_polygon_stroke.dart';
 import 'package:saber/components/canvas/_rectangle_stroke.dart';
+import 'package:saber/components/canvas/_tape_stroke.dart';
 import 'package:saber/data/extensions/list_extensions.dart';
 import 'package:saber/data/extensions/point_extensions.dart';
 import 'package:sbn/has_size.dart';
@@ -34,6 +38,14 @@ class Stroke {
 
   bool get isEmpty => points.isEmpty;
   int get length => points.length;
+
+  /// The first point of the stroke, or null if empty.
+  Offset? get firstPoint =>
+      points.isNotEmpty ? Offset(points.first.x, points.first.y) : null;
+
+  /// The last point of the stroke, or null if empty.
+  Offset? get lastPoint =>
+      points.isNotEmpty ? Offset(points.last.x, points.last.y) : null;
 
   int pageIndex;
   HasSize page;
@@ -222,6 +234,13 @@ class Stroke {
         );
       case 'polygon':
         return PolygonStroke.fromJson(
+          json,
+          fileVersion: fileVersion,
+          pageIndex: pageIndex,
+          page: page,
+        );
+      case 'tape':
+        return TapeStroke.fromJson(
           json,
           fileVersion: fileVersion,
           pageIndex: pageIndex,
@@ -525,13 +544,62 @@ class Stroke {
     options.end.taperEnabled = false;
   }
 
-  /// Snaps a [point] to the nearest grid intersection
+  /// Snaps a [point] to the nearest Cartesian grid intersection
   /// with the given [gridSize].
   static Offset snapPointToGrid(Offset point, double gridSize) {
+    if (gridSize <= 0) return point;
     final gridX = (point.dx / gridSize).round() * gridSize;
     final gridY = (point.dy / gridSize).round() * gridSize;
     return Offset(gridX, gridY);
   }
+
+  /// Snaps a [point] to the nearest vertex on an isometric triangular grid
+  /// with vertical spacing [lineHeight].
+  ///
+  /// Uses an O(1) 4-candidate nearest vertex algorithm across the bounding
+  /// columns.
+  static Offset snapPointToIsometricGrid(Offset point, double lineHeight) {
+    if (lineHeight <= 0) return point;
+    final l = lineHeight;
+    final dx = l * (sqrt(3) / 2);
+
+    final col0 = (point.dx / dx).floor();
+    final col1 = col0 + 1;
+
+    Offset? bestVertex;
+    double minDistanceSq = double.infinity;
+
+    for (final col in [col0, col1]) {
+      final x = col * dx;
+      final yShift = (col % 2 != 0) ? 0.5 * l : 0.0;
+      final rowCenter = (point.dy - yShift) / l;
+      final rowA = rowCenter.floor();
+      final rowB = rowCenter.ceil();
+
+      for (final row in [rowA, rowB]) {
+        final y = row * l + yShift;
+        final dX = point.dx - x;
+        final dY = point.dy - y;
+        final distSq = dX * dX + dY * dY;
+        if (distSq < minDistanceSq) {
+          minDistanceSq = distSq;
+          bestVertex = Offset(x, y);
+        }
+      }
+    }
+
+    return bestVertex ?? point;
+  }
+
+  /// The 6 isometric grid directions (±30°, ±90°, ±150°) in radians.
+  static const List<double> isometricAnglesRad = [
+    pi / 6, // 30°
+    pi / 2, // 90°
+    5 * pi / 6, // 150°
+    -pi / 6, // -30°
+    -pi / 2, // -90°
+    -5 * pi / 6, // -150°
+  ];
 
   /// Snaps a line to either horizontal or vertical
   /// if the angle is close enough.
@@ -542,12 +610,18 @@ class Stroke {
     PointVector firstPoint,
     PointVector lastPoint, {
     double? angleStepDegrees,
+    bool isIsometric = false,
   }) {
     final dx = lastPoint.dx - firstPoint.dx;
     final dy = lastPoint.dy - firstPoint.dy;
 
-    if (angleStepDegrees != null && angleStepDegrees > 0) {
-      return snapLineToAngle(firstPoint, lastPoint, angleStepDegrees);
+    if (isIsometric || (angleStepDegrees != null && (angleStepDegrees > 0 || angleStepDegrees == -30))) {
+      return snapLineToAngle(
+        firstPoint,
+        lastPoint,
+        angleStepDegrees ?? 30.0,
+        isIsometric: isIsometric,
+      );
     }
 
     // Original H/V snapping behavior
@@ -576,11 +650,16 @@ class Stroke {
   /// Applies angle snap to the existing points in this line stroke.
   /// The stroke must have exactly 2 points (start and end of a line).
   /// The start point stays in place; the end point is adjusted.
-  void snapToAngle(double stepDegrees) {
+  void snapToAngle(double stepDegrees, {bool isIsometric = false}) {
     if (points.length < 2) return;
     final first = points.first;
     final last = points.last;
-    final (_, snappedLast) = snapLineToAngle(first, last, stepDegrees);
+    final (_, snappedLast) = snapLineToAngle(
+      first,
+      last,
+      stepDegrees,
+      isIsometric: isIsometric,
+    );
     points.clear();
     points.add(first);
     points.add(snappedLast);
@@ -589,22 +668,43 @@ class Stroke {
     markPolygonNeedsUpdating();
   }
 
-  /// Snaps a line to the nearest angle that is a multiple of [stepDegrees].
+  /// Snaps a line to the nearest angle that is a multiple of [stepDegrees]
+  /// or to the 3-axis isometric directions if [isIsometric] is true
+  /// (or [stepDegrees] is -30).
   /// The line's length is preserved; only its direction is adjusted.
   static (PointVector firstPoint, PointVector lastPoint) snapLineToAngle(
     PointVector firstPoint,
     PointVector lastPoint,
-    double stepDegrees,
-  ) {
+    double stepDegrees, {
+    bool isIsometric = false,
+  }) {
     final dx = lastPoint.dx - firstPoint.dx;
     final dy = lastPoint.dy - firstPoint.dy;
     final length = sqrt(dx * dx + dy * dy);
     if (length < 0.001) return (firstPoint, lastPoint);
 
     var angleRad = atan2(dy, dx);
-    final stepRad = stepDegrees * pi / 180;
-    // Snap to nearest multiple of stepRad
-    angleRad = (angleRad / stepRad).round() * stepRad;
+
+    if (isIsometric || stepDegrees == -30) {
+      double minDiff = double.infinity;
+      double bestAngle = isometricAnglesRad.first;
+      for (final target in isometricAnglesRad) {
+        var diff = (angleRad - target) % (2 * pi);
+        if (diff > pi) diff -= 2 * pi;
+        if (diff < -pi) diff += 2 * pi;
+        final absDiff = diff.abs();
+        if (absDiff < minDiff) {
+          minDiff = absDiff;
+          bestAngle = target;
+        }
+      }
+      angleRad = bestAngle;
+    } else {
+      if (stepDegrees <= 0) return (firstPoint, lastPoint);
+      final stepRad = stepDegrees * pi / 180;
+      // Snap to nearest multiple of stepRad
+      angleRad = (angleRad / stepRad).round() * stepRad;
+    }
 
     return (
       firstPoint,

@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -6,7 +9,9 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:saber/components/canvas/hud/canvas_gesture_lock_btn.dart';
 import 'package:saber/components/canvas/hud/canvas_zoom_indicator.dart';
 import 'package:saber/data/extensions/matrix4_extensions.dart';
+import 'package:saber/data/prefs.dart';
 import 'package:saber/i18n/strings.g.dart';
+import 'package:sbn/tool_id.dart';
 
 class CanvasHud extends HookWidget {
   const CanvasHud({
@@ -23,6 +28,7 @@ class CanvasHud extends HookWidget {
     this.setShowProtractor,
     this.bookmarked = false,
     this.onToggleBookmarked,
+    this.isDrafting = false,
   });
 
   final TransformationController transformationController;
@@ -37,6 +43,7 @@ class CanvasHud extends HookWidget {
   final ValueChanged<bool>? setShowProtractor;
   final bool bookmarked;
   final VoidCallback? onToggleBookmarked;
+  final bool isDrafting;
 
   @override
   Widget build(BuildContext context) {
@@ -58,10 +65,22 @@ class CanvasHud extends HookWidget {
 
     useOnListenableChange(transformationController, onTransform);
 
+    final activeTool = useValueListenable(stows.lastTool);
+    final snapGrid = useValueListenable(stows.snapToGrid);
+    final snapAngle = useValueListenable(stows.snapToAngle);
+    final angleStep = useValueListenable(stows.snapAngleStep);
+
+    final isRuler = activeTool == ToolId.ruler;
+    final isSnapActive = snapGrid || snapAngle;
+    final isDraftingVisible = isDrafting || isRuler || isSnapActive;
+    final effectiveOpacity = isDraftingVisible ? 1.0 : opacity.value;
+
+    final topOffset = setShowProtractor != null ? 165.0 : 125.0;
+
     return IgnorePointer(
-      ignoring: opacity.value < 0.5,
+      ignoring: effectiveOpacity < 0.5,
       child: AnimatedOpacity(
-        opacity: opacity.value,
+        opacity: effectiveOpacity,
         duration: const Duration(milliseconds: 200),
         child: Stack(
           children: [
@@ -120,6 +139,66 @@ class CanvasHud extends HookWidget {
                       : 'Show protractor',
                 ),
               ),
+            Positioned(
+              top: topOffset,
+              left: 5,
+              child: CanvasGestureLockBtn(
+                lock: snapGrid,
+                setLock: (val) => stows.snapToGrid.value = val,
+                icon: snapGrid ? Icons.grid_on : Icons.grid_off,
+                tooltip: snapGrid ? 'Disable snap to grid' : 'Enable snap to grid',
+              ),
+            ),
+            Positioned(
+              top: topOffset + 40,
+              left: 5,
+              child: CanvasGestureLockBtn(
+                lock: snapAngle,
+                setLock: (val) => stows.snapToAngle.value = val,
+                icon: snapAngle ? Icons.square_foot : Icons.square_foot_outlined,
+                tooltip: snapAngle ? 'Disable snap to angle' : 'Enable snap to angle',
+              ),
+            ),
+            Positioned(
+              top: topOffset + 80,
+              left: 5,
+              child: GestureDetector(
+                onTap: () {
+                  final cur = angleStep;
+                  if (cur == 15) {
+                    stows.snapAngleStep.value = 30;
+                  } else if (cur == 30) {
+                    stows.snapAngleStep.value = 45;
+                  } else if (cur == 45) {
+                    stows.snapAngleStep.value = Stows.snapAngleStepIso30;
+                  } else {
+                    stows.snapAngleStep.value = 15;
+                  }
+                },
+                child: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: ColorScheme.of(context).surface.withValues(alpha: 0.5),
+                    borderRadius: const BorderRadius.all(Radius.circular(16)),
+                  ),
+                  child: Tooltip(
+                    message:
+                        'Angle step: ${angleStep == Stows.snapAngleStepIso30 ? "Iso 30°" : "$angleStep°"}',
+                    child: Center(
+                      child: Text(
+                        angleStep == Stows.snapAngleStepIso30 ? 'Iso' : '$angleStep°',
+                        style: TextStyle(
+                          color: ColorScheme.of(context).onSurface,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
             if (onToggleBookmarked != null)
               Positioned(
                 top: 5,

@@ -58,7 +58,7 @@ class TemplatePickerDialog extends StatelessWidget {
                 pageSize: pageSize,
                 invert: invert,
                 backgroundColor:
-                    coreInfo.backgroundColor ?? InnerCanvas.defaultBackgroundColor,
+                    template.backgroundColor ?? coreInfo.backgroundColor ?? InnerCanvas.defaultBackgroundColor,
                 onTap: () {
                   onTemplateSelected(template);
                   Navigator.pop(context);

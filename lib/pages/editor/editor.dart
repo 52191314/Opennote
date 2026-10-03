@@ -1,4 +1,7 @@
 /// 🤖 Modified with DeepSeek v4 Flash
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -16,14 +19,19 @@ import 'package:keybinder/keybinder.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
 import 'package:pdfrx/pdfrx.dart';
+import 'package:saber/components/canvas/_arrow_stroke.dart';
 import 'package:saber/components/canvas/_asset_cache.dart';
+import 'package:saber/components/canvas/_dimension_stroke.dart';
 import 'package:saber/components/canvas/_stroke.dart';
+import 'package:saber/components/canvas/_tape_stroke.dart';
 import 'package:saber/components/canvas/canvas.dart';
 import 'package:saber/components/canvas/canvas_gesture_detector.dart';
 import 'package:saber/components/canvas/canvas_image.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
+import 'package:saber/components/canvas/shape_library_dialog.dart';
 import 'package:saber/components/editor/outline_overlay.dart';
+import 'package:saber/components/editor/page_grid_overview.dart';
 import 'package:saber/components/editor/presentation_mode.dart';
 import 'package:saber/components/editor/read_only_banner.dart';
 import 'package:saber/components/theming/adaptive_alert_dialog.dart';
@@ -32,7 +40,6 @@ import 'package:saber/components/theming/dynamic_material_app.dart';
 import 'package:saber/components/theming/saber_theme.dart';
 import 'package:saber/components/toolbar/color_bar.dart';
 import 'package:saber/components/toolbar/editor_bottom_sheet.dart';
-import 'package:saber/components/toolbar/editor_page_manager.dart';
 import 'package:saber/components/toolbar/toolbar.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/editor_exporter.dart';
@@ -44,6 +51,8 @@ import 'package:saber/data/file_manager/file_manager.dart';
 import 'package:saber/data/nextcloud/saber_syncer.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
+import 'package:saber/data/tools/arrow.dart';
+import 'package:saber/data/tools/dimension.dart';
 import 'package:saber/data/tools/eraser.dart';
 import 'package:saber/data/tools/highlighter.dart';
 import 'package:saber/data/tools/laser_pointer.dart';
@@ -53,7 +62,7 @@ import 'package:saber/data/tools/ruler.dart';
 import 'package:saber/data/tools/scribble_detector.dart';
 import 'package:saber/data/tools/select.dart';
 import 'package:saber/data/tools/shape_pen.dart';
-import 'package:saber/components/canvas/shape_library_dialog.dart';
+import 'package:saber/data/tools/study_tape.dart';
 import 'package:saber/i18n/strings.g.dart';
 import 'package:saber/pages/home/whiteboard.dart';
 import 'package:sbn/change.dart';
@@ -160,6 +169,12 @@ class EditorState extends State<Editor> {
         return LaserPointer.currentLaserPointer;
       case .ruler:
         return Ruler();
+      case .arrow:
+        return ArrowTool();
+      case .dimension:
+        return DimensionTool();
+      case .studyTape:
+        return StudyTapeTool.currentStudyTape;
     }
   }();
   Tool get currentTool => _currentTool;
@@ -196,29 +211,34 @@ class EditorState extends State<Editor> {
   var stylusButtonWasPressed = false;
 
   /// Detects scribble-to-erase gestures when the pen tool is active.
-  final ScribbleDetector scribbleDetector = ScribbleDetector();
+  final scribbleDetector = ScribbleDetector();
 
   /// Strokes copied to the internal clipboard (for paste).
   List<Stroke>? _clipboardStrokes;
 
   /// Whether the user is currently rotating a selection.
-  bool _isRotating = false;
+  var _isRotating = false;
 
   /// The timestamp and position of the last tap (for double-tap detection).
   DateTime? _lastTapTime;
   Offset? _lastTapPosition;
 
   /// Whether the user is currently resizing a selection.
-  bool _isResizing = false;
+  var _isResizing = false;
 
   /// Index of the resize handle being dragged (0-7).
-  int _resizeHandleIndex = -1;
+  var _resizeHandleIndex = -1;
 
   /// The initial bounds of the selection when resize started.
   Rect _resizeStartBounds = Rect.zero;
 
   /// The initial angle (in radians) when the rotation gesture started.
   double _initialRotationAngle = 0;
+
+  /// Whether the user is currently dragging a vertex of a drafting stroke.
+  var _isDraggingVertex = false;
+  var _draggedVertexIndex = -1;
+  Stroke? _draggedVertexStroke;
 
   /// Images copied to the internal clipboard (for paste).
   List<EditorImage>? _clipboardImages;
@@ -402,7 +422,7 @@ class EditorState extends State<Editor> {
       switch (item!.type) {
         case .draw:
           for (final stroke in item.strokes) {
-            coreInfo.pages[stroke.pageIndex].strokes.remove(stroke);
+            coreInfo.pages[stroke.pageIndex].removeStroke(stroke);
           }
           for (final image in item.images) {
             coreInfo.pages[image.pageIndex].images.remove(image);
@@ -646,6 +666,8 @@ class EditorState extends State<Editor> {
           page.selectionDeleteButtonRect = null;
           page.selectionRotationHandleCenter = null;
           page.selectionResizeHandles = null;
+          page.selectionVertexHandles = null;
+          _isDraggingVertex = false;
           select.onDragStart(position, dragPageIndex!);
           history.canRedo = true;
           return;
@@ -659,6 +681,22 @@ class EditorState extends State<Editor> {
         if (deleteRect != null && deleteRect.contains(position)) {
           _deleteSelection(select, page);
           return;
+        }
+
+        // Check if tap is on a vertex handle (ArrowStroke / DimensionStroke)
+        final vertexHandles = page.selectionVertexHandles;
+        if (vertexHandles != null && select.selectResult.strokes.length == 1) {
+          final stroke = select.selectResult.strokes.first;
+          if (stroke is ArrowStroke || stroke is DimensionStroke) {
+            for (int i = 0; i < vertexHandles.length; i++) {
+              if ((position - vertexHandles[i]).distance < 20) {
+                _isDraggingVertex = true;
+                _draggedVertexIndex = i;
+                _draggedVertexStroke = stroke;
+                return;
+              }
+            }
+          }
         }
 
         // Check if tap is on a resize handle
@@ -690,6 +728,8 @@ class EditorState extends State<Editor> {
           page.selectionDeleteButtonRect = null;
           page.selectionRotationHandleCenter = null;
           page.selectionResizeHandles = null;
+          page.selectionVertexHandles = null;
+          _isDraggingVertex = false;
           select.onDragStart(position, dragPageIndex!);
           history.canRedo = true;
         }
@@ -772,6 +812,42 @@ class EditorState extends State<Editor> {
       removeExcessPages();
     } else if (currentTool is Select) {
       final select = currentTool as Select;
+      if (_isDraggingVertex && _draggedVertexStroke != null) {
+        final stroke = _draggedVertexStroke!;
+        if (stroke is ArrowStroke) {
+          if (_draggedVertexIndex == 0) {
+            stroke.start = position;
+          } else if (_draggedVertexIndex == 1) {
+            stroke.end = position;
+          }
+          stroke.markPolygonNeedsUpdating();
+          select.selectResult.path =
+              Select.createTightSelectionPath(stroke.lowQualityPolygon);
+        } else if (stroke is DimensionStroke) {
+          if (_draggedVertexIndex == 0) {
+            stroke.start = position;
+            final dist = (stroke.end - stroke.start).distance;
+            stroke.text = '${dist.toStringAsFixed(1)} px';
+          } else if (_draggedVertexIndex == 1) {
+            stroke.end = position;
+            final dist = (stroke.end - stroke.start).distance;
+            stroke.text = '${dist.toStringAsFixed(1)} px';
+          } else if (_draggedVertexIndex == 2) {
+            final dir = stroke.end - stroke.start;
+            final length = dir.distance;
+            if (length > 0.001) {
+              final perp = Offset(-dir.dy / length, dir.dx / length);
+              stroke.offset = (position.dx - stroke.start.dx) * perp.dx +
+                  (position.dy - stroke.start.dy) * perp.dy;
+            }
+          }
+          stroke.markPolygonNeedsUpdating();
+          select.selectResult.path =
+              Select.createTightSelectionPath(stroke.lowQualityPolygon);
+        }
+        page.redrawStrokes();
+        return;
+      }
       if (_isResizing && select.doneSelecting) {
         // Compute scale factors based on handle drag
         // Handle indices: 0=topLeft, 1=topCenter, 2=topRight,
@@ -792,8 +868,6 @@ class EditorState extends State<Editor> {
           _ => Offset(bounds.right, bounds.center.dy),    // middleLeft → pivot middleRight
         };
 
-        // Constrain to prevent flipping
-        final newBounds = select.selectResult.path.getBounds();
         double scaleX, scaleY;
 
         switch (handleIdx) {
@@ -850,10 +924,6 @@ class EditorState extends State<Editor> {
           );
         }
         // Update selection path bounds
-        final newCenter = Offset(
-          pivot.dx + (newBounds.center.dx - pivot.dx) * scaleX,
-          pivot.dy + (newBounds.center.dy - pivot.dy) * scaleY,
-        );
         select.selectResult.path = _scalePath(
           select.selectResult.path, scaleX, scaleY, pivot,
         );
@@ -955,7 +1025,23 @@ class EditorState extends State<Editor> {
         if (newStroke == null) return;
         if (newStroke.isEmpty) return;
 
-        if (stows.autoStraightenLines.value &&
+        // Check if a quick tap was on an existing TapeStroke to toggle conceal/reveal
+        if (newStroke.length <= 4) {
+          final p0 = newStroke.firstPoint;
+          final pEnd = newStroke.lastPoint;
+          if (p0 != null && pEnd != null && (pEnd - p0).distance < 15.0) {
+            for (final stroke in page.strokes.reversed) {
+              if (stroke is TapeStroke && stroke.rect.inflate(8).contains(p0)) {
+                stroke.toggleConceal();
+                page.redrawStrokes();
+                autosaveAfterDelay();
+                return;
+              }
+            }
+          }
+        }
+
+        if ((stows.autoStraightenLines.value || currentTool is Highlighter) &&
             currentTool is! ShapePen &&
             newStroke.isStraightLine()) {
           newStroke.convertToLine();
@@ -989,6 +1075,42 @@ class EditorState extends State<Editor> {
         );
       } else if (currentTool is Select) {
         final select = currentTool as Select;
+        if (_isDraggingVertex) {
+          _isDraggingVertex = false;
+          _draggedVertexIndex = -1;
+          _draggedVertexStroke = null;
+          final bounds = select.selectResult.path.getBounds();
+          page.selectionDeleteButtonRect = Rect.fromCenter(
+            center: Offset(bounds.right, bounds.top),
+            width: 24,
+            height: 24,
+          );
+          page.selectionRotationHandleCenter = Offset(
+            bounds.center.dx,
+            bounds.top - 30,
+          );
+          final center = bounds.center;
+          page.selectionResizeHandles = [
+            Offset(bounds.left, bounds.top),
+            Offset(center.dx, bounds.top),
+            Offset(bounds.right, bounds.top),
+            Offset(bounds.right, center.dy),
+            Offset(bounds.right, bounds.bottom),
+            Offset(center.dx, bounds.bottom),
+            Offset(bounds.left, bounds.bottom),
+            Offset(bounds.left, center.dy),
+          ];
+          history.recordChange(
+            EditorHistoryItem(
+              type: .draw,
+              pageIndex: dragPageIndex!,
+              strokes: select.selectResult.strokes,
+              images: select.selectResult.images,
+            ),
+          );
+          return;
+        }
+
         final textRect = page.computeTextContentRect(coreInfo.lineHeight.toDouble());
 
         // Detect tap (no drag, no resize, no rotate)
@@ -1012,6 +1134,7 @@ class EditorState extends State<Editor> {
                 page.selectionDeleteButtonRect = null;
                 page.selectionRotationHandleCenter = null;
                 page.selectionResizeHandles = null;
+                page.selectionVertexHandles = null;
               } else {
                 final selectionBounds =
                     select.selectResult.path.getBounds();
@@ -1036,6 +1159,22 @@ class EditorState extends State<Editor> {
                   Offset(selectionBounds.left, selectionBounds.bottom),
                   Offset(selectionBounds.left, center.dy),
                 ];
+                if (select.selectResult.strokes.length == 1) {
+                  final s = select.selectResult.strokes.first;
+                  if (s is ArrowStroke) {
+                    page.selectionVertexHandles = [s.start, s.end];
+                  } else if (s is DimensionStroke) {
+                    page.selectionVertexHandles = [
+                      s.start,
+                      s.end,
+                      s.textPosition,
+                    ];
+                  } else {
+                    page.selectionVertexHandles = null;
+                  }
+                } else {
+                  page.selectionVertexHandles = null;
+                }
               }
 
               // Track for double-tap detection
@@ -1074,6 +1213,7 @@ class EditorState extends State<Editor> {
             page.selectionDeleteButtonRect = null;
             page.selectionRotationHandleCenter = null;
             page.selectionResizeHandles = null;
+            page.selectionVertexHandles = null;
           } else {
             // Compute delete button and rotation handle positions
             final bounds = select.selectResult.path.getBounds();
@@ -1086,7 +1226,6 @@ class EditorState extends State<Editor> {
               bounds.center.dx,
               bounds.top - 30,
             );
-            final halfH = 8;
             final center = bounds.center;
             page.selectionResizeHandles = [
               Offset(bounds.left, bounds.top),
@@ -1098,6 +1237,22 @@ class EditorState extends State<Editor> {
               Offset(bounds.left, bounds.bottom),
               Offset(bounds.left, center.dy),
             ];
+            if (select.selectResult.strokes.length == 1) {
+              final s = select.selectResult.strokes.first;
+              if (s is ArrowStroke) {
+                page.selectionVertexHandles = [s.start, s.end];
+              } else if (s is DimensionStroke) {
+                page.selectionVertexHandles = [
+                  s.start,
+                  s.end,
+                  s.textPosition,
+                ];
+              } else {
+                page.selectionVertexHandles = null;
+              }
+            } else {
+              page.selectionVertexHandles = null;
+            }
           }
         }
       } else if (currentTool is LaserPointer) {
@@ -1618,7 +1773,7 @@ class EditorState extends State<Editor> {
       onDeleteImage: onDeleteImage,
       onMiscChange: autosaveAfterDelay,
       onLoad: () => setState(() {}),
-      dstRect: Rect.fromLTWH(20, 20, 200, 200),
+      dstRect: const Rect.fromLTWH(20, 20, 200, 200),
     );
 
     history.recordChange(
@@ -1653,7 +1808,7 @@ class EditorState extends State<Editor> {
       onDeleteImage: onDeleteImage,
       onMiscChange: autosaveAfterDelay,
       onLoad: () => setState(() {}),
-      dstRect: Rect.fromLTWH(20, 20, size, size),
+      dstRect: const Rect.fromLTWH(20, 20, size, size),
     );
 
     history.recordChange(
@@ -2377,11 +2532,7 @@ class EditorState extends State<Editor> {
                     onPressed: () {
                       showDialog(
                         context: context,
-                        builder: (context) => AdaptiveAlertDialog(
-                          title: Text(t.editor.pages),
-                          content: pageManager(context),
-                          actions: const [],
-                        ),
+                        builder: (context) => pageManager(context),
                       );
                     },
                   ),
@@ -2627,66 +2778,91 @@ class EditorState extends State<Editor> {
   }
 
   Widget pageManager(BuildContext context) {
-    return EditorPageManager(
+    return PageGridOverviewDialog(
       coreInfo: coreInfo,
       currentPageIndex: currentPageIndex,
+      scrollToPage: (int pageIndex) {
+        CanvasGestureDetector.scrollToPage(
+          pageIndex: pageIndex,
+          pages: coreInfo.pages,
+          screenWidth: MediaQuery.sizeOf(context).width,
+          transformationController: _transformationController,
+        );
+      },
       redrawAndSave: () => setState(() {
         if (coreInfo.readOnly) return;
         autosaveAfterDelay();
       }),
       insertPageAfter: insertPageAfter,
-      duplicatePage: (int pageIndex) => setState(() {
-        if (coreInfo.readOnly) return;
-        final page = coreInfo.pages[pageIndex];
-        final newPage = page.copyWith(
-          strokes: page.strokes
-              .map((stroke) => stroke.copy()..pageIndex += 1)
-              .toList(),
-          images: page.images
-              .map((image) => image.copy()..pageIndex += 1)
-              .toList(),
-          quill: QuillStruct(
-            controller: flutter_quill.QuillController(
-              document: flutter_quill.Document.fromDelta(
-                page.quill.controller.document.toDelta(),
-              ),
-              selection: const TextSelection.collapsed(offset: 0),
-            ),
-            focusNode: FocusNode(debugLabel: 'Quill Focus Node'),
-          ),
-          backgroundImage: page.backgroundImage?.copy()?..pageIndex += 1,
-        );
-        coreInfo.pages.insert(pageIndex + 1, newPage);
-        listenToQuillChanges(newPage.quill, pageIndex + 1);
-        history.recordChange(
-          EditorHistoryItem(
-            type: .insertPage,
-            pageIndex: pageIndex,
-            strokes: const [],
-            images: const [],
-            page: newPage,
-          ),
-        );
-        autosaveAfterDelay();
-      }),
+      duplicatePage: duplicatePage,
       clearPage: clearPage,
-      deletePage: (int pageIndex) => setState(() {
-        if (coreInfo.readOnly) return;
-        final page = coreInfo.pages.removeAt(pageIndex);
-        createPage(pageIndex - 1);
-        history.recordChange(
-          EditorHistoryItem(
-            type: .deletePage,
-            pageIndex: pageIndex,
-            strokes: const [],
-            images: const [],
-            page: page,
-          ),
-        );
-        autosaveAfterDelay();
-      }),
-      transformationController: _transformationController,
+      deletePage: deletePage,
     );
+  }
+
+  void duplicatePage(int pageIndex) {
+    if (coreInfo.readOnly) return;
+    if (pageIndex < 0 || pageIndex >= coreInfo.pages.length) return;
+    setState(() {
+      final page = coreInfo.pages[pageIndex];
+      final newLayers = page.layers
+          .map((layer) => Layer(
+                name: layer.name,
+                visible: layer.visible,
+                strokes: layer.strokes
+                    .map((stroke) => stroke.copy()..pageIndex = pageIndex + 1)
+                    .toList(),
+              ))
+          .toList();
+      final newPage = page.copyWith(
+        layers: newLayers,
+        images: page.images
+            .map((image) => image.copy()..pageIndex += 1)
+            .toList(),
+        quill: QuillStruct(
+          controller: flutter_quill.QuillController(
+            document: flutter_quill.Document.fromDelta(
+              page.quill.controller.document.toDelta(),
+            ),
+            selection: const TextSelection.collapsed(offset: 0),
+          ),
+          focusNode: FocusNode(debugLabel: 'Quill Focus Node'),
+        ),
+        backgroundImage: page.backgroundImage?.copy()?..pageIndex += 1,
+      );
+      coreInfo.pages.insert(pageIndex + 1, newPage);
+      listenToQuillChanges(newPage.quill, pageIndex + 1);
+      history.recordChange(
+        EditorHistoryItem(
+          type: .insertPage,
+          pageIndex: pageIndex + 1,
+          strokes: const [],
+          images: const [],
+          page: newPage,
+        ),
+      );
+      autosaveAfterDelay();
+    });
+  }
+
+  void deletePage(int pageIndex) {
+    if (coreInfo.readOnly) return;
+    if (coreInfo.pages.length <= 1) return;
+    if (pageIndex < 0 || pageIndex >= coreInfo.pages.length) return;
+    setState(() {
+      final page = coreInfo.pages.removeAt(pageIndex);
+      createPage(pageIndex - 1);
+      history.recordChange(
+        EditorHistoryItem(
+          type: .deletePage,
+          pageIndex: pageIndex,
+          strokes: const [],
+          images: const [],
+          page: page,
+        ),
+      );
+      autosaveAfterDelay();
+    });
   }
 
   void insertPageAfter(int pageIndex) => setState(() {

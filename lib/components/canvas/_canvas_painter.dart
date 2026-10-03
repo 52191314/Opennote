@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:math';
 import 'dart:ui' as ui;
 
@@ -11,6 +14,7 @@ import 'package:saber/components/canvas/_dimension_stroke.dart';
 import 'package:saber/components/canvas/_polygon_stroke.dart';
 import 'package:saber/components/canvas/_rectangle_stroke.dart';
 import 'package:saber/components/canvas/_stroke.dart';
+import 'package:saber/components/canvas/_tape_stroke.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:saber/data/tools/highlighter.dart';
@@ -53,9 +57,14 @@ class CanvasPainter extends CustomPainter {
     final canvasRect = Offset.zero & size;
 
     _drawHighlighterStrokes(canvas, canvasRect);
-    _drawNonHighlighterStrokes(canvas);
+    if (currentStroke?.toolId == .highlighter) {
+      _drawCurrentStroke(canvas);
+      _drawNonHighlighterStrokes(canvas);
+    } else {
+      _drawNonHighlighterStrokes(canvas);
+      _drawCurrentStroke(canvas);
+    }
     for (final stroke in laserStrokes) _drawLaserStroke(canvas, stroke);
-    _drawCurrentStroke(canvas);
     _drawDetectedShape(canvas);
     _drawPenPreview(canvas);
     _drawSelection(canvas);
@@ -177,6 +186,7 @@ class CanvasPainter extends CustomPainter {
           stroke.getPath(stroke.getPolygon(quality: .high)),
           shapePaint,
         );
+        _drawDimensionText(canvas, stroke);
       } else if (stroke is PolygonStroke) {
         final fillPaint = Paint()
           ..color = stroke.fillColor?.withInversion(invert) ?? paint.color
@@ -191,10 +201,99 @@ class CanvasPainter extends CustomPainter {
           stroke.getPath(stroke.getPolygon(quality: .high)),
           shapePaint,
         );
+      } else if (stroke is TapeStroke) {
+        _drawTapeStroke(canvas, stroke);
       } else {
         canvas.drawPath(_selectPath(stroke), paint);
       }
     }
+  }
+
+  void _drawTapeStroke(Canvas canvas, TapeStroke stroke) {
+    final baseColor = stroke.color.withInversion(invert);
+    final rrect = RRect.fromRectAndRadius(
+      stroke.rect,
+      const Radius.circular(5),
+    );
+
+    if (stroke.isConcealed) {
+      final fillPaint = Paint()
+        ..color = baseColor.withValues(alpha: 0.96)
+        ..style = PaintingStyle.fill;
+      canvas.drawRRect(rrect, fillPaint);
+
+      final borderPaint = Paint()
+        ..color = Color.lerp(baseColor, Colors.black, 0.15)!.withValues(alpha: 0.5)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0;
+      canvas.drawRRect(rrect, borderPaint);
+    } else {
+      final fillPaint = Paint()
+        ..color = baseColor.withValues(alpha: 0.15)
+        ..style = PaintingStyle.fill;
+      canvas.drawRRect(rrect, fillPaint);
+
+      final dashedPath = dashPath(
+        Path()..addRRect(rrect),
+        dashArray: CircularIntervalList<double>([6, 4]),
+      );
+      final borderPaint = Paint()
+        ..color = baseColor.withValues(alpha: 0.7)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2;
+      canvas.drawPath(dashedPath, borderPaint);
+    }
+  }
+
+  void _drawDimensionText(Canvas canvas, DimensionStroke stroke) {
+    if (stroke.text.isEmpty) return;
+
+    final textColor = stroke.color.withInversion(invert);
+    final textSpan = TextSpan(
+      text: stroke.text,
+      style: TextStyle(
+        color: textColor,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+
+    final textPainter = TextPainter(
+      text: textSpan,
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    final center = stroke.textPosition;
+    final pillRect = Rect.fromCenter(
+      center: center,
+      width: textPainter.width + 12,
+      height: textPainter.height + 6,
+    );
+    final pillRRect =
+        RRect.fromRectAndRadius(pillRect, const Radius.circular(4));
+
+    final pillBg = invert ? Colors.black : Colors.white;
+    canvas.drawRRect(
+      pillRRect,
+      Paint()
+        ..color = pillBg.withValues(alpha: 0.9)
+        ..style = PaintingStyle.fill,
+    );
+    canvas.drawRRect(
+      pillRRect,
+      Paint()
+        ..color = textColor.withValues(alpha: 0.5)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+
+    textPainter.paint(
+      canvas,
+      Offset(
+        center.dx - textPainter.width / 2,
+        center.dy - textPainter.height / 2,
+      ),
+    );
   }
 
   void _drawCurrentStroke(Canvas canvas) {
@@ -219,8 +318,17 @@ class CanvasPainter extends CustomPainter {
       paint.maskFilter = _getPencilMaskFilter(currentStroke!.options.size);
     }
 
+    if (currentStroke is ArrowStroke || currentStroke is DimensionStroke) {
+      paint.style = PaintingStyle.stroke;
+      paint.strokeWidth = currentStroke!.options.size;
+    }
+
     // Current stroke always uses high quality
     canvas.drawPath(currentStroke!.highQualityPath, paint);
+
+    if (currentStroke is DimensionStroke) {
+      _drawDimensionText(canvas, currentStroke as DimensionStroke);
+    }
   }
 
   void _drawLaserStroke(Canvas canvas, LaserStroke stroke) {
@@ -371,7 +479,7 @@ class CanvasPainter extends CustomPainter {
     // Draw delete button (X) at top-right corner of selection bounds
     final deleteCenterX = bounds.right;
     final deleteCenterY = bounds.top;
-    final halfSize = deleteButtonSize / 2;
+    const halfSize = deleteButtonSize / 2;
     final buttonRect = Rect.fromCenter(
       center: Offset(deleteCenterX, deleteCenterY),
       width: deleteButtonSize,
@@ -396,7 +504,7 @@ class CanvasPainter extends CustomPainter {
       ..strokeWidth = 2.5
       ..strokeCap = StrokeCap.round;
 
-    final inset = halfSize * 0.3;
+    const inset = halfSize * 0.3;
     canvas.drawLine(
       Offset(deleteCenterX - inset, deleteCenterY - inset),
       Offset(deleteCenterX + inset, deleteCenterY + inset),
@@ -417,7 +525,7 @@ class CanvasPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
 
-    final half = resizeHandleSize;
+    const half = resizeHandleSize;
     final handlePositions = <Offset>[
       Offset(bounds.left, bounds.top),          // topLeft
       Offset(center.dx, bounds.top),            // topCenter
@@ -435,6 +543,40 @@ class CanvasPainter extends CustomPainter {
       final handleRect = Rect.fromLTWH(pos.dx - half, pos.dy - half, half * 2, half * 2);
       canvas.drawRect(handleRect, handlePaint);
       canvas.drawRect(handleRect, handleBorderPaint);
+    }
+
+    final singleStroke = currentSelection!.strokes.length == 1
+        ? currentSelection!.strokes.first
+        : null;
+    if (singleStroke is ArrowStroke) {
+      final vHandles = [singleStroke.start, singleStroke.end];
+      page.selectionVertexHandles = vHandles;
+      _drawVertexHandles(canvas, vHandles);
+    } else if (singleStroke is DimensionStroke) {
+      final vHandles = [
+        singleStroke.start,
+        singleStroke.end,
+        singleStroke.textPosition,
+      ];
+      page.selectionVertexHandles = vHandles;
+      _drawVertexHandles(canvas, vHandles);
+    } else {
+      page.selectionVertexHandles = null;
+    }
+  }
+
+  void _drawVertexHandles(Canvas canvas, List<Offset> handles) {
+    final handlePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    final handleBorderPaint = Paint()
+      ..color = primaryColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    for (final pos in handles) {
+      canvas.drawCircle(pos, 6, handlePaint);
+      canvas.drawCircle(pos, 6, handleBorderPaint);
     }
   }
 

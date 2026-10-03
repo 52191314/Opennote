@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:async';
 import 'dart:io';
 
@@ -218,6 +221,27 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
+  /// Whether the lasso/select tool selects handwriting strokes.
+  final lassoSelectHandwriting = PlainStow<bool>(
+    'lassoSelectHandwriting',
+    true,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Whether the lasso/select tool selects images and PDFs.
+  final lassoSelectImages = PlainStow<bool>(
+    'lassoSelectImages',
+    true,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Whether the lasso/select tool selects text boxes.
+  final lassoSelectText = PlainStow<bool>(
+    'lassoSelectText',
+    true,
+    volatile: !_isOnMainIsolate,
+  );
+
   final hideFingerDrawingToggle = PlainStow(
     'hideFingerDrawingToggle',
     false,
@@ -384,7 +408,10 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
-  /// The angle step (in degrees) used for snap-to-angle, e.g. 15, 30, 45.
+  /// Constant representing 3-axis isometric 30° snapping mode for [snapAngleStep].
+  static const snapAngleStepIso30 = -30;
+
+  /// The angle step (in degrees) used for snap-to-angle, e.g. 15, 30, 45, or [snapAngleStepIso30].
   final snapAngleStep = PlainStow(
     'snapAngleStep',
     15,
