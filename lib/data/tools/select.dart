@@ -404,6 +404,8 @@ class SelectResult {
     return strokes.isEmpty && images.isEmpty && !textSelected;
   }
 
+  bool get isNotEmpty => !isEmpty;
+
   /// Returns endpoint vertex handles when a single drafting primitive is selected.
   List<Offset> get vertexHandles {
     if (strokes.length != 1) return const [];

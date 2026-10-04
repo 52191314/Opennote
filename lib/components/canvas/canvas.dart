@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
 import 'package:one_dollar_unistroke_recognizer/one_dollar_unistroke_recognizer.dart';
 import 'package:onyxsdk_pen/onyxsdk_pen.dart';
@@ -22,6 +25,15 @@ class Canvas extends StatelessWidget {
     required this.currentStroke,
     required this.currentStrokeDetectedShape,
     required this.currentSelection,
+    this.isDoneSelecting = false,
+    this.onCutSelection,
+    this.onCopySelection,
+    this.onDuplicateSelection,
+    this.onDeleteSelection,
+    this.onSetColor,
+    this.cropPossible = false,
+    this.cropActive = false,
+    this.onToggleCrop,
     required this.setAsBackground,
     required this.currentTool,
     required this.currentScale,
@@ -37,6 +49,15 @@ class Canvas extends StatelessWidget {
   final Stroke? currentStroke;
   final RecognizedUnistroke? currentStrokeDetectedShape;
   final SelectResult? currentSelection;
+  final bool isDoneSelecting;
+  final VoidCallback? onCutSelection;
+  final VoidCallback? onCopySelection;
+  final VoidCallback? onDuplicateSelection;
+  final VoidCallback? onDeleteSelection;
+  final void Function(Color color)? onSetColor;
+  final bool cropPossible;
+  final bool cropActive;
+  final VoidCallback? onToggleCrop;
 
   final void Function(EditorImage image)? setAsBackground;
 
@@ -125,6 +146,15 @@ class Canvas extends StatelessWidget {
                       currentStroke: currentStroke,
                       currentStrokeDetectedShape: currentStrokeDetectedShape,
                       currentSelection: currentSelection,
+                      isDoneSelecting: isDoneSelecting,
+                      onCutSelection: onCutSelection,
+                      onCopySelection: onCopySelection,
+                      onDuplicateSelection: onDuplicateSelection,
+                      onDeleteSelection: onDeleteSelection,
+                      onSetColor: onSetColor,
+                      cropPossible: cropPossible,
+                      cropActive: cropActive,
+                      onToggleCrop: onToggleCrop,
                       setAsBackground: setAsBackground,
                       currentToolIsSelect: currentTool.toolId == ToolId.select,
                       currentScale: currentScale,

@@ -1094,14 +1094,10 @@ class EditorState extends State<Editor> {
           _draggedVertexIndex = -1;
           _draggedVertexStroke = null;
           final bounds = select.selectResult.path.getBounds();
-          page.selectionDeleteButtonRect = Rect.fromCenter(
-            center: Offset(bounds.right, bounds.top),
-            width: 24,
-            height: 24,
-          );
+          page.selectionDeleteButtonRect = null;
           page.selectionRotationHandleCenter = Offset(
             bounds.center.dx,
-            bounds.top - 30,
+            bounds.top - 20,
           );
           final center = bounds.center;
           page.selectionResizeHandles = [
@@ -1152,15 +1148,10 @@ class EditorState extends State<Editor> {
               } else {
                 final selectionBounds =
                     select.selectResult.path.getBounds();
-                page.selectionDeleteButtonRect = Rect.fromCenter(
-                  center:
-                      Offset(selectionBounds.right, selectionBounds.top),
-                  width: 24,
-                  height: 24,
-                );
+                page.selectionDeleteButtonRect = null;
                 page.selectionRotationHandleCenter = Offset(
                   selectionBounds.center.dx,
-                  selectionBounds.top - 30,
+                  selectionBounds.top - 20,
                 );
                 final center = selectionBounds.center;
                 page.selectionResizeHandles = [
@@ -1229,16 +1220,12 @@ class EditorState extends State<Editor> {
             page.selectionResizeHandles = null;
             page.selectionVertexHandles = null;
           } else {
-            // Compute delete button and rotation handle positions
+            // Compute rotation handle position
             final bounds = select.selectResult.path.getBounds();
-            page.selectionDeleteButtonRect = Rect.fromCenter(
-              center: Offset(bounds.right, bounds.top),
-              width: 24,
-              height: 24,
-            );
+            page.selectionDeleteButtonRect = null;
             page.selectionRotationHandleCenter = Offset(
               bounds.center.dx,
-              bounds.top - 30,
+              bounds.top - 20,
             );
             final center = bounds.center;
             page.selectionResizeHandles = [
@@ -2049,14 +2036,10 @@ class EditorState extends State<Editor> {
     currentTool = Select.currentSelect;
 
     final bounds = Select.currentSelect.selectResult.path.getBounds();
-    page.selectionDeleteButtonRect = Rect.fromCenter(
-      center: Offset(bounds.right, bounds.top),
-      width: 24,
-      height: 24,
-    );
+    page.selectionDeleteButtonRect = null;
     page.selectionRotationHandleCenter = Offset(
       bounds.center.dx,
-      bounds.top - 30,
+      bounds.top - 20,
     );
     final center = bounds.center;
     page.selectionResizeHandles = [
@@ -2171,6 +2154,92 @@ class EditorState extends State<Editor> {
       _clipboardImages = select.selectResult.images
           .map((image) => image.copy())
           .toList();
+    });
+  }
+
+  void _duplicateSelection() {
+    if (currentTool is! Select) return;
+    final select = currentTool as Select;
+    if (!select.doneSelecting) return;
+
+    setState(() {
+      final page = coreInfo.pages[select.selectResult.pageIndex];
+      final strokes = select.selectResult.strokes;
+      final images = select.selectResult.images;
+
+      const duplicationFeedbackOffset = Offset(25, -25);
+
+      final duplicatedStrokes = strokes.map((stroke) {
+        return stroke.copy()..shift(duplicationFeedbackOffset);
+      }).toList();
+
+      final duplicatedImages = images.map((image) {
+        return image.copy()
+          ..id = coreInfo.nextImageId++
+          ..dstRect.shift(duplicationFeedbackOffset);
+      }).toList();
+
+      page.activeLayerStrokes.addAll(duplicatedStrokes);
+      page.images.addAll(duplicatedImages);
+
+      select.selectResult = select.selectResult.copyWith(
+        strokes: duplicatedStrokes,
+        images: duplicatedImages,
+        path: select.selectResult.path.shift(duplicationFeedbackOffset),
+      );
+
+      history.recordChange(
+        EditorHistoryItem(
+          type: .draw,
+          pageIndex: select.selectResult.pageIndex,
+          strokes: duplicatedStrokes,
+          images: duplicatedImages,
+        ),
+      );
+      autosaveAfterDelay();
+    });
+  }
+
+  void _cutSelection() {
+    if (currentTool is! Select) return;
+    final select = currentTool as Select;
+    if (!select.doneSelecting) return;
+    final page = coreInfo.pages[select.selectResult.pageIndex];
+    setState(() {
+      _copySelection();
+      _deleteSelection(select, page);
+    });
+  }
+
+  void _setSelectionColor(Color color) {
+    if (currentTool is! Select) return;
+    final select = currentTool as Select;
+    if (!select.doneSelecting) return;
+    final strokes = select.selectResult.strokes;
+    if (strokes.isEmpty) return;
+
+    setState(() {
+      updateColorBar(color);
+
+      final colorChange = <Stroke, Change<Color>>{};
+      for (final stroke in strokes) {
+        colorChange[stroke] = Change(
+          previous: stroke.color,
+          current: color,
+        );
+        stroke.color = color;
+      }
+
+      history.recordChange(
+        EditorHistoryItem(
+          type: .changeColor,
+          pageIndex: strokes.first.pageIndex,
+          strokes: strokes,
+          colorChange: colorChange,
+          images: [],
+        ),
+      );
+      autosaveAfterDelay();
     });
   }
 
@@ -2397,47 +2466,7 @@ class EditorState extends State<Editor> {
             if (mounted) setState(() {});
           },
           currentTool: currentTool,
-          duplicateSelection: () {
-            final select = currentTool as Select;
-            if (!select.doneSelecting) return;
-
-            setState(() {
-              final page = coreInfo.pages[select.selectResult.pageIndex];
-              final strokes = select.selectResult.strokes;
-              final images = select.selectResult.images;
-
-              const duplicationFeedbackOffset = Offset(25, -25);
-
-              final duplicatedStrokes = strokes.map((stroke) {
-                return stroke.copy()..shift(duplicationFeedbackOffset);
-              }).toList();
-
-              final duplicatedImages = images.map((image) {
-                return image.copy()
-                  ..id = coreInfo.nextImageId++
-                  ..dstRect.shift(duplicationFeedbackOffset);
-              }).toList();
-
-              page.activeLayerStrokes.addAll(duplicatedStrokes);
-              page.images.addAll(duplicatedImages);
-
-              select.selectResult = select.selectResult.copyWith(
-                strokes: duplicatedStrokes,
-                images: duplicatedImages,
-                path: select.selectResult.path.shift(duplicationFeedbackOffset),
-              );
-
-              history.recordChange(
-                EditorHistoryItem(
-                  type: .draw,
-                  pageIndex: select.selectResult.pageIndex,
-                  strokes: duplicatedStrokes,
-                  images: duplicatedImages,
-                ),
-              );
-              autosaveAfterDelay();
-            });
-          },
+          duplicateSelection: _duplicateSelection,
           deleteSelection: () {
             final select = currentTool as Select;
             if (!select.doneSelecting) return;
@@ -2455,31 +2484,7 @@ class EditorState extends State<Editor> {
               } else if (currentTool is Pen) {
                 (currentTool as Pen).color = color;
               } else if (currentTool is Select) {
-                // Changes color of selected strokes
-                final select = currentTool as Select;
-                if (select.doneSelecting) {
-                  final strokes = select.selectResult.strokes;
-
-                  final colorChange = <Stroke, Change<Color>>{};
-                  for (final stroke in strokes) {
-                    colorChange[stroke] = Change(
-                      previous: stroke.color,
-                      current: color,
-                    );
-                    stroke.color = color;
-                  }
-
-                  history.recordChange(
-                    EditorHistoryItem(
-                      type: .changeColor,
-                      pageIndex: strokes.first.pageIndex,
-                      strokes: strokes,
-                      colorChange: colorChange,
-                      images: [],
-                    ),
-                  );
-                  autosaveAfterDelay();
-                }
+                _setSelectionColor(color);
               }
             });
           },
@@ -2918,6 +2923,10 @@ class EditorState extends State<Editor> {
     final currentStroke = Pen.currentStroke?.pageIndex == pageIndex
         ? Pen.currentStroke
         : null;
+    final isSelect = currentTool is Select;
+    final select = isSelect ? currentTool as Select : null;
+    final isCurrentPageSelected = select?.selectResult.pageIndex == pageIndex;
+
     return Canvas(
       path: coreInfo.filePath,
       page: page,
@@ -2929,12 +2938,20 @@ class EditorState extends State<Editor> {
           currentTool is ShapePen && currentStroke != null
           ? ShapePen.detectedShape
           : null,
-      currentSelection: () {
-        if (currentTool is! Select) return null;
-        final selectResult = (currentTool as Select).selectResult;
-        if (selectResult.pageIndex != pageIndex) return null;
-        return selectResult;
-      }(),
+      currentSelection: isCurrentPageSelected ? select?.selectResult : null,
+      isDoneSelecting: isCurrentPageSelected && (select?.doneSelecting ?? false),
+      onCutSelection: isCurrentPageSelected ? _cutSelection : null,
+      onCopySelection: isCurrentPageSelected ? _copySelection : null,
+      onDuplicateSelection: isCurrentPageSelected ? _duplicateSelection : null,
+      onDeleteSelection: isCurrentPageSelected
+          ? () {
+              if (select != null) _deleteSelection(select, page);
+            }
+          : null,
+      onSetColor: isCurrentPageSelected ? _setSelectionColor : null,
+      cropPossible: isCurrentPageSelected && _cropPossible,
+      cropActive: isCurrentPageSelected && _cropActive,
+      onToggleCrop: isCurrentPageSelected ? _toggleCrop : null,
       setAsBackground: (EditorImage image) {
         if (page.backgroundImage != null) {
           // restore previous background image as normal image

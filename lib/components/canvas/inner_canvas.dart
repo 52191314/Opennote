@@ -1,3 +1,8 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
+import 'dart:math';
+
 import 'package:defer_pointer/defer_pointer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -7,6 +12,7 @@ import 'package:saber/components/canvas/_canvas_painter.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/canvas_image.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
+import 'package:saber/components/canvas/lasso_callout_menu.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/select.dart';
@@ -27,6 +33,15 @@ class InnerCanvas extends StatefulWidget {
     required this.currentStroke,
     required this.currentStrokeDetectedShape,
     required this.currentSelection,
+    this.isDoneSelecting = false,
+    this.onCutSelection,
+    this.onCopySelection,
+    this.onDuplicateSelection,
+    this.onDeleteSelection,
+    this.onSetColor,
+    this.cropPossible = false,
+    this.cropActive = false,
+    this.onToggleCrop,
     this.setAsBackground,
     this.onRenderObjectChange,
     required this.currentToolIsSelect,
@@ -43,6 +58,15 @@ class InnerCanvas extends StatefulWidget {
   final Stroke? currentStroke;
   final RecognizedUnistroke? currentStrokeDetectedShape;
   final SelectResult? currentSelection;
+  final bool isDoneSelecting;
+  final VoidCallback? onCutSelection;
+  final VoidCallback? onCopySelection;
+  final VoidCallback? onDuplicateSelection;
+  final VoidCallback? onDeleteSelection;
+  final void Function(Color color)? onSetColor;
+  final bool cropPossible;
+  final bool cropActive;
+  final VoidCallback? onToggleCrop;
   final void Function(EditorImage image)? setAsBackground;
   final ValueChanged<RenderObject>? onRenderObjectChange;
 
@@ -149,6 +173,7 @@ class _InnerCanvasState extends State<InnerCanvas> {
           laserStrokes: page.laserStrokes,
           currentStroke: widget.currentStroke,
           currentSelection: widget.currentSelection,
+          isDoneSelecting: widget.isDoneSelecting,
           primaryColor: colorScheme.primary,
           page: page,
           showPageIndicator: widget.showPageIndicator,
@@ -207,6 +232,34 @@ class _InnerCanvasState extends State<InnerCanvas> {
                         ) ??
                         false,
                   ),
+                if (widget.currentToolIsSelect &&
+                    widget.isDoneSelecting &&
+                    widget.currentSelection != null &&
+                    widget.currentSelection!.isNotEmpty &&
+                    widget.onCopySelection != null &&
+                    widget.onDeleteSelection != null) () {
+                  final bounds = widget.currentSelection!.path.getBounds();
+                  final left = (bounds.center.dx - 160.0).clamp(12.0, max(12.0, widget.width - 330.0)).toDouble();
+                  final top = bounds.top - 58 > 10 ? bounds.top - 58 : bounds.bottom + 14;
+
+                  return Positioned(
+                    left: left,
+                    top: top,
+                    child: DeferPointer(
+                      child: LassoCalloutMenu(
+                        onCut: widget.onCutSelection!,
+                        onCopy: widget.onCopySelection!,
+                        onDuplicate: widget.onDuplicateSelection ?? () {},
+                        onDelete: widget.onDeleteSelection!,
+                        onSetColor: widget.onSetColor ?? (_) {},
+                        cropPossible: widget.cropPossible,
+                        cropActive: widget.cropActive,
+                        onToggleCrop: widget.onToggleCrop,
+                        currentScale: widget.currentScale,
+                      ),
+                    ),
+                  );
+                }(),
               ],
             ),
           ),

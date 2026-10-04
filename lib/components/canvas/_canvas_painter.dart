@@ -30,6 +30,7 @@ class CanvasPainter extends CustomPainter {
     required this.laserStrokes,
     required this.currentStroke,
     required this.currentSelection,
+    this.isDoneSelecting = true,
     required this.primaryColor,
     required this.page,
     required this.showPageIndicator,
@@ -44,6 +45,7 @@ class CanvasPainter extends CustomPainter {
   final List<LaserStroke> laserStrokes;
   final Stroke? currentStroke;
   final SelectResult? currentSelection;
+  final bool isDoneSelecting;
   final Color primaryColor;
   final EditorPage page;
   final bool showPageIndicator;
@@ -381,169 +383,185 @@ class CanvasPainter extends CustomPainter {
     }
   }
 
-  /// The size of the square delete button shown on the selection bounding box.
-  static const double deleteButtonSize = 24;
-
-  /// The hit-test radius for the delete button.
-  static const double deleteButtonHitRadius = 20;
-
-  /// The radius of the rotation handle circle.
-  static const double rotationHandleRadius = 10;
+  /// The radius of the rotation handle knob.
+  static const double rotationHandleRadius = 8;
 
   /// The distance from the selection bounds top edge
   /// to the rotation handle center.
-  static const double rotationHandleOffset = 30;
+  static const double rotationHandleOffset = 20;
 
-  /// The size of each resize corner handle (half-width).
-  static const double resizeHandleSize = 8;
+  /// The radius of each circular corner resize handle.
+  static const double resizeHandleRadius = 6;
 
   /// The hit-test distance for resize handles.
-  static const double resizeHandleHitRadius = 16;
+  static const double resizeHandleHitRadius = 18;
 
   void _drawSelection(Canvas canvas) {
     if (currentSelection == null) return;
 
-    // draw translucent fill
-    canvas.drawPath(
-      currentSelection!.path,
-      Paint()..color = primaryColor.withValues(alpha: 0.1),
-    );
+    // While actively drawing the lasso loop, show only a delicate in-progress contour
+    if (!isDoneSelecting) {
+      page.selectionDeleteButtonRect = null;
+      page.selectionRotationHandleCenter = null;
+      page.selectionResizeHandles = null;
+      page.selectionVertexHandles = null;
 
-    // draw dashed stroke
-    canvas.drawPath(
-      dashPath(
+      // Soft translucent fill
+      canvas.drawPath(
         currentSelection!.path,
-        dashArray: CircularIntervalList([10, 10]),
-      ),
-      Paint()
-        ..color = primaryColor
-        ..strokeWidth = 3
-        ..style = .stroke,
-    );
+        Paint()..color = primaryColor.withValues(alpha: 0.04),
+      );
+
+      // Delicate dashed contour
+      canvas.drawPath(
+        dashPath(
+          currentSelection!.path,
+          dashArray: CircularIntervalList([6, 4]),
+        ),
+        Paint()
+          ..color = primaryColor.withValues(alpha: 0.85)
+          ..strokeWidth = 1.4
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round,
+      );
+      return;
+    }
 
     final bounds = currentSelection!.path.getBounds();
     if (bounds.isEmpty) return;
 
-    final center = bounds.center;
+    // Remove the clunky red delete circle completely (delete is on floating callout & toolbar)
+    page.selectionDeleteButtonRect = null;
 
-    // Draw rotation handle (circle above selection center)
-    final rotationHandleCenter = Offset(center.dx, bounds.top - rotationHandleOffset);
+    final padded = bounds.inflate(6.0);
+    final center = padded.center;
+    final rrect = RRect.fromRectAndRadius(padded, const Radius.circular(8));
 
-    // Store rotation handle position on page for hit-testing
-    page.selectionRotationHandleCenter = rotationHandleCenter;
+    // Draw subtle bounding box fill
+    canvas.drawRRect(
+      rrect,
+      Paint()..color = primaryColor.withValues(alpha: 0.035),
+    );
 
-    // Draw connector line from handle to selection top
-    canvas.drawLine(
-      Offset(center.dx, bounds.top),
-      rotationHandleCenter,
+    // Draw clean dashed bounding box outline
+    canvas.drawPath(
+      dashPath(
+        Path()..addRRect(rrect),
+        dashArray: CircularIntervalList([6, 4]),
+      ),
       Paint()
-        ..color = primaryColor
-        ..strokeWidth = 2
+        ..color = primaryColor.withValues(alpha: 0.75)
+        ..strokeWidth = 1.3
         ..style = PaintingStyle.stroke,
     );
 
-    // Draw rotation handle circle
-    canvas.drawCircle(
-      rotationHandleCenter,
-      rotationHandleRadius,
+    // Subtle freehand path contour inside bounding box
+    canvas.drawPath(
+      dashPath(
+        currentSelection!.path,
+        dashArray: CircularIntervalList([4, 4]),
+      ),
       Paint()
-        ..color = primaryColor
-        ..style = PaintingStyle.fill,
+        ..color = primaryColor.withValues(alpha: 0.25)
+        ..strokeWidth = 1.0
+        ..style = PaintingStyle.stroke,
+    );
+
+    // Draw modern rotation knob (centered above selection top edge)
+    final rotationHandleCenter = Offset(center.dx, padded.top - rotationHandleOffset);
+    page.selectionRotationHandleCenter = rotationHandleCenter;
+
+    // Connector line
+    canvas.drawLine(
+      Offset(center.dx, padded.top),
+      rotationHandleCenter,
+      Paint()
+        ..color = primaryColor.withValues(alpha: 0.45)
+        ..strokeWidth = 1.0,
+    );
+
+    // Rotation knob shadow & fill
+    canvas.drawCircle(
+      rotationHandleCenter + const Offset(0, 1),
+      rotationHandleRadius + 0.5,
+      Paint()..color = Colors.black.withValues(alpha: 0.16),
     );
     canvas.drawCircle(
       rotationHandleCenter,
       rotationHandleRadius,
       Paint()
         ..color = Colors.white
-        ..strokeWidth = 1.5
+        ..style = PaintingStyle.fill,
+    );
+    canvas.drawCircle(
+      rotationHandleCenter,
+      rotationHandleRadius,
+      Paint()
+        ..color = primaryColor
+        ..strokeWidth = 1.4
         ..style = PaintingStyle.stroke,
     );
 
-    // Draw a small curved arrow inside the handle
+    // Small curved rotate arrow icon
     final arrowPaint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
+      ..color = primaryColor
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
     canvas.drawArc(
       Rect.fromCenter(
         center: rotationHandleCenter,
-        width: rotationHandleRadius * 1.2,
-        height: rotationHandleRadius * 1.2,
+        width: 8,
+        height: 8,
       ),
       -0.8,
-      1.6,
+      2.2,
       false,
       arrowPaint,
     );
 
-    // Draw delete button (X) at top-right corner of selection bounds
-    final deleteCenterX = bounds.right;
-    final deleteCenterY = bounds.top;
-    const halfSize = deleteButtonSize / 2;
-    final buttonRect = Rect.fromCenter(
-      center: Offset(deleteCenterX, deleteCenterY),
-      width: deleteButtonSize,
-      height: deleteButtonSize,
-    );
-
-    // Store the delete button rect on the page for hit-testing
-    page.selectionDeleteButtonRect = buttonRect;
-
-    // Draw background circle
-    canvas.drawCircle(
-      buttonRect.center,
-      halfSize + 2,
-      Paint()
-        ..color = Colors.red
-        ..style = PaintingStyle.fill,
-    );
-
-    // Draw white X
-    final xPaint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 2.5
-      ..strokeCap = StrokeCap.round;
-
-    const inset = halfSize * 0.3;
-    canvas.drawLine(
-      Offset(deleteCenterX - inset, deleteCenterY - inset),
-      Offset(deleteCenterX + inset, deleteCenterY + inset),
-      xPaint,
-    );
-    canvas.drawLine(
-      Offset(deleteCenterX + inset, deleteCenterY - inset),
-      Offset(deleteCenterX - inset, deleteCenterY + inset),
-      xPaint,
-    );
-
-    // Draw resize handles at corners and midpoints
-    final handlePaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-    final handleBorderPaint = Paint()
-      ..color = primaryColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-
-    const half = resizeHandleSize;
-    final handlePositions = <Offset>[
-      Offset(bounds.left, bounds.top),          // topLeft
-      Offset(center.dx, bounds.top),            // topCenter
-      Offset(bounds.right, bounds.top),         // topRight
-      Offset(bounds.right, center.dy),          // middleRight
-      Offset(bounds.right, bounds.bottom),       // bottomRight
-      Offset(center.dx, bounds.bottom),          // bottomCenter
-      Offset(bounds.left, bounds.bottom),        // bottomLeft
-      Offset(bounds.left, center.dy),            // middleLeft
+    // 4 Elegant circular corner knobs (no chunky square midpoints!)
+    final cornerPositions = <Offset>[
+      padded.topLeft,
+      padded.topRight,
+      padded.bottomRight,
+      padded.bottomLeft,
     ];
 
-    page.selectionResizeHandles = handlePositions;
-
-    for (final pos in handlePositions) {
-      final handleRect = Rect.fromLTWH(pos.dx - half, pos.dy - half, half * 2, half * 2);
-      canvas.drawRect(handleRect, handlePaint);
-      canvas.drawRect(handleRect, handleBorderPaint);
+    for (final pos in cornerPositions) {
+      canvas.drawCircle(
+        pos + const Offset(0, 1),
+        resizeHandleRadius + 0.5,
+        Paint()..color = Colors.black.withValues(alpha: 0.16),
+      );
+      canvas.drawCircle(
+        pos,
+        resizeHandleRadius,
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.fill,
+      );
+      canvas.drawCircle(
+        pos,
+        resizeHandleRadius,
+        Paint()
+          ..color = primaryColor
+          ..strokeWidth = 1.5
+          ..style = PaintingStyle.stroke,
+      );
     }
+
+    // Keep all 8 positions in selectionResizeHandles so edge & corner hit-testing remains functional
+    page.selectionResizeHandles = [
+      padded.topLeft,                           // 0: topLeft
+      Offset(center.dx, padded.top),            // 1: topCenter
+      padded.topRight,                          // 2: topRight
+      Offset(padded.right, center.dy),          // 3: middleRight
+      padded.bottomRight,                       // 4: bottomRight
+      Offset(center.dx, padded.bottom),         // 5: bottomCenter
+      padded.bottomLeft,                        // 6: bottomLeft
+      Offset(padded.left, center.dy),           // 7: middleLeft
+    ];
 
     final singleStroke = currentSelection!.strokes.length == 1
         ? currentSelection!.strokes.first
