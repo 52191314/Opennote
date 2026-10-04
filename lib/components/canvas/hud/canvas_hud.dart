@@ -29,6 +29,9 @@ class CanvasHud extends HookWidget {
     this.bookmarked = false,
     this.onToggleBookmarked,
     this.isDrafting = false,
+    this.hasTape = false,
+    this.onRevealAllTape,
+    this.onConcealAllTape,
   });
 
   final TransformationController transformationController;
@@ -44,6 +47,9 @@ class CanvasHud extends HookWidget {
   final bool bookmarked;
   final VoidCallback? onToggleBookmarked;
   final bool isDrafting;
+  final bool hasTape;
+  final VoidCallback? onRevealAllTape;
+  final VoidCallback? onConcealAllTape;
 
   @override
   Widget build(BuildContext context) {
@@ -221,6 +227,43 @@ class CanvasHud extends HookWidget {
                 ),
               ),
             ),
+            if (hasTape && onRevealAllTape != null && onConcealAllTape != null)
+              Positioned(
+                bottom: 24,
+                right: 16,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: ColorScheme.of(context)
+                        .surfaceContainerHighest
+                        .withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.visibility, size: 20),
+                        tooltip: 'Reveal all study tape',
+                        onPressed: onRevealAllTape,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.visibility_off, size: 20),
+                        tooltip: 'Conceal all study tape',
+                        onPressed: onConcealAllTape,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),

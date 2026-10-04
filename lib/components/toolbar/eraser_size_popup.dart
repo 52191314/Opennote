@@ -1,4 +1,4 @@
-/// 🤖 Generated with DeepSeek v4 Flash
+/// 🤖 Generated wholely or partially with DeepSeek v4 Flash; Google Antigravity
 library;
 
 import 'package:flutter/material.dart';
@@ -108,6 +108,31 @@ class _EraserSizePopupState extends State<EraserSizePopup> {
                 ),
               ),
             ),
+          ),
+          const Divider(height: 24),
+          SwitchListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Auto-Deselect'),
+            subtitle: const Text('Return to pen after erasing stroke'),
+            value: stows.disableEraserAfterUse.value,
+            onChanged: (val) {
+              setState(() {
+                stows.disableEraserAfterUse.value = val;
+              });
+            },
+          ),
+          SwitchListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Erase Highlighter Only'),
+            subtitle: const Text('Preserve pen ink, arrows, and text'),
+            value: stows.eraserEraseHighlighterOnly.value,
+            onChanged: (val) {
+              setState(() {
+                stows.eraserEraseHighlighterOnly.value = val;
+              });
+            },
           ),
         ],
       ),

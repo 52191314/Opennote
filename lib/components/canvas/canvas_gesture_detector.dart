@@ -42,6 +42,9 @@ class CanvasGestureDetector extends StatefulWidget {
     required this.isTextEditing,
     this.bookmarked = false,
     this.onToggleBookmarked,
+    this.hasTape = false,
+    this.onRevealAllTape,
+    this.onConcealAllTape,
     TransformationController? transformationController,
   }) : _transformationController =
             transformationController ?? TransformationController();
@@ -74,6 +77,9 @@ class CanvasGestureDetector extends StatefulWidget {
   final bool Function() isTextEditing;
   final bool bookmarked;
   final VoidCallback? onToggleBookmarked;
+  final bool hasTape;
+  final VoidCallback? onRevealAllTape;
+  final VoidCallback? onConcealAllTape;
 
   late final TransformationController _transformationController;
 
@@ -169,7 +175,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
   late bool axisAlignedPanLock = stows.lastAxisAlignedPanLock.value;
 
   /// Whether the protractor overlay is visible.
-  late bool showProtractor = false;
+  var showProtractor = false;
 
   void zoomIn() => widget._transformationController.value =
       setZoom(
@@ -429,7 +435,54 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
         transformation;
   }
 
+  final Map<int, Offset> _pointerPositions = {};
+  DateTime? _multiPointerDownTime;
+  var _maxPointerCountDuringGesture = 0;
+  var _multiPointerMoved = false;
+
+  void _trackPointerForTapGestures(PointerEvent event) {
+    if (!stows.twoFingerTapUndo.value) return;
+
+    if (event is PointerDownEvent) {
+      _pointerPositions[event.pointer] = event.position;
+      if (_pointerPositions.length > _maxPointerCountDuringGesture) {
+        _maxPointerCountDuringGesture = _pointerPositions.length;
+      }
+      if (_pointerPositions.length >= 2) {
+        _multiPointerDownTime ??= DateTime.now();
+      }
+    } else if (event is PointerMoveEvent) {
+      final initial = _pointerPositions[event.pointer];
+      if (initial != null && (event.position - initial).distance > 18.0) {
+        _multiPointerMoved = true;
+      }
+    } else if (event is PointerUpEvent || event is PointerCancelEvent) {
+      _pointerPositions.remove(event.pointer);
+
+      if (_pointerPositions.isEmpty) {
+        if (!_multiPointerMoved && _multiPointerDownTime != null) {
+          final duration =
+              DateTime.now().difference(_multiPointerDownTime!).inMilliseconds;
+          if (duration < 350) {
+            if (_maxPointerCountDuringGesture == 2) {
+              HapticFeedback.lightImpact();
+              widget.undo();
+            } else if (_maxPointerCountDuringGesture >= 3) {
+              HapticFeedback.lightImpact();
+              widget.redo();
+            }
+          }
+        }
+        _multiPointerDownTime = null;
+        _maxPointerCountDuringGesture = 0;
+        _multiPointerMoved = false;
+      }
+    }
+  }
+
   void _listenerPointerEvent(PointerEvent event) {
+    _trackPointerForTapGestures(event);
+
     final isStylus =
         event.kind == PointerDeviceKind.stylus ||
         event.kind == PointerDeviceKind.invertedStylus;
@@ -488,6 +541,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
   }
 
   void _listenerPointerUpEvent(PointerEvent event) {
+    _trackPointerForTapGestures(event);
     widget.updatePointerData(event.kind, null);
     if (stylusButtonWasPressed) {
       stylusButtonWasPressed = false;
@@ -578,6 +632,9 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
             }),
             bookmarked: widget.bookmarked,
             onToggleBookmarked: widget.onToggleBookmarked,
+            hasTape: widget.hasTape,
+            onRevealAllTape: widget.onRevealAllTape,
+            onConcealAllTape: widget.onConcealAllTape,
           ),
         ),
       ],

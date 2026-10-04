@@ -52,6 +52,7 @@ import 'package:saber/data/nextcloud/saber_syncer.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
 import 'package:saber/data/tools/arrow.dart';
+import 'package:saber/data/tools/circle_to_select_detector.dart';
 import 'package:saber/data/tools/dimension.dart';
 import 'package:saber/data/tools/eraser.dart';
 import 'package:saber/data/tools/highlighter.dart';
@@ -212,6 +213,11 @@ class EditorState extends State<Editor> {
 
   /// Detects scribble-to-erase gestures when the pen tool is active.
   final scribbleDetector = ScribbleDetector();
+
+  /// Detects circle-to-select loop gestures when the pen tool is active.
+  late final circleToSelectDetector = CircleToSelectDetector(
+    onCircleDetected: _onCircleToSelectDetected,
+  );
 
   /// Strokes copied to the internal clipboard (for paste).
   List<Stroke>? _clipboardStrokes;
@@ -633,6 +639,9 @@ class EditorState extends State<Editor> {
       if (stows.scribbleToErase.value) {
         scribbleDetector.start(position);
       }
+      if (stows.circleToSelect.value) {
+        circleToSelectDetector.start(position);
+      }
       pen.onDragStart(
         position,
         page,
@@ -797,6 +806,10 @@ class EditorState extends State<Editor> {
         // Scribble-to-erase disabled — normal drawing
         (currentTool as Pen).onDragUpdate(position, currentPressure);
         page.redrawStrokes();
+      }
+
+      if (stows.circleToSelect.value) {
+        circleToSelectDetector.update(position);
       }
     } else if (currentTool is Eraser) {
       final eraser = currentTool as Eraser;
@@ -1000,6 +1013,7 @@ class EditorState extends State<Editor> {
     bool shouldSave = true;
     setState(() {
       if (currentTool is Pen) {
+        circleToSelectDetector.cancel();
         if (scribbleDetector.state == ScribbleState.erasing) {
           final erased = scribbleDetector.end();
           // Discard the partial stroke that was started before scribble detection
@@ -2010,6 +2024,86 @@ class EditorState extends State<Editor> {
     autosaveAfterDelay();
   }
 
+  void _onCircleToSelectDetected(Path path) {
+    if (!mounted || dragPageIndex == null) return;
+    final page = coreInfo.pages[dragPageIndex!];
+
+    // Discard the pen stroke currently being drawn
+    if (currentTool is Pen) {
+      (currentTool as Pen).onDragEnd();
+    }
+
+    HapticFeedback.mediumImpact();
+
+    final textRect =
+        page.computeTextContentRect(coreInfo.lineHeight.toDouble());
+
+    Select.currentSelect.selectFromPath(
+      path: path,
+      strokes: page.activeLayerStrokes,
+      images: page.images,
+      pageIndex: dragPageIndex!,
+      textRect: textRect,
+    );
+
+    currentTool = Select.currentSelect;
+
+    final bounds = Select.currentSelect.selectResult.path.getBounds();
+    page.selectionDeleteButtonRect = Rect.fromCenter(
+      center: Offset(bounds.right, bounds.top),
+      width: 24,
+      height: 24,
+    );
+    page.selectionRotationHandleCenter = Offset(
+      bounds.center.dx,
+      bounds.top - 30,
+    );
+    final center = bounds.center;
+    page.selectionResizeHandles = [
+      Offset(bounds.left, bounds.top),
+      Offset(center.dx, bounds.top),
+      Offset(bounds.right, bounds.top),
+      Offset(bounds.right, center.dy),
+      Offset(bounds.right, bounds.bottom),
+      Offset(center.dx, bounds.bottom),
+      Offset(bounds.left, bounds.bottom),
+      Offset(bounds.left, center.dy),
+    ];
+
+    page.redrawStrokes();
+    setState(() {});
+  }
+
+  bool get currentPageHasTape {
+    final idx = currentPageIndex;
+    if (idx >= coreInfo.pages.length) return false;
+    return coreInfo.pages[idx].strokes.any((s) => s is TapeStroke);
+  }
+
+  void _revealAllTapeOnCurrentPage() {
+    final idx = currentPageIndex;
+    if (idx >= coreInfo.pages.length) return;
+    final page = coreInfo.pages[idx];
+    for (final s in page.strokes) {
+      if (s is TapeStroke) s.isConcealed = false;
+    }
+    page.redrawStrokes();
+    autosaveAfterDelay();
+    setState(() {});
+  }
+
+  void _concealAllTapeOnCurrentPage() {
+    final idx = currentPageIndex;
+    if (idx >= coreInfo.pages.length) return;
+    final page = coreInfo.pages[idx];
+    for (final s in page.strokes) {
+      if (s is TapeStroke) s.isConcealed = true;
+    }
+    page.redrawStrokes();
+    autosaveAfterDelay();
+    setState(() {});
+  }
+
   /// Rotates a [Path] by [angleRadians] around [center].
   static Path _rotatePath(Path path, double angleRadians, Offset center) {
     if (angleRadians == 0) return path;
@@ -2243,6 +2337,9 @@ class EditorState extends State<Editor> {
         page.redrawStrokes();
         autosaveAfterDelay();
       }),
+      hasTape: currentPageHasTape,
+      onRevealAllTape: _revealAllTapeOnCurrentPage,
+      onConcealAllTape: _concealAllTapeOnCurrentPage,
       placeholderPageBuilder: (BuildContext context, int pageIndex) {
         return Canvas(
           path: coreInfo.filePath,
@@ -2523,18 +2620,98 @@ class EditorState extends State<Editor> {
                       );
                     }),
                   ),
-                  IconButton(
-                    icon: const AdaptiveIcon(
-                      icon: Icons.grid_view,
-                      cupertinoIcon: CupertinoIcons.rectangle_grid_2x2,
+                  // Goodnotes Page Pill: Page X / Y ⭐ with 1-tap bookmarking & tap-to-open grid overview
+                  Center(
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+                          width: 0.75,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Tooltip(
+                            message: t.editor.pages,
+                            child: InkWell(
+                              borderRadius: const BorderRadius.horizontal(
+                                left: Radius.circular(16),
+                              ),
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => pageManager(context),
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 6,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.grid_view_rounded,
+                                      size: 15,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      '${currentPageIdx + 1} / ${coreInfo.pages.length}',
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          Container(
+                            width: 1,
+                            height: 16,
+                            color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+                          ),
+                          Tooltip(
+                            message: currentPageBookmarked
+                                ? 'Remove bookmark'
+                                : 'Bookmark page',
+                            child: InkResponse(
+                              radius: 16,
+                              onTap: () => setState(() {
+                                if (coreInfo.readOnly) return;
+                                final pageIdx = currentPageIndex;
+                                if (pageIdx >= coreInfo.pages.length) return;
+                                final page = coreInfo.pages[pageIdx];
+                                page.bookmarked = !page.bookmarked;
+                                page.redrawStrokes();
+                                autosaveAfterDelay();
+                              }),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 6,
+                                ),
+                                child: Icon(
+                                  currentPageBookmarked ? Icons.star : Icons.star_border,
+                                  size: 16,
+                                  color: currentPageBookmarked
+                                      ? Colors.amber.shade700
+                                      : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    tooltip: t.editor.pages,
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => pageManager(context),
-                      );
-                    },
                   ),
                   IconButton(
                     icon: const AdaptiveIcon(

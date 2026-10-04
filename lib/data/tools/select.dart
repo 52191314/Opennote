@@ -108,6 +108,23 @@ class Select extends Tool {
     }
   }
 
+  /// Populates the selection using a pre-constructed [path] (e.g. from circle-to-select).
+  void selectFromPath({
+    required Path path,
+    required List<Stroke> strokes,
+    required List<EditorImage> images,
+    required int pageIndex,
+    Rect textRect = Rect.zero,
+  }) {
+    selectResult = SelectResult(
+      pageIndex: pageIndex,
+      strokes: [],
+      images: [],
+      path: path,
+    );
+    onDragEnd(strokes, images, textRect: textRect);
+  }
+
   /// Adds the indices of any [strokes] or [images] inside the selection area.
   /// [textRect] is the bounding rect of text content ([Rect.zero] if none).
   void onDragEnd(

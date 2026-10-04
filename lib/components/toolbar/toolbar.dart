@@ -19,6 +19,7 @@ import 'package:saber/components/toolbar/eraser_size_popup.dart';
 import 'package:saber/components/toolbar/export_bar.dart';
 import 'package:saber/components/toolbar/lasso_filter_popup.dart';
 import 'package:saber/components/toolbar/pen_modal.dart';
+import 'package:saber/components/toolbar/quick_palette_bar.dart';
 import 'package:saber/components/toolbar/selection_bar.dart';
 import 'package:saber/components/toolbar/size_picker.dart';
 import 'package:saber/components/toolbar/toolbar_button.dart';
@@ -441,6 +442,19 @@ class _ToolbarState extends State<Toolbar> {
                         ),
                       ),
               ),
+              if (widget.currentTool is Pen)
+                Padding(
+                  padding: isToolbarVertical
+                      ? const EdgeInsets.symmetric(vertical: 4)
+                      : const EdgeInsets.symmetric(horizontal: 4),
+                  child: QuickPaletteBar(
+                    axis: isToolbarVertical ? Axis.vertical : Axis.horizontal,
+                    currentTool: widget.currentTool,
+                    setColor: widget.setColor,
+                    onUpdate: () => setState(() {}),
+                    invert: invert,
+                  ),
+                ),
               ToolbarIconButton(
                 tooltip: t.editor.toolbar.select,
                 selected: widget.currentTool is Select,

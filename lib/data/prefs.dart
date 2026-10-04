@@ -242,6 +242,83 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
+  /// Whether the eraser only erases highlighter strokes.
+  final eraserEraseHighlighterOnly = PlainStow<bool>(
+    'eraserEraseHighlighterOnly',
+    false,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Whether drawing a closed loop and holding converts to a lasso selection.
+  final circleToSelect = PlainStow<bool>(
+    'circleToSelect',
+    true,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Whether two-finger tap triggers undo and three-finger tap triggers redo.
+  final twoFingerTapUndo = PlainStow<bool>(
+    'twoFingerTapUndo',
+    true,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// 3 Quick Color slots for Pen (Black, Blue, Red by default).
+  final quickColorsPen = PlainStow<List<int>>(
+    'quickColorsPen',
+    <int>[0xFF000000, 0xFF1976D2, 0xFFD32F2F],
+    codec: const _IntListCsvCodec(),
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// 3 Quick Color slots for Highlighter (Yellow, Green, Pink by default).
+  final quickColorsHighlighter = PlainStow<List<int>>(
+    'quickColorsHighlighter',
+    <int>[0xFFFFF176, 0xFFA5D6A7, 0xFFF48FB1],
+    codec: const _IntListCsvCodec(),
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// 3 Quick Size slots for Pen (Thin, Medium, Thick).
+  final quickSizesPen = PlainStow<List<double>>(
+    'quickSizesPen',
+    <double>[2.0, 4.0, 8.0],
+    codec: const _DoubleListCsvCodec(),
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// 3 Quick Size slots for Highlighter (Thin, Medium, Thick).
+  final quickSizesHighlighter = PlainStow<List<double>>(
+    'quickSizesHighlighter',
+    <double>[15.0, 25.0, 40.0],
+    codec: const _DoubleListCsvCodec(),
+    volatile: !_isOnMainIsolate,
+  );
+
+  final activeQuickColorIndexPen = PlainStow<int>(
+    'activeQuickColorIndexPen',
+    0,
+    volatile: !_isOnMainIsolate,
+  );
+
+  final activeQuickSizeIndexPen = PlainStow<int>(
+    'activeQuickSizeIndexPen',
+    0,
+    volatile: !_isOnMainIsolate,
+  );
+
+  final activeQuickColorIndexHighlighter = PlainStow<int>(
+    'activeQuickColorIndexHighlighter',
+    0,
+    volatile: !_isOnMainIsolate,
+  );
+
+  final activeQuickSizeIndexHighlighter = PlainStow<int>(
+    'activeQuickSizeIndexHighlighter',
+    0,
+    volatile: !_isOnMainIsolate,
+  );
+
   final hideFingerDrawingToggle = PlainStow(
     'hideFingerDrawingToggle',
     false,
@@ -515,4 +592,30 @@ class TransformedStow<T_in, T_out> extends Stow<dynamic, T_out, dynamic> {
     parent.removeListener(notifyListeners);
     super.dispose();
   }
+}
+
+class _IntListCsvCodec extends AbstractCodec<List<int>, String> {
+  const _IntListCsvCodec();
+
+  @override
+  String encode(List<int> input) => input.join(',');
+
+  @override
+  List<int> decode(String encoded) => encoded
+      .split(',')
+      .map((e) => int.tryParse(e.trim()) ?? 0)
+      .toList();
+}
+
+class _DoubleListCsvCodec extends AbstractCodec<List<double>, String> {
+  const _DoubleListCsvCodec();
+
+  @override
+  String encode(List<double> input) => input.join(',');
+
+  @override
+  List<double> decode(String encoded) => encoded
+      .split(',')
+      .map((e) => double.tryParse(e.trim()) ?? 0.0)
+      .toList();
 }
