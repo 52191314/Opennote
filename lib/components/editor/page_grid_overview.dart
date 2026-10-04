@@ -11,10 +11,24 @@ import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/i18n/strings.g.dart';
 
-/// Filter selection for the page grid overview.
+/// Filter selection for the page grid overview / document hub.
 enum PageGridFilter {
   all,
   bookmarked,
+  outline,
+}
+
+/// A heading entry extracted from document text for the Outline view.
+class _OutlineHeadingEntry {
+  final int pageIndex;
+  final int level; // 1-6
+  final String text;
+
+  const _OutlineHeadingEntry({
+    required this.pageIndex,
+    required this.level,
+    required this.text,
+  });
 }
 
 /// A responsive modal dialog presenting a multi-column thumbnail grid
@@ -33,6 +47,7 @@ class PageGridOverviewDialog extends StatefulWidget {
     required this.deletePage,
     required this.insertPageAfter,
     this.clearPage,
+    this.initialFilter = PageGridFilter.all,
   });
 
   final EditorCoreInfo coreInfo;
@@ -43,15 +58,22 @@ class PageGridOverviewDialog extends StatefulWidget {
   final void Function(int pageIndex) deletePage;
   final void Function(int pageIndex) insertPageAfter;
   final void Function(int pageIndex)? clearPage;
+  final PageGridFilter initialFilter;
 
   @override
   State<PageGridOverviewDialog> createState() => _PageGridOverviewDialogState();
 }
 
 class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
-  PageGridFilter _filter = PageGridFilter.all;
+  late PageGridFilter _filter;
   final _scrollController = ScrollController();
   int? _hoveredDropTargetIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _filter = widget.initialFilter;
+  }
 
   @override
   void dispose() {
@@ -154,13 +176,126 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
             _buildHeader(context, theme),
             const Divider(height: 1),
             Expanded(
-              child: visibleIndices.isEmpty
-                  ? _buildEmptyState(theme)
-                  : _buildGrid(context, theme, visibleIndices),
+              child: _filter == PageGridFilter.outline
+                  ? _buildOutlineView(context, theme)
+                  : (visibleIndices.isEmpty
+                      ? _buildEmptyState(theme)
+                      : _buildGrid(context, theme, visibleIndices)),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  List<_OutlineHeadingEntry> _extractHeadings() {
+    final headings = <_OutlineHeadingEntry>[];
+    for (int i = 0; i < widget.coreInfo.pages.length; i++) {
+      final page = widget.coreInfo.pages[i];
+      final delta = page.quill.controller.document.toDelta();
+      for (final op in delta.toList()) {
+        if (op.isInsert && op.data is String) {
+          final attributes = op.attributes;
+          if (attributes != null && attributes.containsKey('heading')) {
+            final text = (op.data as String).trim();
+            if (text.isEmpty) continue;
+            final level = attributes['heading'] as int;
+            headings.add(_OutlineHeadingEntry(
+              pageIndex: i,
+              level: level,
+              text: text,
+            ));
+          }
+        }
+      }
+    }
+    return headings;
+  }
+
+  Widget _buildOutlineView(BuildContext context, ThemeData theme) {
+    final headings = _extractHeadings();
+    if (headings.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.format_list_bulleted,
+              size: 48,
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No headings found in document',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Type headings in text boxes to generate an automatic outline',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      itemCount: headings.length,
+      separatorBuilder: (_, _) => const Divider(height: 1, indent: 48),
+      itemBuilder: (context, index) {
+        final entry = headings[index];
+        return InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () => _jumpToPage(entry.pageIndex),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '${entry.pageIndex + 1}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12 + (entry.level - 1) * 16.0),
+                Expanded(
+                  child: Text(
+                    entry.text,
+                    style: TextStyle(
+                      fontSize: 15.0 - (entry.level - 1) * 1.0,
+                      fontWeight: entry.level <= 2 ? FontWeight.w700 : FontWeight.w500,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  size: 18,
+                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -183,6 +318,11 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
               value: PageGridFilter.bookmarked,
               label: Text('Bookmarked ($bookmarked)'),
               icon: const Icon(Icons.star, size: 16),
+            ),
+            const ButtonSegment<PageGridFilter>(
+              value: PageGridFilter.outline,
+              label: Text('Outline'),
+              icon: Icon(Icons.format_list_bulleted, size: 16),
             ),
           ],
           selected: {_filter},

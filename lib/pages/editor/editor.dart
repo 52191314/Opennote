@@ -30,7 +30,6 @@ import 'package:saber/components/canvas/canvas_image.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/components/canvas/shape_library_dialog.dart';
-import 'package:saber/components/editor/outline_overlay.dart';
 import 'package:saber/components/editor/page_grid_overview.dart';
 import 'package:saber/components/editor/presentation_mode.dart';
 import 'package:saber/components/editor/read_only_banner.dart';
@@ -40,6 +39,7 @@ import 'package:saber/components/theming/dynamic_material_app.dart';
 import 'package:saber/components/theming/saber_theme.dart';
 import 'package:saber/components/toolbar/color_bar.dart';
 import 'package:saber/components/toolbar/editor_bottom_sheet.dart';
+import 'package:saber/components/toolbar/export_bar.dart';
 import 'package:saber/components/toolbar/toolbar.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/editor_exporter.dart';
@@ -2608,24 +2608,26 @@ class EditorState extends State<Editor> {
                   triggerSave: saveToFile,
                 ),
                 actions: [
+                  // Undo & Redo (Goodnotes 6 Navigation Bar controls)
                   IconButton(
                     icon: const AdaptiveIcon(
-                      icon: Icons.insert_page_break,
-                      cupertinoIcon: CupertinoIcons.add,
+                      icon: Icons.undo,
+                      cupertinoIcon: CupertinoIcons.arrow_uturn_left,
                     ),
-                    tooltip: t.editor.menu.insertPage,
-                    onPressed: () => setState(() {
-                      final currentPageIndex = this.currentPageIndex;
-                      insertPageAfter(currentPageIndex);
-                      CanvasGestureDetector.scrollToPage(
-                        pageIndex: currentPageIndex + 1,
-                        pages: coreInfo.pages,
-                        screenWidth: MediaQuery.sizeOf(context).width,
-                        transformationController: _transformationController,
-                      );
-                    }),
+                    tooltip: t.editor.toolbar.undo,
+                    onPressed: (!coreInfo.readOnly && history.canUndo) ? undo : null,
                   ),
-                  // Goodnotes Page Pill: Page X / Y ⭐ with 1-tap bookmarking & tap-to-open grid overview
+                  IconButton(
+                    icon: const AdaptiveIcon(
+                      icon: Icons.redo,
+                      cupertinoIcon: CupertinoIcons.arrow_uturn_right,
+                    ),
+                    tooltip: t.editor.toolbar.redo,
+                    onPressed: (!coreInfo.readOnly && history.canRedo) ? redo : null,
+                  ),
+                  const SizedBox(width: 4),
+
+                  // Goodnotes Document Hub & Page Pill: Page X / Y ⭐
                   Center(
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -2641,7 +2643,7 @@ class EditorState extends State<Editor> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Tooltip(
-                            message: t.editor.pages,
+                            message: 'Document Hub (Thumbnails, Bookmarks & Outline)',
                             child: InkWell(
                               borderRadius: const BorderRadius.horizontal(
                                 left: Radius.circular(16),
@@ -2718,69 +2720,37 @@ class EditorState extends State<Editor> {
                       ),
                     ),
                   ),
+
+                  // Add Page
                   IconButton(
                     icon: const AdaptiveIcon(
-                      icon: Icons.list,
-                      cupertinoIcon: CupertinoIcons.list_bullet,
+                      icon: Icons.add,
+                      cupertinoIcon: CupertinoIcons.add,
                     ),
-                    tooltip: 'Outline',
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AdaptiveAlertDialog(
-                          title: const Text('Document Outline'),
-                          content: DocumentOutlineView(
-                            coreInfo: coreInfo,
-                            transformationController:
-                                _transformationController,
-                          ),
-                          actions: [
-                            CupertinoDialogAction(
-                              child: Text(t.common.cancel),
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                          ],
-                        ),
+                    tooltip: t.editor.menu.insertPage,
+                    onPressed: () => setState(() {
+                      final currentPageIndex = this.currentPageIndex;
+                      insertPageAfter(currentPageIndex);
+                      CanvasGestureDetector.scrollToPage(
+                        pageIndex: currentPageIndex + 1,
+                        pages: coreInfo.pages,
+                        screenWidth: MediaQuery.sizeOf(context).width,
+                        transformationController: _transformationController,
                       );
-                    },
+                    }),
                   ),
+
+                  // Share / Export
                   IconButton(
                     icon: const AdaptiveIcon(
-                      icon: Icons.present_to_all,
-                      cupertinoIcon: CupertinoIcons.rectangle_on_rectangle,
+                      icon: Icons.ios_share,
+                      cupertinoIcon: CupertinoIcons.share,
                     ),
-                    tooltip: 'Present',
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => PresentationMode(
-                            coreInfo: coreInfo,
-                            initialPageIndex: currentPageIndex,
-                          ),
-                          fullscreenDialog: true,
-                        ),
-                      );
-                    },
+                    tooltip: t.editor.toolbar.export,
+                    onPressed: () => _showExportDialog(context),
                   ),
-                  IconButton(
-                    icon: const AdaptiveIcon(
-                      icon: Icons.auto_stories,
-                      cupertinoIcon: CupertinoIcons.book,
-                    ),
-                    tooltip: 'Flashcards',
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => PresentationMode(
-                            coreInfo: coreInfo,
-                            initialPageIndex: currentPageIndex,
-                            mode: DisplayMode.flashcard,
-                          ),
-                          fullscreenDialog: true,
-                        ),
-                      );
-                    },
-                  ),
+
+                  // More (...) menu
                   IconButton(
                     icon: const AdaptiveIcon(
                       icon: Icons.more_vert,
@@ -2820,6 +2790,71 @@ class EditorState extends State<Editor> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(t.editor.needsToSaveBeforeExiting)));
+  }
+
+  void _showExportDialog(BuildContext context) {
+    final colorScheme = ColorScheme.of(context);
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 380),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.ios_share,
+                    size: 20,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    t.editor.toolbar.export,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 20),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ExportBar(
+                axis: Axis.horizontal,
+                toggleExportBar: () => Navigator.of(context).pop(),
+                exportAsSba: exportAsSba,
+                exportAsPdf: exportAsPdf,
+                exportAsPng: exportAsPng,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget bottomSheet(BuildContext context) {
@@ -2914,6 +2949,29 @@ class EditorState extends State<Editor> {
             if (mounted) setState(() {});
           }
         }
+      },
+      onOpenPresentation: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => PresentationMode(
+              coreInfo: coreInfo,
+              initialPageIndex: currentPageIndex,
+            ),
+            fullscreenDialog: true,
+          ),
+        );
+      },
+      onOpenFlashcards: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => PresentationMode(
+              coreInfo: coreInfo,
+              initialPageIndex: currentPageIndex,
+              mode: DisplayMode.flashcard,
+            ),
+            fullscreenDialog: true,
+          ),
+        );
       },
     );
   }

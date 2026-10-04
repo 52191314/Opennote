@@ -43,6 +43,8 @@ class EditorBottomSheet extends StatefulWidget {
     required this.getIsWatchingServer,
     required this.setIsWatchingServer,
     this.setPageSize,
+    this.onOpenPresentation,
+    this.onOpenFlashcards,
   });
 
   final bool invert;
@@ -52,6 +54,8 @@ class EditorBottomSheet extends StatefulWidget {
   final void Function(int) setLineHeight;
   final void Function(int) setLineThickness;
   final void Function(Size)? setPageSize;
+  final VoidCallback? onOpenPresentation;
+  final VoidCallback? onOpenFlashcards;
   final VoidCallback removeBackgroundImage;
   final VoidCallback redrawImage;
   final VoidCallback clearPage;
@@ -125,7 +129,38 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
             const SizedBox(height: 16),
             Wrap(
               spacing: 8,
+              runSpacing: 8,
               children: [
+                if (widget.onOpenPresentation != null)
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      widget.onOpenPresentation!();
+                    },
+                    child: const Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Icon(Icons.present_to_all, size: 18),
+                        SizedBox(width: 8),
+                        Text('Presentation'),
+                      ],
+                    ),
+                  ),
+                if (widget.onOpenFlashcards != null)
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      widget.onOpenFlashcards!();
+                    },
+                    child: const Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Icon(Icons.auto_stories, size: 18),
+                        SizedBox(width: 8),
+                        Text('Flashcards'),
+                      ],
+                    ),
+                  ),
                 ElevatedButton(
                   onPressed: () {
                     final page = widget.coreInfo.pages
@@ -462,21 +497,21 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
                     label: const Text('3:4'),
                     onPressed: () {
                       if (page == null) return;
-                      widget.setPageSize?.call(Size(750, 1000));
+                      widget.setPageSize?.call(const Size(750, 1000));
                     },
                   ),
                   ActionChip(
                     label: const Text('A4'),
                     onPressed: () {
                       if (page == null) return;
-                      widget.setPageSize?.call(Size(842, 1191));
+                      widget.setPageSize?.call(const Size(842, 1191));
                     },
                   ),
                   ActionChip(
                     label: const Text('Square'),
                     onPressed: () {
                       if (page == null) return;
-                      widget.setPageSize?.call(Size(1000, 1000));
+                      widget.setPageSize?.call(const Size(1000, 1000));
                     },
                   ),
                 ],

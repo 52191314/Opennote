@@ -265,6 +265,25 @@ void main() {
       expect(find.text('No bookmarked pages'), findsOneWidget);
       expect(find.text('Star pages to view them here'), findsOneWidget);
     });
+
+    testWidgets('shows empty state when no headings exist in outline view', (tester) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final coreInfo = EditorCoreInfo.placeholder;
+      coreInfo.pages.clear();
+      coreInfo.pages.add(EditorPage(size: const Size(1000, 1400)));
+
+      await tester.pumpWidget(buildTestDialog(coreInfo: coreInfo));
+      await tester.tap(find.text('Open Overview'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Outline'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No headings found in document'), findsOneWidget);
+    });
   });
 
   group('Page Actions & Guards', () {

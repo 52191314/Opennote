@@ -18,6 +18,7 @@ class EditorPageManager extends StatelessWidget {
     required this.clearPage,
     required this.deletePage,
     required this.transformationController,
+    this.initialFilter = PageGridFilter.all,
   });
 
   final EditorCoreInfo coreInfo;
@@ -30,12 +31,14 @@ class EditorPageManager extends StatelessWidget {
   final void Function(int) deletePage;
 
   final TransformationController transformationController;
+  final PageGridFilter initialFilter;
 
   @override
   Widget build(BuildContext context) {
     return PageGridOverviewDialog(
       coreInfo: coreInfo,
       currentPageIndex: currentPageIndex ?? 0,
+      initialFilter: initialFilter,
       scrollToPage: (pageIndex) => CanvasGestureDetector.scrollToPage(
         pageIndex: pageIndex,
         pages: coreInfo.pages,
