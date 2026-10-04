@@ -1,9 +1,8 @@
-/// 🤖 Generated with DeepSeek v4 Flash
+/// 🤖 Generated wholely or partially with DeepSeek v4 Flash; Google Antigravity
 library;
 
 import 'package:flutter/material.dart';
 import 'package:saber/data/editor/page.dart';
-import 'package:saber/i18n/strings.g.dart';
 
 /// A dialog for managing layers (add, remove, reorder, toggle visibility).
 class LayerManager extends StatefulWidget {
@@ -113,7 +112,7 @@ class _LayerManagerState extends State<LayerManager> {
                   decoration: BoxDecoration(
                     color: isActive
                         ? colorScheme.primaryContainer
-                        : colorScheme.surfaceContainerHighest?.withValues(alpha: 0.3),
+                        : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(8),
                     border: isActive
                         ? Border.all(color: colorScheme.primary, width: 2)

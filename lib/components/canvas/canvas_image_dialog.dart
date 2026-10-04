@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:convert';
 
 import 'package:flutter/cupertino.dart' show CupertinoDialogAction, CupertinoIcons;
@@ -206,7 +209,7 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
                   'Unknown image provider type',
                 );
               }
-            case final StickyNoteImage image:
+            case StickyNoteImage _:
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -215,7 +218,7 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
               );
               Navigator.of(context).pop();
               return;
-            case final StickerImage image:
+            case StickerImage _:
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(

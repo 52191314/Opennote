@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:math' show min;
 
 import 'package:flutter/gestures.dart';
@@ -369,8 +372,7 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
                   onChanged: !widget.coreInfo.readOnly
                       ? (bool value) {
                           if (page == null) return;
-                          page!.bookmarked = value;
-                          page!.notifyListeners();
+                          page.bookmarked = value;
                           widget.redrawAndSave();
                         }
                       : null,

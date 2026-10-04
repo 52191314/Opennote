@@ -1,7 +1,6 @@
-/// 🤖 Generated with DeepSeek v4 Flash
+/// 🤖 Generated wholely or partially with DeepSeek v4 Flash; Google Antigravity
 library;
 
-import 'dart:math';
 import 'dart:ui' show Offset;
 
 import 'package:saber/components/canvas/_stroke.dart';
@@ -169,16 +168,6 @@ class ScribbleDetector {
         _eraser!.checkForOverlappingStrokes(position, existingStrokes);
     _erasedStrokes.addAll(erased);
     return erased;
-  }
-
-  /// Angle between two vectors in degrees.
-  static double _angleBetween(Offset a, Offset b) {
-    final dot = a.dx * b.dx + a.dy * b.dy;
-    final magA = a.distance;
-    final magB = b.distance;
-    if (magA <= 0 || magB <= 0) return 0;
-    final cosAngle = (dot / (magA * magB)).clamp(-1.0, 1.0);
-    return acos(cosAngle) * 180 / pi;
   }
 }
 
