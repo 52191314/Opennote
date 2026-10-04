@@ -1,4 +1,5 @@
 /// 🤖 Generated with DeepSeek v4 Flash
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 library;
 
 import 'package:flutter/material.dart';
@@ -50,7 +51,7 @@ class TemplatePickerDialog extends StatelessWidget {
           mainAxisSpacing: 12,
           crossAxisSpacing: 12,
           shrinkWrap: true,
-          childAspectRatio: 0.85,
+          childAspectRatio: 0.72,
           children: [
             for (final template in PageTemplate.all)
               _TemplateCard(
@@ -97,36 +98,38 @@ class _TemplateCard extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: SizedBox(
-              width: CanvasBackgroundPreview.fixedWidth,
-              height: pageSize.height / pageSize.width
-                  * CanvasBackgroundPreview.fixedWidth,
-              child: CanvasBackgroundPreview(
-                selected: false,
-                invert: invert,
-                backgroundColor: backgroundColor,
-                backgroundPattern: template.backgroundPattern,
-                backgroundImage: null,
-                pageSize: pageSize,
-                lineHeight: template.lineHeight,
-                lineThickness: template.lineThickness,
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Column(
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: FittedBox(
+                  fit: BoxFit.contain,
+                  child: CanvasBackgroundPreview(
+                    selected: false,
+                    invert: invert,
+                    backgroundColor: backgroundColor,
+                    backgroundPattern: template.backgroundPattern,
+                    backgroundImage: null,
+                    pageSize: pageSize,
+                    lineHeight: template.lineHeight,
+                    lineThickness: template.lineThickness,
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            template.name,
-            style: TextTheme.of(context).bodyMedium,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+            const SizedBox(height: 6),
+            Text(
+              template.name,
+              style: TextTheme.of(context).bodyMedium,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }

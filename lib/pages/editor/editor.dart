@@ -2561,6 +2561,10 @@ class EditorState extends State<Editor> {
       );
     }
 
+    final double screenWidth = MediaQuery.sizeOf(context).width;
+    final bool isCompact = screenWidth < 500;
+    final bool isVeryCompact = screenWidth < 400;
+
     return ValueListenableBuilder(
       valueListenable: savingState,
       builder: (context, savingState, child) {
@@ -2588,6 +2592,8 @@ class EditorState extends State<Editor> {
             ? null
             : AppBar(
                 toolbarHeight: kToolbarHeight,
+                leadingWidth: isCompact ? 44.0 : null,
+                titleSpacing: isCompact ? 6.0 : NavigationToolbar.kMiddleSpacing,
                 title: widget.customTitle != null
                     ? Text(widget.customTitle!)
                     : Form(
@@ -2610,6 +2616,8 @@ class EditorState extends State<Editor> {
                 actions: [
                   // Undo & Redo (Goodnotes 6 Navigation Bar controls)
                   IconButton(
+                    visualDensity: isCompact ? VisualDensity.compact : null,
+                    padding: isCompact ? const EdgeInsets.symmetric(horizontal: 4) : null,
                     icon: const AdaptiveIcon(
                       icon: Icons.undo,
                       cupertinoIcon: CupertinoIcons.arrow_uturn_left,
@@ -2618,6 +2626,8 @@ class EditorState extends State<Editor> {
                     onPressed: (!coreInfo.readOnly && history.canUndo) ? undo : null,
                   ),
                   IconButton(
+                    visualDensity: isCompact ? VisualDensity.compact : null,
+                    padding: isCompact ? const EdgeInsets.symmetric(horizontal: 4) : null,
                     icon: const AdaptiveIcon(
                       icon: Icons.redo,
                       cupertinoIcon: CupertinoIcons.arrow_uturn_right,
@@ -2625,12 +2635,12 @@ class EditorState extends State<Editor> {
                     tooltip: t.editor.toolbar.redo,
                     onPressed: (!coreInfo.readOnly && history.canRedo) ? redo : null,
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: isCompact ? 2 : 4),
 
                   // Goodnotes Document Hub & Page Pill: Page X / Y ⭐
                   Center(
                     child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      margin: EdgeInsets.symmetric(horizontal: isCompact ? 2 : 4),
                       decoration: BoxDecoration(
                         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.65),
                         borderRadius: BorderRadius.circular(16),
@@ -2655,23 +2665,23 @@ class EditorState extends State<Editor> {
                                 );
                               },
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 6,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isCompact ? 6 : 8,
+                                  vertical: isCompact ? 4 : 6,
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
                                       Icons.grid_view_rounded,
-                                      size: 15,
+                                      size: isCompact ? 13 : 15,
                                       color: colorScheme.onSurfaceVariant,
                                     ),
-                                    const SizedBox(width: 5),
+                                    SizedBox(width: isCompact ? 3 : 5),
                                     Text(
                                       '${currentPageIdx + 1} / ${coreInfo.pages.length}',
                                       style: TextStyle(
-                                        fontSize: 12.5,
+                                        fontSize: isCompact ? 11.5 : 12.5,
                                         fontWeight: FontWeight.w600,
                                         color: colorScheme.onSurfaceVariant,
                                       ),
@@ -2683,7 +2693,7 @@ class EditorState extends State<Editor> {
                           ),
                           Container(
                             width: 1,
-                            height: 16,
+                            height: isCompact ? 12 : 16,
                             color: colorScheme.outlineVariant.withValues(alpha: 0.4),
                           ),
                           Tooltip(
@@ -2702,13 +2712,13 @@ class EditorState extends State<Editor> {
                                 autosaveAfterDelay();
                               }),
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 7,
-                                  vertical: 6,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isCompact ? 5 : 7,
+                                  vertical: isCompact ? 4 : 6,
                                 ),
                                 child: Icon(
                                   currentPageBookmarked ? Icons.star : Icons.star_border,
-                                  size: 16,
+                                  size: isCompact ? 14 : 16,
                                   color: currentPageBookmarked
                                       ? Colors.amber.shade700
                                       : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
@@ -2722,36 +2732,44 @@ class EditorState extends State<Editor> {
                   ),
 
                   // Add Page
-                  IconButton(
-                    icon: const AdaptiveIcon(
-                      icon: Icons.add,
-                      cupertinoIcon: CupertinoIcons.add,
+                  if (!isVeryCompact)
+                    IconButton(
+                      visualDensity: isCompact ? VisualDensity.compact : null,
+                      padding: isCompact ? const EdgeInsets.symmetric(horizontal: 4) : null,
+                      icon: const AdaptiveIcon(
+                        icon: Icons.add,
+                        cupertinoIcon: CupertinoIcons.add,
+                      ),
+                      tooltip: t.editor.menu.insertPage,
+                      onPressed: () => setState(() {
+                        final currentPageIndex = this.currentPageIndex;
+                        insertPageAfter(currentPageIndex);
+                        CanvasGestureDetector.scrollToPage(
+                          pageIndex: currentPageIndex + 1,
+                          pages: coreInfo.pages,
+                          screenWidth: MediaQuery.sizeOf(context).width,
+                          transformationController: _transformationController,
+                        );
+                      }),
                     ),
-                    tooltip: t.editor.menu.insertPage,
-                    onPressed: () => setState(() {
-                      final currentPageIndex = this.currentPageIndex;
-                      insertPageAfter(currentPageIndex);
-                      CanvasGestureDetector.scrollToPage(
-                        pageIndex: currentPageIndex + 1,
-                        pages: coreInfo.pages,
-                        screenWidth: MediaQuery.sizeOf(context).width,
-                        transformationController: _transformationController,
-                      );
-                    }),
-                  ),
 
                   // Share / Export
-                  IconButton(
-                    icon: const AdaptiveIcon(
-                      icon: Icons.ios_share,
-                      cupertinoIcon: CupertinoIcons.share,
+                  if (screenWidth >= 450)
+                    IconButton(
+                      visualDensity: isCompact ? VisualDensity.compact : null,
+                      padding: isCompact ? const EdgeInsets.symmetric(horizontal: 4) : null,
+                      icon: const AdaptiveIcon(
+                        icon: Icons.ios_share,
+                        cupertinoIcon: CupertinoIcons.share,
+                      ),
+                      tooltip: t.editor.toolbar.export,
+                      onPressed: () => _showExportDialog(context),
                     ),
-                    tooltip: t.editor.toolbar.export,
-                    onPressed: () => _showExportDialog(context),
-                  ),
 
                   // More (...) menu
                   IconButton(
+                    visualDensity: isCompact ? VisualDensity.compact : null,
+                    padding: isCompact ? const EdgeInsets.symmetric(horizontal: 4) : null,
                     icon: const AdaptiveIcon(
                       icon: Icons.more_vert,
                       cupertinoIcon: CupertinoIcons.ellipsis_vertical,
@@ -2973,6 +2991,7 @@ class EditorState extends State<Editor> {
           ),
         );
       },
+      onExport: () => _showExportDialog(context),
     );
   }
 

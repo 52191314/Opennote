@@ -45,6 +45,7 @@ class EditorBottomSheet extends StatefulWidget {
     this.setPageSize,
     this.onOpenPresentation,
     this.onOpenFlashcards,
+    this.onExport,
   });
 
   final bool invert;
@@ -56,6 +57,7 @@ class EditorBottomSheet extends StatefulWidget {
   final void Function(Size)? setPageSize;
   final VoidCallback? onOpenPresentation;
   final VoidCallback? onOpenFlashcards;
+  final VoidCallback? onExport;
   final VoidCallback removeBackgroundImage;
   final VoidCallback redrawImage;
   final VoidCallback clearPage;
@@ -229,6 +231,20 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
                     ],
                   ),
                 ),
+                if (widget.onExport != null)
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      widget.onExport!();
+                    },
+                    child: Wrap(
+                      children: [
+                        const Icon(Icons.ios_share),
+                        const SizedBox(width: 8),
+                        Text(t.editor.toolbar.export),
+                      ],
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 16),
