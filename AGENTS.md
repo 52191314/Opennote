@@ -44,6 +44,20 @@ AI agents can find more instructions if needed on the wiki, e.g. [Maintainer not
 - **Do not trigger Android or Windows builds**: Never trigger `Build for Android` or `Build for Windows` GitHub Action workflows (e.g. via `gh workflow run` or manual dispatch).
 - **Target platforms**: Only run/monitor `Run tests` and `Build iOS` (or `Build for iOS`) workflows when pushing changes or inspecting CI status.
 
+### Homelab macOS Runner (`aspire5-server`)
+- **Host**: `homelab` (`192.168.1.6`), managed via Docker Compose at `/opt/dockur-macos`.
+- **macOS Container**: `macos-runner` (`dockurr/macos:latest` running macOS Sonoma 14 with KVM acceleration).
+- **Web Console**: `http://192.168.1.6:8006` (or `http://homelab:8006`).
+- **macOS Guest SSH**:
+  - Host Port: `50922` -> Guest Port `22`
+  - Account Name: `x`
+  - Username: `xxx`
+  - Password: `1314xxx`
+- **Memory Safeguards**:
+  - Host has a 16 GiB swapfile (`/swapfile_docker_osx`, total 20 GiB swap active).
+  - Production containers (`vaultwarden`, `caddy`, `nexuspay`, etc.) are immunized with `oom_score_adj: -1000` via systemd `oom-guard.timer`.
+  - The macOS container has `oom_score_adj: 500` to sacrifice itself first if memory is starved.
+
 ## Commits
 - Follow the Conventional Commits format.
 - Always include one or more emojis that represent your commit. Additionally include the sparkle emoji ✨.
