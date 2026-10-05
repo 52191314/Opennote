@@ -185,6 +185,13 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
+  /// When true, enables the Goodnotes-inspired dual-tier toolbar and document tabs header.
+  final goodnotesUiMode = PlainStow(
+    'goodnotesUiMode',
+    true,
+    volatile: !_isOnMainIsolate,
+  );
+
   final maxImageSize = PlainStow<double>(
     'maxImageSize',
     1000,

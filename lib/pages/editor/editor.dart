@@ -41,6 +41,8 @@ import 'package:saber/components/toolbar/color_bar.dart';
 import 'package:saber/components/toolbar/editor_bottom_sheet.dart';
 import 'package:saber/components/toolbar/elements_sheet.dart';
 import 'package:saber/components/toolbar/export_bar.dart';
+import 'package:saber/components/toolbar/goodnotes_header_bar.dart';
+import 'package:saber/components/toolbar/goodnotes_toolbar.dart';
 import 'package:saber/components/toolbar/toolbar.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/editor_exporter.dart';
@@ -598,8 +600,9 @@ class EditorState extends State<Editor> {
   int? dragPageIndex;
   PointerDeviceKind? currentPointerKind;
   double? currentPressure;
+  var _isHandScrollOnlyMode = false;
   bool isDrawGesture(ScaleStartDetails details) {
-    if (coreInfo.readOnly) return false;
+    if (coreInfo.readOnly || _isHandScrollOnlyMode) return false;
 
     CanvasImage.activeListener
         .notifyListenersPlease(); // un-select active image
@@ -2654,6 +2657,162 @@ class EditorState extends State<Editor> {
           : null,
     );
 
+    final Widget toolbarContent = stows.goodnotesUiMode.value
+        ? GoodnotesToolbar(
+            readOnly: coreInfo.readOnly,
+            setTool: (tool) {
+              if (tool is Eraser && currentTool is Eraser) {
+                tool = _lastNonEraserTool;
+              }
+              currentTool = tool;
+              if (tool is Highlighter) {
+                Highlighter.currentHighlighter = tool;
+              } else if (tool is Pencil) {
+                Pencil.currentPencil = tool;
+              } else if (tool is Pen) {
+                Pen.currentPen = tool;
+              }
+              if (mounted) setState(() {});
+            },
+            currentTool: currentTool,
+            duplicateSelection: _duplicateSelection,
+            deleteSelection: () {
+              final select = currentTool as Select;
+              if (!select.doneSelecting) return;
+              final page = coreInfo.pages[select.selectResult.pageIndex];
+              setState(() => _deleteSelection(select, page));
+            },
+            setColor: (color) {
+              setState(() {
+                updateColorBar(color);
+                if (currentTool is Highlighter) {
+                  (currentTool as Highlighter).color = color.withAlpha(
+                    Highlighter.alpha,
+                  );
+                } else if (currentTool is Pen) {
+                  (currentTool as Pen).color = color;
+                } else if (currentTool is Select) {
+                  _setSelectionColor(color);
+                }
+              });
+            },
+            quillFocus: quillFocus,
+            textEditing: currentTool == Tool.textEditing,
+            toggleTextEditing: () => setState(() {
+              if (currentTool == Tool.textEditing) {
+                currentTool = Pen.currentPen;
+                for (final page in coreInfo.pages) {
+                  page.quill.controller.moveCursorToPosition(
+                    page.quill.controller.selection.extentOffset,
+                  );
+                  page.quill.focusNode.unfocus();
+                }
+              } else {
+                currentTool = Tool.textEditing;
+                quillFocus.value = coreInfo.pages[currentPageIndex].quill
+                  ..focusNode.requestFocus();
+              }
+            }),
+            pickPhoto: _pickPhotos,
+            pickShape: _insertShapeFromLibrary,
+            paste: paste,
+            copySelection: _copySelection,
+            pasteSelection: _pasteSelection,
+            cropPossible: _cropPossible,
+            cropActive: _cropActive,
+            toggleCrop: _toggleCrop,
+            bringToFront: _bringSelectionToFront,
+            sendToBack: _sendSelectionToBack,
+            smoothen: _smoothenSelection,
+            addToElements: _addToElements,
+            openElementsSheet: _openElementsSheet,
+            onRevealAllTape: _revealAllTapeOnCurrentPage,
+            onConcealAllTape: _concealAllTapeOnCurrentPage,
+            onClearPage: () => clearPage(currentPageIndex),
+          )
+        : Toolbar(
+            readOnly: coreInfo.readOnly,
+            setTool: (tool) {
+              if (tool is Eraser && currentTool is Eraser) {
+                tool = _lastNonEraserTool;
+              }
+              currentTool = tool;
+              if (tool is Highlighter) {
+                Highlighter.currentHighlighter = tool;
+              } else if (tool is Pencil) {
+                Pencil.currentPencil = tool;
+              } else if (tool is Pen) {
+                Pen.currentPen = tool;
+              }
+              if (mounted) setState(() {});
+            },
+            currentTool: currentTool,
+            duplicateSelection: _duplicateSelection,
+            deleteSelection: () {
+              final select = currentTool as Select;
+              if (!select.doneSelecting) return;
+              final page = coreInfo.pages[select.selectResult.pageIndex];
+              setState(() => _deleteSelection(select, page));
+            },
+            setColor: (color) {
+              setState(() {
+                updateColorBar(color);
+                if (currentTool is Highlighter) {
+                  (currentTool as Highlighter).color = color.withAlpha(
+                    Highlighter.alpha,
+                  );
+                } else if (currentTool is Pen) {
+                  (currentTool as Pen).color = color;
+                } else if (currentTool is Select) {
+                  _setSelectionColor(color);
+                }
+              });
+            },
+            quillFocus: quillFocus,
+            textEditing: currentTool == Tool.textEditing,
+            toggleTextEditing: () => setState(() {
+              if (currentTool == Tool.textEditing) {
+                currentTool = Pen.currentPen;
+                for (final page in coreInfo.pages) {
+                  page.quill.controller.moveCursorToPosition(
+                    page.quill.controller.selection.extentOffset,
+                  );
+                  page.quill.focusNode.unfocus();
+                }
+              } else {
+                currentTool = Tool.textEditing;
+                quillFocus.value = coreInfo.pages[currentPageIndex].quill
+                  ..focusNode.requestFocus();
+              }
+            }),
+            undo: undo,
+            isUndoPossible: history.canUndo,
+            redo: redo,
+            isRedoPossible: history.canRedo,
+            toggleFingerDrawing: () {
+              stows.editorFingerDrawing.value = !stows.editorFingerDrawing.value;
+              lastSeenPointerCount = 0;
+            },
+            pickPhoto: _pickPhotos,
+            pickShape: _insertShapeFromLibrary,
+            paste: paste,
+            copySelection: _copySelection,
+            pasteSelection: _pasteSelection,
+            cropPossible: _cropPossible,
+            cropActive: _cropActive,
+            toggleCrop: _toggleCrop,
+            bringToFront: _bringSelectionToFront,
+            sendToBack: _sendSelectionToBack,
+            smoothen: _smoothenSelection,
+            addToElements: _addToElements,
+            openElementsSheet: _openElementsSheet,
+            exportAsSba: exportAsSba,
+            exportAsPdf: exportAsPdf,
+            exportAsPng: exportAsPng,
+            onRevealAllTape: _revealAllTapeOnCurrentPage,
+            onConcealAllTape: _concealAllTapeOnCurrentPage,
+          );
+
     final Widget toolbar = Collapsible(
       axis: isToolbarVertical
           ? CollapsibleAxis.horizontal
@@ -2664,94 +2823,7 @@ class EditorState extends State<Editor> {
       maintainState: true,
       child: SafeArea(
         bottom: stows.editorToolbarAlignment.value != AxisDirection.up,
-        child: Toolbar(
-          readOnly: coreInfo.readOnly,
-          setTool: (tool) {
-            if (tool is Eraser && currentTool is Eraser) {
-              // setTool(Eraser) is a special case to toggle the eraser on/off
-              tool = _lastNonEraserTool;
-            }
-
-            currentTool = tool;
-
-            if (tool is Highlighter) {
-              Highlighter.currentHighlighter = tool;
-            } else if (tool is Pencil) {
-              Pencil.currentPencil = tool;
-            } else if (tool is Pen) {
-              Pen.currentPen = tool;
-            }
-
-            if (mounted) setState(() {});
-          },
-          currentTool: currentTool,
-          duplicateSelection: _duplicateSelection,
-          deleteSelection: () {
-            final select = currentTool as Select;
-            if (!select.doneSelecting) return;
-            final page = coreInfo.pages[select.selectResult.pageIndex];
-            setState(() => _deleteSelection(select, page));
-          },
-          setColor: (color) {
-            setState(() {
-              updateColorBar(color);
-
-              if (currentTool is Highlighter) {
-                (currentTool as Highlighter).color = color.withAlpha(
-                  Highlighter.alpha,
-                );
-              } else if (currentTool is Pen) {
-                (currentTool as Pen).color = color;
-              } else if (currentTool is Select) {
-                _setSelectionColor(color);
-              }
-            });
-          },
-          quillFocus: quillFocus,
-          textEditing: currentTool == Tool.textEditing,
-          toggleTextEditing: () => setState(() {
-            if (currentTool == Tool.textEditing) {
-              currentTool = Pen.currentPen;
-              for (final page in coreInfo.pages) {
-                // unselect text, but maintain cursor position
-                page.quill.controller.moveCursorToPosition(
-                  page.quill.controller.selection.extentOffset,
-                );
-                page.quill.focusNode.unfocus();
-              }
-            } else {
-              currentTool = Tool.textEditing;
-              quillFocus.value = coreInfo.pages[currentPageIndex].quill
-                ..focusNode.requestFocus();
-            }
-          }),
-          undo: undo,
-          isUndoPossible: history.canUndo,
-          redo: redo,
-          isRedoPossible: history.canRedo,
-          toggleFingerDrawing: () {
-            stows.editorFingerDrawing.value = !stows.editorFingerDrawing.value;
-            lastSeenPointerCount = 0;
-          },
-          pickPhoto: _pickPhotos,
-          pickShape: _insertShapeFromLibrary,
-          paste: paste,
-          copySelection: _copySelection,
-          pasteSelection: _pasteSelection,
-          cropPossible: _cropPossible,
-          cropActive: _cropActive,
-          toggleCrop: _toggleCrop,
-          bringToFront: _bringSelectionToFront,
-          sendToBack: _sendSelectionToBack,
-          smoothen: _smoothenSelection,
-          addToElements: _addToElements,
-          openElementsSheet: _openElementsSheet,
-          exportAsSba: exportAsSba,
-          exportAsPdf: exportAsPdf,
-          exportAsPng: exportAsPng,
-          onRevealAllTape: _revealAllTapeOnCurrentPage,
-          onConcealAllTape: _concealAllTapeOnCurrentPage,
-        ),
+        child: toolbarContent,
       ),
     );
 
@@ -2814,12 +2886,79 @@ class EditorState extends State<Editor> {
         );
       },
       child: Scaffold(
+        backgroundColor: stows.goodnotesUiMode.value
+            ? (Theme.brightnessOf(context) == Brightness.dark
+                ? const Color(0xFF161618)
+                : const Color(0xFFF3F2EE))
+            : null,
         appBar: DynamicMaterialApp.isFullscreen
             ? null
-            : AppBar(
-                toolbarHeight: kToolbarHeight,
-                leadingWidth: isCompact ? 44.0 : null,
-                titleSpacing: isCompact ? 6.0 : NavigationToolbar.kMiddleSpacing,
+            : stows.goodnotesUiMode.value
+                ? GoodnotesHeaderBar(
+                    filePath: coreInfo.filePath,
+                    customTitle: widget.customTitle,
+                    filenameTextEditingController: filenameTextEditingController,
+                    filenameFormKey: _filenameFormKey,
+                    renameFile: renameFile,
+                    validateFilename: _validateFilenameTextField,
+                    needsNaming: needsNaming,
+                    savingState: savingState,
+                    triggerSave: saveToFile,
+                    onBack: () => Navigator.of(context).maybePop(),
+                    onOpenThumbnails: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => pageManager(context),
+                      );
+                    },
+                    currentPageIndex: currentPageIdx,
+                    totalPages: coreInfo.pages.length,
+                    isInfiniteCanvas: coreInfo.isInfiniteCanvas,
+                    isBookmarked: currentPageBookmarked,
+                    onToggleBookmark: () => setState(() {
+                      if (coreInfo.readOnly) return;
+                      final pageIdx = currentPageIndex;
+                      if (pageIdx >= coreInfo.pages.length) return;
+                      final page = coreInfo.pages[pageIdx];
+                      page.bookmarked = !page.bookmarked;
+                      page.redrawStrokes();
+                      autosaveAfterDelay();
+                    }),
+                    onInsertPage: () => setState(() {
+                      final currentPageIndex = this.currentPageIndex;
+                      insertPageAfter(currentPageIndex);
+                      CanvasGestureDetector.scrollToPage(
+                        pageIndex: currentPageIndex + 1,
+                        pages: coreInfo.pages,
+                        screenWidth: MediaQuery.sizeOf(context).width,
+                        transformationController: _transformationController,
+                      );
+                    }),
+                    undo: undo,
+                    canUndo: !coreInfo.readOnly && history.canUndo,
+                    redo: redo,
+                    canRedo: !coreInfo.readOnly && history.canRedo,
+                    onExport: () => _showExportDialog(context),
+                    isHandScrollMode: _isHandScrollOnlyMode,
+                    onToggleHandScrollMode: () => setState(() {
+                      _isHandScrollOnlyMode = !_isHandScrollOnlyMode;
+                    }),
+                    onOpenMenu: () {
+                      showModalBottomSheet(
+                        context: context,
+                        builder: (context) => bottomSheet(context),
+                        isScrollControlled: true,
+                        showDragHandle: true,
+                        backgroundColor: colorScheme.surface,
+                        constraints: const BoxConstraints(maxWidth: 500),
+                      );
+                    },
+                    readOnly: coreInfo.readOnly,
+                  )
+                : AppBar(
+                    toolbarHeight: kToolbarHeight,
+                    leadingWidth: isCompact ? 44.0 : null,
+                    titleSpacing: isCompact ? 6.0 : NavigationToolbar.kMiddleSpacing,
                 title: widget.customTitle != null
                     ? Text(widget.customTitle!)
                     : Form(

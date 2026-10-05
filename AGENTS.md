@@ -39,6 +39,11 @@ AI agents can find more instructions if needed on the wiki, e.g. [Maintainer not
   - **Immediate visual cleanup**: Clear in-flight ink previews (`Pen.currentStroke = null`) upon gesture detection to prevent frozen partial strokes on screen.
   - **Discoverability**: Expose tool settings in both relevant tool modals and global app settings with intuitive icons and sensible defaults.
 
+## Builds & CI
+
+- **Do not trigger Android or Windows builds**: Never trigger `Build for Android` or `Build for Windows` GitHub Action workflows (e.g. via `gh workflow run` or manual dispatch).
+- **Target platforms**: Only run/monitor `Run tests` and `Build iOS` (or `Build for iOS`) workflows when pushing changes or inspecting CI status.
+
 ## Commits
 - Follow the Conventional Commits format.
 - Always include one or more emojis that represent your commit. Additionally include the sparkle emoji ✨.
