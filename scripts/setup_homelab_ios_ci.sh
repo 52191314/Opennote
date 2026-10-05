@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 #
-# Setup script to prepare an Ubuntu Homelab host to run iOS CI via Docker-OSX & GitHub Actions Self-Hosted Runner.
+# Setup script to prepare an Ubuntu Homelab host to run iOS CI via dockurr/macos & GitHub Actions Self-Hosted Runner.
 
 set -euo pipefail
 
@@ -25,34 +25,31 @@ if ! groups "$USER" | grep -q '\bkvm\b'; then
     echo "⚠️ Group membership updated. You may need to run 'newgrp kvm' or re-login."
 fi
 
-# 3. Create persistent storage for macOS container
-DISK_DIR="${HOME}/docker-osx-disk"
-mkdir -p "${DISK_DIR}"
-echo "✅ Disk directory ready at: ${DISK_DIR}"
+# 3. Create persistent storage directory
+STORAGE_DIR="/opt/dockur-macos"
+mkdir -p "${STORAGE_DIR}/data"
+echo "✅ Persistent storage ready at: ${STORAGE_DIR}/data"
 
 echo ""
 echo "------------------------------------------------------------"
-echo " Launching Docker-OSX Container"
+echo " macOS Runner Container Deployment (dockurr/macos)"
 echo "------------------------------------------------------------"
-echo "Command to run macOS with KVM acceleration:"
+echo "Container manages macOS Sonoma with web viewer on port 8006."
+echo "Access installation in browser at: http://<server-ip>:8006"
 echo ""
-echo "docker run -it \\"
-echo "    --device /dev/kvm \\"
-echo "    -p 50922:10022 \\"
-echo "    -v ${DISK_DIR}:/image \\"
-echo "    -e RAM=12 \\"
-echo "    -e CPU_CORES=6 \\"
-echo "    -e HEADLESS=true \\"
-echo "    sickcodes/docker-osx:auto"
+echo "Compose location: ${STORAGE_DIR}/docker-compose.yml"
+echo "Start command: (cd ${STORAGE_DIR} && docker compose up -d)"
 echo ""
 echo "------------------------------------------------------------"
-echo " Once inside the macOS VM:"
+echo " Once macOS Sonoma installation completes:"
 echo "------------------------------------------------------------"
-echo " 1. Install Xcode Command Line Tools: xcode-select --install"
-echo " 2. Install Xcode.app and accept license: sudo xcodebuild -license accept"
-echo " 3. Register GitHub Actions Self-Hosted Runner:"
+echo " 1. Access GUI at http://<server-ip>:8006 or VNC at <server-ip>:5900"
+echo " 2. Install Xcode Command Line Tools: xcode-select --install"
+echo " 3. Install Xcode.app and accept license: sudo xcodebuild -license accept"
+echo " 4. Register GitHub Actions Self-Hosted Runner:"
 echo "    - Go to GitHub -> Repo Settings -> Actions -> Runners -> New runner -> macOS"
 echo "    - When running ./config.sh, add custom labels: --labels self-hosted,macOS,homelab"
 echo "    - Install runner as a daemon: sudo ./svc.sh install && sudo ./svc.sh start"
 echo ""
 echo "✅ Setup complete! Your homelab is ready to build iOS applications."
+
