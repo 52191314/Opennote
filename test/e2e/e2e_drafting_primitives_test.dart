@@ -114,7 +114,7 @@ void main() {
             pageIndex: 0,
             page: page,
             toolId: ToolId.shapePen,
-            start: const Offset(0, 0),
+            start: Offset.zero,
             end: const Offset(100, 0),
             arrowheadStyle: style,
           );
@@ -235,7 +235,7 @@ void main() {
         pageIndex: 0,
         page: page,
         toolId: ToolId.shapePen,
-        start: const Offset(0, 0),
+        start: Offset.zero,
         end: const Offset(100, 0),
       );
 
@@ -311,7 +311,7 @@ void main() {
             pageIndex: 2,
             page: page,
             toolId: ToolId.shapePen,
-            start: const Offset(0, 0),
+            start: Offset.zero,
             end: const Offset(80, 60),
             offset: 25.0,
             text: '10.0 cm',
@@ -369,7 +369,7 @@ void main() {
           pageIndex: 0,
           page: page,
           toolId: ToolId.shapePen,
-          start: const Offset(0, 0),
+          start: Offset.zero,
           end: const Offset(100, 0),
           offset: 30.0,
           text: '100',
@@ -392,7 +392,7 @@ void main() {
 
         // 3-4-5 right triangle
         expect(
-          calcDistance(const Offset(0, 0), const Offset(30, 40)),
+          calcDistance(Offset.zero, const Offset(30, 40)),
           closeTo(50.0, 1e-4),
         );
         // Pure horizontal
@@ -516,7 +516,7 @@ void main() {
           pageIndex: 0,
           page: page,
           toolId: ToolId.shapePen,
-          start: const Offset(0, 0),
+          start: Offset.zero,
           end: const Offset(50, 0),
         );
 
@@ -535,7 +535,7 @@ void main() {
         pageIndex: 0,
         page: page,
         toolId: ToolId.shapePen,
-        start: const Offset(0, 0),
+        start: Offset.zero,
         end: const Offset(100, 0),
       );
 
@@ -552,7 +552,7 @@ void main() {
         pageIndex: 0,
         page: page,
         toolId: ToolId.shapePen,
-        start: const Offset(0, 0),
+        start: Offset.zero,
         end: const Offset(100, 0),
         text: '100 mm',
       );
@@ -573,7 +573,7 @@ void main() {
         pageIndex: 0,
         page: page,
         toolId: ToolId.shapePen,
-        start: const Offset(0, 0),
+        start: Offset.zero,
         end: const Offset(100, 0),
         offset: 20.0,
       );
@@ -587,7 +587,7 @@ void main() {
 
     test('T1.15: PolygonStroke vertex manipulation retains closed status', () {
       final vertices = [
-        const Offset(0, 0),
+        Offset.zero,
         const Offset(100, 0),
         const Offset(50, 80),
       ];

@@ -1,4 +1,4 @@
-/// 🤖 Generated wholely or partially with DeepSeek v4 Flash; Google Antigravity
+/// 🤖 Generated wholely or partially with DeepSeek v4 Flash; Claude Code; Google Antigravity
 library;
 
 import 'package:flutter/material.dart';
@@ -50,22 +50,6 @@ class _LayerManagerState extends State<LayerManager> {
     _setState();
   }
 
-  void _moveLayer(int oldIndex, int newIndex) {
-    setState(() {
-      if (newIndex > oldIndex) newIndex--;
-      final layer = _layers.removeAt(oldIndex);
-      _layers.insert(newIndex, layer);
-      if (_activeIndex == oldIndex) {
-        _activeIndex = newIndex;
-      } else if (_activeIndex > oldIndex && _activeIndex <= newIndex) {
-        _activeIndex--;
-      } else if (_activeIndex < oldIndex && _activeIndex >= newIndex) {
-        _activeIndex++;
-      }
-    });
-    _setState();
-  }
-
   void _mergeDown(int index) {
     if (index <= 0) return;
     final upper = _layers[index];
@@ -98,7 +82,20 @@ class _LayerManagerState extends State<LayerManager> {
             : ReorderableListView.builder(
                 shrinkWrap: true,
                 itemCount: _layers.length,
-                onReorder: _moveLayer,
+                onReorderItem: (oldIndex, newIndex) {
+                  setState(() {
+                    final layer = _layers.removeAt(oldIndex);
+                    _layers.insert(newIndex, layer);
+                    if (_activeIndex == oldIndex) {
+                      _activeIndex = newIndex;
+                    } else if (_activeIndex > oldIndex && _activeIndex <= newIndex) {
+                      _activeIndex--;
+                    } else if (_activeIndex < oldIndex && _activeIndex >= newIndex) {
+                      _activeIndex++;
+                    }
+                  });
+                  _setState();
+                },
                 itemBuilder: (context, index) {
                   final layer = _layers[index];
                   final isActive = index == _activeIndex;

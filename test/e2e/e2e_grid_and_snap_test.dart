@@ -275,7 +275,7 @@ void main() {
         // Below midpoint rounds down
         expect(
           Stroke.snapPointToGrid(const Offset(4.9, 4.9), gridSize),
-          equals(const Offset(0, 0)),
+          equals(Offset.zero),
         );
         // Above midpoint rounds up
         expect(
@@ -488,7 +488,7 @@ void main() {
           page: const HasSize(Size(1000, 1400)),
           toolId: ToolId.ruler,
         );
-        stroke.addPoint(const Offset(0, 0));
+        stroke.addPoint(Offset.zero);
         const rad28 = 28 * pi / 180;
         stroke.addPoint(Offset(100 * cos(rad28), 100 * sin(rad28)));
 
@@ -616,7 +616,7 @@ void main() {
         stows.snapToAngle.value = true;
         stows.snapAngleStep.value = 30;
 
-        ruler.onDragStart(const Offset(0, 0), page, 0, null);
+        ruler.onDragStart(Offset.zero, page, 0, null);
         // Drag near (80, 40)
         ruler.onDragUpdate(const Offset(78, 42), null);
         final stroke = ruler.onDragEnd();

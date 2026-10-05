@@ -209,9 +209,11 @@ class _InnerCanvasState extends State<InnerCanvas> {
                   ignoring: widget.coreInfo.readOnly || !widget.textEditing,
                   child: Transform(
                     transform: Matrix4.identity()
-                      ..translate(
+                      ..translateByDouble(
                         page.textContentOffset.dx,
                         page.textContentOffset.dy,
+                        0,
+                        1,
                       )
                       ..rotateZ(page.textContentRotation),
                     alignment: Alignment.topLeft,

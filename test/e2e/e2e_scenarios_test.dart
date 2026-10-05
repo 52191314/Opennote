@@ -45,7 +45,7 @@ void main() {
       stows.snapToAngle.value = true;
       stows.snapAngleStep.value = 30;
 
-      ruler.onDragStart(const Offset(0, 0), page, 0, null);
+      ruler.onDragStart(Offset.zero, page, 0, null);
       // Drag at ~28 degrees
       const rad28 = 28 * pi / 180;
       ruler.onDragUpdate(Offset(100 * cos(rad28), 100 * sin(rad28)), null);
@@ -214,7 +214,7 @@ void main() {
           .toList();
       expect(
         snappedVertices,
-        equals([const Offset(0, 0), const Offset(75, 0), const Offset(50, 50)]),
+        equals([Offset.zero, const Offset(75, 0), const Offset(50, 50)]),
       );
 
       final poly = PolygonStroke(
