@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_arrow_stroke.dart';
-import 'package:saber/components/canvas/_canvas_background_painter.dart';
 import 'package:saber/components/canvas/_dimension_stroke.dart';
 import 'package:saber/components/canvas/_polygon_stroke.dart';
 import 'package:saber/components/canvas/_stroke.dart';
@@ -18,7 +17,6 @@ import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/ruler.dart';
-import 'package:sbn/canvas_background_pattern.dart';
 import 'package:sbn/has_size.dart';
 import 'package:sbn/tool_id.dart';
 
@@ -54,42 +52,46 @@ void main() {
       final stroke = ruler.onDragEnd();
 
       expect(stroke, isNotNull);
-      final angle = atan2(stroke!.points.last.dy, stroke.points.last.dx) * 180 / pi;
+      final angle =
+          atan2(stroke!.points.last.dy, stroke.points.last.dx) * 180 / pi;
       expect(angle, closeTo(30.0, 0.01));
       // Slopes match tan(30)
       final slope = stroke.points.last.dy / stroke.points.last.dx;
       expect(slope, closeTo(tan(30 * pi / 180), 0.01));
     });
 
-    test('Pair 2: Dimension Stroke on Drafting Layer + PDF Vector Classification', () {
-      final layer0 = Layer(name: 'Construction', visible: false);
-      final layer1 = Layer(name: 'Drafting', visible: true);
-      final page = EditorPage(layers: [layer0, layer1]);
+    test(
+      'Pair 2: Dimension Stroke on Drafting Layer + PDF Vector Classification',
+      () {
+        final layer0 = Layer(name: 'Construction', visible: false);
+        final layer1 = Layer(name: 'Drafting', visible: true);
+        final page = EditorPage(layers: [layer0, layer1]);
 
-      final refLine = _createTestStroke(toolId: ToolId.fountainPen);
-      layer0.strokes.add(refLine);
+        final refLine = _createTestStroke(toolId: ToolId.fountainPen);
+        layer0.strokes.add(refLine);
 
-      final dim = DimensionStroke(
-        color: Colors.blue,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 2.0),
-        pageIndex: 0,
-        page: pageDef,
-        toolId: ToolId.shapePen,
-        start: const Offset(50, 50),
-        end: const Offset(250, 50),
-        offset: 30.0,
-        text: '200 mm',
-      );
-      layer1.strokes.add(dim);
+        final dim = DimensionStroke(
+          color: Colors.blue,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 2.0),
+          pageIndex: 0,
+          page: pageDef,
+          toolId: ToolId.shapePen,
+          start: const Offset(50, 50),
+          end: const Offset(250, 50),
+          offset: 30.0,
+          text: '200 mm',
+        );
+        layer1.strokes.add(dim);
 
-      // Page strokes should exclude hidden layer
-      expect(page.strokes, hasLength(1));
-      expect(page.strokes.first, equals(dim));
+        // Page strokes should exclude hidden layer
+        expect(page.strokes, hasLength(1));
+        expect(page.strokes.first, equals(dim));
 
-      // Dimension stroke qualifies for PDF vector export
-      expect(EditorExporter.shouldRasterizeStroke(dim), isFalse);
-    });
+        // Dimension stroke qualifies for PDF vector export
+        expect(EditorExporter.shouldRasterizeStroke(dim), isFalse);
+      },
+    );
 
     test('Pair 3: Arrow Stroke Vertex Manipulation + Undo/Redo Stack', () {
       final history = EditorHistory();
@@ -107,12 +109,14 @@ void main() {
       );
 
       page.insertStroke(arrow);
-      history.recordChange(EditorHistoryItem(
-        type: EditorHistoryItemType.draw,
-        pageIndex: 0,
-        strokes: [arrow],
-        images: const [],
-      ));
+      history.recordChange(
+        EditorHistoryItem(
+          type: EditorHistoryItemType.draw,
+          pageIndex: 0,
+          strokes: [arrow],
+          images: const [],
+        ),
+      );
 
       expect(page.strokes, hasLength(1));
 
@@ -144,45 +148,74 @@ void main() {
       final testPoint = const Offset(38.0, 54.0);
 
       // Initial snap with 20 px
-      final snappedInitial = Stroke.snapPointToGrid(testPoint, initialLineHeight);
+      final snappedInitial = Stroke.snapPointToGrid(
+        testPoint,
+        initialLineHeight,
+      );
       expect(snappedInitial, equals(const Offset(40.0, 60.0)));
 
       // Updated snap with 35 px
-      final snappedUpdated = Stroke.snapPointToGrid(testPoint, updatedLineHeight);
+      final snappedUpdated = Stroke.snapPointToGrid(
+        testPoint,
+        updatedLineHeight,
+      );
       expect(snappedUpdated, equals(const Offset(35.0, 70.0)));
     });
 
-    test('Pair 5: Angle Snap 45° with Arrow Stroke Serialization Roundtrip', () {
-      final p1 = PointVector(0, 0, 1.0);
-      final rad43 = 43 * pi / 180;
-      final p2 = PointVector(100 * cos(rad43), 100 * sin(rad43), 1.0);
+    test(
+      'Pair 5: Angle Snap 45° with Arrow Stroke Serialization Roundtrip',
+      () {
+        final p1 = PointVector(0, 0, 1.0);
+        final rad43 = 43 * pi / 180;
+        final p2 = PointVector(100 * cos(rad43), 100 * sin(rad43), 1.0);
 
-      final (_, snappedP2) = Stroke.snapLineToAngle(p1, p2, 45.0);
+        final (_, snappedP2) = Stroke.snapLineToAngle(p1, p2, 45.0);
 
-      final arrow = ArrowStroke(
-        color: Colors.red,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 2.0),
-        pageIndex: 0,
-        page: pageDef,
-        toolId: ToolId.shapePen,
-        start: Offset(p1.dx, p1.dy),
-        end: Offset(snappedP2.dx, snappedP2.dy),
-      );
+        final arrow = ArrowStroke(
+          color: Colors.red,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 2.0),
+          pageIndex: 0,
+          page: pageDef,
+          toolId: ToolId.shapePen,
+          start: Offset(p1.dx, p1.dy),
+          end: Offset(snappedP2.dx, snappedP2.dy),
+        );
 
-      final json = arrow.toJson();
-      final restored = ArrowStroke.fromJson(json, fileVersion: 1, pageIndex: 0, page: pageDef);
+        final json = arrow.toJson();
+        final restored = ArrowStroke.fromJson(
+          json,
+          fileVersion: 1,
+          pageIndex: 0,
+          page: pageDef,
+        );
 
-      final angle = atan2(restored.end.dy - restored.start.dy, restored.end.dx - restored.start.dx) * 180 / pi;
-      expect(angle, closeTo(45.0, 0.01));
-    });
+        final angle =
+            atan2(
+              restored.end.dy - restored.start.dy,
+              restored.end.dx - restored.start.dx,
+            ) *
+            180 /
+            pi;
+        expect(angle, closeTo(45.0, 0.01));
+      },
+    );
 
     test('Pair 6: Polygon Snap to Grid with Bounding Box Bounds', () {
       const double gridSize = 25.0;
-      final rawVertices = [const Offset(12, 8), const Offset(63, 11), const Offset(52, 48)];
+      final rawVertices = [
+        const Offset(12, 8),
+        const Offset(63, 11),
+        const Offset(52, 48),
+      ];
 
-      final snappedVertices = rawVertices.map((v) => Stroke.snapPointToGrid(v, gridSize)).toList();
-      expect(snappedVertices, equals([const Offset(0, 0), const Offset(75, 0), const Offset(50, 50)]));
+      final snappedVertices = rawVertices
+          .map((v) => Stroke.snapPointToGrid(v, gridSize))
+          .toList();
+      expect(
+        snappedVertices,
+        equals([const Offset(0, 0), const Offset(75, 0), const Offset(50, 50)]),
+      );
 
       final poly = PolygonStroke(
         color: Colors.purple,
@@ -223,12 +256,14 @@ void main() {
       expect(snapped.points.last.y, equals(60.0));
 
       page.insertStroke(snapped);
-      history.recordChange(EditorHistoryItem(
-        type: EditorHistoryItemType.draw,
-        pageIndex: 0,
-        strokes: [snapped],
-        images: const [],
-      ));
+      history.recordChange(
+        EditorHistoryItem(
+          type: EditorHistoryItemType.draw,
+          pageIndex: 0,
+          strokes: [snapped],
+          images: const [],
+        ),
+      );
 
       // Undo removes snapped line
       history.canRedo = true;
@@ -311,12 +346,14 @@ void main() {
       );
 
       page.insertStroke(customStroke);
-      history.recordChange(EditorHistoryItem(
-        type: EditorHistoryItemType.draw,
-        pageIndex: 0,
-        strokes: [customStroke],
-        images: const [],
-      ));
+      history.recordChange(
+        EditorHistoryItem(
+          type: EditorHistoryItemType.draw,
+          pageIndex: 0,
+          strokes: [customStroke],
+          images: const [],
+        ),
+      );
 
       // Undo
       history.canRedo = true;
@@ -340,24 +377,34 @@ void main() {
       final history = EditorHistory();
 
       // 2. Handwriting input (writes equation line 1)
-      final stroke1 = _createTestStroke(start: const Offset(50, 100), end: const Offset(150, 100));
+      final stroke1 = _createTestStroke(
+        start: const Offset(50, 100),
+        end: const Offset(150, 100),
+      );
       page.insertStroke(stroke1);
-      history.recordChange(EditorHistoryItem(
-        type: EditorHistoryItemType.draw,
-        pageIndex: 0,
-        strokes: [stroke1],
-        images: const [],
-      ));
+      history.recordChange(
+        EditorHistoryItem(
+          type: EditorHistoryItemType.draw,
+          pageIndex: 0,
+          strokes: [stroke1],
+          images: const [],
+        ),
+      );
 
       // 3. Writes mistaken stroke
-      final strokeMistake = _createTestStroke(start: const Offset(150, 100), end: const Offset(200, 150));
+      final strokeMistake = _createTestStroke(
+        start: const Offset(150, 100),
+        end: const Offset(200, 150),
+      );
       page.insertStroke(strokeMistake);
-      history.recordChange(EditorHistoryItem(
-        type: EditorHistoryItemType.draw,
-        pageIndex: 0,
-        strokes: [strokeMistake],
-        images: const [],
-      ));
+      history.recordChange(
+        EditorHistoryItem(
+          type: EditorHistoryItemType.draw,
+          pageIndex: 0,
+          strokes: [strokeMistake],
+          images: const [],
+        ),
+      );
       expect(page.strokes, hasLength(2));
 
       // 4. Undoes mistake cleanly
@@ -370,14 +417,19 @@ void main() {
       expect(page.strokes.contains(strokeMistake), isFalse);
 
       // 5. Continues writing correct solution
-      final strokeCorrect = _createTestStroke(start: const Offset(150, 100), end: const Offset(250, 100));
+      final strokeCorrect = _createTestStroke(
+        start: const Offset(150, 100),
+        end: const Offset(250, 100),
+      );
       page.insertStroke(strokeCorrect);
-      history.recordChange(EditorHistoryItem(
-        type: EditorHistoryItemType.draw,
-        pageIndex: 0,
-        strokes: [strokeCorrect],
-        images: const [],
-      ));
+      history.recordChange(
+        EditorHistoryItem(
+          type: EditorHistoryItemType.draw,
+          pageIndex: 0,
+          strokes: [strokeCorrect],
+          images: const [],
+        ),
+      );
       expect(page.strokes, hasLength(2));
 
       // 6. Autosave triggered
@@ -389,7 +441,6 @@ void main() {
     test('Scenario 2: Isometric Engineering Schematic Drawing Workflow', () {
       // 1. Engineering student sets isometric grid
       const double L = 30.0;
-      final double tan30 = tan(pi / 6);
       final double dx = L * cos(pi / 6); // L * sqrt(3) / 2
 
       // 2. Drafts 3D isometric cube vertices
@@ -415,7 +466,10 @@ void main() {
         PointVector.fromOffset(offset: rightDiag),
         30.0,
       );
-      final rightAngle = atan2(snappedRight.dy - origin.dy, snappedRight.dx - origin.dx) * 180 / pi;
+      final rightAngle =
+          atan2(snappedRight.dy - origin.dy, snappedRight.dx - origin.dx) *
+          180 /
+          pi;
       expect(rightAngle, closeTo(30.0, 0.01));
 
       final (_, snappedLeft) = Stroke.snapLineToAngle(
@@ -423,7 +477,10 @@ void main() {
         PointVector.fromOffset(offset: leftDiag),
         30.0,
       );
-      final leftAngle = atan2(snappedLeft.dy - origin.dy, snappedLeft.dx - origin.dx) * 180 / pi;
+      final leftAngle =
+          atan2(snappedLeft.dy - origin.dy, snappedLeft.dx - origin.dx) *
+          180 /
+          pi;
       expect(leftAngle, closeTo(150.0, 0.01));
 
       // 4. Vertex concurrence verification: diagonals meet origin at exact vertex
@@ -469,7 +526,10 @@ void main() {
 
     test('Scenario 4: Technical Diagram PDF Export Workflow', () {
       // 1. Multi-layer drafting document
-      final constructionLayer = Layer(name: 'Construction Guides', visible: false);
+      final constructionLayer = Layer(
+        name: 'Construction Guides',
+        visible: false,
+      );
       final schematicLayer = Layer(name: 'Schematic', visible: true);
       final page = EditorPage(layers: [constructionLayer, schematicLayer]);
 
@@ -514,29 +574,35 @@ void main() {
       }
     });
 
-    test('Scenario 5: End-to-End Packaging & Clean Sideload Pipeline Audit', () {
-      // 1. Codemagic workflow check
-      final codemagicFile = File('codemagic.yaml');
-      expect(codemagicFile.existsSync(), isTrue);
-      final codemagic = codemagicFile.readAsStringSync();
-      expect(codemagic, contains('mac_mini_m2'));
-      expect(codemagic, contains('flutter pub get --directory=packages/sbn'));
-      expect(codemagic, contains('flutter pub get --directory=packages/onyxsdk_pen'));
-      expect(codemagic, contains('--no-codesign'));
-      expect(codemagic, contains('Opennote.ipa'));
+    test(
+      'Scenario 5: End-to-End Packaging & Clean Sideload Pipeline Audit',
+      () {
+        // 1. Codemagic workflow check
+        final codemagicFile = File('codemagic.yaml');
+        expect(codemagicFile.existsSync(), isTrue);
+        final codemagic = codemagicFile.readAsStringSync();
+        expect(codemagic, contains('mac_mini_m2'));
+        expect(codemagic, contains('flutter pub get --directory=packages/sbn'));
+        expect(
+          codemagic,
+          contains('flutter pub get --directory=packages/onyxsdk_pen'),
+        );
+        expect(codemagic, contains('--no-codesign'));
+        expect(codemagic, contains('Opennote.ipa'));
 
-      // 2. iOS project metadata check
-      final infoPlistFile = File('ios/Runner/Info.plist');
-      expect(infoPlistFile.existsSync(), isTrue);
-      final infoPlist = infoPlistFile.readAsStringSync();
-      expect(infoPlist, contains('<string>Opennote</string>'));
+        // 2. iOS project metadata check
+        final infoPlistFile = File('ios/Runner/Info.plist');
+        expect(infoPlistFile.existsSync(), isTrue);
+        final infoPlist = infoPlistFile.readAsStringSync();
+        expect(infoPlist, contains('<string>Opennote</string>'));
 
-      // 3. iOS deployment target check
-      final pbxprojFile = File('ios/Runner.xcodeproj/project.pbxproj');
-      expect(pbxprojFile.existsSync(), isTrue);
-      final pbxproj = pbxprojFile.readAsStringSync();
-      expect(pbxproj, contains('IPHONEOS_DEPLOYMENT_TARGET = 14.0;'));
-    });
+        // 3. iOS deployment target check
+        final pbxprojFile = File('ios/Runner.xcodeproj/project.pbxproj');
+        expect(pbxprojFile.existsSync(), isTrue);
+        final pbxproj = pbxprojFile.readAsStringSync();
+        expect(pbxproj, contains('IPHONEOS_DEPLOYMENT_TARGET = 14.0;'));
+      },
+    );
   });
 }
 

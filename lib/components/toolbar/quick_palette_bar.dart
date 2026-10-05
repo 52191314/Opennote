@@ -143,7 +143,9 @@ class _QuickPaletteBarState extends State<QuickPaletteBar> {
     final colorButtons = List.generate(_colorSlots.length, (idx) {
       final color = Color(_colorSlots[idx]);
       final isSelected = idx == _activeColorIdx;
-      final displayColor = color.withInversion(widget.invert).withValues(alpha: 1);
+      final displayColor = color
+          .withInversion(widget.invert)
+          .withValues(alpha: 1);
 
       return GestureDetector(
         key: ValueKey('quick_color_$idx'),
@@ -168,7 +170,7 @@ class _QuickPaletteBarState extends State<QuickPaletteBar> {
                       color: colorScheme.primary.withValues(alpha: 0.4),
                       blurRadius: 4,
                       spreadRadius: 1,
-                    )
+                    ),
                   ]
                 : null,
           ),

@@ -50,9 +50,9 @@ abstract class EditorExporter {
     final pdf = pw.Document();
 
     // Determine which pages to export
-    final exportIndices = (pageIndices ?? List.generate(
-      coreInfo.pages.length, (i) => i,
-    )).toList();
+    final exportIndices =
+        (pageIndices ?? List.generate(coreInfo.pages.length, (i) => i))
+            .toList();
 
     // Remove trailing empty page only when exporting all
     var pages = coreInfo.pages;
@@ -172,7 +172,8 @@ abstract class EditorExporter {
                         strokeSize / 4,
                         strokeSize / 4,
                       );
-                    } else if (stroke is ArrowStroke || stroke is DimensionStroke) {
+                    } else if (stroke is ArrowStroke ||
+                        stroke is DimensionStroke) {
                       shouldFillShape = false;
                       pdfGraphics.drawShape(stroke.toSvgPath());
                     } else {
@@ -200,8 +201,11 @@ abstract class EditorExporter {
                           final textMetrics = font.stringMetrics(stroke.text);
                           final textWidth = textMetrics.width * fontSize;
                           final textX = textPos.dx - textWidth / 2;
-                          final textY = (pageSize.height - textPos.dy) -
-                              (textMetrics.ascent + textMetrics.descent) / 2 * fontSize;
+                          final textY =
+                              (pageSize.height - textPos.dy) -
+                              (textMetrics.ascent + textMetrics.descent) /
+                                  2 *
+                                  fontSize;
                           pdfGraphics.setFillColor(strokeColor);
                           pdfGraphics.drawString(
                             font,
@@ -217,7 +221,7 @@ abstract class EditorExporter {
                     }
                   }
                 },
-                  child: pw.Image(
+                child: pw.Image(
                   pw.ImageImage(pageScreenshots[i]),
                   width: pageSize.width,
                   height: pageSize.height,

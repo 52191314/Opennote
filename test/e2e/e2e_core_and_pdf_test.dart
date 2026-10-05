@@ -26,7 +26,10 @@ void main() {
     // -------------------------------------------------------------
     test('T1.1: Handwriting stroke insertion into page active layer', () {
       final page = EditorPage();
-      final stroke = _createStroke(start: const Offset(10, 10), end: const Offset(50, 50));
+      final stroke = _createStroke(
+        start: const Offset(10, 10),
+        end: const Offset(50, 50),
+      );
 
       expect(page.strokes, isEmpty);
       page.insertStroke(stroke);
@@ -38,7 +41,10 @@ void main() {
 
     test('T1.2: Stroke removal via page removeStroke contract', () {
       final page = EditorPage();
-      final stroke = _createStroke(start: const Offset(20, 20), end: const Offset(80, 80));
+      final stroke = _createStroke(
+        start: const Offset(20, 20),
+        end: const Offset(80, 80),
+      );
 
       page.insertStroke(stroke);
       expect(page.strokes, hasLength(1));
@@ -52,15 +58,20 @@ void main() {
     test('T1.3: Undo/Redo single stroke lifecycle with EditorHistory', () {
       final history = EditorHistory();
       final page = EditorPage();
-      final stroke = _createStroke(start: const Offset(15, 15), end: const Offset(60, 60));
+      final stroke = _createStroke(
+        start: const Offset(15, 15),
+        end: const Offset(60, 60),
+      );
 
       page.insertStroke(stroke);
-      history.recordChange(EditorHistoryItem(
-        type: EditorHistoryItemType.draw,
-        pageIndex: 0,
-        strokes: [stroke],
-        images: const [],
-      ));
+      history.recordChange(
+        EditorHistoryItem(
+          type: EditorHistoryItemType.draw,
+          pageIndex: 0,
+          strokes: [stroke],
+          images: const [],
+        ),
+      );
 
       expect(history.canUndo, isTrue);
       expect(history.canRedo, isFalse);
@@ -89,8 +100,14 @@ void main() {
       final layer1 = Layer(name: 'Overlay Layer');
       final page = EditorPage(layers: [layer0, layer1], activeLayerIndex: 0);
 
-      final stroke1 = _createStroke(start: const Offset(10, 10), end: const Offset(50, 50));
-      final stroke2 = _createStroke(start: const Offset(60, 60), end: const Offset(90, 90));
+      final stroke1 = _createStroke(
+        start: const Offset(10, 10),
+        end: const Offset(50, 50),
+      );
+      final stroke2 = _createStroke(
+        start: const Offset(60, 60),
+        end: const Offset(90, 90),
+      );
 
       // Draw stroke1 on layer 0
       page.activeLayerIndex = 0;
@@ -118,24 +135,28 @@ void main() {
 
       expect(history.isCurrentStateSaved, isTrue);
 
-      history.recordChange(EditorHistoryItem(
-        type: EditorHistoryItemType.draw,
-        pageIndex: 0,
-        strokes: [stroke1],
-        images: const [],
-      ));
+      history.recordChange(
+        EditorHistoryItem(
+          type: EditorHistoryItemType.draw,
+          pageIndex: 0,
+          strokes: [stroke1],
+          images: const [],
+        ),
+      );
       expect(history.isCurrentStateSaved, isFalse);
 
       history.markLastChangeAsSaved();
       expect(history.isCurrentStateSaved, isTrue);
 
       final stroke2 = _createStroke();
-      history.recordChange(EditorHistoryItem(
-        type: EditorHistoryItemType.draw,
-        pageIndex: 0,
-        strokes: [stroke2],
-        images: const [],
-      ));
+      history.recordChange(
+        EditorHistoryItem(
+          type: EditorHistoryItemType.draw,
+          pageIndex: 0,
+          strokes: [stroke2],
+          images: const [],
+        ),
+      );
       expect(history.isCurrentStateSaved, isFalse);
     });
 
@@ -154,38 +175,49 @@ void main() {
       expect(() => history.redo(), throwsA(isA<Exception>()));
     });
 
-    test('T2.3: Rapid alternating undo/redo sequences across multiple strokes', () {
-      final history = EditorHistory();
-      final page = EditorPage();
-      final strokes = List.generate(5, (i) => _createStroke(start: Offset(i * 10.0, 0), end: Offset(i * 10.0, 50)));
+    test(
+      'T2.3: Rapid alternating undo/redo sequences across multiple strokes',
+      () {
+        final history = EditorHistory();
+        final page = EditorPage();
+        final strokes = List.generate(
+          5,
+          (i) => _createStroke(
+            start: Offset(i * 10.0, 0),
+            end: Offset(i * 10.0, 50),
+          ),
+        );
 
-      for (final s in strokes) {
-        page.insertStroke(s);
-        history.recordChange(EditorHistoryItem(
-          type: EditorHistoryItemType.draw,
-          pageIndex: 0,
-          strokes: [s],
-          images: const [],
-        ));
-      }
-      expect(page.strokes, hasLength(5));
-
-      // Alternating undo and redo
-      for (int i = 0; i < 3; i++) {
-        history.canRedo = true;
-        final undone = history.undo();
-        for (final s in undone.strokes) {
-          page.removeStroke(s);
-        }
-        expect(page.strokes, hasLength(4));
-
-        final redone = history.redo();
-        for (final s in redone.strokes) {
+        for (final s in strokes) {
           page.insertStroke(s);
+          history.recordChange(
+            EditorHistoryItem(
+              type: EditorHistoryItemType.draw,
+              pageIndex: 0,
+              strokes: [s],
+              images: const [],
+            ),
+          );
         }
         expect(page.strokes, hasLength(5));
-      }
-    });
+
+        // Alternating undo and redo
+        for (int i = 0; i < 3; i++) {
+          history.canRedo = true;
+          final undone = history.undo();
+          for (final s in undone.strokes) {
+            page.removeStroke(s);
+          }
+          expect(page.strokes, hasLength(4));
+
+          final redone = history.redo();
+          for (final s in redone.strokes) {
+            page.insertStroke(s);
+          }
+          expect(page.strokes, hasLength(5));
+        }
+      },
+    );
 
     test('T2.4: Stroke with zero length insertion and removal boundary', () {
       final page = EditorPage();
@@ -196,7 +228,10 @@ void main() {
 
       page.insertStroke(zeroLengthStroke);
       expect(page.strokes, hasLength(1));
-      expect(page.strokes.first.points.first.x, equals(page.strokes.first.points.last.x));
+      expect(
+        page.strokes.first.points.first.x,
+        equals(page.strokes.first.points.last.x),
+      );
 
       final removed = page.removeStroke(zeroLengthStroke);
       expect(removed, isTrue);
@@ -237,13 +272,16 @@ void main() {
       expect(EditorExporter.shouldRasterizeStroke(shapePenStroke), isFalse);
     });
 
-    test('T1.7: Rasterization classification: highlighter and pencil are rasterized', () {
-      final highlighterStroke = _createStroke(toolId: ToolId.highlighter);
-      final pencilStroke = _createStroke(toolId: ToolId.pencil);
+    test(
+      'T1.7: Rasterization classification: highlighter and pencil are rasterized',
+      () {
+        final highlighterStroke = _createStroke(toolId: ToolId.highlighter);
+        final pencilStroke = _createStroke(toolId: ToolId.pencil);
 
-      expect(EditorExporter.shouldRasterizeStroke(highlighterStroke), isTrue);
-      expect(EditorExporter.shouldRasterizeStroke(pencilStroke), isTrue);
-    });
+        expect(EditorExporter.shouldRasterizeStroke(highlighterStroke), isTrue);
+        expect(EditorExporter.shouldRasterizeStroke(pencilStroke), isTrue);
+      },
+    );
 
     test('T1.8: Drafting primitives are classified for vector export', () {
       final arrow = _createArrowStroke();
@@ -258,8 +296,14 @@ void main() {
       final layerHidden = Layer(name: 'Construction', visible: false);
       final page = EditorPage(layers: [layerVisible, layerHidden]);
 
-      final s1 = _createStroke(start: const Offset(10, 10), end: const Offset(20, 20));
-      final s2 = _createStroke(start: const Offset(30, 30), end: const Offset(40, 40));
+      final s1 = _createStroke(
+        start: const Offset(10, 10),
+        end: const Offset(20, 20),
+      );
+      final s2 = _createStroke(
+        start: const Offset(30, 30),
+        end: const Offset(40, 40),
+      );
 
       layerVisible.strokes.add(s1);
       layerHidden.strokes.add(s2);
@@ -290,7 +334,10 @@ void main() {
       // In PDF coordinate system, Y is inverted: page.size.height - y
       // y = 200 -> inverted Y = 1200
       // y = 400 -> inverted Y = 1000
-      expect(svgPath.contains('100.0 1200.0') || svgPath.contains('1200'), isTrue);
+      expect(
+        svgPath.contains('100.0 1200.0') || svgPath.contains('1200'),
+        isTrue,
+      );
     });
 
     // -------------------------------------------------------------
@@ -334,54 +381,77 @@ void main() {
       expect(svgPath, isNot(contains('Infinity')));
     });
 
-    test('T2.8: Extreme canvas aspect ratios preserve coordinate conversion', () {
-      // 10:1 tall page
-      const tallSize = Size(500, 5000);
-      final tallStroke = Stroke(
-        color: Colors.black,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 1.0),
-        pageIndex: 0,
-        page: const HasSize(tallSize),
-        toolId: ToolId.fountainPen,
-      );
-      tallStroke.addPoint(const Offset(250, 4500));
-      final tallSvg = tallStroke.toSvgPath();
-      expect(tallSvg, isNotEmpty);
-      expect(tallSvg.contains('500.0') || tallSvg.contains('500'), isTrue); // 5000 - 4500 = 500
-    });
+    test(
+      'T2.8: Extreme canvas aspect ratios preserve coordinate conversion',
+      () {
+        // 10:1 tall page
+        const tallSize = Size(500, 5000);
+        final tallStroke = Stroke(
+          color: Colors.black,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 1.0),
+          pageIndex: 0,
+          page: const HasSize(tallSize),
+          toolId: ToolId.fountainPen,
+        );
+        tallStroke.addPoint(const Offset(250, 4500));
+        final tallSvg = tallStroke.toSvgPath();
+        expect(tallSvg, isNotEmpty);
+        expect(
+          tallSvg.contains('500.0') || tallSvg.contains('500'),
+          isTrue,
+        ); // 5000 - 4500 = 500
+      },
+    );
 
-    test('T2.9: ArrowStroke and DimensionStroke toSvgPath generate valid paths', () {
-      final arrow = _createArrowStroke(start: const Offset(10, 10), end: const Offset(100, 10));
-      final dimension = _createDimensionStroke(start: const Offset(20, 20), end: const Offset(120, 20));
+    test(
+      'T2.9: ArrowStroke and DimensionStroke toSvgPath generate valid paths',
+      () {
+        final arrow = _createArrowStroke(
+          start: const Offset(10, 10),
+          end: const Offset(100, 10),
+        );
+        final dimension = _createDimensionStroke(
+          start: const Offset(20, 20),
+          end: const Offset(120, 20),
+        );
 
-      final arrowSvg = arrow.toSvgPath();
-      final dimSvg = dimension.toSvgPath();
+        final arrowSvg = arrow.toSvgPath();
+        final dimSvg = dimension.toSvgPath();
 
-      expect(arrowSvg, startsWith('M'));
-      expect(arrowSvg, contains('L'));
-      expect(arrowSvg, isNot(contains('NaN')));
+        expect(arrowSvg, startsWith('M'));
+        expect(arrowSvg, contains('L'));
+        expect(arrowSvg, isNot(contains('NaN')));
 
-      expect(dimSvg, startsWith('M'));
-      expect(dimSvg, contains('L'));
-      expect(dimSvg, isNot(contains('NaN')));
-    });
+        expect(dimSvg, startsWith('M'));
+        expect(dimSvg, contains('L'));
+        expect(dimSvg, isNot(contains('NaN')));
+      },
+    );
 
-    test('T2.10: High density multi-layer vector strokes flattening integrity', () {
-      final layers = List.generate(3, (l) => Layer(name: 'Layer $l', visible: true));
-      final page = EditorPage(layers: layers);
+    test(
+      'T2.10: High density multi-layer vector strokes flattening integrity',
+      () {
+        final layers = List.generate(
+          3,
+          (l) => Layer(name: 'Layer $l', visible: true),
+        );
+        final page = EditorPage(layers: layers);
 
-      for (int l = 0; l < 3; l++) {
-        for (int i = 0; i < 50; i++) {
-          layers[l].strokes.add(_createStroke(start: Offset(i.toDouble(), l.toDouble())));
+        for (int l = 0; l < 3; l++) {
+          for (int i = 0; i < 50; i++) {
+            layers[l].strokes.add(
+              _createStroke(start: Offset(i.toDouble(), l.toDouble())),
+            );
+          }
         }
-      }
 
-      expect(page.strokes, hasLength(150));
-      // Toggling visibility of one layer
-      layers[1].visible = false;
-      expect(page.strokes, hasLength(100));
-    });
+        expect(page.strokes, hasLength(150));
+        // Toggling visibility of one layer
+        layers[1].visible = false;
+        expect(page.strokes, hasLength(100));
+      },
+    );
   });
 }
 

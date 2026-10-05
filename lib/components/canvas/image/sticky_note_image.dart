@@ -77,11 +77,7 @@ class StickyNoteImage extends EditorImage {
   @override
   Map<String, dynamic> toJson(OrderedAssetCache assets) =>
       super.toJson(assets)
-        ..addAll({
-          'c': color.toARGB32(),
-          't': text,
-          'fs': fontSize,
-        });
+        ..addAll({'c': color.toARGB32(), 't': text, 'fs': fontSize});
 
   @override
   Future<void> firstLoad() async {

@@ -43,7 +43,9 @@ class CanvasBackgroundPainter extends CustomPainter {
     final Rect visibleRect;
     if (isInfiniteCanvas) {
       final clip = canvas.getLocalClipBounds();
-      visibleRect = (clip.isFinite && !clip.isEmpty) ? clip : (Offset.zero & size);
+      visibleRect = (clip.isFinite && !clip.isEmpty)
+          ? clip
+          : (Offset.zero & size);
     } else {
       visibleRect = Offset.zero & size;
     }
@@ -110,8 +112,10 @@ class CanvasBackgroundPainter extends CustomPainter {
         case .collegeLtr:
         case .collegeRtl:
         case .lined:
-          final startY = (bounds.top / lineHeight).floor() * lineHeight.toDouble();
-          final endY = (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+          final startY =
+              (bounds.top / lineHeight).floor() * lineHeight.toDouble();
+          final endY =
+              (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
           for (double y = startY; y <= endY; y += lineHeight) {
             yield PatternElement(
               Offset(bounds.left, y),
@@ -135,10 +139,14 @@ class CanvasBackgroundPainter extends CustomPainter {
             );
           }
         case .grid:
-          final startX = (bounds.left / lineHeight).floor() * lineHeight.toDouble();
-          final endX = (bounds.right / lineHeight).ceil() * lineHeight.toDouble();
-          final startY = (bounds.top / lineHeight).floor() * lineHeight.toDouble();
-          final endY = (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+          final startX =
+              (bounds.left / lineHeight).floor() * lineHeight.toDouble();
+          final endX =
+              (bounds.right / lineHeight).ceil() * lineHeight.toDouble();
+          final startY =
+              (bounds.top / lineHeight).floor() * lineHeight.toDouble();
+          final endY =
+              (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
           for (double y = startY; y <= endY; y += lineHeight) {
             yield PatternElement(
               Offset(bounds.left, y),
@@ -154,20 +162,28 @@ class CanvasBackgroundPainter extends CustomPainter {
             );
           }
         case .dots:
-          final startX = (bounds.left / lineHeight).floor() * lineHeight.toDouble();
-          final endX = (bounds.right / lineHeight).ceil() * lineHeight.toDouble();
-          final startY = (bounds.top / lineHeight).floor() * lineHeight.toDouble();
-          final endY = (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+          final startX =
+              (bounds.left / lineHeight).floor() * lineHeight.toDouble();
+          final endX =
+              (bounds.right / lineHeight).ceil() * lineHeight.toDouble();
+          final startY =
+              (bounds.top / lineHeight).floor() * lineHeight.toDouble();
+          final endY =
+              (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
           for (double y = startY; y <= endY; y += lineHeight) {
             for (double x = startX; x <= endX; x += lineHeight) {
               yield PatternElement(Offset(x, y), Offset(x, y), isLine: false);
             }
           }
         case .engineeringGrid:
-          final startX = (bounds.left / lineHeight).floor() * lineHeight.toDouble();
-          final endX = (bounds.right / lineHeight).ceil() * lineHeight.toDouble();
-          final startY = (bounds.top / lineHeight).floor() * lineHeight.toDouble();
-          final endY = (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+          final startX =
+              (bounds.left / lineHeight).floor() * lineHeight.toDouble();
+          final endX =
+              (bounds.right / lineHeight).ceil() * lineHeight.toDouble();
+          final startY =
+              (bounds.top / lineHeight).floor() * lineHeight.toDouble();
+          final endY =
+              (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
           for (double y = startY; y <= endY; y += lineHeight) {
             final isHeavy = (y / lineHeight).round() % 10 == 0;
             yield PatternElement(
@@ -194,7 +210,10 @@ class CanvasBackgroundPainter extends CustomPainter {
           final colMax = (bounds.right / dx).ceil();
           for (int col = colMin; col <= colMax; col++) {
             final x = col * dx;
-            yield PatternElement(Offset(x, bounds.top), Offset(x, bounds.bottom));
+            yield PatternElement(
+              Offset(x, bounds.top),
+              Offset(x, bounds.bottom),
+            );
           }
 
           final mMin = ((bounds.top - tan30 * bounds.right) / l).floor();
@@ -203,7 +222,10 @@ class CanvasBackgroundPainter extends CustomPainter {
             final b = m * l;
             final x1 = (bounds.top - b) / tan30;
             final x2 = (bounds.bottom - b) / tan30;
-            yield PatternElement(Offset(x1, bounds.top), Offset(x2, bounds.bottom));
+            yield PatternElement(
+              Offset(x1, bounds.top),
+              Offset(x2, bounds.bottom),
+            );
           }
 
           final kMin = ((bounds.top + tan30 * bounds.left) / l).floor();
@@ -212,13 +234,18 @@ class CanvasBackgroundPainter extends CustomPainter {
             final c = k * l;
             final x1 = (c - bounds.top) / tan30;
             final x2 = (c - bounds.bottom) / tan30;
-            yield PatternElement(Offset(x1, bounds.top), Offset(x2, bounds.bottom));
+            yield PatternElement(
+              Offset(x1, bounds.top),
+              Offset(x2, bounds.bottom),
+            );
           }
         case .staffs:
         case .tablature:
         case .cornell:
-          final startY = (bounds.top / lineHeight).floor() * lineHeight.toDouble();
-          final endY = (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+          final startY =
+              (bounds.top / lineHeight).floor() * lineHeight.toDouble();
+          final endY =
+              (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
           for (double y = startY; y <= endY; y += lineHeight) {
             yield PatternElement(
               Offset(bounds.left, y),
@@ -322,7 +349,10 @@ class CanvasBackgroundPainter extends CustomPainter {
         // Vertical lines: x = col * dx
         for (double x = 0; x <= size.width + 1e-6; x += dx) {
           final clampedX = x.clamp(0.0, size.width);
-          yield PatternElement(Offset(clampedX, 0), Offset(clampedX, size.height));
+          yield PatternElement(
+            Offset(clampedX, 0),
+            Offset(clampedX, size.height),
+          );
         }
 
         // +30° lines (right-leaning): y = tan30 * x + m * l, for integer m
@@ -362,7 +392,8 @@ class CanvasBackgroundPainter extends CustomPainter {
               candidates.last.dx.clamp(0.0, size.width),
               candidates.last.dy.clamp(0.0, size.height),
             );
-            if ((end.dx - start.dx).abs() > 1e-4 || (end.dy - start.dy).abs() > 1e-4) {
+            if ((end.dx - start.dx).abs() > 1e-4 ||
+                (end.dy - start.dy).abs() > 1e-4) {
               yield PatternElement(start, end);
             }
           }
@@ -405,7 +436,8 @@ class CanvasBackgroundPainter extends CustomPainter {
               candidates.last.dx.clamp(0.0, size.width),
               candidates.last.dy.clamp(0.0, size.height),
             );
-            if ((end.dx - start.dx).abs() > 1e-4 || (end.dy - start.dy).abs() > 1e-4) {
+            if ((end.dx - start.dx).abs() > 1e-4 ||
+                (end.dy - start.dy).abs() > 1e-4) {
               yield PatternElement(start, end);
             }
           }
@@ -481,7 +513,11 @@ class CanvasBackgroundPainter extends CustomPainter {
         }
 
         // Ruled lines for bottom summary section
-        for (double y = summaryTop + lineHeight; y < size.height - lineHeight; y += lineHeight) {
+        for (
+          double y = summaryTop + lineHeight;
+          y < size.height - lineHeight;
+          y += lineHeight
+        ) {
           yield PatternElement(
             Offset(lineHeight.toDouble(), y),
             Offset(size.width - lineHeight, y),

@@ -229,7 +229,11 @@ void main() {
         select.onDragUpdate(const Offset(10, 10));
         select.onDragUpdate(const Offset(10, 0));
 
-        select.onDragEnd(const [], const [], textRect: const Rect.fromLTWH(0, 0, 10, 10));
+        select.onDragEnd(
+          const [],
+          const [],
+          textRect: const Rect.fromLTWH(0, 0, 10, 10),
+        );
 
         expect(select.selectResult.textSelected, isFalse);
       });
@@ -243,79 +247,89 @@ void main() {
         select.onDragUpdate(const Offset(10, 10));
         select.onDragUpdate(const Offset(10, 0));
 
-        select.onDragEnd(const [], const [], textRect: const Rect.fromLTWH(0, 0, 10, 10));
+        select.onDragEnd(
+          const [],
+          const [],
+          textRect: const Rect.fromLTWH(0, 0, 10, 10),
+        );
 
         expect(select.selectResult.textSelected, isTrue);
       });
 
-      test('selects both strokes and images when both filters enabled', () async {
-        final select = Select.currentSelect;
-        stows.lassoSelectHandwriting.value = true;
-        stows.lassoSelectImages.value = true;
+      test(
+        'selects both strokes and images when both filters enabled',
+        () async {
+          final select = Select.currentSelect;
+          stows.lassoSelectHandwriting.value = true;
+          stows.lassoSelectImages.value = true;
 
-        select.onDragStart(Offset.zero, 0);
-        select.onDragUpdate(const Offset(0, 10));
-        select.onDragUpdate(const Offset(10, 10));
-        select.onDragUpdate(const Offset(10, 0));
+          select.onDragStart(Offset.zero, 0);
+          select.onDragUpdate(const Offset(0, 10));
+          select.onDragUpdate(const Offset(10, 10));
+          select.onDragUpdate(const Offset(10, 0));
 
-        const page = HasSize(Size(100, 100));
-        final options = StrokeOptions(size: 9);
-        final stroke = Stroke(
-          color: Stroke.defaultColor,
-          pressureEnabled: Stroke.defaultPressureEnabled,
-          options: options,
-          pageIndex: 0,
-          page: page,
-          toolId: .fountainPen,
-        )..addPoint(const Offset(5, 5));
-        final image = TestImage(dstRect: const Rect.fromLTWH(0, 0, 10, 10));
+          const page = HasSize(Size(100, 100));
+          final options = StrokeOptions(size: 9);
+          final stroke = Stroke(
+            color: Stroke.defaultColor,
+            pressureEnabled: Stroke.defaultPressureEnabled,
+            options: options,
+            pageIndex: 0,
+            page: page,
+            toolId: .fountainPen,
+          )..addPoint(const Offset(5, 5));
+          final image = TestImage(dstRect: const Rect.fromLTWH(0, 0, 10, 10));
 
-        select.onDragEnd([stroke], [image]);
+          select.onDragEnd([stroke], [image]);
 
-        expect(select.selectResult.strokes, hasLength(1));
-        expect(select.selectResult.images, hasLength(1));
-      });
+          expect(select.selectResult.strokes, hasLength(1));
+          expect(select.selectResult.images, hasLength(1));
+        },
+      );
 
-      test('underlying image remains stationary when image filter disabled', () async {
-        final select = Select.currentSelect;
-        stows.lassoSelectImages.value = false;
-        stows.lassoSelectHandwriting.value = true;
+      test(
+        'underlying image remains stationary when image filter disabled',
+        () async {
+          final select = Select.currentSelect;
+          stows.lassoSelectImages.value = false;
+          stows.lassoSelectHandwriting.value = true;
 
-        select.onDragStart(Offset.zero, 0);
-        select.onDragUpdate(const Offset(0, 100));
-        select.onDragUpdate(const Offset(100, 100));
-        select.onDragUpdate(const Offset(100, 0));
+          select.onDragStart(Offset.zero, 0);
+          select.onDragUpdate(const Offset(0, 100));
+          select.onDragUpdate(const Offset(100, 100));
+          select.onDragUpdate(const Offset(100, 0));
 
-        const page = HasSize(Size(200, 200));
-        final options = StrokeOptions(size: 9);
-        final annotationStroke = Stroke(
-          color: Colors.red,
-          pressureEnabled: Stroke.defaultPressureEnabled,
-          options: options,
-          pageIndex: 0,
-          page: page,
-          toolId: .fountainPen,
-        )..addPoint(const Offset(50, 50));
-        const originalImageRect = Rect.fromLTWH(10, 10, 80, 80);
-        final backgroundImage = TestImage(dstRect: originalImageRect);
+          const page = HasSize(Size(200, 200));
+          final options = StrokeOptions(size: 9);
+          final annotationStroke = Stroke(
+            color: Colors.red,
+            pressureEnabled: Stroke.defaultPressureEnabled,
+            options: options,
+            pageIndex: 0,
+            page: page,
+            toolId: .fountainPen,
+          )..addPoint(const Offset(50, 50));
+          const originalImageRect = Rect.fromLTWH(10, 10, 80, 80);
+          final backgroundImage = TestImage(dstRect: originalImageRect);
 
-        select.onDragEnd([annotationStroke], [backgroundImage]);
+          select.onDragEnd([annotationStroke], [backgroundImage]);
 
-        expect(select.selectResult.strokes, contains(annotationStroke));
-        expect(select.selectResult.images, isEmpty);
+          expect(select.selectResult.strokes, contains(annotationStroke));
+          expect(select.selectResult.images, isEmpty);
 
-        // Simulate moving selection: only items in selectResult are moved
-        const moveOffset = Offset(20, 30);
-        for (final stroke in select.selectResult.strokes) {
-          stroke.shift(moveOffset);
-        }
-        for (final image in select.selectResult.images) {
-          image.dstRect = image.dstRect.shift(moveOffset);
-        }
+          // Simulate moving selection: only items in selectResult are moved
+          const moveOffset = Offset(20, 30);
+          for (final stroke in select.selectResult.strokes) {
+            stroke.shift(moveOffset);
+          }
+          for (final image in select.selectResult.images) {
+            image.dstRect = image.dstRect.shift(moveOffset);
+          }
 
-        // Image was not selected, so dstRect must remain 100% stationary
-        expect(backgroundImage.dstRect, equals(originalImageRect));
-      });
+          // Image was not selected, so dstRect must remain 100% stationary
+          expect(backgroundImage.dstRect, equals(originalImageRect));
+        },
+      );
     });
 
     group('Lasso filters tapSelect', () {

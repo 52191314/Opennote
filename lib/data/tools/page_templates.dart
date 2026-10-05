@@ -62,10 +62,7 @@ class PageTemplate {
       name: 'Lined',
       backgroundPattern: CanvasBackgroundPattern.lined,
     ),
-    PageTemplate(
-      name: 'Grid',
-      backgroundPattern: CanvasBackgroundPattern.grid,
-    ),
+    PageTemplate(name: 'Grid', backgroundPattern: CanvasBackgroundPattern.grid),
     PageTemplate(
       name: 'Dot Grid',
       backgroundPattern: CanvasBackgroundPattern.dots,
@@ -110,7 +107,8 @@ class PageTemplate {
     PageTemplate(
       name: 'Planner (Weekly)',
       backgroundPattern: CanvasBackgroundPattern.grid,
-      initialContent: 'Weekly Planner\n'
+      initialContent:
+          'Weekly Planner\n'
           '----------------------\n'
           '\n'
           'Monday:\n'
@@ -140,7 +138,8 @@ class PageTemplate {
     PageTemplate(
       name: 'To-Do List',
       backgroundPattern: CanvasBackgroundPattern.lined,
-      initialContent: 'To-Do List\n'
+      initialContent:
+          'To-Do List\n'
           '-------------\n'
           '\n'
           '- [ ] \n'

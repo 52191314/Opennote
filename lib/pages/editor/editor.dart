@@ -648,7 +648,8 @@ class EditorState extends State<Editor> {
     final position = page.renderBox!.globalToLocal(details.focalPoint);
     history.canRedo = false;
 
-    if (page.activeLayer.locked && (currentTool is Pen || currentTool is Eraser)) {
+    if (page.activeLayer.locked &&
+        (currentTool is Pen || currentTool is Eraser)) {
       return;
     }
 
@@ -665,12 +666,7 @@ class EditorState extends State<Editor> {
       if (stows.circleToSelect.value) {
         circleToSelectDetector.start(position);
       }
-      pen.onDragStart(
-        position,
-        page,
-        dragPageIndex!,
-        currentPressure,
-      );
+      pen.onDragStart(position, page, dragPageIndex!, currentPressure);
     } else if (currentTool is Eraser) {
       final eraser = currentTool as Eraser;
       page.eraserCursorPosition = position;
@@ -689,7 +685,8 @@ class EditorState extends State<Editor> {
       // trigger a re-selection even if a stroke is already selected.
       if (select.doneSelecting &&
           select.selectResult.pageIndex == dragPageIndex! &&
-          _lastTapTime != null && _lastTapPosition != null) {
+          _lastTapTime != null &&
+          _lastTapPosition != null) {
         final now = DateTime.now();
         final timeDelta = now.difference(_lastTapTime!).inMilliseconds;
         final posDelta = (position - _lastTapPosition!).distance;
@@ -793,7 +790,8 @@ class EditorState extends State<Editor> {
 
   void onDrawUpdate(ScaleUpdateDetails details) {
     final page = coreInfo.pages[dragPageIndex!];
-    if (page.activeLayer.locked && (currentTool is Pen || currentTool is Eraser)) {
+    if (page.activeLayer.locked &&
+        (currentTool is Pen || currentTool is Eraser)) {
       return;
     }
     final position = page.renderBox!.globalToLocal(details.focalPoint);
@@ -866,8 +864,9 @@ class EditorState extends State<Editor> {
             stroke.end = position;
           }
           stroke.markPolygonNeedsUpdating();
-          select.selectResult.path =
-              Select.createTightSelectionPath(stroke.lowQualityPolygon);
+          select.selectResult.path = Select.createTightSelectionPath(
+            stroke.lowQualityPolygon,
+          );
         } else if (stroke is DimensionStroke) {
           if (_draggedVertexIndex == 0) {
             stroke.start = position;
@@ -882,13 +881,15 @@ class EditorState extends State<Editor> {
             final length = dir.distance;
             if (length > 0.001) {
               final perp = Offset(-dir.dy / length, dir.dx / length);
-              stroke.offset = (position.dx - stroke.start.dx) * perp.dx +
+              stroke.offset =
+                  (position.dx - stroke.start.dx) * perp.dx +
                   (position.dy - stroke.start.dy) * perp.dy;
             }
           }
           stroke.markPolygonNeedsUpdating();
-          select.selectResult.path =
-              Select.createTightSelectionPath(stroke.lowQualityPolygon);
+          select.selectResult.path = Select.createTightSelectionPath(
+            stroke.lowQualityPolygon,
+          );
         }
         page.redrawStrokes();
         return;
@@ -903,14 +904,26 @@ class EditorState extends State<Editor> {
 
         // Determine pivot (opposite corner/edge)
         final pivot = switch (handleIdx) {
-          0 => bounds.bottomRight,       // topLeft → pivot bottomRight
-          1 => Offset(bounds.center.dx, bounds.bottom),  // topCenter → pivot bottomCenter
-          2 => bounds.bottomLeft,        // topRight → pivot bottomLeft
-          3 => Offset(bounds.left, bounds.center.dy),     // middleRight → pivot middleLeft
-          4 => bounds.topLeft,           // bottomRight → pivot topLeft
-          5 => Offset(bounds.center.dx, bounds.top),      // bottomCenter → pivot topCenter
-          6 => bounds.topRight,          // bottomLeft → pivot topRight
-          _ => Offset(bounds.right, bounds.center.dy),    // middleLeft → pivot middleRight
+          0 => bounds.bottomRight, // topLeft → pivot bottomRight
+          1 => Offset(
+            bounds.center.dx,
+            bounds.bottom,
+          ), // topCenter → pivot bottomCenter
+          2 => bounds.bottomLeft, // topRight → pivot bottomLeft
+          3 => Offset(
+            bounds.left,
+            bounds.center.dy,
+          ), // middleRight → pivot middleLeft
+          4 => bounds.topLeft, // bottomRight → pivot topLeft
+          5 => Offset(
+            bounds.center.dx,
+            bounds.top,
+          ), // bottomCenter → pivot topCenter
+          6 => bounds.topRight, // bottomLeft → pivot topRight
+          _ => Offset(
+            bounds.right,
+            bounds.center.dy,
+          ), // middleLeft → pivot middleRight
         };
 
         double scaleX, scaleY;
@@ -970,7 +983,10 @@ class EditorState extends State<Editor> {
         }
         // Update selection path bounds
         select.selectResult.path = _scalePath(
-          select.selectResult.path, scaleX, scaleY, pivot,
+          select.selectResult.path,
+          scaleX,
+          scaleY,
+          pivot,
         );
         page.redrawStrokes();
       } else if (_isRotating && select.doneSelecting) {
@@ -1011,7 +1027,9 @@ class EditorState extends State<Editor> {
 
         // Update the selection path bounds
         select.selectResult.path = _rotatePath(
-          select.selectResult.path, deltaAngle, center,
+          select.selectResult.path,
+          deltaAngle,
+          center,
         );
         page.redrawStrokes();
       } else if (select.doneSelecting) {
@@ -1042,7 +1060,8 @@ class EditorState extends State<Editor> {
 
   void onDrawEnd(ScaleEndDetails details) {
     final page = coreInfo.pages[dragPageIndex!];
-    if (page.activeLayer.locked && (currentTool is Pen || currentTool is Eraser)) {
+    if (page.activeLayer.locked &&
+        (currentTool is Pen || currentTool is Eraser)) {
       if (currentTool is Pen) (currentTool as Pen).onDragEnd();
       if (currentTool is Eraser) (currentTool as Eraser).onDragEnd();
       page.eraserCursorPosition = null;
@@ -1168,15 +1187,16 @@ class EditorState extends State<Editor> {
           return;
         }
 
-        final textRect = page.computeTextContentRect(coreInfo.lineHeight.toDouble());
+        final textRect = page.computeTextContentRect(
+          coreInfo.lineHeight.toDouble(),
+        );
 
         // Detect tap (no drag, no resize, no rotate)
         if (moveOffset == .zero && !_isRotating && !_isResizing) {
           if (!select.doneSelecting) {
             // A new selection that ended without dragging → try tap-to-select
             final bounds = select.selectResult.path.getBounds();
-            if (bounds.isEmpty ||
-                (bounds.width < 20 && bounds.height < 20)) {
+            if (bounds.isEmpty || (bounds.width < 20 && bounds.height < 20)) {
               select.tapSelect(
                 previousPosition,
                 page.strokes,
@@ -1193,8 +1213,7 @@ class EditorState extends State<Editor> {
                 page.selectionResizeHandles = null;
                 page.selectionVertexHandles = null;
               } else {
-                final selectionBounds =
-                    select.selectResult.path.getBounds();
+                final selectionBounds = select.selectResult.path.getBounds();
                 page.selectionDeleteButtonRect = null;
                 page.selectionRotationHandleCenter = Offset(
                   selectionBounds.center.dx,
@@ -1249,11 +1268,11 @@ class EditorState extends State<Editor> {
               offset: (_isRotating || _isResizing)
                   ? null
                   : .fromLTRB(
-                    moveOffset.dx,
-                    moveOffset.dy,
-                    moveOffset.dx,
-                    moveOffset.dy,
-                  ),
+                      moveOffset.dx,
+                      moveOffset.dy,
+                      moveOffset.dx,
+                      moveOffset.dy,
+                    ),
             ),
           );
         } else {
@@ -1290,11 +1309,7 @@ class EditorState extends State<Editor> {
               if (s is ArrowStroke) {
                 page.selectionVertexHandles = [s.start, s.end];
               } else if (s is DimensionStroke) {
-                page.selectionVertexHandles = [
-                  s.start,
-                  s.end,
-                  s.textPosition,
-                ];
+                page.selectionVertexHandles = [s.start, s.end, s.textPosition];
               } else {
                 page.selectionVertexHandles = null;
               }
@@ -2078,8 +2093,9 @@ class EditorState extends State<Editor> {
 
     HapticFeedback.mediumImpact();
 
-    final textRect =
-        page.computeTextContentRect(coreInfo.lineHeight.toDouble());
+    final textRect = page.computeTextContentRect(
+      coreInfo.lineHeight.toDouble(),
+    );
 
     Select.currentSelect.selectFromPath(
       path: path,
@@ -2175,7 +2191,12 @@ class EditorState extends State<Editor> {
     return newPath;
   }
 
-  static Path _scalePath(Path path, double scaleX, double scaleY, Offset pivot) {
+  static Path _scalePath(
+    Path path,
+    double scaleX,
+    double scaleY,
+    Offset pivot,
+  ) {
     if (scaleX == 1 && scaleY == 1) return path;
     final metrics = path.computeMetrics().toList();
     if (metrics.isEmpty) return path;
@@ -2279,10 +2300,7 @@ class EditorState extends State<Editor> {
 
       final colorChange = <Stroke, Change<Color>>{};
       for (final stroke in strokes) {
-        colorChange[stroke] = Change(
-          previous: stroke.color,
-          current: color,
-        );
+        colorChange[stroke] = Change(previous: stroke.color, current: color);
         stroke.color = color;
       }
 
@@ -2419,9 +2437,7 @@ class EditorState extends State<Editor> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => ElementsSheet(
-        onSelectElement: _stampElement,
-      ),
+      builder: (ctx) => ElementsSheet(onSelectElement: _stampElement),
     );
   }
 
@@ -2437,7 +2453,10 @@ class EditorState extends State<Editor> {
     }
 
     final targetCenter = Offset(page.size.width / 2, page.size.height / 2);
-    final newStrokes = item.instantiateStrokes(page: page, targetCenter: targetCenter);
+    final newStrokes = item.instantiateStrokes(
+      page: page,
+      targetCenter: targetCenter,
+    );
     if (newStrokes.isEmpty) return;
 
     for (final s in newStrokes) {
@@ -2589,7 +2608,8 @@ class EditorState extends State<Editor> {
         stows.editorToolbarAlignment.value == AxisDirection.right;
 
     final int currentPageIdx = currentPageIndex;
-    final bool currentPageBookmarked = coreInfo.pages.isNotEmpty &&
+    final bool currentPageBookmarked =
+        coreInfo.pages.isNotEmpty &&
         currentPageIdx < coreInfo.pages.length &&
         coreInfo.pages[currentPageIdx].bookmarked;
 
@@ -2790,7 +2810,8 @@ class EditorState extends State<Editor> {
             redo: redo,
             isRedoPossible: history.canRedo,
             toggleFingerDrawing: () {
-              stows.editorFingerDrawing.value = !stows.editorFingerDrawing.value;
+              stows.editorFingerDrawing.value =
+                  !stows.editorFingerDrawing.value;
               lastSeenPointerCount = 0;
             },
             pickPhoto: _pickPhotos,
@@ -2888,77 +2909,79 @@ class EditorState extends State<Editor> {
       child: Scaffold(
         backgroundColor: stows.goodnotesUiMode.value
             ? (Theme.brightnessOf(context) == Brightness.dark
-                ? const Color(0xFF161618)
-                : const Color(0xFFF3F2EE))
+                  ? const Color(0xFF161618)
+                  : const Color(0xFFF3F2EE))
             : null,
         appBar: DynamicMaterialApp.isFullscreen
             ? null
             : stows.goodnotesUiMode.value
-                ? GoodnotesHeaderBar(
-                    filePath: coreInfo.filePath,
-                    customTitle: widget.customTitle,
-                    filenameTextEditingController: filenameTextEditingController,
-                    filenameFormKey: _filenameFormKey,
-                    renameFile: renameFile,
-                    validateFilename: _validateFilenameTextField,
-                    needsNaming: needsNaming,
-                    savingState: savingState,
-                    triggerSave: saveToFile,
-                    onBack: () => Navigator.of(context).maybePop(),
-                    onOpenThumbnails: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => pageManager(context),
-                      );
-                    },
-                    currentPageIndex: currentPageIdx,
-                    totalPages: coreInfo.pages.length,
-                    isInfiniteCanvas: coreInfo.isInfiniteCanvas,
-                    isBookmarked: currentPageBookmarked,
-                    onToggleBookmark: () => setState(() {
-                      if (coreInfo.readOnly) return;
-                      final pageIdx = currentPageIndex;
-                      if (pageIdx >= coreInfo.pages.length) return;
-                      final page = coreInfo.pages[pageIdx];
-                      page.bookmarked = !page.bookmarked;
-                      page.redrawStrokes();
-                      autosaveAfterDelay();
-                    }),
-                    onInsertPage: () => setState(() {
-                      final currentPageIndex = this.currentPageIndex;
-                      insertPageAfter(currentPageIndex);
-                      CanvasGestureDetector.scrollToPage(
-                        pageIndex: currentPageIndex + 1,
-                        pages: coreInfo.pages,
-                        screenWidth: MediaQuery.sizeOf(context).width,
-                        transformationController: _transformationController,
-                      );
-                    }),
-                    undo: undo,
-                    canUndo: !coreInfo.readOnly && history.canUndo,
-                    redo: redo,
-                    canRedo: !coreInfo.readOnly && history.canRedo,
-                    onExport: () => _showExportDialog(context),
-                    isHandScrollMode: _isHandScrollOnlyMode,
-                    onToggleHandScrollMode: () => setState(() {
-                      _isHandScrollOnlyMode = !_isHandScrollOnlyMode;
-                    }),
-                    onOpenMenu: () {
-                      showModalBottomSheet(
-                        context: context,
-                        builder: (context) => bottomSheet(context),
-                        isScrollControlled: true,
-                        showDragHandle: true,
-                        backgroundColor: colorScheme.surface,
-                        constraints: const BoxConstraints(maxWidth: 500),
-                      );
-                    },
-                    readOnly: coreInfo.readOnly,
-                  )
-                : AppBar(
-                    toolbarHeight: kToolbarHeight,
-                    leadingWidth: isCompact ? 44.0 : null,
-                    titleSpacing: isCompact ? 6.0 : NavigationToolbar.kMiddleSpacing,
+            ? GoodnotesHeaderBar(
+                filePath: coreInfo.filePath,
+                customTitle: widget.customTitle,
+                filenameTextEditingController: filenameTextEditingController,
+                filenameFormKey: _filenameFormKey,
+                renameFile: renameFile,
+                validateFilename: _validateFilenameTextField,
+                needsNaming: needsNaming,
+                savingState: savingState,
+                triggerSave: saveToFile,
+                onBack: () => Navigator.of(context).maybePop(),
+                onOpenThumbnails: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => pageManager(context),
+                  );
+                },
+                currentPageIndex: currentPageIdx,
+                totalPages: coreInfo.pages.length,
+                isInfiniteCanvas: coreInfo.isInfiniteCanvas,
+                isBookmarked: currentPageBookmarked,
+                onToggleBookmark: () => setState(() {
+                  if (coreInfo.readOnly) return;
+                  final pageIdx = currentPageIndex;
+                  if (pageIdx >= coreInfo.pages.length) return;
+                  final page = coreInfo.pages[pageIdx];
+                  page.bookmarked = !page.bookmarked;
+                  page.redrawStrokes();
+                  autosaveAfterDelay();
+                }),
+                onInsertPage: () => setState(() {
+                  final currentPageIndex = this.currentPageIndex;
+                  insertPageAfter(currentPageIndex);
+                  CanvasGestureDetector.scrollToPage(
+                    pageIndex: currentPageIndex + 1,
+                    pages: coreInfo.pages,
+                    screenWidth: MediaQuery.sizeOf(context).width,
+                    transformationController: _transformationController,
+                  );
+                }),
+                undo: undo,
+                canUndo: !coreInfo.readOnly && history.canUndo,
+                redo: redo,
+                canRedo: !coreInfo.readOnly && history.canRedo,
+                onExport: () => _showExportDialog(context),
+                isHandScrollMode: _isHandScrollOnlyMode,
+                onToggleHandScrollMode: () => setState(() {
+                  _isHandScrollOnlyMode = !_isHandScrollOnlyMode;
+                }),
+                onOpenMenu: () {
+                  showModalBottomSheet(
+                    context: context,
+                    builder: (context) => bottomSheet(context),
+                    isScrollControlled: true,
+                    showDragHandle: true,
+                    backgroundColor: colorScheme.surface,
+                    constraints: const BoxConstraints(maxWidth: 500),
+                  );
+                },
+                readOnly: coreInfo.readOnly,
+              )
+            : AppBar(
+                toolbarHeight: kToolbarHeight,
+                leadingWidth: isCompact ? 44.0 : null,
+                titleSpacing: isCompact
+                    ? 6.0
+                    : NavigationToolbar.kMiddleSpacing,
                 title: widget.customTitle != null
                     ? Text(widget.customTitle!)
                     : Form(
@@ -2982,35 +3005,49 @@ class EditorState extends State<Editor> {
                   // Undo & Redo (Goodnotes 6 Navigation Bar controls)
                   IconButton(
                     visualDensity: isCompact ? VisualDensity.compact : null,
-                    padding: isCompact ? const EdgeInsets.symmetric(horizontal: 4) : null,
+                    padding: isCompact
+                        ? const EdgeInsets.symmetric(horizontal: 4)
+                        : null,
                     icon: const AdaptiveIcon(
                       icon: Icons.undo,
                       cupertinoIcon: CupertinoIcons.arrow_uturn_left,
                     ),
                     tooltip: t.editor.toolbar.undo,
-                    onPressed: (!coreInfo.readOnly && history.canUndo) ? undo : null,
+                    onPressed: (!coreInfo.readOnly && history.canUndo)
+                        ? undo
+                        : null,
                   ),
                   IconButton(
                     visualDensity: isCompact ? VisualDensity.compact : null,
-                    padding: isCompact ? const EdgeInsets.symmetric(horizontal: 4) : null,
+                    padding: isCompact
+                        ? const EdgeInsets.symmetric(horizontal: 4)
+                        : null,
                     icon: const AdaptiveIcon(
                       icon: Icons.redo,
                       cupertinoIcon: CupertinoIcons.arrow_uturn_right,
                     ),
                     tooltip: t.editor.toolbar.redo,
-                    onPressed: (!coreInfo.readOnly && history.canRedo) ? redo : null,
+                    onPressed: (!coreInfo.readOnly && history.canRedo)
+                        ? redo
+                        : null,
                   ),
                   SizedBox(width: isCompact ? 2 : 4),
 
                   // Goodnotes Document Hub & Page Pill: Page X / Y ⭐
                   Center(
                     child: Container(
-                      margin: EdgeInsets.symmetric(horizontal: isCompact ? 2 : 4),
+                      margin: EdgeInsets.symmetric(
+                        horizontal: isCompact ? 2 : 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.65),
+                        color: colorScheme.surfaceContainerHighest.withValues(
+                          alpha: 0.65,
+                        ),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+                          color: colorScheme.outlineVariant.withValues(
+                            alpha: 0.4,
+                          ),
                           width: 0.75,
                         ),
                       ),
@@ -3018,7 +3055,8 @@ class EditorState extends State<Editor> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Tooltip(
-                            message: 'Document Hub (Thumbnails, Bookmarks & Outline)',
+                            message:
+                                'Document Hub (Thumbnails, Bookmarks & Outline)',
                             child: InkWell(
                               borderRadius: const BorderRadius.horizontal(
                                 left: Radius.circular(16),
@@ -3076,7 +3114,9 @@ class EditorState extends State<Editor> {
                           Container(
                             width: 1,
                             height: isCompact ? 12 : 16,
-                            color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+                            color: colorScheme.outlineVariant.withValues(
+                              alpha: 0.4,
+                            ),
                           ),
                           Tooltip(
                             message: currentPageBookmarked
@@ -3099,11 +3139,15 @@ class EditorState extends State<Editor> {
                                   vertical: isCompact ? 4 : 6,
                                 ),
                                 child: Icon(
-                                  currentPageBookmarked ? Icons.star : Icons.star_border,
+                                  currentPageBookmarked
+                                      ? Icons.star
+                                      : Icons.star_border,
                                   size: isCompact ? 14 : 16,
                                   color: currentPageBookmarked
                                       ? Colors.amber.shade700
-                                      : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                      : colorScheme.onSurfaceVariant.withValues(
+                                          alpha: 0.6,
+                                        ),
                                 ),
                               ),
                             ),
@@ -3117,7 +3161,9 @@ class EditorState extends State<Editor> {
                   if (!isVeryCompact)
                     IconButton(
                       visualDensity: isCompact ? VisualDensity.compact : null,
-                      padding: isCompact ? const EdgeInsets.symmetric(horizontal: 4) : null,
+                      padding: isCompact
+                          ? const EdgeInsets.symmetric(horizontal: 4)
+                          : null,
                       icon: const AdaptiveIcon(
                         icon: Icons.add,
                         cupertinoIcon: CupertinoIcons.add,
@@ -3139,7 +3185,9 @@ class EditorState extends State<Editor> {
                   if (screenWidth >= 450)
                     IconButton(
                       visualDensity: isCompact ? VisualDensity.compact : null,
-                      padding: isCompact ? const EdgeInsets.symmetric(horizontal: 4) : null,
+                      padding: isCompact
+                          ? const EdgeInsets.symmetric(horizontal: 4)
+                          : null,
                       icon: const AdaptiveIcon(
                         icon: Icons.ios_share,
                         cupertinoIcon: CupertinoIcons.share,
@@ -3151,7 +3199,9 @@ class EditorState extends State<Editor> {
                   // More (...) menu
                   IconButton(
                     visualDensity: isCompact ? VisualDensity.compact : null,
-                    padding: isCompact ? const EdgeInsets.symmetric(horizontal: 4) : null,
+                    padding: isCompact
+                        ? const EdgeInsets.symmetric(horizontal: 4)
+                        : null,
                     icon: const AdaptiveIcon(
                       icon: Icons.more_vert,
                       cupertinoIcon: CupertinoIcons.ellipsis_vertical,
@@ -3221,11 +3271,7 @@ class EditorState extends State<Editor> {
             children: [
               Row(
                 children: [
-                  Icon(
-                    Icons.ios_share,
-                    size: 20,
-                    color: colorScheme.primary,
-                  ),
+                  Icon(Icons.ios_share, size: 20, color: colorScheme.primary),
                   const SizedBox(width: 8),
                   Text(
                     t.editor.toolbar.export,
@@ -3398,7 +3444,8 @@ class EditorState extends State<Editor> {
           ? ShapePen.detectedShape
           : null,
       currentSelection: isCurrentPageSelected ? select?.selectResult : null,
-      isDoneSelecting: isCurrentPageSelected && (select?.doneSelecting ?? false),
+      isDoneSelecting:
+          isCurrentPageSelected && (select?.doneSelecting ?? false),
       onCutSelection: isCurrentPageSelected ? _cutSelection : null,
       onCopySelection: isCurrentPageSelected ? _copySelection : null,
       onDuplicateSelection: isCurrentPageSelected ? _duplicateSelection : null,
@@ -3459,13 +3506,15 @@ class EditorState extends State<Editor> {
     setState(() {
       final page = coreInfo.pages[pageIndex];
       final newLayers = page.layers
-          .map((layer) => Layer(
-                name: layer.name,
-                visible: layer.visible,
-                strokes: layer.strokes
-                    .map((stroke) => stroke.copy()..pageIndex = pageIndex + 1)
-                    .toList(),
-              ))
+          .map(
+            (layer) => Layer(
+              name: layer.name,
+              visible: layer.visible,
+              strokes: layer.strokes
+                  .map((stroke) => stroke.copy()..pageIndex = pageIndex + 1)
+                  .toList(),
+            ),
+          )
           .toList();
       final newPage = page.copyWith(
         layers: newLayers,

@@ -51,7 +51,7 @@ class CanvasGestureDetector extends StatefulWidget {
     this.isInfiniteCanvas = false,
     TransformationController? transformationController,
   }) : _transformationController =
-            transformationController ?? TransformationController();
+           transformationController ?? TransformationController();
 
   final String filePath;
 
@@ -475,8 +475,9 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
 
       if (_pointerPositions.isEmpty) {
         if (!_multiPointerMoved && _multiPointerDownTime != null) {
-          final duration =
-              DateTime.now().difference(_multiPointerDownTime!).inMilliseconds;
+          final duration = DateTime.now()
+              .difference(_multiPointerDownTime!)
+              .inMilliseconds;
           if (duration < 350) {
             if (_maxPointerCountDuringGesture == 2) {
               HapticFeedback.lightImpact();
@@ -620,8 +621,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
             ),
           ),
         ),
-        if (showProtractor)
-          const ProtractorOverlay(),
+        if (showProtractor) const ProtractorOverlay(),
         Positioned.fill(
           child: CanvasHud(
             transformationController: widget._transformationController,

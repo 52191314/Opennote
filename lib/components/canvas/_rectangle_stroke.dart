@@ -162,10 +162,22 @@ class RectangleStroke extends Stroke {
     final bottomRight = _rotatePoint(rect.bottomRight);
     final bottomLeft = _rotatePoint(rect.bottomLeft);
 
-    final newLeft = min(topLeft.dx, min(topRight.dx, min(bottomRight.dx, bottomLeft.dx)));
-    final newTop = min(topLeft.dy, min(topRight.dy, min(bottomRight.dy, bottomLeft.dy)));
-    final newRight = max(topLeft.dx, max(topRight.dx, max(bottomRight.dx, bottomLeft.dx)));
-    final newBottom = max(topLeft.dy, max(topRight.dy, max(bottomRight.dy, bottomLeft.dy)));
+    final newLeft = min(
+      topLeft.dx,
+      min(topRight.dx, min(bottomRight.dx, bottomLeft.dx)),
+    );
+    final newTop = min(
+      topLeft.dy,
+      min(topRight.dy, min(bottomRight.dy, bottomLeft.dy)),
+    );
+    final newRight = max(
+      topLeft.dx,
+      max(topRight.dx, max(bottomRight.dx, bottomLeft.dx)),
+    );
+    final newBottom = max(
+      topLeft.dy,
+      max(topRight.dy, max(bottomRight.dy, bottomLeft.dy)),
+    );
 
     rect = Rect.fromLTRB(newLeft, newTop, newRight, newBottom);
 

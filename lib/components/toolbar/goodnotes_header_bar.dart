@@ -18,7 +18,8 @@ import 'package:saber/i18n/strings.g.dart';
 /// - Share & Export button
 /// - Read-Only / Stylus Hand Scroll mode toggle (disables pencil marks for reading/panning)
 /// - More `...` overflow menu
-class GoodnotesHeaderBar extends StatelessWidget implements PreferredSizeWidget {
+class GoodnotesHeaderBar extends StatelessWidget
+    implements PreferredSizeWidget {
   const GoodnotesHeaderBar({
     super.key,
     required this.filePath,
@@ -124,7 +125,9 @@ class GoodnotesHeaderBar extends StatelessWidget implements PreferredSizeWidget 
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: colorScheme.outlineVariant.withValues(alpha: 0.35),
@@ -170,8 +173,12 @@ class GoodnotesHeaderBar extends StatelessWidget implements PreferredSizeWidget 
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.65),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.65,
+                  ),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(8),
+                  ),
                   border: Border.all(
                     color: colorScheme.outlineVariant.withValues(alpha: 0.35),
                     width: 0.75,
@@ -198,7 +205,8 @@ class GoodnotesHeaderBar extends StatelessWidget implements PreferredSizeWidget 
                             )
                           : Form(
                               key: filenameFormKey,
-                              autovalidateMode: AutovalidateMode.onUserInteraction,
+                              autovalidateMode:
+                                  AutovalidateMode.onUserInteraction,
                               child: TextFormField(
                                 decoration: const InputDecoration(
                                   border: InputBorder.none,

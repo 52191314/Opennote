@@ -199,7 +199,8 @@ class Canvas extends StatelessWidget {
                         cropActive: cropActive,
                         onToggleCrop: onToggleCrop,
                         setAsBackground: setAsBackground,
-                        currentToolIsSelect: currentTool.toolId == ToolId.select,
+                        currentToolIsSelect:
+                            currentTool.toolId == ToolId.select,
                         currentScale: currentScale,
                       ),
                     ),

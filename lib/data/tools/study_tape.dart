@@ -14,20 +14,18 @@ import 'package:sbn/tool_id.dart';
 
 /// A tool for placing [TapeStroke] masking tape strips on notes for active recall.
 class StudyTapeTool extends Pen {
-  StudyTapeTool({
-    TapePattern? pattern,
-    super.color = const Color(0xFFFFD54F),
-  })  : pattern = pattern ?? defaultPattern,
-        super(
-          name: 'Study Tape',
-          sizeMin: 10,
-          sizeMax: 60,
-          sizeStep: 5,
-          icon: studyTapeIcon,
-          options: StrokeOptions(size: 24, isComplete: false),
-          pressureEnabled: false,
-          toolId: ToolId.studyTape,
-        );
+  StudyTapeTool({TapePattern? pattern, super.color = const Color(0xFFFFD54F)})
+    : pattern = pattern ?? defaultPattern,
+      super(
+        name: 'Study Tape',
+        sizeMin: 10,
+        sizeMax: 60,
+        sizeStep: 5,
+        icon: studyTapeIcon,
+        options: StrokeOptions(size: 24, isComplete: false),
+        pressureEnabled: false,
+        toolId: ToolId.studyTape,
+      );
 
   static const studyTapeIcon = Icons.view_headline_rounded;
 

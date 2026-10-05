@@ -55,10 +55,7 @@ class CrdtDocument {
       timestamp: customTimestamp ?? DateTime.now().millisecondsSinceEpoch,
       type: CrdtOpType.addStroke,
       targetId: strokeId,
-      data: {
-        'page': pageIndex,
-        'stroke': strokeJson,
-      },
+      data: {'page': pageIndex, 'stroke': strokeJson},
     );
 
     _log.add(op);
@@ -104,7 +101,8 @@ class CrdtDocument {
     );
 
     _log.add(op);
-    if (!_tombstones.contains(strokeId) && _activeStrokes.containsKey(strokeId)) {
+    if (!_tombstones.contains(strokeId) &&
+        _activeStrokes.containsKey(strokeId)) {
       _activeStrokes[strokeId]!.addAll(patch);
     }
     return op;
@@ -119,10 +117,7 @@ class CrdtDocument {
         missingOps.add(op);
       }
     }
-    return CrdtUpdate(
-      operations: missingOps,
-      stateVector: stateVector.copy(),
-    );
+    return CrdtUpdate(operations: missingOps, stateVector: stateVector.copy());
   }
 
   /// Applies a [CrdtUpdate] payload received from a remote replica.
@@ -141,8 +136,9 @@ class CrdtDocument {
           if (!_tombstones.contains(op.targetId)) {
             final strokeData = op.data['stroke'] as Map?;
             if (strokeData != null) {
-              _activeStrokes[op.targetId] =
-                  Map<String, dynamic>.from(strokeData);
+              _activeStrokes[op.targetId] = Map<String, dynamic>.from(
+                strokeData,
+              );
               _strokePages[op.targetId] = op.data['page'] as int? ?? 0;
             }
           }
@@ -155,7 +151,9 @@ class CrdtDocument {
               _activeStrokes.containsKey(op.targetId)) {
             final patch = op.data['patch'] as Map?;
             if (patch != null) {
-              _activeStrokes[op.targetId]!.addAll(Map<String, dynamic>.from(patch));
+              _activeStrokes[op.targetId]!.addAll(
+                Map<String, dynamic>.from(patch),
+              );
             }
           }
         case CrdtOpType.addPage:

@@ -88,7 +88,9 @@ void main() {
       expect(find.byKey(const Key('page_number_2')), findsOneWidget);
     });
 
-    testWidgets('prominently highlights active page with badge', (tester) async {
+    testWidgets('prominently highlights active page with badge', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1200, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -113,93 +115,101 @@ void main() {
   });
 
   group('Tap to Jump Navigation', () {
-    testWidgets('tapping thumbnail card calls scrollToPage and dismisses dialog', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(1200, 900);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'tapping thumbnail card calls scrollToPage and dismisses dialog',
+      (tester) async {
+        tester.view.physicalSize = const Size(1200, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      final coreInfo = EditorCoreInfo.placeholder;
-      coreInfo.pages.clear();
-      coreInfo.pages.addAll([
-        EditorPage(size: const Size(1000, 1400)),
-        EditorPage(size: const Size(1000, 1400)),
-      ]);
+        final coreInfo = EditorCoreInfo.placeholder;
+        coreInfo.pages.clear();
+        coreInfo.pages.addAll([
+          EditorPage(size: const Size(1000, 1400)),
+          EditorPage(size: const Size(1000, 1400)),
+        ]);
 
-      int? scrolledTo;
-      await tester.pumpWidget(
-        buildTestDialog(
-          coreInfo: coreInfo,
-          scrollToPage: (pageIndex) => scrolledTo = pageIndex,
-        ),
-      );
-      await tester.tap(find.text('Open Overview'));
-      await tester.pumpAndSettle();
+        int? scrolledTo;
+        await tester.pumpWidget(
+          buildTestDialog(
+            coreInfo: coreInfo,
+            scrollToPage: (pageIndex) => scrolledTo = pageIndex,
+          ),
+        );
+        await tester.tap(find.text('Open Overview'));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(PageGridOverviewDialog), findsOneWidget);
+        expect(find.byType(PageGridOverviewDialog), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('page_jump_target_1')));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('page_jump_target_1')));
+        await tester.pumpAndSettle();
 
-      expect(scrolledTo, equals(1));
-      expect(find.byType(PageGridOverviewDialog), findsNothing);
-    });
+        expect(scrolledTo, equals(1));
+        expect(find.byType(PageGridOverviewDialog), findsNothing);
+      },
+    );
   });
 
   group('Bookmark Toggling', () {
-    testWidgets('star badge displays outline/amber and toggles bookmark state', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(1200, 900);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'star badge displays outline/amber and toggles bookmark state',
+      (tester) async {
+        tester.view.physicalSize = const Size(1200, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      final coreInfo = EditorCoreInfo.placeholder;
-      coreInfo.pages.clear();
-      final page0 = EditorPage(size: const Size(1000, 1400), bookmarked: false);
-      final page1 = EditorPage(size: const Size(1000, 1400), bookmarked: true);
-      coreInfo.pages.addAll([page0, page1]);
+        final coreInfo = EditorCoreInfo.placeholder;
+        coreInfo.pages.clear();
+        final page0 = EditorPage(
+          size: const Size(1000, 1400),
+          bookmarked: false,
+        );
+        final page1 = EditorPage(
+          size: const Size(1000, 1400),
+          bookmarked: true,
+        );
+        coreInfo.pages.addAll([page0, page1]);
 
-      var redrawAndSaveCalled = false;
-      await tester.pumpWidget(
-        buildTestDialog(
-          coreInfo: coreInfo,
-          redrawAndSave: () => redrawAndSaveCalled = true,
-        ),
-      );
-      await tester.tap(find.text('Open Overview'));
-      await tester.pumpAndSettle();
+        var redrawAndSaveCalled = false;
+        await tester.pumpWidget(
+          buildTestDialog(
+            coreInfo: coreInfo,
+            redrawAndSave: () => redrawAndSaveCalled = true,
+          ),
+        );
+        await tester.tap(find.text('Open Overview'));
+        await tester.pumpAndSettle();
 
-      final star0Finder = find.descendant(
-        of: find.byKey(const Key('bookmark_star_0')),
-        matching: find.byType(Icon),
-      );
-      final star0Icon = tester.widget<Icon>(star0Finder);
-      expect(star0Icon.icon, equals(Icons.star_border));
+        final star0Finder = find.descendant(
+          of: find.byKey(const Key('bookmark_star_0')),
+          matching: find.byType(Icon),
+        );
+        final star0Icon = tester.widget<Icon>(star0Finder);
+        expect(star0Icon.icon, equals(Icons.star_border));
 
-      final star1Finder = find.descendant(
-        of: find.byKey(const Key('bookmark_star_1')),
-        matching: find.byType(Icon),
-      );
-      final star1Icon = tester.widget<Icon>(star1Finder);
-      expect(star1Icon.icon, equals(Icons.star));
-      expect(star1Icon.color, equals(Colors.amber));
+        final star1Finder = find.descendant(
+          of: find.byKey(const Key('bookmark_star_1')),
+          matching: find.byType(Icon),
+        );
+        final star1Icon = tester.widget<Icon>(star1Finder);
+        expect(star1Icon.icon, equals(Icons.star));
+        expect(star1Icon.color, equals(Colors.amber));
 
-      await tester.tap(find.byKey(const Key('bookmark_star_0')));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('bookmark_star_0')));
+        await tester.pumpAndSettle();
 
-      expect(page0.bookmarked, isTrue);
-      expect(redrawAndSaveCalled, isTrue);
+        expect(page0.bookmarked, isTrue);
+        expect(redrawAndSaveCalled, isTrue);
 
-      final star0ToggledFinder = find.descendant(
-        of: find.byKey(const Key('bookmark_star_0')),
-        matching: find.byType(Icon),
-      );
-      final star0ToggledIcon = tester.widget<Icon>(star0ToggledFinder);
-      expect(star0ToggledIcon.icon, equals(Icons.star));
-      expect(star0ToggledIcon.color, equals(Colors.amber));
-    });
+        final star0ToggledFinder = find.descendant(
+          of: find.byKey(const Key('bookmark_star_0')),
+          matching: find.byType(Icon),
+        );
+        final star0ToggledIcon = tester.widget<Icon>(star0ToggledFinder);
+        expect(star0ToggledIcon.icon, equals(Icons.star));
+        expect(star0ToggledIcon.color, equals(Colors.amber));
+      },
+    );
   });
 
   group('Filter Tabs (All vs Bookmarked)', () {
@@ -244,7 +254,9 @@ void main() {
       expect(find.byKey(const Key('page_thumbnail_card_2')), findsOneWidget);
     });
 
-    testWidgets('shows empty state when no pages are bookmarked', (tester) async {
+    testWidgets('shows empty state when no pages are bookmarked', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1200, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -266,7 +278,9 @@ void main() {
       expect(find.text('Star pages to view them here'), findsOneWidget);
     });
 
-    testWidgets('shows empty state when no headings exist in outline view', (tester) async {
+    testWidgets('shows empty state when no headings exist in outline view', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1200, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -452,66 +466,64 @@ void main() {
   });
 
   group('Drag and Drop Reordering', () {
-    testWidgets('long-press draggable and drag target are present and functional', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(1200, 900);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'long-press draggable and drag target are present and functional',
+      (tester) async {
+        tester.view.physicalSize = const Size(1200, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      final coreInfo = EditorCoreInfo.placeholder;
-      coreInfo.pages.clear();
-      final pageA = EditorPage(size: const Size(1000, 1400));
-      final pageB = EditorPage(size: const Size(1000, 1400));
-      coreInfo.pages.addAll([pageA, pageB]);
+        final coreInfo = EditorCoreInfo.placeholder;
+        coreInfo.pages.clear();
+        final pageA = EditorPage(size: const Size(1000, 1400));
+        final pageB = EditorPage(size: const Size(1000, 1400));
+        coreInfo.pages.addAll([pageA, pageB]);
 
-      var saved = false;
-      await tester.pumpWidget(
-        buildTestDialog(
-          coreInfo: coreInfo,
-          redrawAndSave: () => saved = true,
-        ),
-      );
-      await tester.tap(find.text('Open Overview'));
-      await tester.pumpAndSettle();
+        var saved = false;
+        await tester.pumpWidget(
+          buildTestDialog(
+            coreInfo: coreInfo,
+            redrawAndSave: () => saved = true,
+          ),
+        );
+        await tester.tap(find.text('Open Overview'));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(LongPressDraggable<int>), findsNWidgets(2));
-      expect(find.byType(DragTarget<int>), findsNWidgets(2));
+        expect(find.byType(LongPressDraggable<int>), findsNWidgets(2));
+        expect(find.byType(DragTarget<int>), findsNWidgets(2));
 
-      // Simulate dragging card 0 onto card 1
-      final firstCard = find.byKey(const Key('page_thumbnail_card_0'));
-      final secondCard = find.byKey(const Key('page_thumbnail_card_1'));
+        // Simulate dragging card 0 onto card 1
+        final firstCard = find.byKey(const Key('page_thumbnail_card_0'));
+        final secondCard = find.byKey(const Key('page_thumbnail_card_1'));
 
-      final gesture = await tester.startGesture(tester.getCenter(firstCard));
-      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
-      await gesture.moveTo(tester.getCenter(secondCard));
-      await tester.pump();
-      await gesture.up();
-      await tester.pumpAndSettle();
+        final gesture = await tester.startGesture(tester.getCenter(firstCard));
+        await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+        await gesture.moveTo(tester.getCenter(secondCard));
+        await tester.pump();
+        await gesture.up();
+        await tester.pumpAndSettle();
 
-      expect(saved, isTrue);
-      expect(coreInfo.pages.first, equals(pageB));
-      expect(coreInfo.pages.last, equals(pageA));
-    });
+        expect(saved, isTrue);
+        expect(coreInfo.pages.first, equals(pageB));
+        expect(coreInfo.pages.last, equals(pageA));
+      },
+    );
   });
 
   group('Bug Fixes Verification', () {
     test('duplicatePage creates independent deep layer copies', () {
       final stroke = createTestStroke(pageIndex: 0);
       final layer = Layer(name: 'Default', strokes: [stroke]);
-      final page = EditorPage(
-        size: const Size(1000, 1400),
-        layers: [layer],
-      );
+      final page = EditorPage(size: const Size(1000, 1400), layers: [layer]);
 
       final newLayers = page.layers
-          .map((l) => Layer(
-                name: l.name,
-                visible: l.visible,
-                strokes: l.strokes
-                    .map((s) => s.copy()..pageIndex = 1)
-                    .toList(),
-              ))
+          .map(
+            (l) => Layer(
+              name: l.name,
+              visible: l.visible,
+              strokes: l.strokes.map((s) => s.copy()..pageIndex = 1).toList(),
+            ),
+          )
           .toList();
 
       final duplicatedPage = page.copyWith(
@@ -523,14 +535,15 @@ void main() {
       );
 
       expect(
-        identical(page.layers.first.strokes, duplicatedPage.layers.first.strokes),
+        identical(
+          page.layers.first.strokes,
+          duplicatedPage.layers.first.strokes,
+        ),
         isFalse,
         reason: 'Layer strokes list must be independently allocated',
       );
 
-      duplicatedPage.layers.first.strokes.add(
-        createTestStroke(pageIndex: 1),
-      );
+      duplicatedPage.layers.first.strokes.add(createTestStroke(pageIndex: 1));
 
       expect(page.layers.first.strokes.length, equals(1));
       expect(duplicatedPage.layers.first.strokes.length, equals(2));
@@ -560,13 +573,21 @@ void main() {
       }
 
       safeDeletePage(0);
-      expect(pages.length, equals(1), reason: 'Single page must not be deleted');
+      expect(
+        pages.length,
+        equals(1),
+        reason: 'Single page must not be deleted',
+      );
 
       pages.add(EditorPage(size: const Size(1000, 1400)));
       expect(pages.length, equals(2));
 
       safeDeletePage(0);
-      expect(pages.length, equals(1), reason: 'Multiple pages can be deleted down to 1');
+      expect(
+        pages.length,
+        equals(1),
+        reason: 'Multiple pages can be deleted down to 1',
+      );
     });
   });
 }

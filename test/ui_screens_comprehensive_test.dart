@@ -15,7 +15,6 @@ import 'package:saber/data/file_manager/file_manager.dart';
 import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/pen.dart';
-import 'package:saber/data/tools/select.dart';
 import 'package:saber/i18n/strings.g.dart';
 import 'package:saber/pages/editor/editor.dart';
 import 'package:saber/pages/home/home.dart';
@@ -46,11 +45,7 @@ void main() {
         themeMode: themeMode,
         home: MediaQuery(
           data: MediaQueryData(size: size),
-          child: SizedBox(
-            width: size.width,
-            height: size.height,
-            child: child,
-          ),
+          child: SizedBox(width: size.width, height: size.height, child: child),
         ),
       ),
     );
@@ -70,7 +65,10 @@ void main() {
         });
 
         await tester.pumpWidget(
-          wrapWithApp(HomePage(subpage: subpage, path: ''), size: phoneSize),
+          wrapWithApp(
+            HomePage(subpage: subpage, path: ''),
+            size: phoneSize,
+          ),
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 200));
@@ -87,7 +85,10 @@ void main() {
         });
 
         await tester.pumpWidget(
-          wrapWithApp(HomePage(subpage: subpage, path: ''), size: tabletSize),
+          wrapWithApp(
+            HomePage(subpage: subpage, path: ''),
+            size: tabletSize,
+          ),
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 200));
@@ -123,7 +124,9 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(wrapWithApp(const NcLoginPage(), size: phoneSize));
+      await tester.pumpWidget(
+        wrapWithApp(const NcLoginPage(), size: phoneSize),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -151,10 +154,7 @@ void main() {
 
     testWidgets('EraserSizePopup renders without error', (tester) async {
       await tester.pumpWidget(
-        wrapWithApp(
-          const EraserSizePopup(),
-          size: phoneSize,
-        ),
+        wrapWithApp(const EraserSizePopup(), size: phoneSize),
       );
       await tester.pump();
       expect(tester.takeException(), isNull);
@@ -162,10 +162,7 @@ void main() {
 
     testWidgets('LassoFilterPopup renders without error', (tester) async {
       await tester.pumpWidget(
-        wrapWithApp(
-          const LassoFilterPopup(),
-          size: phoneSize,
-        ),
+        wrapWithApp(const LassoFilterPopup(), size: phoneSize),
       );
       await tester.pump();
       expect(tester.takeException(), isNull);
@@ -210,26 +207,29 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('SelectionBar (Floating Lasso Callout Bar) renders without error', (tester) async {
-      await tester.pumpWidget(
-        wrapWithApp(
-          Scaffold(
-            body: SelectionBar(
-              duplicateSelection: () {},
-              deleteSelection: () {},
-              copySelection: () {},
-              pasteSelection: () {},
-              cropPossible: false,
-              cropActive: false,
-              toggleCrop: () {},
+    testWidgets(
+      'SelectionBar (Floating Lasso Callout Bar) renders without error',
+      (tester) async {
+        await tester.pumpWidget(
+          wrapWithApp(
+            Scaffold(
+              body: SelectionBar(
+                duplicateSelection: () {},
+                deleteSelection: () {},
+                copySelection: () {},
+                pasteSelection: () {},
+                cropPossible: false,
+                cropActive: false,
+                toggleCrop: () {},
+              ),
             ),
+            size: phoneSize,
           ),
-          size: phoneSize,
-        ),
-      );
-      await tester.pump();
-      expect(tester.takeException(), isNull);
-    });
+        );
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('Editor UI Tests Across Form Factors', () {
@@ -279,10 +279,7 @@ void main() {
 
       await tester.pumpWidget(
         wrapWithApp(
-          Editor(
-            path: '/test_dark_note',
-            customTitle: 'Dark Mode Notes',
-          ),
+          Editor(path: '/test_dark_note', customTitle: 'Dark Mode Notes'),
           size: phoneSize,
           themeMode: ThemeMode.dark,
         ),
@@ -293,7 +290,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('TemplatePickerDialog renders cleanly in Dark Theme', (tester) async {
+    testWidgets('TemplatePickerDialog renders cleanly in Dark Theme', (
+      tester,
+    ) async {
       final coreInfo = EditorCoreInfo(filePath: 'test_dark.sbn2');
       coreInfo.pages.add(EditorPage());
       await tester.pumpWidget(
@@ -312,7 +311,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('PageGridOverviewDialog renders cleanly in Dark Theme', (tester) async {
+    testWidgets('PageGridOverviewDialog renders cleanly in Dark Theme', (
+      tester,
+    ) async {
       final coreInfo = EditorCoreInfo(filePath: 'test_dark.sbn2');
       coreInfo.pages.add(EditorPage());
       await tester.pumpWidget(

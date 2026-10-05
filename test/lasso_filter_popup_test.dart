@@ -23,13 +23,11 @@ void main() {
   });
 
   group('LassoFilterPopup', () {
-    testWidgets('renders dialog title and all three filter options', (tester) async {
+    testWidgets('renders dialog title and all three filter options', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: LassoFilterPopup(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: LassoFilterPopup())),
       );
 
       expect(find.text('Lasso Options'), findsOneWidget);
@@ -41,11 +39,7 @@ void main() {
 
     testWidgets('toggling Images switch updates stow', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: LassoFilterPopup(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: LassoFilterPopup())),
       );
 
       expect(stows.lassoSelectImages.value, isTrue);
@@ -59,20 +53,21 @@ void main() {
       expect(stows.lassoSelectImages.value, isFalse);
     });
 
-    testWidgets('safety constraint prevents disabling all three toggles', (tester) async {
+    testWidgets('safety constraint prevents disabling all three toggles', (
+      tester,
+    ) async {
       stows.lassoSelectHandwriting.value = true;
       stows.lassoSelectImages.value = false;
       stows.lassoSelectText.value = false;
 
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: LassoFilterPopup(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: LassoFilterPopup())),
       );
 
-      final handwritingTile = find.widgetWithText(AdaptiveSwitchListTile, 'Handwriting');
+      final handwritingTile = find.widgetWithText(
+        AdaptiveSwitchListTile,
+        'Handwriting',
+      );
       expect(handwritingTile, findsOneWidget);
 
       // Attempt to disable the last active toggle
@@ -94,14 +89,13 @@ void main() {
       Select.currentSelect.doneSelecting = true;
 
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: LassoFilterPopup(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: LassoFilterPopup())),
       );
 
-      final textTile = find.widgetWithText(AdaptiveSwitchListTile, 'Text Boxes');
+      final textTile = find.widgetWithText(
+        AdaptiveSwitchListTile,
+        'Text Boxes',
+      );
       await tester.tap(textTile);
       await tester.pumpAndSettle();
 

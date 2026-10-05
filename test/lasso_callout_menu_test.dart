@@ -96,49 +96,54 @@ void main() {
       expect(deleteTapped, isTrue);
     });
 
-    testWidgets('Tapping Color opens palette and picking color triggers onSetColor', (tester) async {
-      Color? pickedColor;
+    testWidgets(
+      'Tapping Color opens palette and picking color triggers onSetColor',
+      (tester) async {
+        Color? pickedColor;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: LassoCalloutMenu(
-              onCut: () {},
-              onCopy: () {},
-              onDuplicate: () {},
-              onDelete: () {},
-              onSetColor: (color) => pickedColor = color,
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: LassoCalloutMenu(
+                onCut: () {},
+                onCopy: () {},
+                onDuplicate: () {},
+                onDelete: () {},
+                onSetColor: (color) => pickedColor = color,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Tap Color
-      await tester.tap(find.text('Color'));
-      await tester.pumpAndSettle();
+        // Tap Color
+        await tester.tap(find.text('Color'));
+        await tester.pumpAndSettle();
 
-      // Should show back arrow and color discs
-      expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
-      expect(find.text('Cut'), findsNothing);
+        // Should show back arrow and color discs
+        expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
+        expect(find.text('Cut'), findsNothing);
 
-      // Tap the first color disc (GestureDetector or InkWell)
-      final discFinder = find.byType(GestureDetector);
-      expect(discFinder, findsWidgets);
+        // Tap the first color disc (GestureDetector or InkWell)
+        final discFinder = find.byType(GestureDetector);
+        expect(discFinder, findsWidgets);
 
-      // Tap one of the discs
-      await tester.tap(discFinder.at(1));
-      await tester.pump();
+        // Tap one of the discs
+        await tester.tap(discFinder.at(1));
+        await tester.pump();
 
-      expect(pickedColor, isNotNull);
+        expect(pickedColor, isNotNull);
 
-      // Back arrow returns to action pill
-      await tester.tap(find.byIcon(Icons.arrow_back_rounded));
-      await tester.pumpAndSettle();
+        // Back arrow returns to action pill
+        await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Cut'), findsOneWidget);
-    });
+        expect(find.text('Cut'), findsOneWidget);
+      },
+    );
 
-    testWidgets('Renders Crop button when cropPossible is true', (tester) async {
+    testWidgets('Renders Crop button when cropPossible is true', (
+      tester,
+    ) async {
       bool cropToggled = false;
 
       await tester.pumpWidget(

@@ -30,106 +30,119 @@ void main() {
   });
 
   group('Isometric Grid Vertex Concurrence Math', () {
-    test('Vertical and diagonal line families concur at identical lattice vertices', () {
-      const double l = 40.0;
-      final double dx = l * (sqrt(3) / 2);
-      final double tan30 = 1 / sqrt(3);
+    test(
+      'Vertical and diagonal line families concur at identical lattice vertices',
+      () {
+        const double l = 40.0;
+        final double dx = l * (sqrt(3) / 2);
+        final double tan30 = 1 / sqrt(3);
 
-      // Verify for multiple column and row combinations
-      for (int col = 0; col < 10; col++) {
-        for (int row = 0; row < 10; row++) {
-          final xExpected = col * dx;
-          final yShift = (col % 2 != 0) ? 0.5 * l : 0.0;
-          final yExpected = row * l + yShift;
+        // Verify for multiple column and row combinations
+        for (int col = 0; col < 10; col++) {
+          for (int row = 0; row < 10; row++) {
+            final xExpected = col * dx;
+            final yShift = (col % 2 != 0) ? 0.5 * l : 0.0;
+            final yExpected = row * l + yShift;
 
-          // The +30° line passing through this vertex has intercept b = y - tan30 * x
-          final b = yExpected - tan30 * xExpected;
-          // The -30° line passing through this vertex has intercept c = y + tan30 * x
-          final c = yExpected + tan30 * xExpected;
+            // The +30° line passing through this vertex has intercept b = y - tan30 * x
+            final b = yExpected - tan30 * xExpected;
+            // The -30° line passing through this vertex has intercept c = y + tan30 * x
+            final c = yExpected + tan30 * xExpected;
 
-          // In our grid math, b = m * l and c = k * l for integers m and k
-          final m = (b / l).round();
-          final k = (c / l).round();
-          expect((b - m * l).abs(), lessThan(1e-4));
-          expect((c - k * l).abs(), lessThan(1e-4));
+            // In our grid math, b = m * l and c = k * l for integers m and k
+            final m = (b / l).round();
+            final k = (c / l).round();
+            expect((b - m * l).abs(), lessThan(1e-4));
+            expect((c - k * l).abs(), lessThan(1e-4));
 
-          // The intersection of y = tan30 * x + m * l and y = -tan30 * x + k * l
-          final xIntersect = (k - m) * l * (sqrt(3) / 2);
-          final yIntersect = (m + (k - m) / 2) * l;
+            // The intersection of y = tan30 * x + m * l and y = -tan30 * x + k * l
+            final xIntersect = (k - m) * l * (sqrt(3) / 2);
+            final yIntersect = (m + (k - m) / 2) * l;
 
-          expect(xIntersect, closeTo(xExpected, 1e-4));
-          expect(yIntersect, closeTo(yExpected, 1e-4));
-          expect(k - m, equals(col));
+            expect(xIntersect, closeTo(xExpected, 1e-4));
+            expect(yIntersect, closeTo(yExpected, 1e-4));
+            expect(k - m, equals(col));
+          }
         }
-      }
-    });
+      },
+    );
 
-    test('CanvasBackgroundPainter isometric pattern elements stay within bounds', () {
-      const size = Size(800, 1200);
-      const lineHeight = 30;
+    test(
+      'CanvasBackgroundPainter isometric pattern elements stay within bounds',
+      () {
+        const size = Size(800, 1200);
+        const lineHeight = 30;
 
-      final elements = CanvasBackgroundPainter.getPatternElements(
-        pattern: CanvasBackgroundPattern.isometric,
-        size: size,
-        lineHeight: lineHeight,
-      ).toList();
+        final elements = CanvasBackgroundPainter.getPatternElements(
+          pattern: CanvasBackgroundPattern.isometric,
+          size: size,
+          lineHeight: lineHeight,
+        ).toList();
 
-      expect(elements, isNotEmpty);
-      for (final e in elements) {
-        expect(e.start.dx, inInclusiveRange(0.0, size.width));
-        expect(e.start.dy, inInclusiveRange(0.0, size.height));
-        expect(e.end.dx, inInclusiveRange(0.0, size.width));
-        expect(e.end.dy, inInclusiveRange(0.0, size.height));
-      }
-    });
+        expect(elements, isNotEmpty);
+        for (final e in elements) {
+          expect(e.start.dx, inInclusiveRange(0.0, size.width));
+          expect(e.start.dy, inInclusiveRange(0.0, size.height));
+          expect(e.end.dx, inInclusiveRange(0.0, size.width));
+          expect(e.end.dy, inInclusiveRange(0.0, size.height));
+        }
+      },
+    );
 
-    test('CanvasBackgroundPainter isometric vertical lines have spacing L * sqrt(3) / 2', () {
-      const size = Size(500, 500);
-      const lineHeight = 20;
-      final expectedDx = lineHeight * (sqrt(3) / 2);
+    test(
+      'CanvasBackgroundPainter isometric vertical lines have spacing L * sqrt(3) / 2',
+      () {
+        const size = Size(500, 500);
+        const lineHeight = 20;
+        final expectedDx = lineHeight * (sqrt(3) / 2);
 
-      final elements = CanvasBackgroundPainter.getPatternElements(
-        pattern: CanvasBackgroundPattern.isometric,
-        size: size,
-        lineHeight: lineHeight,
-      ).toList();
+        final elements = CanvasBackgroundPainter.getPatternElements(
+          pattern: CanvasBackgroundPattern.isometric,
+          size: size,
+          lineHeight: lineHeight,
+        ).toList();
 
-      final verticalLines = elements
-          .where((e) => e.isLine && (e.start.dx - e.end.dx).abs() < 1e-4)
-          .map((e) => e.start.dx)
-          .toList()
-        ..sort();
+        final verticalLines =
+            elements
+                .where((e) => e.isLine && (e.start.dx - e.end.dx).abs() < 1e-4)
+                .map((e) => e.start.dx)
+                .toList()
+              ..sort();
 
-      expect(verticalLines.length, greaterThan(2));
-      for (int i = 0; i < verticalLines.length - 1; i++) {
-        final diff = verticalLines[i + 1] - verticalLines[i];
-        expect(diff, closeTo(expectedDx, 1e-4));
-      }
-    });
+        expect(verticalLines.length, greaterThan(2));
+        for (int i = 0; i < verticalLines.length - 1; i++) {
+          final diff = verticalLines[i + 1] - verticalLines[i];
+          expect(diff, closeTo(expectedDx, 1e-4));
+        }
+      },
+    );
 
-    test('CanvasBackgroundPainter isometric diagonal lines have slope 1/√3', () {
-      const size = Size(600, 600);
-      const lineHeight = 25;
-      final expectedTan30 = 1 / sqrt(3);
+    test(
+      'CanvasBackgroundPainter isometric diagonal lines have slope 1/√3',
+      () {
+        const size = Size(600, 600);
+        const lineHeight = 25;
+        final expectedTan30 = 1 / sqrt(3);
 
-      final elements = CanvasBackgroundPainter.getPatternElements(
-        pattern: CanvasBackgroundPattern.isometric,
-        size: size,
-        lineHeight: lineHeight,
-      ).toList();
+        final elements = CanvasBackgroundPainter.getPatternElements(
+          pattern: CanvasBackgroundPattern.isometric,
+          size: size,
+          lineHeight: lineHeight,
+        ).toList();
 
-      final diagonals = elements
-          .where((e) => e.isLine && (e.start.dx - e.end.dx).abs() > 1e-4)
-          .toList();
+        final diagonals = elements
+            .where((e) => e.isLine && (e.start.dx - e.end.dx).abs() > 1e-4)
+            .toList();
 
-      expect(diagonals, isNotEmpty);
-      for (final diag in diagonals) {
-        final dx = diag.end.dx - diag.start.dx;
-        final dy = diag.end.dy - diag.start.dy;
-        final slope = (dy / dx).abs();
-        expect(slope, closeTo(expectedTan30, 0.02));
-      }
-    });
+        expect(diagonals, isNotEmpty);
+        for (final diag in diagonals) {
+          final dx = diag.end.dx - diag.start.dx;
+          final dy = diag.end.dy - diag.start.dy;
+          final slope = (dy / dx).abs();
+          expect(slope, closeTo(expectedTan30, 0.02));
+        }
+      },
+    );
   });
 
   group('Isometric Nearest Vertex Snapping', () {
@@ -155,7 +168,10 @@ void main() {
 
       // Vertex at col 2, row 3: (2 * dx, 3 * l) = (86.6025, 150.0)
       final targetVertex = Offset(2 * dx, 3 * l);
-      final perturbedPoint = Offset(targetVertex.dx + 2.5, targetVertex.dy - 3.0);
+      final perturbedPoint = Offset(
+        targetVertex.dx + 2.5,
+        targetVertex.dy - 3.0,
+      );
 
       final snapped = Stroke.snapPointToIsometricGrid(perturbedPoint, l);
       expect(snapped.dx, closeTo(targetVertex.dx, 1e-4));
@@ -252,10 +268,19 @@ void main() {
         final last = PointVector(100 * cos(rad), 100 * sin(rad), 1.0);
 
         // Test with isIsometric: true
-        final (_, snappedIso) = Stroke.snapLineToAngle(first, last, 30.0, isIsometric: true);
+        final (_, snappedIso) = Stroke.snapLineToAngle(
+          first,
+          last,
+          30.0,
+          isIsometric: true,
+        );
         final angleIso = atan2(snappedIso.dy, snappedIso.dx) * 180 / pi;
-        expect(angleIso, closeTo(entry.value, 0.02),
-            reason: 'Input ${entry.key}° should snap to ${entry.value}° in Iso 30° mode');
+        expect(
+          angleIso,
+          closeTo(entry.value, 0.02),
+          reason:
+              'Input ${entry.key}° should snap to ${entry.value}° in Iso 30° mode',
+        );
 
         // Test with stepDegrees = -30 (Stows.snapAngleStepIso30)
         final (_, snappedConst) = Stroke.snapLineToAngle(first, last, -30.0);
@@ -267,10 +292,19 @@ void main() {
     test('Angle snap strictly preserves line length', () {
       const first = PointVector(12.3, 45.6, 1.0);
       const last = PointVector(150.7, 98.4, 1.0);
-      final originalLen = sqrt(pow(last.dx - first.dx, 2) + pow(last.dy - first.dy, 2));
+      final originalLen = sqrt(
+        pow(last.dx - first.dx, 2) + pow(last.dy - first.dy, 2),
+      );
 
-      final (_, snapped) = Stroke.snapLineToAngle(first, last, 30.0, isIsometric: true);
-      final snappedLen = sqrt(pow(snapped.dx - first.dx, 2) + pow(snapped.dy - first.dy, 2));
+      final (_, snapped) = Stroke.snapLineToAngle(
+        first,
+        last,
+        30.0,
+        isIsometric: true,
+      );
+      final snappedLen = sqrt(
+        pow(snapped.dx - first.dx, 2) + pow(snapped.dy - first.dy, 2),
+      );
       expect(snappedLen, closeTo(originalLen, 1e-4));
     });
   });
@@ -297,45 +331,52 @@ void main() {
       expect(stroke.points.last.y, equals(75.0));
     });
 
-    test('Ruler start and end points remain unsnapped when snapToGrid is false', () {
-      final ruler = Ruler();
-      final page = EditorPage();
+    test(
+      'Ruler start and end points remain unsnapped when snapToGrid is false',
+      () {
+        final ruler = Ruler();
+        final page = EditorPage();
 
-      stows.snapToGrid.value = false;
-      stows.gridSize.value = 20.0;
+        stows.snapToGrid.value = false;
+        stows.gridSize.value = 20.0;
 
-      ruler.onDragStart(const Offset(12.3, 18.7), page, 0, null);
-      ruler.onDragUpdate(const Offset(53.4, 72.8), null);
-      final stroke = ruler.onDragEnd();
+        ruler.onDragStart(const Offset(12.3, 18.7), page, 0, null);
+        ruler.onDragUpdate(const Offset(53.4, 72.8), null);
+        final stroke = ruler.onDragEnd();
 
-      expect(stroke, isNotNull);
-      expect(stroke!.points.first.x, equals(12.3));
-      expect(stroke.points.first.y, equals(18.7));
-      expect(stroke.points.last.x, equals(53.4));
-      expect(stroke.points.last.y, equals(72.8));
-    });
+        expect(stroke, isNotNull);
+        expect(stroke!.points.first.x, equals(12.3));
+        expect(stroke.points.first.y, equals(18.7));
+        expect(stroke.points.last.x, equals(53.4));
+        expect(stroke.points.last.y, equals(72.8));
+      },
+    );
 
-    test('Ruler snaps to page.lineHeight instead of stows.gridSize when available', () {
-      final ruler = Ruler();
-      final page = EditorPage();
-      page.lineHeight = 32;
+    test(
+      'Ruler snaps to page.lineHeight instead of stows.gridSize when available',
+      () {
+        final ruler = Ruler();
+        final page = EditorPage();
+        page.lineHeight = 32;
 
-      stows.snapToGrid.value = true;
-      stows.gridSize.value = 20.0; // Stows default, should be overridden by 32
+        stows.snapToGrid.value = true;
+        stows.gridSize.value =
+            20.0; // Stows default, should be overridden by 32
 
-      ruler.onDragStart(const Offset(14, 30), page, 0, null);
-      ruler.onDragUpdate(const Offset(70, 95), null);
-      final stroke = ruler.onDragEnd();
+        ruler.onDragStart(const Offset(14, 30), page, 0, null);
+        ruler.onDragUpdate(const Offset(70, 95), null);
+        final stroke = ruler.onDragEnd();
 
-      expect(stroke, isNotNull);
-      // Snapped to 32 px module:
-      // Start (14, 30) -> (0, 32)
-      expect(stroke!.points.first.x, equals(0.0));
-      expect(stroke.points.first.y, equals(32.0));
-      // End (70, 95) -> (64, 96)
-      expect(stroke.points.last.x, equals(64.0));
-      expect(stroke.points.last.y, equals(96.0));
-    });
+        expect(stroke, isNotNull);
+        // Snapped to 32 px module:
+        // Start (14, 30) -> (0, 32)
+        expect(stroke!.points.first.x, equals(0.0));
+        expect(stroke.points.first.y, equals(32.0));
+        // End (70, 95) -> (64, 96)
+        expect(stroke.points.last.x, equals(64.0));
+        expect(stroke.points.last.y, equals(96.0));
+      },
+    );
 
     test('Ruler on isometric page snaps to triangular isometric lattice', () {
       final ruler = Ruler();
@@ -377,7 +418,8 @@ void main() {
       final stroke = ruler.onDragEnd();
 
       expect(stroke, isNotNull);
-      final angle = atan2(stroke!.points.last.dy, stroke.points.last.dx) * 180 / pi;
+      final angle =
+          atan2(stroke!.points.last.dy, stroke.points.last.dx) * 180 / pi;
       expect(angle, closeTo(30.0, 0.02));
     });
   });

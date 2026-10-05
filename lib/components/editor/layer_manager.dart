@@ -9,11 +9,7 @@ class LayerManager extends StatefulWidget {
   final EditorPage page;
   final VoidCallback onChanged;
 
-  const LayerManager({
-    super.key,
-    required this.page,
-    required this.onChanged,
-  });
+  const LayerManager({super.key, required this.page, required this.onChanged});
 
   @override
   State<LayerManager> createState() => _LayerManagerState();
@@ -100,87 +96,97 @@ class _LayerManagerState extends State<LayerManager> {
         child: _layers.isEmpty
             ? const Center(child: Text('No layers'))
             : ReorderableListView.builder(
-              shrinkWrap: true,
-              itemCount: _layers.length,
-              onReorder: _moveLayer,
-              itemBuilder: (context, index) {
-                final layer = _layers[index];
-                final isActive = index == _activeIndex;
-                return Container(
-                  key: ValueKey('layer_$index'),
-                  margin: const EdgeInsets.symmetric(vertical: 2),
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? colorScheme.primaryContainer
-                        : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(8),
-                    border: isActive
-                        ? Border.all(color: colorScheme.primary, width: 2)
-                        : null,
-                  ),
-                  child: ListTile(
-                    dense: true,
-                    leading: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            layer.visible ? Icons.visibility : Icons.visibility_off,
-                            size: 20,
-                          ),
-                          tooltip: layer.visible ? 'Hide Layer' : 'Show Layer',
-                          onPressed: () {
-                            layer.visible = !layer.visible;
-                            _setState();
-                          },
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            layer.locked ? Icons.lock : Icons.lock_open,
-                            size: 20,
-                            color: layer.locked ? colorScheme.error : null,
-                          ),
-                          tooltip: layer.locked ? 'Unlock Layer' : 'Lock Layer',
-                          onPressed: () {
-                            layer.locked = !layer.locked;
-                            _setState();
-                          },
-                        ),
-                      ],
+                shrinkWrap: true,
+                itemCount: _layers.length,
+                onReorder: _moveLayer,
+                itemBuilder: (context, index) {
+                  final layer = _layers[index];
+                  final isActive = index == _activeIndex;
+                  return Container(
+                    key: ValueKey('layer_$index'),
+                    margin: const EdgeInsets.symmetric(vertical: 2),
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? colorScheme.primaryContainer
+                          : colorScheme.surfaceContainerHighest.withValues(
+                              alpha: 0.3,
+                            ),
+                      borderRadius: BorderRadius.circular(8),
+                      border: isActive
+                          ? Border.all(color: colorScheme.primary, width: 2)
+                          : null,
                     ),
-                    title: Text(
-                      layer.name,
-                      style: TextStyle(
-                        fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                    subtitle: Text('${layer.strokes.length} strokes'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (index > 0)
+                    child: ListTile(
+                      dense: true,
+                      leading: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                           IconButton(
-                            icon: const Icon(Icons.merge_type, size: 18),
-                            tooltip: 'Merge Down',
-                            onPressed: () => _mergeDown(index),
+                            icon: Icon(
+                              layer.visible
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                              size: 20,
+                            ),
+                            tooltip: layer.visible
+                                ? 'Hide Layer'
+                                : 'Show Layer',
+                            onPressed: () {
+                              layer.visible = !layer.visible;
+                              _setState();
+                            },
                           ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 18),
-                          tooltip: 'Delete Layer',
-                          onPressed: _layers.length > 1
-                              ? () => _removeLayer(index)
-                              : null,
+                          IconButton(
+                            icon: Icon(
+                              layer.locked ? Icons.lock : Icons.lock_open,
+                              size: 20,
+                              color: layer.locked ? colorScheme.error : null,
+                            ),
+                            tooltip: layer.locked
+                                ? 'Unlock Layer'
+                                : 'Lock Layer',
+                            onPressed: () {
+                              layer.locked = !layer.locked;
+                              _setState();
+                            },
+                          ),
+                        ],
+                      ),
+                      title: Text(
+                        layer.name,
+                        style: TextStyle(
+                          fontWeight: isActive
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
-                      ],
+                      ),
+                      subtitle: Text('${layer.strokes.length} strokes'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (index > 0)
+                            IconButton(
+                              icon: const Icon(Icons.merge_type, size: 18),
+                              tooltip: 'Merge Down',
+                              onPressed: () => _mergeDown(index),
+                            ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 18),
+                            tooltip: 'Delete Layer',
+                            onPressed: _layers.length > 1
+                                ? () => _removeLayer(index)
+                                : null,
+                          ),
+                        ],
+                      ),
+                      onTap: () {
+                        _activeIndex = index;
+                        _setState();
+                      },
                     ),
-                    onTap: () {
-                      _activeIndex = index;
-                      _setState();
-                    },
-                  ),
-                );
-              },
-            ),
+                  );
+                },
+              ),
       ),
       actions: [
         TextButton(

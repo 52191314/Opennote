@@ -228,7 +228,11 @@ class _ToolbarState extends State<Toolbar> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.palette_outlined, size: 20, color: colorScheme.primary),
+                  Icon(
+                    Icons.palette_outlined,
+                    size: 20,
+                    color: colorScheme.primary,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     t.editor.toolbar.toggleColors,
@@ -352,7 +356,11 @@ class _ToolbarState extends State<Toolbar> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.tune_rounded, size: 20, color: colorScheme.primary),
+                  Icon(
+                    Icons.tune_rounded,
+                    size: 20,
+                    color: colorScheme.primary,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'Pen Settings',
@@ -580,7 +588,8 @@ class _ToolbarState extends State<Toolbar> {
                     widget.setTool(Highlighter.currentHighlighter);
                   }
                 },
-                onLongPress: () => _showPenSettings(() => Highlighter.currentHighlighter),
+                onLongPress: () =>
+                    _showPenSettings(() => Highlighter.currentHighlighter),
                 padding: buttonPadding,
                 child: const FaIcon(Highlighter.highlighterIcon, size: 16),
               ),
@@ -611,7 +620,8 @@ class _ToolbarState extends State<Toolbar> {
               // 5. Drafting & Shapes (Shapes, Ruler, Arrow, Dimension)
               ToolbarIconButton(
                 tooltip: 'Drafting & Shapes',
-                selected: widget.currentTool is Ruler ||
+                selected:
+                    widget.currentTool is Ruler ||
                     widget.currentTool is ArrowTool ||
                     widget.currentTool is DimensionTool,
                 enabled: !widget.readOnly,
@@ -725,14 +735,15 @@ class _ToolbarState extends State<Toolbar> {
                 tooltip: stows.laserPointerMode.value == 'spotlight'
                     ? 'Laser Pointer (Spotlight Mode)'
                     : t.editor.pens.laserPointer,
-                selected: widget.currentTool == LaserPointer.currentLaserPointer,
+                selected:
+                    widget.currentTool == LaserPointer.currentLaserPointer,
                 enabled: true,
                 onPressed: () {
                   if (widget.currentTool == LaserPointer.currentLaserPointer) {
                     stows.laserPointerMode.value =
                         stows.laserPointerMode.value == 'spotlight'
-                            ? 'trail'
-                            : 'spotlight';
+                        ? 'trail'
+                        : 'spotlight';
                     setState(() {});
                   } else {
                     widget.setTool(LaserPointer.currentLaserPointer);
@@ -741,8 +752,8 @@ class _ToolbarState extends State<Toolbar> {
                 onLongPress: () {
                   stows.laserPointerMode.value =
                       stows.laserPointerMode.value == 'spotlight'
-                          ? 'trail'
-                          : 'spotlight';
+                      ? 'trail'
+                      : 'spotlight';
                   setState(() {});
                 },
                 padding: buttonPadding,

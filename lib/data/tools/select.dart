@@ -99,10 +99,12 @@ class Select extends Tool {
     if (stows.selectionRectMode.value) {
       // Rectangle selection
       selectResult.path = Path()
-        ..addRRect(RRect.fromRectAndRadius(
-          Rect.fromPoints(start, position),
-          const Radius.circular(4),
-        ));
+        ..addRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromPoints(start, position),
+            const Radius.circular(4),
+          ),
+        );
     } else {
       // Lasso selection (freeform)
       selectResult.path.lineTo(position.dx, position.dy);
@@ -154,7 +156,10 @@ class Select extends Tool {
     if (stows.lassoSelectImages.value) {
       for (int i = 0; i < images.length; i++) {
         final image = images[i];
-        final percentInside = rectPercentInside(selectResult.path, image.dstRect);
+        final percentInside = rectPercentInside(
+          selectResult.path,
+          image.dstRect,
+        );
         if (percentInside >= minPercentInside) {
           selectResult.images.add(image);
         }
@@ -309,11 +314,7 @@ class Select extends Tool {
 
   /// Returns true if [point] is within [radius] of any vertex
   /// or segment of [stroke].
-  static bool _isPointNearStroke(
-    Offset point,
-    Stroke stroke,
-    double radius,
-  ) {
+  static bool _isPointNearStroke(Offset point, Stroke stroke, double radius) {
     if (stroke is ArrowStroke) {
       return _distanceToSegment(point, stroke.start, stroke.end) <= radius;
     }
@@ -325,9 +326,11 @@ class Select extends Tool {
       final dimOffset = perp * stroke.offset;
       final dimStart = stroke.start + dimOffset;
       final dimEnd = stroke.end + dimOffset;
-      if (_distanceToSegment(point, stroke.start, stroke.end) <= radius) return true;
+      if (_distanceToSegment(point, stroke.start, stroke.end) <= radius)
+        return true;
       if (_distanceToSegment(point, dimStart, dimEnd) <= radius) return true;
-      if (_distanceToSegment(point, stroke.start, dimStart) <= radius) return true;
+      if (_distanceToSegment(point, stroke.start, dimStart) <= radius)
+        return true;
       if (_distanceToSegment(point, stroke.end, dimEnd) <= radius) return true;
       if ((point - stroke.textPosition).distance <= radius + 10) return true;
       return false;
@@ -369,11 +372,9 @@ class Select extends Tool {
     }
 
     final bounds = Rect.fromLTRB(minX, minY, maxX, maxY);
-    return Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        bounds.inflate(8),
-        const Radius.circular(4),
-      ));
+    return Path()..addRRect(
+      RRect.fromRectAndRadius(bounds.inflate(8), const Radius.circular(4)),
+    );
   }
 
   static Path _createTightSelectionPath(List<Offset> polygon) =>
@@ -381,11 +382,9 @@ class Select extends Tool {
 
   /// Creates a selection path around [rect], inflated by a small margin.
   static Path _createRectSelectionPath(Rect rect) {
-    return Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        rect.inflate(8),
-        const Radius.circular(4),
-      ));
+    return Path()..addRRect(
+      RRect.fromRectAndRadius(rect.inflate(8), const Radius.circular(4)),
+    );
   }
 }
 

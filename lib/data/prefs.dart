@@ -210,11 +210,7 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
-  final eraserSize = PlainStow(
-    'eraserSize',
-    30.0,
-    volatile: !_isOnMainIsolate,
-  );
+  final eraserSize = PlainStow('eraserSize', 30.0, volatile: !_isOnMainIsolate);
 
   /// Whether scribbling back-and-forth with the pen erases overlapping strokes.
   final scribbleToErase = PlainStow(
@@ -686,10 +682,8 @@ class _IntListCsvCodec extends AbstractCodec<List<int>, String> {
   String encode(List<int> input) => input.join(',');
 
   @override
-  List<int> decode(String encoded) => encoded
-      .split(',')
-      .map((e) => int.tryParse(e.trim()) ?? 0)
-      .toList();
+  List<int> decode(String encoded) =>
+      encoded.split(',').map((e) => int.tryParse(e.trim()) ?? 0).toList();
 }
 
 class _DoubleListCsvCodec extends AbstractCodec<List<double>, String> {
@@ -699,8 +693,6 @@ class _DoubleListCsvCodec extends AbstractCodec<List<double>, String> {
   String encode(List<double> input) => input.join(',');
 
   @override
-  List<double> decode(String encoded) => encoded
-      .split(',')
-      .map((e) => double.tryParse(e.trim()) ?? 0.0)
-      .toList();
+  List<double> decode(String encoded) =>
+      encoded.split(',').map((e) => double.tryParse(e.trim()) ?? 0.0).toList();
 }

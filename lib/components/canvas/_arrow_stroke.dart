@@ -200,7 +200,8 @@ class ArrowStroke extends Stroke {
         for (int i = 1; i <= 16; i++) {
           final t = i / 16.0;
           final it = 1.0 - t;
-          final pt = start * (it * it * it) +
+          final pt =
+              start * (it * it * it) +
               c1 * (3 * it * it * t) +
               c2 * (3 * it * t * t) +
               end * (t * t * t);

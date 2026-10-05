@@ -138,10 +138,9 @@ class _PenModalState extends State<PenModal> {
                   ? ColorScheme.of(context).secondary
                   : ColorScheme.of(context).onSurface,
               backgroundColor: stows.highlighterDrawInStraightLine.value
-                  ? Theme.of(context)
-                      .colorScheme
-                      .secondary
-                      .withValues(alpha: 0.1)
+                  ? Theme.of(
+                      context,
+                    ).colorScheme.secondary.withValues(alpha: 0.1)
                   : Colors.transparent,
               shape: const CircleBorder(),
             ),
@@ -164,10 +163,9 @@ class _PenModalState extends State<PenModal> {
                   ? ColorScheme.of(context).secondary
                   : ColorScheme.of(context).onSurface,
               backgroundColor: stows.scribbleToErase.value
-                  ? Theme.of(context)
-                      .colorScheme
-                      .secondary
-                      .withValues(alpha: 0.1)
+                  ? Theme.of(
+                      context,
+                    ).colorScheme.secondary.withValues(alpha: 0.1)
                   : Colors.transparent,
               shape: const CircleBorder(),
             ),
@@ -177,7 +175,9 @@ class _PenModalState extends State<PenModal> {
             icon: const FaIcon(FontAwesomeIcons.eraser),
           ),
         ],
-        if (currentPen is! Highlighter && currentPen is! Pencil && currentPen is! ShapePen) ...[
+        if (currentPen is! Highlighter &&
+            currentPen is! Pencil &&
+            currentPen is! ShapePen) ...[
           const SizedBox.square(dimension: 8),
           IconButton(
             onPressed: () {
@@ -195,10 +195,9 @@ class _PenModalState extends State<PenModal> {
                   ? ColorScheme.of(context).secondary
                   : ColorScheme.of(context).onSurface,
               backgroundColor: stows.penLineStyle.value != 'solid'
-                  ? Theme.of(context)
-                      .colorScheme
-                      .secondary
-                      .withValues(alpha: 0.1)
+                  ? Theme.of(
+                      context,
+                    ).colorScheme.secondary.withValues(alpha: 0.1)
                   : Colors.transparent,
               shape: const CircleBorder(),
             ),
@@ -207,8 +206,8 @@ class _PenModalState extends State<PenModal> {
               stows.penLineStyle.value == 'dashed'
                   ? Icons.border_style
                   : stows.penLineStyle.value == 'dotted'
-                      ? Icons.more_horiz
-                      : Icons.horizontal_rule,
+                  ? Icons.more_horiz
+                  : Icons.horizontal_rule,
             ),
           ),
         ],

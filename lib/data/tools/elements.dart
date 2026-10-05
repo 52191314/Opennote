@@ -39,7 +39,8 @@ class ElementItem {
     id: json['id'] as String? ?? UniqueKey().toString(),
     name: json['name'] as String? ?? 'Sticker',
     category: json['category'] as String? ?? 'General',
-    strokesJson: (json['strokes'] as List?)
+    strokesJson:
+        (json['strokes'] as List?)
             ?.whereType<Map<String, dynamic>>()
             .toList() ??
         [],
@@ -133,11 +134,15 @@ class ElementsManager extends ChangeNotifier {
 
   static Map<String, dynamic> _strokeToJson(Stroke stroke) {
     final json = stroke.toJson();
-    json['p'] = stroke.rawPoints.map((p) => <String, dynamic>{
-      'x': p.x,
-      'y': p.y,
-      if (p.pressure != null) 'p': p.pressure,
-    }).toList();
+    json['p'] = stroke.rawPoints
+        .map(
+          (p) => <String, dynamic>{
+            'x': p.x,
+            'y': p.y,
+            if (p.pressure != null) 'p': p.pressure,
+          },
+        )
+        .toList();
     return json;
   }
 
@@ -279,6 +284,8 @@ class ElementsManager extends ChangeNotifier {
   }
 
   void _save() {
-    stows.elementsJson.value = jsonEncode(_items.map((e) => e.toJson()).toList());
+    stows.elementsJson.value = jsonEncode(
+      _items.map((e) => e.toJson()).toList(),
+    );
   }
 }

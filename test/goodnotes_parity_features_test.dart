@@ -32,37 +32,40 @@ void main() {
   group('Feature 1: Tape / Study Masking Tool & Patterns', () {
     const page = HasSize(Size(800, 1000));
 
-    test('TapeStroke serializes and deserializes pattern correctly across all styles', () {
-      for (final pattern in TapePattern.values) {
-        final stroke = TapeStroke(
-          color: const Color(0xFFFFD54F),
-          pressureEnabled: false,
-          options: StrokeOptions(size: 24),
-          pageIndex: 0,
-          page: page,
-          toolId: ToolId.studyTape,
-          rect: const Rect.fromLTWH(50, 100, 200, 30),
-          isConcealed: true,
-          pattern: pattern,
-        );
+    test(
+      'TapeStroke serializes and deserializes pattern correctly across all styles',
+      () {
+        for (final pattern in TapePattern.values) {
+          final stroke = TapeStroke(
+            color: const Color(0xFFFFD54F),
+            pressureEnabled: false,
+            options: StrokeOptions(size: 24),
+            pageIndex: 0,
+            page: page,
+            toolId: ToolId.studyTape,
+            rect: const Rect.fromLTWH(50, 100, 200, 30),
+            isConcealed: true,
+            pattern: pattern,
+          );
 
-        final json = stroke.toJson();
-        expect(json['shape'], equals('tape'));
-        expect(json['tp'], equals(pattern.name));
-        expect(json['c_state'], isTrue);
+          final json = stroke.toJson();
+          expect(json['shape'], equals('tape'));
+          expect(json['tp'], equals(pattern.name));
+          expect(json['c_state'], isTrue);
 
-        final deserialized = TapeStroke.fromJson(
-          json,
-          fileVersion: 19,
-          pageIndex: 0,
-          page: page,
-        );
+          final deserialized = TapeStroke.fromJson(
+            json,
+            fileVersion: 19,
+            pageIndex: 0,
+            page: page,
+          );
 
-        expect(deserialized.pattern, equals(pattern));
-        expect(deserialized.rect, equals(stroke.rect));
-        expect(deserialized.isConcealed, isTrue);
-      }
-    });
+          expect(deserialized.pattern, equals(pattern));
+          expect(deserialized.rect, equals(stroke.rect));
+          expect(deserialized.isConcealed, isTrue);
+        }
+      },
+    );
 
     test('TapeStroke toggleConceal flips state', () {
       final stroke = TapeStroke(
@@ -84,9 +87,7 @@ void main() {
     });
 
     test('StudyTapeTool creates stroke with configured pattern', () {
-      final editorPage = EditorPage(
-        size: const Size(800, 1000),
-      );
+      final editorPage = EditorPage(size: const Size(800, 1000));
 
       final tool = StudyTapeTool(pattern: TapePattern.stripes);
       tool.onDragStart(const Offset(100, 100), editorPage, 0, null);
@@ -103,7 +104,9 @@ void main() {
       expect(Pen.currentStroke, isNull);
     });
 
-    testWidgets('TapeOptionsPopup updates pattern and color on StudyTapeTool', (tester) async {
+    testWidgets('TapeOptionsPopup updates pattern and color on StudyTapeTool', (
+      tester,
+    ) async {
       final tool = StudyTapeTool(pattern: TapePattern.solid);
       bool revealTriggered = false;
 
@@ -131,7 +134,9 @@ void main() {
       expect(revealTriggered, isTrue);
     });
 
-    testWidgets('TapeOptionsPopup Conceal All button invokes callback', (tester) async {
+    testWidgets('TapeOptionsPopup Conceal All button invokes callback', (
+      tester,
+    ) async {
       final tool = StudyTapeTool(pattern: TapePattern.solid);
       bool concealTriggered = false;
 
@@ -186,69 +191,70 @@ void main() {
       }
     });
 
-    test('Elbow and Curved connectors generate valid non-empty paths and polygons', () {
-      final straight = ArrowStroke(
-        color: Colors.black,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 4),
-        pageIndex: 0,
-        page: page,
-        toolId: ToolId.arrow,
-        start: const Offset(50, 50),
-        end: const Offset(200, 250),
-        connectorStyle: ConnectorStyle.straight,
-      );
+    test(
+      'Elbow and Curved connectors generate valid non-empty paths and polygons',
+      () {
+        final straight = ArrowStroke(
+          color: Colors.black,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 4),
+          pageIndex: 0,
+          page: page,
+          toolId: ToolId.arrow,
+          start: const Offset(50, 50),
+          end: const Offset(200, 250),
+          connectorStyle: ConnectorStyle.straight,
+        );
 
-      final elbow = ArrowStroke(
-        color: Colors.black,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 4),
-        pageIndex: 0,
-        page: page,
-        toolId: ToolId.arrow,
-        start: const Offset(50, 50),
-        end: const Offset(200, 250),
-        connectorStyle: ConnectorStyle.elbow,
-      );
+        final elbow = ArrowStroke(
+          color: Colors.black,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 4),
+          pageIndex: 0,
+          page: page,
+          toolId: ToolId.arrow,
+          start: const Offset(50, 50),
+          end: const Offset(200, 250),
+          connectorStyle: ConnectorStyle.elbow,
+        );
 
-      final curved = ArrowStroke(
-        color: Colors.black,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 4),
-        pageIndex: 0,
-        page: page,
-        toolId: ToolId.arrow,
-        start: const Offset(50, 50),
-        end: const Offset(200, 250),
-        connectorStyle: ConnectorStyle.curved,
-      );
+        final curved = ArrowStroke(
+          color: Colors.black,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 4),
+          pageIndex: 0,
+          page: page,
+          toolId: ToolId.arrow,
+          start: const Offset(50, 50),
+          end: const Offset(200, 250),
+          connectorStyle: ConnectorStyle.curved,
+        );
 
-      final straightPath = straight.getPath([]);
-      final elbowPath = elbow.getPath([]);
-      final curvedPath = curved.getPath([]);
+        final straightPath = straight.getPath([]);
+        final elbowPath = elbow.getPath([]);
+        final curvedPath = curved.getPath([]);
 
-      expect(straightPath.computeMetrics().isNotEmpty, isTrue);
-      expect(elbowPath.computeMetrics().isNotEmpty, isTrue);
-      expect(curvedPath.computeMetrics().isNotEmpty, isTrue);
+        expect(straightPath.computeMetrics().isNotEmpty, isTrue);
+        expect(elbowPath.computeMetrics().isNotEmpty, isTrue);
+        expect(curvedPath.computeMetrics().isNotEmpty, isTrue);
 
-      final straightPoly = straight.getPolygon(quality: StrokeQuality.high);
-      final elbowPoly = elbow.getPolygon(quality: StrokeQuality.high);
-      final curvedPoly = curved.getPolygon(quality: StrokeQuality.high);
+        final straightPoly = straight.getPolygon(quality: StrokeQuality.high);
+        final elbowPoly = elbow.getPolygon(quality: StrokeQuality.high);
+        final curvedPoly = curved.getPolygon(quality: StrokeQuality.high);
 
-      expect(straightPoly.length, greaterThanOrEqualTo(2));
-      expect(elbowPoly.length, greaterThan(straightPoly.length));
-      expect(curvedPoly.length, greaterThan(elbowPoly.length));
+        expect(straightPoly.length, greaterThanOrEqualTo(2));
+        expect(elbowPoly.length, greaterThan(straightPoly.length));
+        expect(curvedPoly.length, greaterThan(elbowPoly.length));
 
-      // Verify SVG generation contains distinct SVG commands
-      expect(straight.toSvgPath(), contains('M'));
-      expect(elbow.toSvgPath(), contains('L'));
-      expect(curved.toSvgPath(), contains('C'));
-    });
+        // Verify SVG generation contains distinct SVG commands
+        expect(straight.toSvgPath(), contains('M'));
+        expect(elbow.toSvgPath(), contains('L'));
+        expect(curved.toSvgPath(), contains('C'));
+      },
+    );
 
     test('ArrowTool creates strokes with requested connectorStyle', () {
-      final editorPage = EditorPage(
-        size: const Size(800, 1000),
-      );
+      final editorPage = EditorPage(size: const Size(800, 1000));
 
       final tool = ArrowTool(connectorStyle: ConnectorStyle.curved);
       expect(tool.name, equals('Curved Connector'));
@@ -261,7 +267,10 @@ void main() {
       tool.onDragUpdate(const Offset(100, 150), null);
       final finished = tool.onDragEnd();
       expect(finished, isA<ArrowStroke>());
-      expect((finished as ArrowStroke).connectorStyle, equals(ConnectorStyle.curved));
+      expect(
+        (finished as ArrowStroke).connectorStyle,
+        equals(ConnectorStyle.curved),
+      );
     });
   });
 
@@ -352,7 +361,10 @@ void main() {
       select.onDragStart(const Offset(10, 10), 0);
       select.onDragUpdate(const Offset(100, 80));
 
-      expect(select.selectResult.path.getBounds(), equals(const Rect.fromLTRB(10, 10, 100, 80)));
+      expect(
+        select.selectResult.path.getBounds(),
+        equals(const Rect.fromLTRB(10, 10, 100, 80)),
+      );
     });
   });
 
@@ -375,69 +387,75 @@ void main() {
       expect(v1.hasSeen('clientA', 8), isFalse);
     });
 
-    test('Two CrdtDocuments converge deterministically after concurrent additions', () {
-      final docA = CrdtDocument(replicaId: 'device_A');
-      final docB = CrdtDocument(replicaId: 'device_B');
+    test(
+      'Two CrdtDocuments converge deterministically after concurrent additions',
+      () {
+        final docA = CrdtDocument(replicaId: 'device_A');
+        final docB = CrdtDocument(replicaId: 'device_B');
 
-      docA.addStroke(
-        strokeId: 'stroke_1',
-        pageIndex: 0,
-        strokeJson: {'shape': 'tape', 'c': 0xFF0000},
-      );
-      docA.addStroke(
-        strokeId: 'stroke_2',
-        pageIndex: 0,
-        strokeJson: {'shape': 'tape', 'c': 0x00FF00},
-      );
+        docA.addStroke(
+          strokeId: 'stroke_1',
+          pageIndex: 0,
+          strokeJson: {'shape': 'tape', 'c': 0xFF0000},
+        );
+        docA.addStroke(
+          strokeId: 'stroke_2',
+          pageIndex: 0,
+          strokeJson: {'shape': 'tape', 'c': 0x00FF00},
+        );
 
-      docB.addStroke(
-        strokeId: 'stroke_3',
-        pageIndex: 0,
-        strokeJson: {'shape': 'tape', 'c': 0x0000FF},
-      );
+        docB.addStroke(
+          strokeId: 'stroke_3',
+          pageIndex: 0,
+          strokeJson: {'shape': 'tape', 'c': 0x0000FF},
+        );
 
-      expect(docA.strokeCount, equals(2));
-      expect(docB.strokeCount, equals(1));
+        expect(docA.strokeCount, equals(2));
+        expect(docB.strokeCount, equals(1));
 
-      // Bidirectional sync
-      docA.syncWith(docB);
+        // Bidirectional sync
+        docA.syncWith(docB);
 
-      expect(docA.strokeCount, equals(3));
-      expect(docB.strokeCount, equals(3));
-      expect(docA.activeStrokeIds.toSet(), equals(docB.activeStrokeIds.toSet()));
-    });
+        expect(docA.strokeCount, equals(3));
+        expect(docB.strokeCount, equals(3));
+        expect(
+          docA.activeStrokeIds.toSet(),
+          equals(docB.activeStrokeIds.toSet()),
+        );
+      },
+    );
 
-    test('Tombstone prevents deleted stroke from resurrecting during late sync', () {
-      final docA = CrdtDocument(replicaId: 'device_A');
-      final docB = CrdtDocument(replicaId: 'device_B');
+    test(
+      'Tombstone prevents deleted stroke from resurrecting during late sync',
+      () {
+        final docA = CrdtDocument(replicaId: 'device_A');
+        final docB = CrdtDocument(replicaId: 'device_B');
 
-      // A creates a stroke
-      docA.addStroke(
-        strokeId: 'stroke_temp',
-        pageIndex: 0,
-        strokeJson: {'shape': 'tape'},
-      );
+        // A creates a stroke
+        docA.addStroke(
+          strokeId: 'stroke_temp',
+          pageIndex: 0,
+          strokeJson: {'shape': 'tape'},
+        );
 
-      // Initial sync: B learns about stroke_temp
-      docA.syncWith(docB);
-      expect(docB.strokeCount, equals(1));
+        // Initial sync: B learns about stroke_temp
+        docA.syncWith(docB);
+        expect(docB.strokeCount, equals(1));
 
-      // A erases the stroke while B is offline
-      docA.deleteStroke('stroke_temp');
-      expect(docA.strokeCount, equals(0));
+        // A erases the stroke while B is offline
+        docA.deleteStroke('stroke_temp');
+        expect(docA.strokeCount, equals(0));
 
-      // B edits the stroke while offline
-      docB.updateStroke(
-        strokeId: 'stroke_temp',
-        patch: {'c_state': false},
-      );
+        // B edits the stroke while offline
+        docB.updateStroke(strokeId: 'stroke_temp', patch: {'c_state': false});
 
-      // Now sync again: deletion tombstone must prevail
-      docA.syncWith(docB);
+        // Now sync again: deletion tombstone must prevail
+        docA.syncWith(docB);
 
-      expect(docA.strokeCount, equals(0));
-      expect(docB.strokeCount, equals(0));
-    });
+        expect(docA.strokeCount, equals(0));
+        expect(docB.strokeCount, equals(0));
+      },
+    );
 
     test('Delta encoding only transmits unobserved operations', () {
       final docA = CrdtDocument(replicaId: 'device_A');
@@ -458,86 +476,95 @@ void main() {
   group('Feature 5: Goodnotes Eraser Mechanics & Filtering', () {
     const page = HasSize(Size(800, 1000));
 
-    test('Erase Tape Only filter selectively erases tape strokes while preserving ink', () {
-      final penStroke = Stroke(
-        color: Colors.black,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 5),
-        pageIndex: 0,
-        page: page,
-        toolId: ToolId.fountainPen,
-      )..addPoint(const Offset(50, 50), null)
-       ..addPoint(const Offset(55, 55), null)
-       ..addPoint(const Offset(60, 60), null);
+    test(
+      'Erase Tape Only filter selectively erases tape strokes while preserving ink',
+      () {
+        final penStroke =
+            Stroke(
+                color: Colors.black,
+                pressureEnabled: false,
+                options: StrokeOptions(size: 5),
+                pageIndex: 0,
+                page: page,
+                toolId: ToolId.fountainPen,
+              )
+              ..addPoint(const Offset(50, 50), null)
+              ..addPoint(const Offset(55, 55), null)
+              ..addPoint(const Offset(60, 60), null);
 
-      final tapeStroke = TapeStroke(
-        color: const Color(0xFFFFD54F),
-        pressureEnabled: false,
-        options: StrokeOptions(size: 24),
-        pageIndex: 0,
-        page: page,
-        toolId: ToolId.studyTape,
-        rect: const Rect.fromLTWH(40, 40, 100, 30),
-      );
+        final tapeStroke = TapeStroke(
+          color: const Color(0xFFFFD54F),
+          pressureEnabled: false,
+          options: StrokeOptions(size: 24),
+          pageIndex: 0,
+          page: page,
+          toolId: ToolId.studyTape,
+          rect: const Rect.fromLTWH(40, 40, 100, 30),
+        );
 
-      final highlighterStroke = Stroke(
-        color: Colors.yellow,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 20),
-        pageIndex: 0,
-        page: page,
-        toolId: ToolId.highlighter,
-      )..addPoint(const Offset(50, 50), null)
-       ..addPoint(const Offset(55, 55), null)
-       ..addPoint(const Offset(60, 60), null);
+        final highlighterStroke =
+            Stroke(
+                color: Colors.yellow,
+                pressureEnabled: false,
+                options: StrokeOptions(size: 20),
+                pageIndex: 0,
+                page: page,
+                toolId: ToolId.highlighter,
+              )
+              ..addPoint(const Offset(50, 50), null)
+              ..addPoint(const Offset(55, 55), null)
+              ..addPoint(const Offset(60, 60), null);
 
-      final strokes = [penStroke, tapeStroke, highlighterStroke];
+        final strokes = [penStroke, tapeStroke, highlighterStroke];
 
-      // 1. With eraserEraseTapeOnly = true
-      stows.eraserEraseTapeOnly.value = true;
-      stows.eraserEraseHighlighterOnly.value = false;
-      stows.eraserMode.value = 'object';
+        // 1. With eraserEraseTapeOnly = true
+        stows.eraserEraseTapeOnly.value = true;
+        stows.eraserEraseHighlighterOnly.value = false;
+        stows.eraserMode.value = 'object';
 
-      final eraser = Eraser(size: 20);
-      final erasedTapeOnly = eraser.checkForOverlappingStrokes(
-        const Offset(55, 55),
-        strokes,
-      );
+        final eraser = Eraser(size: 20);
+        final erasedTapeOnly = eraser.checkForOverlappingStrokes(
+          const Offset(55, 55),
+          strokes,
+        );
 
-      expect(erasedTapeOnly, contains(tapeStroke));
-      expect(erasedTapeOnly, isNot(contains(penStroke)));
-      expect(erasedTapeOnly, isNot(contains(highlighterStroke)));
+        expect(erasedTapeOnly, contains(tapeStroke));
+        expect(erasedTapeOnly, isNot(contains(penStroke)));
+        expect(erasedTapeOnly, isNot(contains(highlighterStroke)));
 
-      // 2. With eraserEraseHighlighterOnly = true
-      stows.eraserEraseTapeOnly.value = false;
-      stows.eraserEraseHighlighterOnly.value = true;
+        // 2. With eraserEraseHighlighterOnly = true
+        stows.eraserEraseTapeOnly.value = false;
+        stows.eraserEraseHighlighterOnly.value = true;
 
-      final eraser2 = Eraser(size: 20);
-      final erasedHighlighterOnly = eraser2.checkForOverlappingStrokes(
-        const Offset(55, 55),
-        strokes,
-      );
+        final eraser2 = Eraser(size: 20);
+        final erasedHighlighterOnly = eraser2.checkForOverlappingStrokes(
+          const Offset(55, 55),
+          strokes,
+        );
 
-      expect(erasedHighlighterOnly, contains(highlighterStroke));
-      expect(erasedHighlighterOnly, isNot(contains(penStroke)));
-      expect(erasedHighlighterOnly, isNot(contains(tapeStroke)));
+        expect(erasedHighlighterOnly, contains(highlighterStroke));
+        expect(erasedHighlighterOnly, isNot(contains(penStroke)));
+        expect(erasedHighlighterOnly, isNot(contains(tapeStroke)));
 
-      // Reset
-      stows.eraserEraseTapeOnly.value = false;
-      stows.eraserEraseHighlighterOnly.value = false;
-    });
+        // Reset
+        stows.eraserEraseTapeOnly.value = false;
+        stows.eraserEraseHighlighterOnly.value = false;
+      },
+    );
 
     test('Precision eraser mode uses tighter contact threshold', () {
-      final stroke = Stroke(
-        color: Colors.black,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 5),
-        pageIndex: 0,
-        page: page,
-        toolId: ToolId.fountainPen,
-      )..addPoint(const Offset(100, 100), null)
-       ..addPoint(const Offset(105, 105), null)
-       ..addPoint(const Offset(110, 110), null);
+      final stroke =
+          Stroke(
+              color: Colors.black,
+              pressureEnabled: false,
+              options: StrokeOptions(size: 5),
+              pageIndex: 0,
+              page: page,
+              toolId: ToolId.fountainPen,
+            )
+            ..addPoint(const Offset(100, 100), null)
+            ..addPoint(const Offset(105, 105), null)
+            ..addPoint(const Offset(110, 110), null);
 
       final strokes = [stroke];
 
@@ -549,20 +576,28 @@ void main() {
       // Object mode with size 20: effective radius 20, sqrDistance <= 400 -> erased!
       stows.eraserMode.value = 'object';
       final eraserObject = Eraser(size: 20);
-      final erasedObj = eraserObject.checkForOverlappingStrokes(testPos, strokes);
+      final erasedObj = eraserObject.checkForOverlappingStrokes(
+        testPos,
+        strokes,
+      );
       expect(erasedObj, isNotEmpty);
 
       // Precision mode with size 20: effectiveSqrSize = 400 * 0.25 = 100 < 314 -> NOT erased!
       stows.eraserMode.value = 'precision';
       final eraserPrecision = Eraser(size: 20);
-      final erasedPrec = eraserPrecision.checkForOverlappingStrokes(testPos, strokes);
+      final erasedPrec = eraserPrecision.checkForOverlappingStrokes(
+        testPos,
+        strokes,
+      );
       expect(erasedPrec, isEmpty);
 
       // Reset
       stows.eraserMode.value = 'object';
     });
 
-    testWidgets('EraserSizePopup renders eraser styles and toggles tape only', (tester) async {
+    testWidgets('EraserSizePopup renders eraser styles and toggles tape only', (
+      tester,
+    ) async {
       stows.eraserEraseTapeOnly.value = false;
       stows.disableEraserAfterUse.value = false;
       stows.eraserMode.value = 'object';
@@ -572,9 +607,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: EraserSizePopup(
-              onClearPage: () => cleared = true,
-            ),
+            body: EraserSizePopup(onClearPage: () => cleared = true),
           ),
         ),
       );
@@ -663,39 +696,42 @@ void main() {
       expect(stroke.points[1].y, greaterThan(0.0));
     });
 
-    testWidgets('SelectionBar displays Bring to Front, Send to Back, and Smoothen buttons', (tester) async {
-      bool broughtToFront = false;
-      bool sentToBack = false;
-      bool smoothed = false;
+    testWidgets(
+      'SelectionBar displays Bring to Front, Send to Back, and Smoothen buttons',
+      (tester) async {
+        bool broughtToFront = false;
+        bool sentToBack = false;
+        bool smoothed = false;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SelectionBar(
-              copySelection: () {},
-              pasteSelection: () {},
-              duplicateSelection: () {},
-              deleteSelection: () {},
-              bringToFront: () => broughtToFront = true,
-              sendToBack: () => sentToBack = true,
-              smoothen: () => smoothed = true,
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SelectionBar(
+                copySelection: () {},
+                pasteSelection: () {},
+                duplicateSelection: () {},
+                deleteSelection: () {},
+                bringToFront: () => broughtToFront = true,
+                sendToBack: () => sentToBack = true,
+                smoothen: () => smoothed = true,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byTooltip('Bring to Front'), findsOneWidget);
-      expect(find.byTooltip('Send to Back'), findsOneWidget);
-      expect(find.byTooltip('Smoothen Handwriting'), findsOneWidget);
+        expect(find.byTooltip('Bring to Front'), findsOneWidget);
+        expect(find.byTooltip('Send to Back'), findsOneWidget);
+        expect(find.byTooltip('Smoothen Handwriting'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Bring to Front'));
-      expect(broughtToFront, isTrue);
+        await tester.tap(find.byTooltip('Bring to Front'));
+        expect(broughtToFront, isTrue);
 
-      await tester.tap(find.byTooltip('Send to Back'));
-      expect(sentToBack, isTrue);
+        await tester.tap(find.byTooltip('Send to Back'));
+        expect(sentToBack, isTrue);
 
-      await tester.tap(find.byTooltip('Smoothen Handwriting'));
-      expect(smoothed, isTrue);
-    });
+        await tester.tap(find.byTooltip('Smoothen Handwriting'));
+        expect(smoothed, isTrue);
+      },
+    );
   });
 }

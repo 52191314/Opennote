@@ -12,10 +12,7 @@ import 'package:sbn/has_size.dart';
 class ElementsSheet extends StatefulWidget {
   final ValueChanged<ElementItem> onSelectElement;
 
-  const ElementsSheet({
-    super.key,
-    required this.onSelectElement,
-  });
+  const ElementsSheet({super.key, required this.onSelectElement});
 
   @override
   State<ElementsSheet> createState() => _ElementsSheetState();
@@ -79,11 +76,7 @@ class _ElementsSheetState extends State<ElementsSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                Icon(
-                  Icons.auto_awesome,
-                  size: 20,
-                  color: colorScheme.primary,
-                ),
+                Icon(Icons.auto_awesome, size: 20, color: colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
                   'Elements',
@@ -139,11 +132,11 @@ class _ElementsSheetState extends State<ElementsSheet> {
                     padding: const EdgeInsets.all(12),
                     gridDelegate:
                         const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 110,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: 0.85,
-                    ),
+                          maxCrossAxisExtent: 110,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: 0.85,
+                        ),
                     itemCount: filteredItems.length,
                     itemBuilder: (context, index) {
                       final item = filteredItems[index];
@@ -160,8 +153,9 @@ class _ElementsSheetState extends State<ElementsSheet> {
                                 .withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: colorScheme.outlineVariant
-                                  .withValues(alpha: 0.4),
+                              color: colorScheme.outlineVariant.withValues(
+                                alpha: 0.4,
+                              ),
                             ),
                           ),
                           child: Column(
@@ -222,10 +216,7 @@ class _ElementsSheetState extends State<ElementsSheet> {
               _manager.removeElement(item.id);
               Navigator.pop(ctx);
             },
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),

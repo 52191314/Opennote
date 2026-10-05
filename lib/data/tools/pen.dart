@@ -130,7 +130,8 @@ class Pen extends Tool {
           ? _activePage!.lineHeight!.toDouble()
           : stows.gridSize.value;
       if (lh > 0) {
-        if (_activePage?.backgroundPattern == CanvasBackgroundPattern.isometric) {
+        if (_activePage?.backgroundPattern ==
+            CanvasBackgroundPattern.isometric) {
           snappedPosition = Stroke.snapPointToIsometricGrid(position, lh);
         } else {
           snappedPosition = Stroke.snapPointToGrid(position, lh);

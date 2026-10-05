@@ -17,11 +17,7 @@ class Sticker {
   /// The emoji character(s) rendered on the canvas.
   final String emoji;
 
-  const Sticker({
-    required this.name,
-    required this.icon,
-    required this.emoji,
-  });
+  const Sticker({required this.name, required this.icon, required this.emoji});
 
   /// All built-in stickers grouped by category.
   static const categories = <StickerCategory>[
@@ -63,7 +59,11 @@ class Sticker {
         Sticker(name: 'Left Arrow', icon: Icons.arrow_back, emoji: '⬅️'),
         Sticker(name: 'Up Arrow', icon: Icons.arrow_upward, emoji: '⬆️'),
         Sticker(name: 'Down Arrow', icon: Icons.arrow_downward, emoji: '⬇️'),
-        Sticker(name: 'Return Arrow', icon: Icons.subdirectory_arrow_left, emoji: '↩️'),
+        Sticker(
+          name: 'Return Arrow',
+          icon: Icons.subdirectory_arrow_left,
+          emoji: '↩️',
+        ),
       ],
     ),
     StickerCategory(

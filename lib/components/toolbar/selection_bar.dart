@@ -54,15 +54,15 @@ class SelectionBar extends StatelessWidget {
                     ? ColorScheme.of(context).secondary
                     : ColorScheme.of(context).onSurface,
                 backgroundColor: stows.selectionRectMode.value
-                    ? Theme.of(context)
-                        .colorScheme
-                        .secondary
-                        .withValues(alpha: 0.1)
+                    ? Theme.of(
+                        context,
+                      ).colorScheme.secondary.withValues(alpha: 0.1)
                     : Colors.transparent,
                 shape: const CircleBorder(),
               ),
-              tooltip:
-                  stows.selectionRectMode.value ? 'Rect Select' : 'Lasso Select',
+              tooltip: stows.selectionRectMode.value
+                  ? 'Rect Select'
+                  : 'Lasso Select',
               icon: Icon(
                 stows.selectionRectMode.value
                     ? Icons.crop_square
@@ -98,8 +98,7 @@ class SelectionBar extends StatelessWidget {
               tooltip: cropActive ? 'Done cropping' : 'Crop image',
               icon: Icon(
                 cropActive ? Icons.check : Icons.crop,
-                color:
-                    cropActive ? ColorScheme.of(context).primary : null,
+                color: cropActive ? ColorScheme.of(context).primary : null,
               ),
             ),
           IconButton(

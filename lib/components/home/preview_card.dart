@@ -159,7 +159,9 @@ class _PreviewCardState extends State<PreviewCard> {
                                       alignment: .topCenter,
                                       fit: .cover,
                                     )
-                                  : _FallbackThumbnail(filePath: widget.filePath),
+                                  : _FallbackThumbnail(
+                                      filePath: widget.filePath,
+                                    ),
                             ),
                           ),
                         ),
@@ -282,8 +284,12 @@ class _FallbackThumbnail extends StatelessWidget {
         decoration: BoxDecoration(
           color: coverColor,
           borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(kYaruContainerRadius - kYaruFocusBorderWidth),
-            topRight: Radius.circular(kYaruContainerRadius - kYaruFocusBorderWidth),
+            topLeft: Radius.circular(
+              kYaruContainerRadius - kYaruFocusBorderWidth,
+            ),
+            topRight: Radius.circular(
+              kYaruContainerRadius - kYaruFocusBorderWidth,
+            ),
           ),
         ),
         child: Stack(
@@ -315,7 +321,9 @@ class _FallbackThumbnail extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.amber.shade700,
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(2)),
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(2),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.2),
@@ -329,8 +337,16 @@ class _FallbackThumbnail extends StatelessWidget {
             // Centered Notebook Label Card
             Center(
               child: Container(
-                margin: const EdgeInsets.only(left: 20, right: 14, top: 16, bottom: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                margin: const EdgeInsets.only(
+                  left: 20,
+                  right: 14,
+                  top: 16,
+                  bottom: 16,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFDFBF7),
                   borderRadius: BorderRadius.circular(4),

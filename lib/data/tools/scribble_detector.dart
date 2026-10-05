@@ -131,7 +131,8 @@ class ScribbleDetector {
       radius: eraserRadius * 0.8,
     );
     for (final image in List<EditorImage>.of(existingImages)) {
-      if (image.dstRect.overlaps(eraserCircle) && !_erasedImages.contains(image)) {
+      if (image.dstRect.overlaps(eraserCircle) &&
+          !_erasedImages.contains(image)) {
         newlyErased.add(image);
         _erasedImages.add(image);
         existingImages.remove(image);
@@ -141,11 +142,7 @@ class ScribbleDetector {
   }
 
   /// Erases text lines in [page.quill] overlapping with [position].
-  bool eraseTextAt(
-    Offset position,
-    EditorPage page,
-    double lineHeight,
-  ) {
+  bool eraseTextAt(Offset position, EditorPage page, double lineHeight) {
     if (page.quill.controller.document.isEmpty()) return false;
     final textRect = page.computeTextContentRect(lineHeight);
     if (textRect == Rect.zero) return false;
@@ -187,8 +184,10 @@ class ScribbleDetector {
     for (int i = 0; i < lineIndex; i++) {
       offset += lines[i].length + 1;
     }
-    final length = lines[lineIndex].length + (lineIndex < lines.length - 1 ? 1 : 0);
-    if (length > 0 && offset + length <= page.quill.controller.document.length) {
+    final length =
+        lines[lineIndex].length + (lineIndex < lines.length - 1 ? 1 : 0);
+    if (length > 0 &&
+        offset + length <= page.quill.controller.document.length) {
       page.quill.controller.replaceText(offset, length, '', null);
       erasedText = true;
       return true;
@@ -264,8 +263,11 @@ class ScribbleDetector {
       final isHorizontalOscillation =
           hasXOverlap && (delta1.dx * delta2.dx < 0);
       final isVerticalOscillation =
-          hasYOverlap && (delta1.dy * delta2.dy < 0) &&
-          (hasXOverlap || (delta1.dx * delta2.dx < 0) || (x1Max - x1Min <= 8.0 && x2Max - x2Min <= 8.0));
+          hasYOverlap &&
+          (delta1.dy * delta2.dy < 0) &&
+          (hasXOverlap ||
+              (delta1.dx * delta2.dx < 0) ||
+              (x1Max - x1Min <= 8.0 && x2Max - x2Min <= 8.0));
 
       if (isHorizontalOscillation || isVerticalOscillation) {
         overlappingPasses++;
@@ -298,13 +300,12 @@ class ScribbleDetector {
   }
 
   /// Erase strokes at the given position using the eraser tool.
-  List<Stroke> _eraseAt(
-    Offset position,
-    List<Stroke> existingStrokes,
-  ) {
+  List<Stroke> _eraseAt(Offset position, List<Stroke> existingStrokes) {
     _eraser ??= Eraser(size: eraserRadius);
-    final erased =
-        _eraser!.checkForOverlappingStrokes(position, existingStrokes);
+    final erased = _eraser!.checkForOverlappingStrokes(
+      position,
+      existingStrokes,
+    );
     _erasedStrokes.addAll(erased);
     return erased;
   }

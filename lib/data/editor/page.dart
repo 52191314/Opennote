@@ -53,8 +53,10 @@ class EditorPage extends ChangeNotifier implements HasSize {
   final QuillStruct quill;
 
   /// All strokes from all visible layers, flattened for rendering.
-  List<Stroke> get strokes =>
-      [for (final layer in layers) if (layer.visible) ...layer.strokes];
+  List<Stroke> get strokes => [
+    for (final layer in layers)
+      if (layer.visible) ...layer.strokes,
+  ];
 
   /// Strokes in the currently active layer (for mutation).
   List<Stroke> get activeLayerStrokes => activeLayer.strokes;
@@ -196,7 +198,8 @@ class EditorPage extends ChangeNotifier implements HasSize {
          "size and width/height shouldn't both be specified",
        ),
        size = size ?? Size(width ?? defaultWidth, height ?? defaultHeight),
-       layers = layers ??
+       layers =
+           layers ??
            (strokes != null
                ? [Layer(name: 'Default', strokes: strokes)]
                : [Layer(name: 'Default')]),
@@ -226,12 +229,16 @@ class EditorPage extends ChangeNotifier implements HasSize {
       return EditorPage(
         size: size,
         bookmarked: json['bm'] as bool? ?? false,
-        layers: layersList.map((layerJson) => Layer.fromJson(
-          layerJson as Map<String, dynamic>,
-          fileVersion: fileVersion,
-          pageIndex: 0,
-          page: hasisPage,
-        )).toList(),
+        layers: layersList
+            .map(
+              (layerJson) => Layer.fromJson(
+                layerJson as Map<String, dynamic>,
+                fileVersion: fileVersion,
+                pageIndex: 0,
+                page: hasisPage,
+              ),
+            )
+            .toList(),
         images: parseImagesJson(
           json['i'] as List?,
           inlineAssets: inlineAssets,
@@ -304,8 +311,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
     'w': size.width,
     'h': size.height,
     if (bookmarked) 'bm': bookmarked,
-    if (layers.isNotEmpty)
-      'l': layers.map((layer) => layer.toJson()).toList(),
+    if (layers.isNotEmpty) 'l': layers.map((layer) => layer.toJson()).toList(),
     if (images.isNotEmpty)
       'i': images.map((image) => image.toJson(assets)).toList(),
     if (!quill.controller.document.isEmpty())
@@ -492,14 +498,20 @@ class EditorPage extends ChangeNotifier implements HasSize {
   /// you're done with it.
   EditorPage cloneForRasterization({bool rasterizeAllStrokes = false}) {
     return copyWith(
-      layers: layers.map((layer) => Layer(
-        name: layer.name,
-        visible: layer.visible,
-        locked: layer.locked,
-        strokes: rasterizeAllStrokes
-            ? layer.strokes
-            : layer.strokes.where(EditorExporter.shouldRasterizeStroke).toList(),
-      )).toList(),
+      layers: layers
+          .map(
+            (layer) => Layer(
+              name: layer.name,
+              visible: layer.visible,
+              locked: layer.locked,
+              strokes: rasterizeAllStrokes
+                  ? layer.strokes
+                  : layer.strokes
+                        .where(EditorExporter.shouldRasterizeStroke)
+                        .toList(),
+            ),
+          )
+          .toList(),
       quill: quill.cloneForScreenshot(),
     );
   }

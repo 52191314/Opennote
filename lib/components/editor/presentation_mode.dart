@@ -58,8 +58,10 @@ class _PresentationModeState extends State<PresentationMode>
   @override
   void initState() {
     super.initState();
-    _currentPageIndex = widget.initialPageIndex
-        .clamp(0, widget.coreInfo.pages.length - 1);
+    _currentPageIndex = widget.initialPageIndex.clamp(
+      0,
+      widget.coreInfo.pages.length - 1,
+    );
     _totalPages = widget.coreInfo.pages.length;
 
     _flipController = AnimationController(

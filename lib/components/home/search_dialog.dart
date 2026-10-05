@@ -128,13 +128,15 @@ class _SearchDialogState extends State<SearchDialog> {
     for (final filePath in _allFiles) {
       final fileName = p.basename(filePath);
       if (fileName.toLowerCase().contains(queryLower)) {
-        fileNameMatches.add(SearchMatch(
-          filePath: filePath,
-          fileName: fileName,
-          pageIndex: 0,
-          matchKind: 'filename',
-          preview: fileName,
-        ));
+        fileNameMatches.add(
+          SearchMatch(
+            filePath: filePath,
+            fileName: fileName,
+            pageIndex: 0,
+            matchKind: 'filename',
+            preview: fileName,
+          ),
+        );
       }
     }
     if (!mounted || _activeQuery != queryLower) return;
@@ -152,10 +154,7 @@ class _SearchDialogState extends State<SearchDialog> {
       });
 
       try {
-        final pageMatches = await _searchFileContents(
-          filePath,
-          queryLower,
-        );
+        final pageMatches = await _searchFileContents(filePath, queryLower);
         if (!mounted || _activeQuery != queryLower) return;
 
         if (pageMatches.isNotEmpty) {
@@ -227,13 +226,15 @@ class _SearchDialogState extends State<SearchDialog> {
         final plainText = _extractPlainTextFromQuillDelta(quillDelta);
         if (plainText.toLowerCase().contains(queryLower)) {
           final snippet = _buildSnippet(plainText, queryLower);
-          results.add(SearchMatch(
-            filePath: filePath,
-            fileName: fileName,
-            pageIndex: pageIdx,
-            matchKind: 'text',
-            preview: 'Page ${pageIdx + 1}: "$snippet"',
-          ));
+          results.add(
+            SearchMatch(
+              filePath: filePath,
+              fileName: fileName,
+              pageIndex: pageIdx,
+              matchKind: 'text',
+              preview: 'Page ${pageIdx + 1}: "$snippet"',
+            ),
+          );
         }
       }
 
@@ -294,13 +295,15 @@ class _SearchDialogState extends State<SearchDialog> {
         if (colorInt != null) {
           final hex = _intToHex(colorInt);
           if (hex.toLowerCase().contains(queryLower)) {
-            results.add(SearchMatch(
-              filePath: filePath,
-              fileName: fileName,
-              pageIndex: pageIndex,
-              matchKind: 'color',
-              preview: 'Page ${pageIndex + 1} – colour $hex',
-            ));
+            results.add(
+              SearchMatch(
+                filePath: filePath,
+                fileName: fileName,
+                pageIndex: pageIndex,
+                matchKind: 'color',
+                preview: 'Page ${pageIndex + 1} – colour $hex',
+              ),
+            );
             foundColor = true;
           }
         }
@@ -309,15 +312,16 @@ class _SearchDialogState extends State<SearchDialog> {
       // --- Tool type search ---
       if (!foundTool) {
         final toolType = stroke['ty'] as String?;
-        if (toolType != null &&
-            toolType.toLowerCase().contains(queryLower)) {
-          results.add(SearchMatch(
-            filePath: filePath,
-            fileName: fileName,
-            pageIndex: pageIndex,
-            matchKind: 'tool',
-            preview: 'Page ${pageIndex + 1} – tool: $toolType',
-          ));
+        if (toolType != null && toolType.toLowerCase().contains(queryLower)) {
+          results.add(
+            SearchMatch(
+              filePath: filePath,
+              fileName: fileName,
+              pageIndex: pageIndex,
+              matchKind: 'tool',
+              preview: 'Page ${pageIndex + 1} – tool: $toolType',
+            ),
+          );
           foundTool = true;
         }
       }
@@ -369,9 +373,7 @@ class _SearchDialogState extends State<SearchDialog> {
   static String _buildSnippet(String text, String query) {
     final idx = text.toLowerCase().indexOf(query);
     if (idx < 0) {
-      return text.length > 60
-          ? '${text.substring(0, 60)}…'
-          : text;
+      return text.length > 60 ? '${text.substring(0, 60)}…' : text;
     }
 
     const contextLen = 30;
