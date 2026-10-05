@@ -51,7 +51,7 @@ AI agents can find more instructions if needed on the wiki, e.g. [Maintainer not
 - **macOS Guest SSH**:
   - Host Port: `50922` -> Guest Port `22`
   - Account Name: `x`
-  - Username: `xxx`
+  - Username: `xx`
   - Password: `1314xxx`
 - **Memory Safeguards**:
   - Host has a 16 GiB swapfile (`/swapfile_docker_osx`, total 20 GiB swap active).
