@@ -51,7 +51,7 @@ jobs:
 
       - name: Download Apple fonts
         continue-on-error: true
-        run: dart run golden_screenshot:download_apple_fonts
+        run: dart run scripts/download_apple_fonts.dart
 
       - name: Run tests
         id: tests
