@@ -64,7 +64,7 @@ void main() {
         },
       );
 
-      detector.start(const Offset(0, 0));
+      detector.start(Offset.zero);
       for (int i = 1; i <= 15; i++) {
         detector.update(Offset(i * 10.0, i * 10.0));
       }
@@ -136,9 +136,10 @@ void main() {
       expect(highlighterColors[2], equals(0xFFF48FB1)); // Pink
     });
 
-    test('Circle-to-select and two-finger tap undo are enabled by default', () {
+    test('Circle-to-select, two-finger tap undo, and scribble to erase are enabled by default', () {
       expect(stows.circleToSelect.value, isTrue);
       expect(stows.twoFingerTapUndo.value, isTrue);
+      expect(stows.scribbleToErase.value, isTrue);
     });
   });
 }

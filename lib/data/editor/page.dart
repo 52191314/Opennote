@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
@@ -54,15 +57,21 @@ class EditorPage extends ChangeNotifier implements HasSize {
       [for (final layer in layers) if (layer.visible) ...layer.strokes];
 
   /// Strokes in the currently active layer (for mutation).
-  List<Stroke> get activeLayerStrokes {
+  List<Stroke> get activeLayerStrokes => activeLayer.strokes;
+
+  /// The currently active layer instance.
+  Layer get activeLayer {
     if (layers.isEmpty) {
       layers.add(Layer(name: 'Default'));
     }
-    return layers[activeLayerIndex.clamp(0, layers.length - 1)].strokes;
+    return layers[activeLayerIndex.clamp(0, layers.length - 1)];
   }
 
   /// The index of the currently active layer for drawing operations.
   int activeLayerIndex;
+
+  /// Optional position of the laser pointer spotlight dot (in page-local coordinates).
+  Offset? laserSpotlightPosition;
 
   /// Position of the eraser cursor on this page (in page-local coordinates).
   /// When non-null, a semi-transparent circle is painted at this position.
@@ -85,7 +94,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
   List<Offset>? selectionResizeHandles;
 
   /// Whether this page is bookmarked/favorited by the user.
-  bool bookmarked = false;
+  var bookmarked = false;
 
   /// Offset applied to the text content from its default position.
   Offset textContentOffset = Offset.zero;
@@ -308,6 +317,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
   /// Returns true if the stroke was found and removed.
   bool removeStroke(Stroke stroke) {
     for (final layer in layers) {
+      if (layer.locked) continue;
       if (layer.strokes.remove(stroke)) return true;
     }
     return false;
@@ -320,6 +330,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
       layers.add(Layer(name: 'Default'));
     }
     final activeLayer = layers[activeLayerIndex.clamp(0, layers.length - 1)];
+    if (activeLayer.locked) return;
     final int newStrokeColor = newStroke.color.toARGB32();
 
     int index = 0;
@@ -484,6 +495,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
       layers: layers.map((layer) => Layer(
         name: layer.name,
         visible: layer.visible,
+        locked: layer.locked,
         strokes: rasterizeAllStrokes
             ? layer.strokes
             : layer.strokes.where(EditorExporter.shouldRasterizeStroke).toList(),
@@ -495,23 +507,25 @@ class EditorPage extends ChangeNotifier implements HasSize {
 
 /// A single layer within a page, containing a set of strokes.
 ///
-/// Future expansion: each page will have multiple layers that can be
-/// independently hidden, reordered, and locked. For now, pages have
-/// a single implicit "Default" layer wrapping the legacy [EditorPage.strokes] list.
+/// Each page can have multiple layers that can be independently
+/// hidden, reordered, and locked.
 class Layer {
   String name;
   bool visible;
+  bool locked;
   final List<Stroke> strokes;
 
   Layer({
     this.name = 'Default',
     this.visible = true,
+    this.locked = false,
     List<Stroke>? strokes,
   }) : strokes = strokes ?? [];
 
   Map<String, dynamic> toJson() => {
     'n': name,
     'v': visible,
+    'l': locked,
     's': strokes.map((s) => s.toJson()).toList(),
   };
 
@@ -523,6 +537,7 @@ class Layer {
   }) => Layer(
     name: json['n'] as String? ?? 'Default',
     visible: json['v'] as bool? ?? true,
+    locked: json['l'] as bool? ?? false,
     strokes: EditorPage.parseStrokesJson(
       json['s'] as List?,
       page: page,

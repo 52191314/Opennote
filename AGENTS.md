@@ -30,6 +30,15 @@ AI agents can find more instructions if needed on the wiki, e.g. [Maintainer not
 - Ideally, write tests *before* implementing the feature/fix. Follow the TDD (Test-Driven Development) approach. This ensures you've found the precise issue you're trying to fix.
 - Don't delete existing tests. If they're failing, that highlights something wrong with your code. Don't say "we'll fix it later": later never comes. If you really cannot fix it, defer to a human or a more complex AI agent.
 
+## Gesture & Canvas Tools
+
+- When building or tuning pen/stylus gesture detectors (e.g. scribble-to-erase, circle-to-select, shape recognition):
+  - **Physical scale independence**: Do not couple human touch gesture geometry to digital stroke widths (e.g. bounding box size scaling directly with pen width). Human gestures operate on physical human scales (20–400 px) regardless of pen thickness.
+  - **No premature lock-out**: Never permanently lock out gesture recognition after a fixed initial point window; touch sampling rates (60–120Hz) mean multi-stroke gestures take dozens of points. Use a sliding window of recent points instead.
+  - **Discrete hit-testing & lead-in erasure**: For gesture-driven erasing, hit testing must account for discrete sampling intervals with a generous effective radius (e.g. >= 24 px) and retroactively erase all points traversed during the gesture leading up to detection.
+  - **Immediate visual cleanup**: Clear in-flight ink previews (`Pen.currentStroke = null`) upon gesture detection to prevent frozen partial strokes on screen.
+  - **Discoverability**: Expose tool settings in both relevant tool modals and global app settings with intuitive icons and sensible defaults.
+
 ## Commits
 - Follow the Conventional Commits format.
 - Always include one or more emojis that represent your commit. Additionally include the sparkle emoji ✨.

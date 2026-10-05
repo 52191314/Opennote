@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:keybinder/keybinder.dart';
 import 'package:saber/components/canvas/hud/canvas_hud.dart';
+import 'package:saber/components/canvas/hud/floating_layers_overlay.dart';
 import 'package:saber/components/canvas/hud/protractor_overlay.dart';
 import 'package:saber/components/canvas/interactive_canvas.dart';
 import 'package:saber/data/editor/page.dart';
@@ -45,6 +46,9 @@ class CanvasGestureDetector extends StatefulWidget {
     this.hasTape = false,
     this.onRevealAllTape,
     this.onConcealAllTape,
+    this.activePage,
+    this.onLayersChanged,
+    this.isInfiniteCanvas = false,
     TransformationController? transformationController,
   }) : _transformationController =
             transformationController ?? TransformationController();
@@ -80,6 +84,9 @@ class CanvasGestureDetector extends StatefulWidget {
   final bool hasTape;
   final VoidCallback? onRevealAllTape;
   final VoidCallback? onConcealAllTape;
+  final EditorPage? activePage;
+  final VoidCallback? onLayersChanged;
+  final bool isInfiniteCanvas;
 
   late final TransformationController _transformationController;
 
@@ -362,6 +369,9 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
       if (zoomLockedValue != null) {
         zoomLockedValue = transformCacheItem.transform.approxScale;
       }
+    } else if (widget.isInfiniteCanvas) {
+      // For infinite canvas, start at identity
+      widget._transformationController.value = Matrix4.identity();
     } else if (widget.initialPageIndex != null) {
       // if we're opening a different note, scroll to the last recorded page
       CanvasGestureDetector.scrollToPage(
@@ -380,10 +390,6 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
   /// Otherwise, prevents the user from scrolling past the edges.
   void onTransformChanged() {
     final scale = widget._transformationController.value.approxScale;
-    final translation = widget._transformationController.value.getTranslation();
-
-    double adjustmentX = 0;
-    double adjustmentY = 0;
 
     // snap to 1.0x zoom
     _snapZoomTimer?.cancel();
@@ -391,6 +397,14 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
     // allow 0.001 leeway for floating point error
     if (diffFrom1 < 0.05 && diffFrom1 > 0.001)
       _snapZoomTimer = Timer(const Duration(milliseconds: 200), resetZoom);
+
+    // In infinite canvas mode, allow completely free pan in all 2D directions
+    if (widget.isInfiniteCanvas) return;
+
+    final translation = widget._transformationController.value.getTranslation();
+
+    double adjustmentX = 0;
+    double adjustmentY = 0;
 
     if (scale < 1) {
       // horizontally center pages if zoomed out
@@ -576,10 +590,12 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
 
                   // we need a non-zero boundary margin so we can zoom out
                   // past the size of the page (for minScale < 1)
-                  boundaryMargin: .symmetric(
-                    vertical: 0,
-                    horizontal: screenSize.width * 2,
-                  ),
+                  boundaryMargin: widget.isInfiniteCanvas
+                      ? const EdgeInsets.all(double.infinity)
+                      : EdgeInsets.symmetric(
+                          vertical: 0,
+                          horizontal: screenSize.width * 2,
+                        ),
 
                   transformationController: widget._transformationController,
 
@@ -596,6 +612,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
                       placeholderPageBuilder: widget.placeholderPageBuilder,
                       boundingBox: _axisAlignedBoundingBox(viewport),
                       containerWidth: containerBounds.maxWidth,
+                      isInfiniteCanvas: widget.isInfiniteCanvas,
                     );
                   },
                 );
@@ -637,6 +654,24 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
             onConcealAllTape: widget.onConcealAllTape,
           ),
         ),
+        if (widget.activePage != null)
+          Positioned(
+            bottom: 24,
+            left: 16,
+            child: ValueListenableBuilder<bool>(
+              valueListenable: stows.showFloatingLayersHud,
+              builder: (context, show, _) {
+                if (!show) return const SizedBox.shrink();
+                return FloatingLayersOverlay(
+                  page: widget.activePage,
+                  onChanged: () {
+                    widget.activePage?.redrawStrokes();
+                    widget.onLayersChanged?.call();
+                  },
+                );
+              },
+            ),
+          ),
       ],
     );
   }
@@ -682,6 +717,7 @@ class _PagesBuilder extends StatelessWidget {
     required this.placeholderPageBuilder,
     required this.boundingBox,
     required this.containerWidth,
+    this.isInfiniteCanvas = false,
   });
 
   final List<EditorPage> pages;
@@ -690,9 +726,16 @@ class _PagesBuilder extends StatelessWidget {
   placeholderPageBuilder;
   final Rect boundingBox;
   final double containerWidth;
+  final bool isInfiniteCanvas;
 
   @override
   Widget build(BuildContext context) {
+    if (isInfiniteCanvas) {
+      if (pages.isEmpty) return const SizedBox.shrink();
+      pages.first.isRendered = true;
+      return pageBuilder(context, 0);
+    }
+
     final List<Widget> children = [
       const SizedBox.square(dimension: Editor.gapBetweenPages),
       const SizedBox.square(dimension: Editor.gapBetweenPages),

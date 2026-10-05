@@ -4,6 +4,7 @@ library;
 import 'dart:ui';
 
 import 'package:saber/components/canvas/_stroke.dart';
+import 'package:saber/components/canvas/_tape_stroke.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
 import 'package:sbn/tool_id.dart';
@@ -29,13 +30,26 @@ class Eraser extends Tool {
     List<Stroke> strokes,
   ) {
     final List<Stroke> overlapping = [];
+    final isPrecision = stows.eraserMode.value == 'precision';
+    final effectiveSqrSize = isPrecision ? sqrSize * 0.25 : sqrSize;
+
     for (int i = 0; i < strokes.length; i++) {
       final stroke = strokes[i];
       if (stows.eraserEraseHighlighterOnly.value &&
           stroke.toolId != ToolId.highlighter) {
         continue;
       }
-      if (_shouldStrokeBeErased(eraserPos, stroke, sqrSize)) {
+      if (stows.eraserEraseTapeOnly.value &&
+          stroke.toolId != ToolId.studyTape &&
+          stroke is! TapeStroke) {
+        continue;
+      }
+      if (_shouldStrokeBeErased(
+        eraserPos,
+        stroke,
+        effectiveSqrSize,
+        isPrecision: isPrecision,
+      )) {
         overlapping.add(stroke);
         _erased.add(stroke);
       }
@@ -53,18 +67,25 @@ class Eraser extends Tool {
   static bool _shouldStrokeBeErased(
     Offset eraserPos,
     Stroke stroke,
-    double sqrSize,
-  ) {
+    double sqrSize, {
+    bool isPrecision = false,
+  }) {
+    if (stroke is TapeStroke) {
+      return stroke.rect.inflate(isPrecision ? 4 : 12).contains(eraserPos);
+    }
+
     if (stroke.length <= 3) {
       if (stroke.lowQualityPath.contains(eraserPos)) return true;
     }
 
-    /// skip checking every few vertices for performance
-    final int verticesToSkip = switch (stroke.lowQualityPolygon.length) {
-      < 100 => 0,
-      < 1000 => 1,
-      _ => 2,
-    };
+    /// skip checking every few vertices for performance in object mode
+    final int verticesToSkip = isPrecision
+        ? 0
+        : switch (stroke.lowQualityPolygon.length) {
+            < 100 => 0,
+            < 1000 => 1,
+            _ => 2,
+          };
 
     for (
       int i = 0;

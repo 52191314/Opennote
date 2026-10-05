@@ -120,15 +120,33 @@ class _LayerManagerState extends State<LayerManager> {
                   ),
                   child: ListTile(
                     dense: true,
-                    leading: IconButton(
-                      icon: Icon(
-                        layer.visible ? Icons.visibility : Icons.visibility_off,
-                        size: 20,
-                      ),
-                      onPressed: () {
-                        layer.visible = !layer.visible;
-                        _setState();
-                      },
+                    leading: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            layer.visible ? Icons.visibility : Icons.visibility_off,
+                            size: 20,
+                          ),
+                          tooltip: layer.visible ? 'Hide Layer' : 'Show Layer',
+                          onPressed: () {
+                            layer.visible = !layer.visible;
+                            _setState();
+                          },
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            layer.locked ? Icons.lock : Icons.lock_open,
+                            size: 20,
+                            color: layer.locked ? colorScheme.error : null,
+                          ),
+                          tooltip: layer.locked ? 'Unlock Layer' : 'Lock Layer',
+                          onPressed: () {
+                            layer.locked = !layer.locked;
+                            _setState();
+                          },
+                        ),
+                      ],
                     ),
                     title: Text(
                       layer.name,

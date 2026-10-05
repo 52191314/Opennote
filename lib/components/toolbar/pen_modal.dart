@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -11,7 +14,7 @@ import 'package:saber/data/tools/pencil.dart';
 import 'package:saber/data/tools/shape_pen.dart';
 import 'package:saber/i18n/strings.g.dart';
 
-/// 🤖 Generated with DeepSeek v4 Flash
+/// 🤖 Generated wholely or partially with DeepSeek v4 Flash; Google Antigravity
 
 class PenModal extends StatefulWidget {
   const PenModal({super.key, required this.getTool, required this.setTool});
@@ -121,6 +124,33 @@ class _PenModalState extends State<PenModal> {
             icon: const FaIcon(ShapePen.shapePenIcon),
           ),
         ],
+        if (currentPen is Highlighter) ...[
+          const SizedBox.square(dimension: 8),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                stows.highlighterDrawInStraightLine.value =
+                    !stows.highlighterDrawInStraightLine.value;
+              });
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: stows.highlighterDrawInStraightLine.value
+                  ? ColorScheme.of(context).secondary
+                  : ColorScheme.of(context).onSurface,
+              backgroundColor: stows.highlighterDrawInStraightLine.value
+                  ? Theme.of(context)
+                      .colorScheme
+                      .secondary
+                      .withValues(alpha: 0.1)
+                  : Colors.transparent,
+              shape: const CircleBorder(),
+            ),
+            tooltip: stows.highlighterDrawInStraightLine.value
+                ? 'Draw in Straight Line: ON'
+                : 'Draw in Straight Line: OFF',
+            icon: const Icon(Icons.straighten_rounded),
+          ),
+        ],
         if (currentPen is! Pencil) ...[
           const SizedBox.square(dimension: 8),
           IconButton(
@@ -144,7 +174,42 @@ class _PenModalState extends State<PenModal> {
             tooltip: stows.scribbleToErase.value
                 ? 'Scribble to Erase: ON'
                 : 'Scribble to Erase: OFF',
-            icon: const FaIcon(FontAwesomeIcons.repeat),
+            icon: const FaIcon(FontAwesomeIcons.eraser),
+          ),
+        ],
+        if (currentPen is! Highlighter && currentPen is! Pencil && currentPen is! ShapePen) ...[
+          const SizedBox.square(dimension: 8),
+          IconButton(
+            onPressed: () {
+              final next = switch (stows.penLineStyle.value) {
+                'solid' => 'dashed',
+                'dashed' => 'dotted',
+                _ => 'solid',
+              };
+              setState(() {
+                stows.penLineStyle.value = next;
+              });
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: stows.penLineStyle.value != 'solid'
+                  ? ColorScheme.of(context).secondary
+                  : ColorScheme.of(context).onSurface,
+              backgroundColor: stows.penLineStyle.value != 'solid'
+                  ? Theme.of(context)
+                      .colorScheme
+                      .secondary
+                      .withValues(alpha: 0.1)
+                  : Colors.transparent,
+              shape: const CircleBorder(),
+            ),
+            tooltip: 'Stroke Style: ${stows.penLineStyle.value.toUpperCase()}',
+            icon: Icon(
+              stows.penLineStyle.value == 'dashed'
+                  ? Icons.border_style
+                  : stows.penLineStyle.value == 'dotted'
+                      ? Icons.more_horiz
+                      : Icons.horizontal_rule,
+            ),
           ),
         ],
       ],

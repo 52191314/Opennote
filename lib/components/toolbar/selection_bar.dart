@@ -16,6 +16,10 @@ class SelectionBar extends StatelessWidget {
   final bool cropPossible;
   final bool cropActive;
   final VoidCallback? toggleCrop;
+  final VoidCallback? bringToFront;
+  final VoidCallback? sendToBack;
+  final VoidCallback? smoothen;
+  final VoidCallback? addToElements;
 
   const SelectionBar({
     super.key,
@@ -26,120 +30,176 @@ class SelectionBar extends StatelessWidget {
     this.cropPossible = false,
     this.cropActive = false,
     this.toggleCrop,
+    this.bringToFront,
+    this.sendToBack,
+    this.smoothen,
+    this.addToElements,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: .center,
-      children: [
-        StatefulBuilder(
-          builder: (context, setState) => IconButton(
-            onPressed: () {
-              stows.selectionRectMode.value = !stows.selectionRectMode.value;
-              setState(() {});
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: stows.selectionRectMode.value
-                  ? ColorScheme.of(context).secondary
-                  : ColorScheme.of(context).onSurface,
-              backgroundColor: stows.selectionRectMode.value
-                  ? Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1)
-                  : Colors.transparent,
-              shape: const CircleBorder(),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          StatefulBuilder(
+            builder: (context, setState) => IconButton(
+              onPressed: () {
+                stows.selectionRectMode.value = !stows.selectionRectMode.value;
+                setState(() {});
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: stows.selectionRectMode.value
+                    ? ColorScheme.of(context).secondary
+                    : ColorScheme.of(context).onSurface,
+                backgroundColor: stows.selectionRectMode.value
+                    ? Theme.of(context)
+                        .colorScheme
+                        .secondary
+                        .withValues(alpha: 0.1)
+                    : Colors.transparent,
+                shape: const CircleBorder(),
+              ),
+              tooltip:
+                  stows.selectionRectMode.value ? 'Rect Select' : 'Lasso Select',
+              icon: Icon(
+                stows.selectionRectMode.value
+                    ? Icons.crop_square
+                    : Icons.gesture,
+              ),
             ),
-            tooltip: stows.selectionRectMode.value ? 'Rect Select' : 'Lasso Select',
-            icon: Icon(
-              stows.selectionRectMode.value ? Icons.crop_square : Icons.gesture,
-            ),
           ),
-        ),
-        IconButton(
-          onPressed: () => showDialog(
-            context: context,
-            builder: (_) => const LassoFilterPopup(),
-          ),
-          style: TextButton.styleFrom(
-            foregroundColor: ColorScheme.of(context).secondary,
-            backgroundColor: Colors.transparent,
-            shape: const CircleBorder(),
-          ),
-          tooltip: 'Lasso Filters',
-          icon: const Icon(Icons.tune),
-        ),
-        if (cropPossible)
           IconButton(
-            onPressed: toggleCrop,
+            onPressed: () => showDialog(
+              context: context,
+              builder: (_) => const LassoFilterPopup(),
+            ),
             style: TextButton.styleFrom(
-              foregroundColor: cropActive
-                  ? ColorScheme.of(context).primary
-                  : ColorScheme.of(context).secondary,
-              backgroundColor: cropActive
-                  ? ColorScheme.of(context).primary.withValues(alpha: 0.15)
-                  : Colors.transparent,
+              foregroundColor: ColorScheme.of(context).secondary,
+              backgroundColor: Colors.transparent,
               shape: const CircleBorder(),
             ),
-            tooltip: cropActive ? 'Done cropping' : 'Crop image',
-            icon: Icon(
-              cropActive ? Icons.check : Icons.crop,
-              color: cropActive
-                  ? ColorScheme.of(context).primary
-                  : null,
+            tooltip: 'Lasso Filters',
+            icon: const Icon(Icons.tune),
+          ),
+          if (cropPossible)
+            IconButton(
+              onPressed: toggleCrop,
+              style: TextButton.styleFrom(
+                foregroundColor: cropActive
+                    ? ColorScheme.of(context).primary
+                    : ColorScheme.of(context).secondary,
+                backgroundColor: cropActive
+                    ? ColorScheme.of(context).primary.withValues(alpha: 0.15)
+                    : Colors.transparent,
+                shape: const CircleBorder(),
+              ),
+              tooltip: cropActive ? 'Done cropping' : 'Crop image',
+              icon: Icon(
+                cropActive ? Icons.check : Icons.crop,
+                color:
+                    cropActive ? ColorScheme.of(context).primary : null,
+              ),
+            ),
+          IconButton(
+            onPressed: copySelection,
+            style: TextButton.styleFrom(
+              foregroundColor: ColorScheme.of(context).secondary,
+              backgroundColor: Colors.transparent,
+              shape: const CircleBorder(),
+            ),
+            tooltip: 'Copy',
+            icon: const AdaptiveIcon(
+              icon: Icons.file_copy,
+              cupertinoIcon: CupertinoIcons.doc_on_clipboard,
             ),
           ),
-        IconButton(
-          onPressed: copySelection,
-          style: TextButton.styleFrom(
-            foregroundColor: ColorScheme.of(context).secondary,
-            backgroundColor: Colors.transparent,
-            shape: const CircleBorder(),
+          IconButton(
+            onPressed: pasteSelection,
+            style: TextButton.styleFrom(
+              foregroundColor: ColorScheme.of(context).secondary,
+              backgroundColor: Colors.transparent,
+              shape: const CircleBorder(),
+            ),
+            tooltip: 'Paste',
+            icon: const AdaptiveIcon(
+              icon: Icons.content_paste,
+              cupertinoIcon: CupertinoIcons.doc_on_clipboard,
+            ),
           ),
-          tooltip: t.editor.selectionBar.duplicate,
-          icon: const AdaptiveIcon(
-            icon: Icons.file_copy,
-            cupertinoIcon: CupertinoIcons.doc_on_clipboard,
+          IconButton(
+            onPressed: duplicateSelection,
+            style: TextButton.styleFrom(
+              foregroundColor: ColorScheme.of(context).secondary,
+              backgroundColor: Colors.transparent,
+              shape: const CircleBorder(),
+            ),
+            tooltip: t.editor.selectionBar.duplicate,
+            icon: const AdaptiveIcon(
+              icon: Icons.copy_all,
+              cupertinoIcon: CupertinoIcons.plus_rectangle_on_rectangle,
+            ),
           ),
-        ),
-        IconButton(
-          onPressed: pasteSelection,
-          style: TextButton.styleFrom(
-            foregroundColor: ColorScheme.of(context).secondary,
-            backgroundColor: Colors.transparent,
-            shape: const CircleBorder(),
+          if (bringToFront != null)
+            IconButton(
+              onPressed: bringToFront,
+              style: TextButton.styleFrom(
+                foregroundColor: ColorScheme.of(context).secondary,
+                backgroundColor: Colors.transparent,
+                shape: const CircleBorder(),
+              ),
+              tooltip: 'Bring to Front',
+              icon: const Icon(Icons.flip_to_front_rounded),
+            ),
+          if (sendToBack != null)
+            IconButton(
+              onPressed: sendToBack,
+              style: TextButton.styleFrom(
+                foregroundColor: ColorScheme.of(context).secondary,
+                backgroundColor: Colors.transparent,
+                shape: const CircleBorder(),
+              ),
+              tooltip: 'Send to Back',
+              icon: const Icon(Icons.flip_to_back_rounded),
+            ),
+          if (smoothen != null)
+            IconButton(
+              onPressed: smoothen,
+              style: TextButton.styleFrom(
+                foregroundColor: ColorScheme.of(context).secondary,
+                backgroundColor: Colors.transparent,
+                shape: const CircleBorder(),
+              ),
+              tooltip: 'Smoothen Handwriting',
+              icon: const Icon(Icons.auto_fix_high_rounded),
+            ),
+          if (addToElements != null)
+            IconButton(
+              onPressed: addToElements,
+              style: TextButton.styleFrom(
+                foregroundColor: ColorScheme.of(context).secondary,
+                backgroundColor: Colors.transparent,
+                shape: const CircleBorder(),
+              ),
+              tooltip: 'Add to Elements',
+              icon: const Icon(Icons.bookmark_add_outlined),
+            ),
+          IconButton(
+            onPressed: deleteSelection,
+            style: TextButton.styleFrom(
+              foregroundColor: ColorScheme.of(context).secondary,
+              backgroundColor: Colors.transparent,
+              shape: const CircleBorder(),
+            ),
+            tooltip: t.editor.selectionBar.delete,
+            icon: const AdaptiveIcon(
+              icon: Icons.delete,
+              cupertinoIcon: CupertinoIcons.delete,
+            ),
           ),
-          tooltip: 'Paste',
-          icon: const AdaptiveIcon(
-            icon: Icons.content_paste,
-            cupertinoIcon: CupertinoIcons.doc_on_clipboard,
-          ),
-        ),
-        IconButton(
-          onPressed: duplicateSelection,
-          style: TextButton.styleFrom(
-            foregroundColor: ColorScheme.of(context).secondary,
-            backgroundColor: Colors.transparent,
-            shape: const CircleBorder(),
-          ),
-          tooltip: t.editor.selectionBar.duplicate,
-          icon: const AdaptiveIcon(
-            icon: Icons.copy_all,
-            cupertinoIcon: CupertinoIcons.plus_rectangle_on_rectangle,
-          ),
-        ),
-        IconButton(
-          onPressed: deleteSelection,
-          style: TextButton.styleFrom(
-            foregroundColor: ColorScheme.of(context).secondary,
-            backgroundColor: Colors.transparent,
-            shape: const CircleBorder(),
-          ),
-          tooltip: t.editor.selectionBar.delete,
-          icon: const AdaptiveIcon(
-            icon: Icons.delete,
-            cupertinoIcon: CupertinoIcons.delete,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

@@ -25,6 +25,7 @@ void main() {
     stows.lassoSelectHandwriting.value = true;
     stows.lassoSelectImages.value = true;
     stows.lassoSelectText.value = true;
+    stows.lassoSelectTape.value = true;
     stows.selectionRectMode.value = false;
     Select.currentSelect.unselect();
   });
@@ -33,6 +34,7 @@ void main() {
     stows.lassoSelectHandwriting.value = true;
     stows.lassoSelectImages.value = true;
     stows.lassoSelectText.value = true;
+    stows.lassoSelectTape.value = true;
     stows.selectionRectMode.value = false;
     Select.currentSelect.unselect();
   });
@@ -423,6 +425,7 @@ void main() {
       stows.lassoSelectHandwriting.value = true;
       stows.lassoSelectImages.value = false;
       stows.lassoSelectText.value = false;
+      stows.lassoSelectTape.value = false;
 
       await tester.pumpWidget(
         const MaterialApp(home: Scaffold(body: LassoFilterPopup())),
@@ -436,6 +439,7 @@ void main() {
       stows.lassoSelectHandwriting.value = false;
       stows.lassoSelectImages.value = true;
       stows.lassoSelectText.value = false;
+      stows.lassoSelectTape.value = false;
 
       await tester.pumpWidget(
         const MaterialApp(home: Scaffold(body: LassoFilterPopup())),
@@ -449,6 +453,7 @@ void main() {
       stows.lassoSelectHandwriting.value = false;
       stows.lassoSelectImages.value = false;
       stows.lassoSelectText.value = true;
+      stows.lassoSelectTape.value = false;
 
       await tester.pumpWidget(
         const MaterialApp(home: Scaffold(body: LassoFilterPopup())),
@@ -457,26 +462,49 @@ void main() {
       await tester.tap(txtTile);
       await tester.pumpAndSettle();
       expect(stows.lassoSelectText.value, isTrue, reason: 'Text Boxes must not be disabled when it is the sole active filter');
+
+      // Permutation 4: only Study Tape is true
+      stows.lassoSelectHandwriting.value = false;
+      stows.lassoSelectImages.value = false;
+      stows.lassoSelectText.value = false;
+      stows.lassoSelectTape.value = true;
+
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: LassoFilterPopup())),
+      );
+      final tapeTile = find.widgetWithText(AdaptiveSwitchListTile, 'Study Tape');
+      await tester.ensureVisible(tapeTile);
+      await tester.tap(tapeTile);
+      await tester.pumpAndSettle();
+      expect(stows.lassoSelectTape.value, isTrue, reason: 'Study Tape must not be disabled when it is the sole active filter');
     });
 
-    testWidgets('sequential toggling sequence 3 -> 2 -> 1 blocks at 1', (tester) async {
+    testWidgets('sequential toggling sequence 4 -> 3 -> 2 -> 1 blocks at 1', (tester) async {
       stows.lassoSelectHandwriting.value = true;
       stows.lassoSelectImages.value = true;
       stows.lassoSelectText.value = true;
+      stows.lassoSelectTape.value = true;
 
       await tester.pumpWidget(
         const MaterialApp(home: Scaffold(body: LassoFilterPopup())),
       );
 
-      // Disable handwriting (3 -> 2)
+      // Disable handwriting (4 -> 3)
       await tester.tap(find.widgetWithText(AdaptiveSwitchListTile, 'Handwriting'));
       await tester.pumpAndSettle();
       expect(stows.lassoSelectHandwriting.value, isFalse);
 
-      // Disable text (2 -> 1)
+      // Disable text (3 -> 2)
       await tester.tap(find.widgetWithText(AdaptiveSwitchListTile, 'Text Boxes'));
       await tester.pumpAndSettle();
       expect(stows.lassoSelectText.value, isFalse);
+
+      // Disable study tape (2 -> 1)
+      final tapeFinder = find.widgetWithText(AdaptiveSwitchListTile, 'Study Tape');
+      await tester.ensureVisible(tapeFinder);
+      await tester.tap(tapeFinder);
+      await tester.pumpAndSettle();
+      expect(stows.lassoSelectTape.value, isFalse);
       expect(stows.lassoSelectImages.value, isTrue);
 
       // Attempt to disable images (1 -> 0) -> MUST FAIL / BE BLOCKED

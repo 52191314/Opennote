@@ -104,6 +104,13 @@ class Pen extends Tool {
     double? pressure,
   ) {
     _activePage = page;
+    final lineStyle = (this is! Highlighter && this is! Pencil)
+        ? switch (stows.penLineStyle.value) {
+            'dashed' => LineStyle.dashed,
+            'dotted' => LineStyle.dotted,
+            _ => LineStyle.solid,
+          }
+        : LineStyle.solid;
     currentStroke = Stroke(
       color: color,
       pressureEnabled: pressureEnabled,
@@ -111,6 +118,7 @@ class Pen extends Tool {
       pageIndex: pageIndex,
       page: page,
       toolId: toolId,
+      lineStyle: lineStyle,
     );
     onDragUpdate(position, pressure);
   }

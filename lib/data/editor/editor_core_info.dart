@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -72,6 +75,9 @@ class EditorCoreInfo {
   int lineThickness;
   List<EditorPage> pages;
 
+  /// Whether the canvas is an unbounded 2D infinite canvas rather than paged sheets.
+  bool isInfiniteCanvas;
+
   /// Stores the current page index so that it can be restored when the file is reloaded.
   int? initialPageIndex;
 
@@ -87,6 +93,7 @@ class EditorCoreInfo {
         pages: [],
         initialPageIndex: null,
         assetCache: null,
+        isInfiniteCanvas: false,
       ).._migrateOldStrokesAndImages(
         fileVersion: sbnVersion,
         strokesJson: null,
@@ -99,13 +106,18 @@ class EditorCoreInfo {
   bool get isNotEmpty => !isEmpty;
 
   @visibleForTesting
-  EditorCoreInfo({required this.filePath, this.readOnlyReason})
-    : nextImageId = 0,
-      backgroundPattern = stows.lastBackgroundPattern.value,
-      lineHeight = stows.lastLineHeight.value,
-      lineThickness = stows.lastLineThickness.value,
-      pages = [],
-      assetCache = AssetCache();
+  EditorCoreInfo({
+    required this.filePath,
+    this.readOnlyReason,
+    bool? isInfiniteCanvas,
+  }) : nextImageId = 0,
+       backgroundPattern = stows.lastBackgroundPattern.value,
+       lineHeight = stows.lastLineHeight.value,
+       lineThickness = stows.lastLineThickness.value,
+       pages = [],
+       isInfiniteCanvas =
+           isInfiniteCanvas ?? stows.defaultInfiniteCanvas.value,
+       assetCache = AssetCache();
 
   EditorCoreInfo._({
     required this.filePath,
@@ -118,6 +130,7 @@ class EditorCoreInfo {
     required this.pages,
     required this.initialPageIndex,
     required AssetCache? assetCache,
+    this.isInfiniteCanvas = false,
   }) : assetCache = assetCache ?? AssetCache() {
     _handleEmptyImageIds();
   }
@@ -193,6 +206,7 @@ class EditorCoreInfo {
         ),
         initialPageIndex: json['c'] as int?,
         assetCache: assetCache,
+        isInfiniteCanvas: json['ic'] as bool? ?? false,
       )
       .._migrateOldStrokesAndImages(
         fileVersion: fileVersion,
@@ -217,6 +231,7 @@ class EditorCoreInfo {
        lineHeight = stows.lastLineHeight.value,
        lineThickness = stows.lastLineThickness.value,
        pages = [],
+       isInfiniteCanvas = false,
        assetCache = AssetCache() {
     _migrateOldStrokesAndImages(
       fileVersion: 0,
@@ -478,6 +493,7 @@ class EditorCoreInfo {
       'lt': lineThickness,
       'z': pages.map((EditorPage page) => page.toJson(assets)).toList(),
       'c': initialPageIndex,
+      if (isInfiniteCanvas) 'ic': true,
     };
 
     return (json, assets);

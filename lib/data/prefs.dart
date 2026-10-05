@@ -209,8 +209,16 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
+  /// Whether scribbling back-and-forth with the pen erases overlapping strokes.
   final scribbleToErase = PlainStow(
     'scribbleToErase',
+    true,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Whether new notes default to 2D infinite canvas mode.
+  final defaultInfiniteCanvas = PlainStow<bool>(
+    'defaultInfiniteCanvas',
     false,
     volatile: !_isOnMainIsolate,
   );
@@ -242,9 +250,44 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
+  /// Whether the lasso/select tool selects study tape strokes.
+  final lassoSelectTape = PlainStow<bool>(
+    'lassoSelectTape',
+    true,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Default pattern for Study Tape ('solid', 'stripes', 'dots', 'grid').
+  final studyTapePattern = PlainStow<String>(
+    'studyTapePattern',
+    'solid',
+    volatile: !_isOnMainIsolate,
+  );
+
   /// Whether the eraser only erases highlighter strokes.
   final eraserEraseHighlighterOnly = PlainStow<bool>(
     'eraserEraseHighlighterOnly',
+    false,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Whether the eraser only erases tape strokes.
+  final eraserEraseTapeOnly = PlainStow<bool>(
+    'eraserEraseTapeOnly',
+    false,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Eraser style/mode ('object', 'precision').
+  final eraserMode = PlainStow<String>(
+    'eraserMode',
+    'object',
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Whether highlighter strokes are automatically drawn in a straight line.
+  final highlighterDrawInStraightLine = PlainStow<bool>(
+    'highlighterDrawInStraightLine',
     false,
     volatile: !_isOnMainIsolate,
   );
@@ -253,6 +296,34 @@ class Stows {
   final circleToSelect = PlainStow<bool>(
     'circleToSelect',
     true,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Laser pointer mode ('trail', 'spotlight').
+  final laserPointerMode = PlainStow<String>(
+    'laserPointerMode',
+    'trail',
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Pen stroke line style ('solid', 'dashed', 'dotted').
+  final penLineStyle = PlainStow<String>(
+    'penLineStyle',
+    'solid',
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Whether the floating layers HUD is visible on canvas.
+  final showFloatingLayersHud = PlainStow<bool>(
+    'showFloatingLayersHud',
+    true,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Persisted reusable elements / stickers JSON array.
+  final elementsJson = PlainStow<String>(
+    'elementsJson',
+    '',
     volatile: !_isOnMainIsolate,
   );
 

@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'dart:io';
 
 import 'package:collapsible/collapsible.dart';
@@ -34,7 +37,7 @@ import 'package:saber/data/tools/shape_pen.dart';
 import 'package:saber/i18n/strings.g.dart';
 import 'package:stow/stow.dart';
 
-/// 🤖 Generated with DeepSeek v4 Flash
+/// 🤖 Generated wholely or partially with DeepSeek v4 Flash; Google Antigravity
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -448,6 +451,13 @@ class _SettingsPageState extends State<SettingsPage> {
                   icon: FontAwesomeIcons.eraser,
                   pref: stows.disableEraserAfterUse,
                 ),
+                SettingsSwitch(
+                  title: 'Scribble to erase',
+                  subtitle:
+                      'Scribble back and forth over strokes with the pen to erase them',
+                  icon: FontAwesomeIcons.eraser,
+                  pref: stows.scribbleToErase,
+                ),
                 ValueListenableBuilder(
                   valueListenable: stows.hideFingerDrawingToggle,
                   builder: (context, _, _) {
@@ -547,6 +557,13 @@ class _SettingsPageState extends State<SettingsPage> {
                     return b ? Icons.invert_colors_on : Icons.invert_colors_off;
                   },
                   pref: stows.editorAutoInvert,
+                ),
+                SettingsSwitch(
+                  title: 'Default to Infinite Canvas (2D)',
+                  subtitle:
+                      'New notes open with an infinite 2D canvas instead of discrete pages',
+                  icon: Icons.all_inclusive_rounded,
+                  pref: stows.defaultInfiniteCanvas,
                 ),
                 SettingsSwitch(
                   title: t.settings.prefLabels.editorPromptRename,

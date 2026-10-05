@@ -413,29 +413,60 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Bookmark',
+              'Canvas Mode',
               style: TextTheme.of(context).titleMedium,
             ),
-            Row(
-              children: [
-                Switch(
-                  value: page?.bookmarked ?? false,
-                  onChanged: !widget.coreInfo.readOnly
-                      ? (bool value) {
-                          if (page == null) return;
-                          page.bookmarked = value;
-                          widget.redrawAndSave();
-                        }
-                      : null,
+            const SizedBox(height: 8),
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(
+                  value: false,
+                  label: Text('Paged'),
+                  icon: Icon(Icons.description_outlined),
                 ),
-                const SizedBox(width: 8),
-                Text(page?.bookmarked ?? false
-                    ? 'Page is bookmarked'
-                    : 'Not bookmarked'),
+                ButtonSegment(
+                  value: true,
+                  label: Text('Infinite Canvas (2D)'),
+                  icon: Icon(Icons.all_inclusive_rounded),
+                ),
               ],
+              selected: {widget.coreInfo.isInfiniteCanvas},
+              onSelectionChanged: !widget.coreInfo.readOnly
+                  ? (newSelection) {
+                      setState(() {
+                        widget.coreInfo.isInfiniteCanvas = newSelection.first;
+                        widget.redrawAndSave();
+                      });
+                    }
+                  : null,
             ),
             const SizedBox(height: 16),
-            if (widget.setPageSize != null) ...[
+            if (!widget.coreInfo.isInfiniteCanvas) ...[
+              Text(
+                'Bookmark',
+                style: TextTheme.of(context).titleMedium,
+              ),
+              Row(
+                children: [
+                  Switch(
+                    value: page?.bookmarked ?? false,
+                    onChanged: !widget.coreInfo.readOnly
+                        ? (bool value) {
+                            if (page == null) return;
+                            page.bookmarked = value;
+                            widget.redrawAndSave();
+                          }
+                        : null,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(page?.bookmarked ?? false
+                      ? 'Page is bookmarked'
+                      : 'Not bookmarked'),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+            if (!widget.coreInfo.isInfiniteCanvas && widget.setPageSize != null) ...[
               Text(
                 'Page Size',
                 style: TextTheme.of(context).titleMedium,

@@ -18,14 +18,24 @@ enum ArrowheadStyle {
   static const defaultStyle = ArrowheadStyle.single;
 }
 
-/// A stroke representing an arrow with optional arrowheads on either end.
+/// The routing path style of an [ArrowStroke].
+enum ConnectorStyle {
+  straight,
+  elbow,
+  curved;
+
+  static const defaultStyle = ConnectorStyle.straight;
+}
+
+/// A stroke representing an arrow or connector with optional arrowheads on either end.
 ///
-/// The arrow runs from [start] to [end]. Arrowheads can be drawn at the
-/// endpoint ([ArrowheadStyle.single]) or both ends ([ArrowheadStyle.double]).
+/// The connector routes from [start] to [end] according to [connectorStyle].
+/// Arrowheads can be drawn at the endpoint ([ArrowheadStyle.single]) or both ends ([ArrowheadStyle.double]).
 class ArrowStroke extends Stroke {
   Offset start;
   Offset end;
   ArrowheadStyle arrowheadStyle;
+  ConnectorStyle connectorStyle;
   double headLength;
   double headAngle;
 
@@ -39,6 +49,7 @@ class ArrowStroke extends Stroke {
     required this.start,
     required this.end,
     this.arrowheadStyle = ArrowheadStyle.single,
+    this.connectorStyle = ConnectorStyle.straight,
     this.headLength = 12.0,
     this.headAngle = 0.5, // ~28 degrees
     super.fillColor,
@@ -89,6 +100,11 @@ class ArrowStroke extends Stroke {
         'double' => ArrowheadStyle.double,
         _ => ArrowheadStyle.single,
       },
+      connectorStyle: switch (json['cnt'] as String?) {
+        'elbow' => ConnectorStyle.elbow,
+        'curved' => ConnectorStyle.curved,
+        _ => ConnectorStyle.straight,
+      },
       headLength: (json['hl'] as num?)?.toDouble() ?? 12.0,
       headAngle: (json['ha'] as num?)?.toDouble() ?? 0.5,
     );
@@ -107,6 +123,7 @@ class ArrowStroke extends Stroke {
       'ex': end.dx,
       'ey': end.dy,
       'ah': arrowheadStyle.name,
+      'cnt': connectorStyle.name,
       'hl': headLength,
       'ha': headAngle,
       if (fillColor != null) 'fc': fillColor!.toARGB32(),
@@ -119,20 +136,82 @@ class ArrowStroke extends Stroke {
   @override
   int get length => 50;
 
+  Offset _endTangent() {
+    switch (connectorStyle) {
+      case ConnectorStyle.straight:
+        final dir = end - start;
+        return dir.distance > 0.001 ? dir / dir.distance : const Offset(1, 0);
+      case ConnectorStyle.elbow:
+        final midX = (start.dx + end.dx) / 2;
+        if ((end.dx - midX).abs() > 0.001) {
+          return Offset((end.dx - midX).sign, 0);
+        } else if ((end.dy - start.dy).abs() > 0.001) {
+          return Offset(0, (end.dy - start.dy).sign);
+        }
+        return const Offset(1, 0);
+      case ConnectorStyle.curved:
+        final c2 = Offset(start.dx + (end.dx - start.dx) * 0.5, end.dy);
+        final tangent = end - c2;
+        if (tangent.distance > 0.001) return tangent / tangent.distance;
+        final dir = end - start;
+        return dir.distance > 0.001 ? dir / dir.distance : const Offset(1, 0);
+    }
+  }
+
+  Offset _startTangent() {
+    switch (connectorStyle) {
+      case ConnectorStyle.straight:
+        final dir = end - start;
+        return dir.distance > 0.001 ? dir / dir.distance : const Offset(1, 0);
+      case ConnectorStyle.elbow:
+        final midX = (start.dx + end.dx) / 2;
+        if ((midX - start.dx).abs() > 0.001) {
+          return Offset((midX - start.dx).sign, 0);
+        } else if ((end.dy - start.dy).abs() > 0.001) {
+          return Offset(0, (end.dy - start.dy).sign);
+        }
+        return const Offset(1, 0);
+      case ConnectorStyle.curved:
+        final c1 = Offset(start.dx + (end.dx - start.dx) * 0.5, start.dy);
+        final tangent = c1 - start;
+        if (tangent.distance > 0.001) return tangent / tangent.distance;
+        final dir = end - start;
+        return dir.distance > 0.001 ? dir / dir.distance : const Offset(1, 0);
+    }
+  }
+
   /// Returns the polygon for this arrow (shaft + arrowheads).
   @override
   List<Offset> getPolygon({required StrokeQuality quality}) {
-    final dir = (end - start);
-    final length = dir.distance;
-    if (length < 0.001) return [start, end];
+    if (start == end) return [start, end];
 
-    final unitDir = dir / length;
-    final perp = Offset(-unitDir.dy, unitDir.dx);
+    final points = <Offset>[start];
 
-    final points = <Offset>[start, end];
+    switch (connectorStyle) {
+      case ConnectorStyle.straight:
+        points.add(end);
+      case ConnectorStyle.elbow:
+        final midX = (start.dx + end.dx) / 2;
+        points.addAll([Offset(midX, start.dy), Offset(midX, end.dy), end]);
+      case ConnectorStyle.curved:
+        final dx = end.dx - start.dx;
+        final c1 = Offset(start.dx + dx * 0.5, start.dy);
+        final c2 = Offset(start.dx + dx * 0.5, end.dy);
+        for (int i = 1; i <= 16; i++) {
+          final t = i / 16.0;
+          final it = 1.0 - t;
+          final pt = start * (it * it * it) +
+              c1 * (3 * it * it * t) +
+              c2 * (3 * it * t * t) +
+              end * (t * t * t);
+          points.add(pt);
+        }
+    }
 
     // End arrowhead
     if (arrowheadStyle == .single || arrowheadStyle == .double) {
+      final unitDir = _endTangent();
+      final perp = Offset(-unitDir.dy, unitDir.dx);
       final tip = end;
       final left = tip - unitDir * headLength + perp * headLength * headAngle;
       final right = tip - unitDir * headLength - perp * headLength * headAngle;
@@ -141,6 +220,8 @@ class ArrowStroke extends Stroke {
 
     // Start arrowhead
     if (arrowheadStyle == .double) {
+      final unitDir = _startTangent();
+      final perp = Offset(-unitDir.dy, unitDir.dx);
       final tip = start;
       final left = tip + unitDir * headLength + perp * headLength * headAngle;
       final right = tip + unitDir * headLength - perp * headLength * headAngle;
@@ -153,19 +234,47 @@ class ArrowStroke extends Stroke {
   @override
   Path getPath(List<Offset> polygon, {bool smooth = true}) {
     final path = Path();
-    final dir = (end - start);
-    final length = dir.distance;
-    if (length < 0.001) return path;
+    if (start == end) return path;
 
-    final unitDir = dir / length;
-    final perp = Offset(-unitDir.dy, unitDir.dx);
-
-    // Draw shaft
-    path.moveTo(start.dx, start.dy);
-    path.lineTo(end.dx, end.dy);
+    // Draw shaft according to connectorStyle
+    switch (connectorStyle) {
+      case ConnectorStyle.straight:
+        path.moveTo(start.dx, start.dy);
+        path.lineTo(end.dx, end.dy);
+      case ConnectorStyle.elbow:
+        final midX = (start.dx + end.dx) / 2;
+        final dx1 = (midX - start.dx).abs();
+        final dy = (end.dy - start.dy).abs();
+        final dx2 = (end.dx - midX).abs();
+        final r = min(12.0, min(dx1, min(dy, dx2)) / 2);
+        if (r < 1.0) {
+          path.moveTo(start.dx, start.dy);
+          path.lineTo(midX, start.dy);
+          path.lineTo(midX, end.dy);
+          path.lineTo(end.dx, end.dy);
+        } else {
+          final sgnX1 = midX >= start.dx ? 1.0 : -1.0;
+          final sgnY = end.dy >= start.dy ? 1.0 : -1.0;
+          final sgnX2 = end.dx >= midX ? 1.0 : -1.0;
+          path.moveTo(start.dx, start.dy);
+          path.lineTo(midX - sgnX1 * r, start.dy);
+          path.quadraticBezierTo(midX, start.dy, midX, start.dy + sgnY * r);
+          path.lineTo(midX, end.dy - sgnY * r);
+          path.quadraticBezierTo(midX, end.dy, midX + sgnX2 * r, end.dy);
+          path.lineTo(end.dx, end.dy);
+        }
+      case ConnectorStyle.curved:
+        final dx = end.dx - start.dx;
+        final c1 = Offset(start.dx + dx * 0.5, start.dy);
+        final c2 = Offset(start.dx + dx * 0.5, end.dy);
+        path.moveTo(start.dx, start.dy);
+        path.cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, end.dx, end.dy);
+    }
 
     // End arrowhead
     if (arrowheadStyle == .single || arrowheadStyle == .double) {
+      final unitDir = _endTangent();
+      final perp = Offset(-unitDir.dy, unitDir.dx);
       final tip = end;
       final left = tip - unitDir * headLength + perp * headLength * headAngle;
       final right = tip - unitDir * headLength - perp * headLength * headAngle;
@@ -176,6 +285,8 @@ class ArrowStroke extends Stroke {
 
     // Start arrowhead
     if (arrowheadStyle == .double) {
+      final unitDir = _startTangent();
+      final perp = Offset(-unitDir.dy, unitDir.dx);
       final tip = start;
       final left = tip + unitDir * headLength + perp * headLength * headAngle;
       final right = tip + unitDir * headLength - perp * headLength * headAngle;
@@ -189,22 +300,39 @@ class ArrowStroke extends Stroke {
 
   @override
   String toSvgPath() {
-    final dir = (end - start);
-    final length = dir.distance;
-    if (length < 0.001) return '';
-
-    final unitDir = dir / length;
-    final perp = Offset(-unitDir.dy, unitDir.dx);
+    if (start == end) return '';
 
     String toSvgPoint(Offset point) {
       return '${point.dx} ${page.size.height - point.dy}';
     }
 
     final buffer = StringBuffer();
-    buffer.write('M${toSvgPoint(start)} L${toSvgPoint(end)}');
+
+    switch (connectorStyle) {
+      case ConnectorStyle.straight:
+        buffer.write('M${toSvgPoint(start)} L${toSvgPoint(end)}');
+      case ConnectorStyle.elbow:
+        final midX = (start.dx + end.dx) / 2;
+        buffer.write(
+          'M${toSvgPoint(start)} '
+          'L${toSvgPoint(Offset(midX, start.dy))} '
+          'L${toSvgPoint(Offset(midX, end.dy))} '
+          'L${toSvgPoint(end)}',
+        );
+      case ConnectorStyle.curved:
+        final dx = end.dx - start.dx;
+        final c1 = Offset(start.dx + dx * 0.5, start.dy);
+        final c2 = Offset(start.dx + dx * 0.5, end.dy);
+        buffer.write(
+          'M${toSvgPoint(start)} '
+          'C${toSvgPoint(c1)} ${toSvgPoint(c2)} ${toSvgPoint(end)}',
+        );
+    }
 
     // End arrowhead
     if (arrowheadStyle == .single || arrowheadStyle == .double) {
+      final unitDir = _endTangent();
+      final perp = Offset(-unitDir.dy, unitDir.dx);
       final tip = end;
       final left = tip - unitDir * headLength + perp * headLength * headAngle;
       final right = tip - unitDir * headLength - perp * headLength * headAngle;
@@ -214,6 +342,8 @@ class ArrowStroke extends Stroke {
 
     // Start arrowhead
     if (arrowheadStyle == .double) {
+      final unitDir = _startTangent();
+      final perp = Offset(-unitDir.dy, unitDir.dx);
       final tip = start;
       final left = tip + unitDir * headLength + perp * headLength * headAngle;
       final right = tip + unitDir * headLength - perp * headLength * headAngle;
@@ -301,6 +431,7 @@ class ArrowStroke extends Stroke {
     start: start,
     end: end,
     arrowheadStyle: arrowheadStyle,
+    connectorStyle: connectorStyle,
     headLength: headLength,
     headAngle: headAngle,
     fillColor: fillColor,

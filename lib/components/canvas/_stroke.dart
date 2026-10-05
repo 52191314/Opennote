@@ -39,6 +39,9 @@ class Stroke {
   bool get isEmpty => points.isEmpty;
   int get length => points.length;
 
+  /// Read-only view of points defining the stroke trajectory.
+  List<PointVector> get rawPoints => points;
+
   /// The first point of the stroke, or null if empty.
   Offset? get firstPoint =>
       points.isNotEmpty ? Offset(points.first.x, points.first.y) : null;
@@ -46,6 +49,17 @@ class Stroke {
   /// The last point of the stroke, or null if empty.
   Offset? get lastPoint =>
       points.isNotEmpty ? Offset(points.last.x, points.last.y) : null;
+
+  /// Returns a path along the center line of the stroke points.
+  Path get centerlinePath {
+    final path = Path();
+    if (points.isEmpty) return path;
+    path.moveTo(points.first.x, points.first.y);
+    for (int i = 1; i < points.length; i++) {
+      path.lineTo(points[i].x, points[i].y);
+    }
+    return path;
+  }
 
   int pageIndex;
   HasSize page;
@@ -542,6 +556,40 @@ class Stroke {
     options.isComplete = true;
     options.start.taperEnabled = false;
     options.end.taperEnabled = false;
+  }
+
+  /// Sets this stroke to a straight line segment from [start] to [end].
+  void setStraightLine(Offset start, Offset end) {
+    points.clear();
+    points.add(PointVector(start.dx, start.dy, 0.5));
+    points.add(PointVector(end.dx, end.dy, 0.5));
+    points.add(PointVector(end.dx, end.dy, 0.5));
+    markPolygonNeedsUpdating();
+  }
+
+  /// Applies Laplacian smoothing to the raw points of this stroke to beautify handwriting.
+  void smoothen({int iterations = 2}) {
+    if (points.length < 4) return;
+    for (int iter = 0; iter < iterations; iter++) {
+      final smoothed = <PointVector>[points.first];
+      for (int i = 1; i < points.length - 1; i++) {
+        final prev = points[i - 1];
+        final curr = points[i];
+        final next = points[i + 1];
+        final nx = 0.25 * prev.x + 0.5 * curr.x + 0.25 * next.x;
+        final ny = 0.25 * prev.y + 0.5 * curr.y + 0.25 * next.y;
+        final np = curr.pressure != null
+            ? 0.25 * (prev.pressure ?? curr.pressure!) +
+                0.5 * curr.pressure! +
+                0.25 * (next.pressure ?? curr.pressure!)
+            : null;
+        smoothed.add(PointVector(nx, ny, np));
+      }
+      smoothed.add(points.last);
+      points.clear();
+      points.addAll(smoothed);
+    }
+    markPolygonNeedsUpdating();
   }
 
   /// Snaps a [point] to the nearest Cartesian grid intersection

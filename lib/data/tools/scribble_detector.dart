@@ -1,6 +1,7 @@
 /// 🤖 Generated wholely or partially with DeepSeek v4 Flash; Google Antigravity
 library;
 
+import 'dart:math';
 import 'dart:ui' show Offset;
 
 import 'package:saber/components/canvas/_stroke.dart';
@@ -8,13 +9,6 @@ import 'package:saber/data/tools/eraser.dart';
 
 /// Detects when the user is scribbling back-and-forth with the pen tool
 /// and switches to erase mode for those strokes.
-///
-/// Algorithm:
-/// 1. Buffer the last [windowSize] pen positions
-/// 2. Subsample points to reduce noise, then count direction-quadrant changes
-/// 3. Measure the bounding box diagonal of the window
-/// 4. If >= [minDirectionChanges] direction changes within a moderate cluster → scribbling mode
-/// 5. Once mode is determined (drawing/erasing), stay in that mode for the gesture
 class ScribbleDetector {
   /// Current state of the detection for the active gesture.
   ScribbleState state = ScribbleState.undetermined;
@@ -23,18 +17,17 @@ class ScribbleDetector {
   final List<Stroke> _erasedStrokes = [];
   Eraser? _eraser;
 
-  /// Number of recent positions to keep in the sliding window.
-  static const int windowSize = 20;
+  /// Effective eraser radius used when erasing scribbled-over strokes.
+  static const eraserRadius = 24.0;
 
-  /// Minimum points needed before attempting detection.
-  static const int minPoints = 8;
+  /// Maximum points to retain in the sliding window.
+  static const maxBufferedPoints = 60;
 
-  /// Minimum direction-quadrant changes to classify as scribbling.
-  static const int minDirectionChanges = 4;
-
-  /// Bounding-box diagonal multiplier relative to pen stroke width.
-  /// Scribbling over a stroke typically spans 10-30× the pen width.
-  static const double boundingBoxMultiplier = 20.0;
+  static const minPointDistance = 5.0;
+  static const minReversals = 3;
+  static const minDiagonal = 12.0;
+  static const maxDiagonal = 450.0;
+  static const pathLengthRatio = 1.6;
 
   /// Reset the detector for a new gesture.
   void start(Offset firstPoint) {
@@ -49,40 +42,27 @@ class ScribbleDetector {
   ///
   /// Returns the list of strokes that should be erased
   /// (empty list means continue drawing normally).
-  ///
-  /// [penStrokeWidth] is the current pen's stroke width,
-  /// used as the eraser diameter when in scribble-erase mode.
   List<Stroke> update(
     Offset point,
     List<Stroke> existingStrokes,
     double penStrokeWidth,
   ) {
     _points.add(point);
-    if (_points.length > windowSize) {
+    if (_points.length > maxBufferedPoints) {
       _points.removeAt(0);
     }
 
     if (state == ScribbleState.erasing) {
-      return _eraseAt(point, existingStrokes, penStrokeWidth);
+      return _eraseAt(point, existingStrokes);
     }
 
-    if (state == ScribbleState.drawing) {
-      return const [];
-    }
-
-    // Still undetermined — need enough points to decide
-    if (_points.length < minPoints) {
-      return const [];
-    }
-
-    if (_isScribbling(_points, penStrokeWidth)) {
+    if (_isScribbling(_points)) {
       state = ScribbleState.erasing;
-      return _eraseAt(point, existingStrokes, penStrokeWidth);
-    }
-
-    // Full window collected and still not scribbling → it's drawing
-    if (_points.length >= windowSize) {
-      state = ScribbleState.drawing;
+      final newlyErased = <Stroke>[];
+      for (final p in _points) {
+        newlyErased.addAll(_eraseAt(p, existingStrokes));
+      }
+      return newlyErased;
     }
 
     return const [];
@@ -108,62 +88,111 @@ class ScribbleDetector {
   }
 
   /// Analyze the buffered points to determine if the user is scribbling.
-  bool _isScribbling(List<Offset> points, double penStrokeWidth) {
+  bool _isScribbling(List<Offset> points) {
     if (points.length < 8) return false;
 
-    // Subsample points to reduce natural jitter
-    final step = (points.length / 6).ceil().clamp(1, 3);
-    final sampled = <Offset>[];
-    for (int i = 0; i < points.length; i += step) {
-      sampled.add(points[i]);
+    // 1. Simplify points by minimum distance to remove touch jitter
+    final simplified = <Offset>[points.first];
+    for (int i = 1; i < points.length; i++) {
+      if ((points[i] - simplified.last).distance >= minPointDistance) {
+        simplified.add(points[i]);
+      }
+    }
+    if (simplified.length < 6) return false;
+
+    // 2. Identify motion segments and direction reversals
+    final turnaroundIndices = <int>[0];
+    Offset? prevDir;
+
+    for (int i = 1; i < simplified.length; i++) {
+      final delta = simplified[i] - simplified[i - 1];
+      final dist = delta.distance;
+      if (dist < 1e-3) continue;
+      final dir = delta / dist;
+
+      if (prevDir != null) {
+        final dot = prevDir.dx * dir.dx + prevDir.dy * dir.dy;
+        if (dot < -0.2) {
+          turnaroundIndices.add(i - 1);
+        }
+      }
+      prevDir = dir;
+    }
+    turnaroundIndices.add(simplified.length - 1);
+
+    final reversals = turnaroundIndices.length - 2;
+    if (reversals < minReversals) return false;
+
+    // 3. Check passes between turnarounds
+    int overlappingPasses = 0;
+    for (int p = 0; p < turnaroundIndices.length - 2; p++) {
+      final start1 = simplified[turnaroundIndices[p]];
+      final end1 = simplified[turnaroundIndices[p + 1]];
+      final start2 = simplified[turnaroundIndices[p + 1]];
+      final end2 = simplified[turnaroundIndices[p + 2]];
+
+      final x1Min = min(start1.dx, end1.dx);
+      final x1Max = max(start1.dx, end1.dx);
+      final x2Min = min(start2.dx, end2.dx);
+      final x2Max = max(start2.dx, end2.dx);
+      final xOverlap = max(0.0, min(x1Max, x2Max) - max(x1Min, x2Min));
+      final xSpan = min(x1Max - x1Min, x2Max - x2Min);
+
+      final y1Min = min(start1.dy, end1.dy);
+      final y1Max = max(start1.dy, end1.dy);
+      final y2Min = min(start2.dy, end2.dy);
+      final y2Max = max(start2.dy, end2.dy);
+      final yOverlap = max(0.0, min(y1Max, y2Max) - max(y1Min, y2Min));
+      final ySpan = min(y1Max - y1Min, y2Max - y2Min);
+
+      final hasXOverlap = xSpan > 5.0 && (xOverlap / xSpan) > 0.35;
+      final hasYOverlap = ySpan > 5.0 && (yOverlap / ySpan) > 0.35;
+
+      final delta1 = end1 - start1;
+      final delta2 = end2 - start2;
+
+      final isHorizontalOscillation =
+          hasXOverlap && (delta1.dx * delta2.dx < 0);
+      final isVerticalOscillation =
+          hasYOverlap && (delta1.dy * delta2.dy < 0) &&
+          (hasXOverlap || (delta1.dx * delta2.dx < 0) || (x1Max - x1Min <= 8.0 && x2Max - x2Min <= 8.0));
+
+      if (isHorizontalOscillation || isVerticalOscillation) {
+        overlappingPasses++;
+      }
     }
 
-    // Count direction-quadrant changes
-    int directionChanges = 0;
-    int? lastQuadrant;
-    for (int i = 1; i < sampled.length; i++) {
-      final dx = sampled[i].dx - sampled[i - 1].dx;
-      final dy = sampled[i].dy - sampled[i - 1].dy;
+    if (overlappingPasses < minReversals) return false;
 
-      // Skip tiny movements (natural jitter)
-      if (dx.abs() < 3 && dy.abs() < 3) continue;
-
-      final int quadrant;
-      if (dx.abs() > dy.abs()) {
-        quadrant = dx > 0 ? 0 : 2; // moving right (0) or left (2)
-      } else {
-        quadrant = dy > 0 ? 1 : 3; // moving down (1) or up (3)
-      }
-
-      if (lastQuadrant != null && quadrant != lastQuadrant) {
-        directionChanges++;
-      }
-      lastQuadrant = quadrant;
-    }
-
-    // Measure bounding box diagonal
+    // 4. Bounding box & path density check
     double minX = double.infinity, maxX = double.negativeInfinity;
     double minY = double.infinity, maxY = double.negativeInfinity;
-    for (final p in points) {
-      if (p.dx < minX) minX = p.dx;
-      if (p.dx > maxX) maxX = p.dx;
-      if (p.dy < minY) minY = p.dy;
-      if (p.dy > maxY) maxY = p.dy;
-    }
-    final diagonal = Offset(maxX - minX, maxY - minY).distance;
+    double totalPathLength = 0;
 
-    // Scribbling requires frequent direction changes within a moderate area
-    return directionChanges >= minDirectionChanges &&
-        diagonal < boundingBoxMultiplier * penStrokeWidth;
+    for (int i = 0; i < simplified.length; i++) {
+      final pt = simplified[i];
+      if (pt.dx < minX) minX = pt.dx;
+      if (pt.dx > maxX) maxX = pt.dx;
+      if (pt.dy < minY) minY = pt.dy;
+      if (pt.dy > maxY) maxY = pt.dy;
+      if (i > 0) {
+        totalPathLength += (pt - simplified[i - 1]).distance;
+      }
+    }
+
+    final diagonal = Offset(maxX - minX, maxY - minY).distance;
+    if (diagonal < minDiagonal || diagonal > maxDiagonal) return false;
+    if (totalPathLength < diagonal * pathLengthRatio) return false;
+
+    return true;
   }
 
   /// Erase strokes at the given position using the eraser tool.
   List<Stroke> _eraseAt(
     Offset position,
     List<Stroke> existingStrokes,
-    double penStrokeWidth,
   ) {
-    _eraser ??= Eraser(size: penStrokeWidth);
+    _eraser ??= Eraser(size: eraserRadius);
     final erased =
         _eraser!.checkForOverlappingStrokes(position, existingStrokes);
     _erasedStrokes.addAll(erased);

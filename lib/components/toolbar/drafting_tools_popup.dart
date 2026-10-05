@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:saber/components/canvas/_arrow_stroke.dart';
 import 'package:saber/data/tools/_tool.dart';
 import 'package:saber/data/tools/arrow.dart';
 import 'package:saber/data/tools/dimension.dart';
@@ -88,12 +89,46 @@ class DraftingToolsPopup extends StatelessWidget {
               const SizedBox(height: 6),
               _DraftingOptionTile(
                 icon: const Icon(Icons.arrow_right_alt, size: 20),
-                title: 'Drafting Arrow',
-                subtitle: 'Precision arrow with editable vertices',
-                selected: currentTool is ArrowTool,
+                title: 'Straight Arrow',
+                subtitle: 'Direct pointer arrow',
+                selected: currentTool is ArrowTool &&
+                    (currentTool as ArrowTool).connectorStyle ==
+                        ConnectorStyle.straight,
                 onTap: () {
                   Navigator.of(context).pop();
-                  onSelectTool(ArrowTool());
+                  onSelectTool(
+                    ArrowTool(connectorStyle: ConnectorStyle.straight),
+                  );
+                },
+              ),
+              const SizedBox(height: 6),
+              _DraftingOptionTile(
+                icon: const Icon(Icons.turn_right_rounded, size: 20),
+                title: 'Elbow Connector',
+                subtitle: 'Orthogonal stepped connector line',
+                selected: currentTool is ArrowTool &&
+                    (currentTool as ArrowTool).connectorStyle ==
+                        ConnectorStyle.elbow,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onSelectTool(
+                    ArrowTool(connectorStyle: ConnectorStyle.elbow),
+                  );
+                },
+              ),
+              const SizedBox(height: 6),
+              _DraftingOptionTile(
+                icon: const Icon(Icons.gesture, size: 20),
+                title: 'Curved Connector',
+                subtitle: 'Smooth bezier spline connector',
+                selected: currentTool is ArrowTool &&
+                    (currentTool as ArrowTool).connectorStyle ==
+                        ConnectorStyle.curved,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onSelectTool(
+                    ArrowTool(connectorStyle: ConnectorStyle.curved),
+                  );
                 },
               ),
               const SizedBox(height: 6),

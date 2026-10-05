@@ -8,13 +8,17 @@ import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/_tape_stroke.dart';
 import 'package:saber/data/editor/page.dart';
+import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/pen.dart';
 import 'package:sbn/tool_id.dart';
 
 /// A tool for placing [TapeStroke] masking tape strips on notes for active recall.
 class StudyTapeTool extends Pen {
-  StudyTapeTool()
-      : super(
+  StudyTapeTool({
+    TapePattern? pattern,
+    super.color = const Color(0xFFFFD54F),
+  })  : pattern = pattern ?? defaultPattern,
+        super(
           name: 'Study Tape',
           sizeMin: 10,
           sizeMax: 60,
@@ -22,11 +26,21 @@ class StudyTapeTool extends Pen {
           icon: studyTapeIcon,
           options: StrokeOptions(size: 24, isComplete: false),
           pressureEnabled: false,
-          color: const Color(0xFFFFD54F), // Pastel yellow masking tape
           toolId: ToolId.studyTape,
         );
 
   static const studyTapeIcon = Icons.view_headline_rounded;
+
+  static TapePattern get defaultPattern {
+    return switch (stows.studyTapePattern.value) {
+      'stripes' => TapePattern.stripes,
+      'dots' => TapePattern.dots,
+      'grid' => TapePattern.grid,
+      _ => TapePattern.solid,
+    };
+  }
+
+  TapePattern pattern;
 
   static final currentStudyTape = StudyTapeTool();
 
@@ -54,6 +68,7 @@ class StudyTapeTool extends Pen {
       toolId: toolId,
       rect: initialRect,
       isConcealed: true,
+      pattern: pattern,
     );
   }
 

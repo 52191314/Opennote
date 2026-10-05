@@ -21,6 +21,8 @@ import 'package:saber/components/toolbar/export_bar.dart';
 import 'package:saber/components/toolbar/lasso_filter_popup.dart';
 import 'package:saber/components/toolbar/pen_modal.dart';
 import 'package:saber/components/toolbar/quick_palette_bar.dart';
+import 'package:saber/components/toolbar/selection_bar.dart';
+import 'package:saber/components/toolbar/tape_options_popup.dart';
 import 'package:saber/components/toolbar/toolbar_button.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/extensions/color_extensions.dart';
@@ -63,9 +65,16 @@ class Toolbar extends StatefulWidget {
     this.cropPossible = false,
     this.cropActive = false,
     this.toggleCrop,
+    this.bringToFront,
+    this.sendToBack,
+    this.smoothen,
+    this.addToElements,
+    this.openElementsSheet,
     required this.exportAsSba,
     required this.exportAsPdf,
     required this.exportAsPng,
+    this.onRevealAllTape,
+    this.onConcealAllTape,
   });
 
   final bool readOnly;
@@ -99,10 +108,17 @@ class Toolbar extends StatefulWidget {
   final bool cropPossible;
   final bool cropActive;
   final VoidCallback? toggleCrop;
+  final VoidCallback? bringToFront;
+  final VoidCallback? sendToBack;
+  final VoidCallback? smoothen;
+  final VoidCallback? addToElements;
+  final VoidCallback? openElementsSheet;
 
   final Future Function(BuildContext)? exportAsSba;
   final Future Function(BuildContext)? exportAsPdf;
   final Future Function(BuildContext)? exportAsPng;
+  final VoidCallback? onRevealAllTape;
+  final VoidCallback? onConcealAllTape;
 
   @override
   State<Toolbar> createState() => _ToolbarState();
@@ -459,6 +475,38 @@ class _ToolbarState extends State<Toolbar> {
           );
         },
       ),
+      Collapsible(
+        axis: isToolbarVertical
+            ? CollapsibleAxis.horizontal
+            : CollapsibleAxis.vertical,
+        maintainState: false,
+        collapsed: widget.currentTool is! Select,
+        child: Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surface.withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+              width: 0.75,
+            ),
+          ),
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: SelectionBar(
+            copySelection: widget.copySelection,
+            pasteSelection: widget.pasteSelection,
+            duplicateSelection: widget.duplicateSelection,
+            deleteSelection: widget.deleteSelection,
+            cropPossible: widget.cropPossible,
+            cropActive: widget.cropActive,
+            toggleCrop: widget.toggleCrop,
+            bringToFront: widget.bringToFront,
+            sendToBack: widget.sendToBack,
+            smoothen: widget.smoothen,
+            addToElements: widget.addToElements,
+          ),
+        ),
+      ),
       DecoratedBox(
         decoration: BoxDecoration(
           color: colorScheme.surface.withValues(alpha: 0.95),
@@ -602,13 +650,52 @@ class _ToolbarState extends State<Toolbar> {
                 selected: widget.currentTool is StudyTapeTool,
                 enabled: !widget.readOnly,
                 onPressed: () {
-                  widget.setTool(StudyTapeTool());
+                  if (widget.currentTool is StudyTapeTool) {
+                    showDialog(
+                      context: context,
+                      builder: (_) => TapeOptionsPopup(
+                        currentTapeTool: widget.currentTool as StudyTapeTool,
+                        onRevealAll: widget.onRevealAllTape,
+                        onConcealAll: widget.onConcealAllTape,
+                        onTapeChanged: () => setState(() {}),
+                      ),
+                    );
+                  } else {
+                    widget.setTool(StudyTapeTool());
+                  }
+                },
+                onLongPress: () {
+                  final tool = widget.currentTool is StudyTapeTool
+                      ? widget.currentTool as StudyTapeTool
+                      : StudyTapeTool();
+                  if (widget.currentTool is! StudyTapeTool) {
+                    widget.setTool(tool);
+                  }
+                  showDialog(
+                    context: context,
+                    builder: (_) => TapeOptionsPopup(
+                      currentTapeTool: tool,
+                      onRevealAll: widget.onRevealAllTape,
+                      onConcealAll: widget.onConcealAllTape,
+                      onTapeChanged: () => setState(() {}),
+                    ),
+                  );
                 },
                 padding: buttonPadding,
                 child: const Icon(Icons.view_headline_rounded, size: 16),
               ),
 
-              // 8. Photo
+              // 8. Elements (Stickers)
+              ToolbarIconButton(
+                tooltip: 'Elements (Stickers)',
+                selected: false,
+                enabled: !widget.readOnly,
+                onPressed: () => widget.openElementsSheet?.call(),
+                padding: buttonPadding,
+                child: const Icon(Icons.auto_awesome, size: 16),
+              ),
+
+              // 9. Photo
               ToolbarIconButton(
                 tooltip: t.editor.toolbar.photo,
                 enabled: !widget.readOnly,
@@ -620,7 +707,7 @@ class _ToolbarState extends State<Toolbar> {
                 ),
               ),
 
-              // 9. Text Box
+              // 10. Text Box
               ToolbarIconButton(
                 tooltip: t.editor.toolbar.text,
                 selected: widget.textEditing,
@@ -633,16 +720,38 @@ class _ToolbarState extends State<Toolbar> {
                 ),
               ),
 
-              // 10. Laser Pointer
+              // 11. Laser Pointer (Trail / Spotlight mode toggle)
               ToolbarIconButton(
-                tooltip: t.editor.pens.laserPointer,
+                tooltip: stows.laserPointerMode.value == 'spotlight'
+                    ? 'Laser Pointer (Spotlight Mode)'
+                    : t.editor.pens.laserPointer,
                 selected: widget.currentTool == LaserPointer.currentLaserPointer,
                 enabled: true,
                 onPressed: () {
-                  widget.setTool(LaserPointer.currentLaserPointer);
+                  if (widget.currentTool == LaserPointer.currentLaserPointer) {
+                    stows.laserPointerMode.value =
+                        stows.laserPointerMode.value == 'spotlight'
+                            ? 'trail'
+                            : 'spotlight';
+                    setState(() {});
+                  } else {
+                    widget.setTool(LaserPointer.currentLaserPointer);
+                  }
+                },
+                onLongPress: () {
+                  stows.laserPointerMode.value =
+                      stows.laserPointerMode.value == 'spotlight'
+                          ? 'trail'
+                          : 'spotlight';
+                  setState(() {});
                 },
                 padding: buttonPadding,
-                child: const Icon(Symbols.stylus_laser_pointer),
+                child: Icon(
+                  stows.laserPointerMode.value == 'spotlight'
+                      ? Icons.adjust_rounded
+                      : Symbols.stylus_laser_pointer,
+                  size: 16,
+                ),
               ),
 
               // Contextual Quick Palette (3 Quick Colors + 3 Quick Sizes)

@@ -39,6 +39,7 @@ import 'package:saber/components/theming/dynamic_material_app.dart';
 import 'package:saber/components/theming/saber_theme.dart';
 import 'package:saber/components/toolbar/color_bar.dart';
 import 'package:saber/components/toolbar/editor_bottom_sheet.dart';
+import 'package:saber/components/toolbar/elements_sheet.dart';
 import 'package:saber/components/toolbar/export_bar.dart';
 import 'package:saber/components/toolbar/toolbar.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
@@ -54,6 +55,7 @@ import 'package:saber/data/tools/_tool.dart';
 import 'package:saber/data/tools/arrow.dart';
 import 'package:saber/data/tools/circle_to_select_detector.dart';
 import 'package:saber/data/tools/dimension.dart';
+import 'package:saber/data/tools/elements.dart';
 import 'package:saber/data/tools/eraser.dart';
 import 'package:saber/data/tools/highlighter.dart';
 import 'package:saber/data/tools/laser_pointer.dart';
@@ -360,6 +362,14 @@ class EditorState extends State<Editor> {
   /// Creates pages until the given page index exists,
   /// plus an extra blank page
   void createPage(int pageIndex) {
+    if (coreInfo.isInfiniteCanvas) {
+      if (coreInfo.pages.isEmpty) {
+        final page = EditorPage();
+        coreInfo.pages.add(page);
+        listenToQuillChanges(page.quill, 0);
+      }
+      return;
+    }
     while (pageIndex >= coreInfo.pages.length - 1) {
       final page = EditorPage();
       coreInfo.pages.add(page);
@@ -368,6 +378,7 @@ class EditorState extends State<Editor> {
   }
 
   void removeExcessPages() {
+    if (coreInfo.isInfiniteCanvas) return;
     bool removedAPage = false;
 
     // remove excess pages if all pages >= this one are empty
@@ -559,6 +570,11 @@ class EditorState extends State<Editor> {
   }
 
   int? onWhichPageIsFocalPoint(Offset focalPoint) {
+    if (coreInfo.isInfiniteCanvas && coreInfo.pages.isNotEmpty) {
+      if (coreInfo.pages[0].renderBox != null) {
+        return 0;
+      }
+    }
     for (int i = 0; i < coreInfo.pages.length; ++i) {
       if (coreInfo.pages[i].renderBox == null) continue;
       final pageBounds = Offset.zero & coreInfo.pages[i].size;
@@ -628,6 +644,10 @@ class EditorState extends State<Editor> {
     final page = coreInfo.pages[dragPageIndex!];
     final position = page.renderBox!.globalToLocal(details.focalPoint);
     history.canRedo = false;
+
+    if (page.activeLayer.locked && (currentTool is Pen || currentTool is Eraser)) {
+      return;
+    }
 
     if (currentTool is Pen) {
       // Set pen preview
@@ -770,6 +790,9 @@ class EditorState extends State<Editor> {
 
   void onDrawUpdate(ScaleUpdateDetails details) {
     final page = coreInfo.pages[dragPageIndex!];
+    if (page.activeLayer.locked && (currentTool is Pen || currentTool is Eraser)) {
+      return;
+    }
     final position = page.renderBox!.globalToLocal(details.focalPoint);
     final offset = position - previousPosition;
 
@@ -789,13 +812,16 @@ class EditorState extends State<Editor> {
         );
 
         if (scribbleDetector.state == ScribbleState.erasing) {
+          if (Pen.currentStroke != null) {
+            Pen.currentStroke = null;
+          }
           // In scribble-erase mode: erase overlapping strokes
           for (final stroke in erased) {
             page.removeStroke(stroke);
           }
-          // Show eraser cursor with pen width
+          // Show eraser cursor with eraser radius
           page.eraserCursorPosition = position;
-          page.eraserCursorRadius = penStrokeWidth / 2;
+          page.eraserCursorRadius = ScribbleDetector.eraserRadius;
           page.redrawStrokes();
         } else {
           // Still drawing or undetermined — draw normally
@@ -1010,6 +1036,20 @@ class EditorState extends State<Editor> {
 
   void onDrawEnd(ScaleEndDetails details) {
     final page = coreInfo.pages[dragPageIndex!];
+    if (page.activeLayer.locked && (currentTool is Pen || currentTool is Eraser)) {
+      if (currentTool is Pen) (currentTool as Pen).onDragEnd();
+      if (currentTool is Eraser) (currentTool as Eraser).onDragEnd();
+      page.eraserCursorPosition = null;
+      page.eraserCursorRadius = null;
+      page.penPreviewPosition = null;
+      page.penPreviewRadius = null;
+      page.penPreviewColor = null;
+      _isRotating = false;
+      _initialRotationAngle = 0;
+      _isResizing = false;
+      _resizeHandleIndex = -1;
+      return;
+    }
     bool shouldSave = true;
     setState(() {
       if (currentTool is Pen) {
@@ -2243,6 +2283,165 @@ class EditorState extends State<Editor> {
     });
   }
 
+  void _bringSelectionToFront() {
+    if (currentTool is! Select) return;
+    final select = currentTool as Select;
+    if (!select.doneSelecting) return;
+    final page = coreInfo.pages[select.selectResult.pageIndex];
+    final strokes = select.selectResult.strokes;
+    final images = select.selectResult.images;
+    if (strokes.isEmpty && images.isEmpty) return;
+
+    setState(() {
+      if (strokes.isNotEmpty) {
+        page.activeLayerStrokes.removeWhere((s) => strokes.contains(s));
+        page.activeLayerStrokes.addAll(strokes);
+      }
+      if (images.isNotEmpty) {
+        page.images.removeWhere((img) => images.contains(img));
+        page.images.addAll(images);
+      }
+      page.redrawStrokes();
+      autosaveAfterDelay();
+    });
+  }
+
+  void _sendSelectionToBack() {
+    if (currentTool is! Select) return;
+    final select = currentTool as Select;
+    if (!select.doneSelecting) return;
+    final page = coreInfo.pages[select.selectResult.pageIndex];
+    final strokes = select.selectResult.strokes;
+    final images = select.selectResult.images;
+    if (strokes.isEmpty && images.isEmpty) return;
+
+    setState(() {
+      if (strokes.isNotEmpty) {
+        page.activeLayerStrokes.removeWhere((s) => strokes.contains(s));
+        page.activeLayerStrokes.insertAll(0, strokes);
+      }
+      if (images.isNotEmpty) {
+        page.images.removeWhere((img) => images.contains(img));
+        page.images.insertAll(0, images);
+      }
+      page.redrawStrokes();
+      autosaveAfterDelay();
+    });
+  }
+
+  void _smoothenSelection() {
+    if (currentTool is! Select) return;
+    final select = currentTool as Select;
+    if (!select.doneSelecting) return;
+    final page = coreInfo.pages[select.selectResult.pageIndex];
+    final strokes = select.selectResult.strokes;
+    if (strokes.isEmpty) return;
+
+    setState(() {
+      for (final stroke in strokes) {
+        stroke.smoothen(iterations: 2);
+      }
+      page.redrawStrokes();
+      autosaveAfterDelay();
+    });
+  }
+
+  void _addToElements() {
+    if (currentTool is! Select) return;
+    final select = currentTool as Select;
+    if (!select.doneSelecting) return;
+    final strokes = select.selectResult.strokes;
+    if (strokes.isEmpty) return;
+
+    final controller = TextEditingController(
+      text: 'Element ${ElementsManager.instance.items.length + 1}',
+    );
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add to Elements'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Element Name',
+            hintText: 'Enter name for sticker',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final name = controller.text.trim().isNotEmpty
+                  ? controller.text.trim()
+                  : 'Element';
+              ElementsManager.instance.addElement(
+                name: name,
+                strokes: strokes,
+                category: 'My Elements',
+              );
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Added "$name" to Elements'),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openElementsSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => ElementsSheet(
+        onSelectElement: _stampElement,
+      ),
+    );
+  }
+
+  void _stampElement(ElementItem item) {
+    if (coreInfo.readOnly) return;
+    final pageIndex = currentPageIndex.clamp(0, coreInfo.pages.length - 1);
+    final page = coreInfo.pages[pageIndex];
+    if (page.activeLayer.locked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cannot stamp element on a locked layer')),
+      );
+      return;
+    }
+
+    final targetCenter = Offset(page.size.width / 2, page.size.height / 2);
+    final newStrokes = item.instantiateStrokes(page: page, targetCenter: targetCenter);
+    if (newStrokes.isEmpty) return;
+
+    for (final s in newStrokes) {
+      s.pageIndex = pageIndex;
+      page.insertStroke(s);
+    }
+
+    history.recordChange(
+      EditorHistoryItem(
+        type: .draw,
+        pageIndex: pageIndex,
+        strokes: newStrokes,
+        images: [],
+      ),
+    );
+
+    page.redrawStrokes();
+    autosaveAfterDelay();
+  }
+
   /// Whether the current selection has exactly one image and no strokes,
   /// which makes the crop button available.
   bool get _cropPossible {
@@ -2409,6 +2608,13 @@ class EditorState extends State<Editor> {
       hasTape: currentPageHasTape,
       onRevealAllTape: _revealAllTapeOnCurrentPage,
       onConcealAllTape: _concealAllTapeOnCurrentPage,
+      activePage: coreInfo.pages.isNotEmpty
+          ? coreInfo.pages[currentPageIndex.clamp(0, coreInfo.pages.length - 1)]
+          : null,
+      onLayersChanged: () => setState(() {
+        autosaveAfterDelay();
+      }),
+      isInfiniteCanvas: coreInfo.isInfiniteCanvas,
       placeholderPageBuilder: (BuildContext context, int pageIndex) {
         return Canvas(
           path: coreInfo.filePath,
@@ -2522,9 +2728,16 @@ class EditorState extends State<Editor> {
           cropPossible: _cropPossible,
           cropActive: _cropActive,
           toggleCrop: _toggleCrop,
+          bringToFront: _bringSelectionToFront,
+          sendToBack: _sendSelectionToBack,
+          smoothen: _smoothenSelection,
+          addToElements: _addToElements,
+          openElementsSheet: _openElementsSheet,
           exportAsSba: exportAsSba,
           exportAsPdf: exportAsPdf,
           exportAsPng: exportAsPng,
+          onRevealAllTape: _revealAllTapeOnCurrentPage,
+          onConcealAllTape: _concealAllTapeOnCurrentPage,
         ),
       ),
     );
@@ -2672,20 +2885,37 @@ class EditorState extends State<Editor> {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(
-                                      Icons.grid_view_rounded,
-                                      size: isCompact ? 13 : 15,
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                                    SizedBox(width: isCompact ? 3 : 5),
-                                    Text(
-                                      '${currentPageIdx + 1} / ${coreInfo.pages.length}',
-                                      style: TextStyle(
-                                        fontSize: isCompact ? 11.5 : 12.5,
-                                        fontWeight: FontWeight.w600,
+                                    if (coreInfo.isInfiniteCanvas) ...[
+                                      Icon(
+                                        Icons.all_inclusive_rounded,
+                                        size: isCompact ? 13 : 15,
                                         color: colorScheme.onSurfaceVariant,
                                       ),
-                                    ),
+                                      SizedBox(width: isCompact ? 3 : 5),
+                                      Text(
+                                        'Infinite',
+                                        style: TextStyle(
+                                          fontSize: isCompact ? 11.5 : 12.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ] else ...[
+                                      Icon(
+                                        Icons.grid_view_rounded,
+                                        size: isCompact ? 13 : 15,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                      SizedBox(width: isCompact ? 3 : 5),
+                                      Text(
+                                        '${currentPageIdx + 1} / ${coreInfo.pages.length}',
+                                        style: TextStyle(
+                                          fontSize: isCompact ? 11.5 : 12.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),

@@ -112,6 +112,45 @@ class Canvas extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (coreInfo.isInfiniteCanvas) {
+      return !placeholder
+          ? SizedBox(
+              width: page.size.width,
+              height: page.size.height,
+              child: OnyxSdkPenArea(
+                refreshDelay: const Duration(seconds: 1),
+                strokeStyle: _getOnyxTool(currentTool),
+                strokeColor: _getOnyxColor(),
+                strokeWidth: _getOnyxWidth(),
+                child: InnerCanvas(
+                  key: page.innerCanvasKey,
+                  pageIndex: pageIndex,
+                  redrawPageListenable: page,
+                  width: page.size.width,
+                  height: page.size.height,
+                  textEditing: textEditing,
+                  coreInfo: coreInfo,
+                  currentStroke: currentStroke,
+                  currentStrokeDetectedShape: currentStrokeDetectedShape,
+                  currentSelection: currentSelection,
+                  isDoneSelecting: isDoneSelecting,
+                  onCutSelection: onCutSelection,
+                  onCopySelection: onCopySelection,
+                  onDuplicateSelection: onDuplicateSelection,
+                  onDeleteSelection: onDeleteSelection,
+                  onSetColor: onSetColor,
+                  cropPossible: cropPossible,
+                  cropActive: cropActive,
+                  onToggleCrop: onToggleCrop,
+                  setAsBackground: setAsBackground,
+                  currentToolIsSelect: currentTool.toolId == ToolId.select,
+                  currentScale: currentScale,
+                ),
+              ),
+            )
+          : SizedBox(width: page.size.width, height: page.size.height);
+    }
+
     return Center(
       child: FittedBox(
         child: DecoratedBox(

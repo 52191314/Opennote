@@ -18,6 +18,7 @@ class CanvasBackgroundPainter extends CustomPainter {
     this.primaryColor = Colors.blue,
     this.secondaryColor = Colors.red,
     this.preview = false,
+    this.isInfiniteCanvas = false,
   });
 
   final bool invert;
@@ -34,17 +35,26 @@ class CanvasBackgroundPainter extends CustomPainter {
   /// Whether to draw the background pattern in a preview mode (more opaque).
   final bool preview;
 
+  /// Whether to paint an unbounded 2D infinite canvas.
+  final bool isInfiniteCanvas;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final canvasRect = Offset.zero & size;
+    final Rect visibleRect;
+    if (isInfiniteCanvas) {
+      final clip = canvas.getLocalClipBounds();
+      visibleRect = (clip.isFinite && !clip.isEmpty) ? clip : (Offset.zero & size);
+    } else {
+      visibleRect = Offset.zero & size;
+    }
     final paint = Paint();
 
     paint.color = backgroundColor.withInversion(invert);
-    canvas.drawRect(canvasRect, paint);
+    canvas.drawRect(visibleRect, paint);
 
-    if (backgroundPattern.requiresClipping) {
+    if (!isInfiniteCanvas && backgroundPattern.requiresClipping) {
       canvas.save();
-      canvas.clipRect(canvasRect);
+      canvas.clipRect(visibleRect);
     }
 
     for (final element in getPatternElements(
@@ -52,6 +62,7 @@ class CanvasBackgroundPainter extends CustomPainter {
       size: size,
       lineHeight: lineHeight,
       lineThickness: lineThickness,
+      bounds: isInfiniteCanvas ? visibleRect : null,
     )) {
       paint.strokeWidth = element.thickness ?? lineThickness.toDouble();
 
@@ -68,27 +79,156 @@ class CanvasBackgroundPainter extends CustomPainter {
       }
     }
 
-    if (backgroundPattern.requiresClipping) {
+    if (!isInfiniteCanvas && backgroundPattern.requiresClipping) {
       canvas.restore();
     }
   }
 
   @override
   bool shouldRepaint(CanvasBackgroundPainter oldDelegate) =>
+      isInfiniteCanvas ||
       kDebugMode ||
       oldDelegate.invert != invert ||
       oldDelegate.backgroundColor != backgroundColor ||
       oldDelegate.backgroundPattern != backgroundPattern ||
       oldDelegate.lineHeight != lineHeight ||
       oldDelegate.primaryColor != primaryColor ||
-      oldDelegate.secondaryColor != secondaryColor;
+      oldDelegate.secondaryColor != secondaryColor ||
+      oldDelegate.isInfiniteCanvas != isInfiniteCanvas;
 
   static Iterable<PatternElement> getPatternElements({
     required CanvasBackgroundPattern pattern,
     required Size size,
     required int lineHeight,
     int lineThickness = 3,
+    Rect? bounds,
   }) sync* {
+    if (bounds != null) {
+      switch (pattern) {
+        case .none:
+          return;
+        case .collegeLtr:
+        case .collegeRtl:
+        case .lined:
+          final startY = (bounds.top / lineHeight).floor() * lineHeight.toDouble();
+          final endY = (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+          for (double y = startY; y <= endY; y += lineHeight) {
+            yield PatternElement(
+              Offset(bounds.left, y),
+              Offset(bounds.right, y),
+              isLine: true,
+            );
+          }
+          if (pattern == .collegeLtr) {
+            yield PatternElement(
+              Offset(lineHeight * 2, bounds.top),
+              Offset(lineHeight * 2, bounds.bottom),
+              isLine: true,
+              secondaryColor: true,
+            );
+          } else if (pattern == .collegeRtl) {
+            yield PatternElement(
+              Offset(size.width - lineHeight * 2, bounds.top),
+              Offset(size.width - lineHeight * 2, bounds.bottom),
+              isLine: true,
+              secondaryColor: true,
+            );
+          }
+        case .grid:
+          final startX = (bounds.left / lineHeight).floor() * lineHeight.toDouble();
+          final endX = (bounds.right / lineHeight).ceil() * lineHeight.toDouble();
+          final startY = (bounds.top / lineHeight).floor() * lineHeight.toDouble();
+          final endY = (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+          for (double y = startY; y <= endY; y += lineHeight) {
+            yield PatternElement(
+              Offset(bounds.left, y),
+              Offset(bounds.right, y),
+              isLine: true,
+            );
+          }
+          for (double x = startX; x <= endX; x += lineHeight) {
+            yield PatternElement(
+              Offset(x, bounds.top),
+              Offset(x, bounds.bottom),
+              isLine: true,
+            );
+          }
+        case .dots:
+          final startX = (bounds.left / lineHeight).floor() * lineHeight.toDouble();
+          final endX = (bounds.right / lineHeight).ceil() * lineHeight.toDouble();
+          final startY = (bounds.top / lineHeight).floor() * lineHeight.toDouble();
+          final endY = (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+          for (double y = startY; y <= endY; y += lineHeight) {
+            for (double x = startX; x <= endX; x += lineHeight) {
+              yield PatternElement(Offset(x, y), Offset(x, y), isLine: false);
+            }
+          }
+        case .engineeringGrid:
+          final startX = (bounds.left / lineHeight).floor() * lineHeight.toDouble();
+          final endX = (bounds.right / lineHeight).ceil() * lineHeight.toDouble();
+          final startY = (bounds.top / lineHeight).floor() * lineHeight.toDouble();
+          final endY = (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+          for (double y = startY; y <= endY; y += lineHeight) {
+            final isHeavy = (y / lineHeight).round() % 10 == 0;
+            yield PatternElement(
+              Offset(bounds.left, y),
+              Offset(bounds.right, y),
+              thickness: isHeavy ? lineThickness * 3.0 : null,
+            );
+          }
+          for (double x = startX; x <= endX; x += lineHeight) {
+            final isHeavy = (x / lineHeight).round() % 10 == 0;
+            yield PatternElement(
+              Offset(x, bounds.top),
+              Offset(x, bounds.bottom),
+              thickness: isHeavy ? lineThickness * 3.0 : null,
+            );
+          }
+        case .isometric:
+          if (lineHeight <= 0) return;
+          final l = lineHeight.toDouble();
+          final dx = l * (sqrt(3) / 2);
+          final tan30 = 1 / sqrt(3);
+
+          final colMin = (bounds.left / dx).floor();
+          final colMax = (bounds.right / dx).ceil();
+          for (int col = colMin; col <= colMax; col++) {
+            final x = col * dx;
+            yield PatternElement(Offset(x, bounds.top), Offset(x, bounds.bottom));
+          }
+
+          final mMin = ((bounds.top - tan30 * bounds.right) / l).floor();
+          final mMax = ((bounds.bottom - tan30 * bounds.left) / l).ceil();
+          for (int m = mMin; m <= mMax; m++) {
+            final b = m * l;
+            final x1 = (bounds.top - b) / tan30;
+            final x2 = (bounds.bottom - b) / tan30;
+            yield PatternElement(Offset(x1, bounds.top), Offset(x2, bounds.bottom));
+          }
+
+          final kMin = ((bounds.top + tan30 * bounds.left) / l).floor();
+          final kMax = ((bounds.bottom + tan30 * bounds.right) / l).ceil();
+          for (int k = kMin; k <= kMax; k++) {
+            final c = k * l;
+            final x1 = (c - bounds.top) / tan30;
+            final x2 = (c - bounds.bottom) / tan30;
+            yield PatternElement(Offset(x1, bounds.top), Offset(x2, bounds.bottom));
+          }
+        case .staffs:
+        case .tablature:
+        case .cornell:
+          final startY = (bounds.top / lineHeight).floor() * lineHeight.toDouble();
+          final endY = (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+          for (double y = startY; y <= endY; y += lineHeight) {
+            yield PatternElement(
+              Offset(bounds.left, y),
+              Offset(bounds.right, y),
+              isLine: true,
+            );
+          }
+      }
+      return;
+    }
     switch (pattern) {
       case .none:
         return;

@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -5,6 +8,7 @@ import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/extensions/list_extensions.dart';
+import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
 import 'package:saber/data/tools/pen.dart';
 import 'package:sbn/tool_id.dart';
@@ -36,8 +40,15 @@ class LaserPointer extends Tool {
   /// has finished drawing.
   static var isDrawing = false;
 
+  EditorPage? _activePage;
+
   void onDragStart(Offset position, EditorPage page, int pageIndex) {
     isDrawing = true;
+    _activePage = page;
+    if (stows.laserPointerMode.value == 'spotlight') {
+      page.laserSpotlightPosition = position;
+      return;
+    }
     Pen.currentStroke = LaserStroke(
       color: outerColor,
       pressureEnabled: pressureEnabled,
@@ -55,6 +66,10 @@ class LaserPointer extends Tool {
 
   void onDragUpdate(Offset position, {@visibleForTesting Duration? elapsed}) {
     isDrawing = true;
+    if (stows.laserPointerMode.value == 'spotlight') {
+      _activePage?.laserSpotlightPosition = position;
+      return;
+    }
     Pen.currentStroke?.addPoint(position);
     strokePointDelays.add(elapsed ?? _stopwatch.elapsed);
     _stopwatch.reset();
@@ -65,6 +80,11 @@ class LaserPointer extends Tool {
     void Function(Stroke) deleteStroke,
   ) {
     isDrawing = false;
+    if (stows.laserPointerMode.value == 'spotlight') {
+      _activePage?.laserSpotlightPosition = null;
+      redrawPage();
+      return null;
+    }
 
     final stroke = Pen.currentStroke;
     Pen.currentStroke = null;

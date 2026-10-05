@@ -38,6 +38,7 @@ class CanvasPainter extends CustomPainter {
     required this.totalPages,
     required this.currentScale,
     required this.defaultTextStyle,
+    this.isInfiniteCanvas = false,
   });
 
   final bool invert;
@@ -53,10 +54,11 @@ class CanvasPainter extends CustomPainter {
   final int totalPages;
   final double currentScale;
   final TextStyle defaultTextStyle;
+  final bool isInfiniteCanvas;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final canvasRect = Offset.zero & size;
+    final canvasRect = isInfiniteCanvas ? null : (Offset.zero & size);
 
     _drawHighlighterStrokes(canvas, canvasRect);
     if (currentStroke?.toolId == .highlighter) {
@@ -71,7 +73,8 @@ class CanvasPainter extends CustomPainter {
     _drawPenPreview(canvas);
     _drawSelection(canvas);
     _drawEraserCursor(canvas);
-    _drawPageIndicator(canvas, size);
+    _drawLaserSpotlight(canvas);
+    if (!isInfiniteCanvas) _drawPageIndicator(canvas, size);
   }
 
   @override
@@ -81,6 +84,8 @@ class CanvasPainter extends CustomPainter {
         (currentStroke != null || oldDelegate.currentStroke != null) ||
         // Laser strokes are always fading out, so always repaint if present
         (laserStrokes.isNotEmpty || oldDelegate.laserStrokes.isNotEmpty) ||
+        // Laser spotlight active
+        (page.laserSpotlightPosition != oldDelegate.page.laserSpotlightPosition) ||
         // Check for any other changes
         invert != oldDelegate.invert ||
         strokes.length != oldDelegate.strokes.length ||
@@ -90,10 +95,11 @@ class CanvasPainter extends CustomPainter {
         showPageIndicator != oldDelegate.showPageIndicator ||
         pageIndex != oldDelegate.pageIndex ||
         totalPages != oldDelegate.totalPages ||
-        currentScale != oldDelegate.currentScale;
+        currentScale != oldDelegate.currentScale ||
+        isInfiniteCanvas != oldDelegate.isInfiniteCanvas;
   }
 
-  void _drawHighlighterStrokes(Canvas canvas, Rect canvasRect) {
+  void _drawHighlighterStrokes(Canvas canvas, Rect? canvasRect) {
     final layerPaint = Paint()
       ..blendMode = invert ? BlendMode.lighten : BlendMode.darken
       ..color = Colors.white.withAlpha(Highlighter.alpha);
@@ -205,6 +211,8 @@ class CanvasPainter extends CustomPainter {
         );
       } else if (stroke is TapeStroke) {
         _drawTapeStroke(canvas, stroke);
+      } else if (stroke.lineStyle != LineStyle.solid) {
+        _drawStyledStroke(canvas, stroke, paint);
       } else {
         canvas.drawPath(_selectPath(stroke), paint);
       }
@@ -223,6 +231,58 @@ class CanvasPainter extends CustomPainter {
         ..color = baseColor.withValues(alpha: 0.96)
         ..style = PaintingStyle.fill;
       canvas.drawRRect(rrect, fillPaint);
+
+      switch (stroke.pattern) {
+        case TapePattern.stripes:
+          canvas.save();
+          canvas.clipRRect(rrect);
+          final stripePaint = Paint()
+            ..color = Color.lerp(baseColor, Colors.black, 0.15)!.withValues(alpha: 0.4)
+            ..strokeWidth = 3.0
+            ..style = PaintingStyle.stroke;
+          final rect = stroke.rect;
+          const step = 10.0;
+          for (double x = rect.left - rect.height; x < rect.right + rect.height; x += step) {
+            canvas.drawLine(
+              Offset(x, rect.bottom),
+              Offset(x + rect.height, rect.top),
+              stripePaint,
+            );
+          }
+          canvas.restore();
+        case TapePattern.dots:
+          canvas.save();
+          canvas.clipRRect(rrect);
+          final dotPaint = Paint()
+            ..color = Color.lerp(baseColor, Colors.black, 0.18)!.withValues(alpha: 0.5)
+            ..style = PaintingStyle.fill;
+          final rect = stroke.rect;
+          const spacing = 8.0;
+          for (double x = rect.left + 4; x < rect.right; x += spacing) {
+            for (double y = rect.top + 4; y < rect.bottom; y += spacing) {
+              canvas.drawCircle(Offset(x, y), 1.5, dotPaint);
+            }
+          }
+          canvas.restore();
+        case TapePattern.grid:
+          canvas.save();
+          canvas.clipRRect(rrect);
+          final gridPaint = Paint()
+            ..color = Color.lerp(baseColor, Colors.black, 0.15)!.withValues(alpha: 0.35)
+            ..strokeWidth = 1.0
+            ..style = PaintingStyle.stroke;
+          final rect = stroke.rect;
+          const spacing = 8.0;
+          for (double x = rect.left + spacing; x < rect.right; x += spacing) {
+            canvas.drawLine(Offset(x, rect.top), Offset(x, rect.bottom), gridPaint);
+          }
+          for (double y = rect.top + spacing; y < rect.bottom; y += spacing) {
+            canvas.drawLine(Offset(rect.left, y), Offset(rect.right, y), gridPaint);
+          }
+          canvas.restore();
+        case TapePattern.solid:
+          break;
+      }
 
       final borderPaint = Paint()
         ..color = Color.lerp(baseColor, Colors.black, 0.15)!.withValues(alpha: 0.5)
@@ -326,7 +386,11 @@ class CanvasPainter extends CustomPainter {
     }
 
     // Current stroke always uses high quality
-    canvas.drawPath(currentStroke!.highQualityPath, paint);
+    if (currentStroke!.lineStyle != LineStyle.solid) {
+      _drawStyledStroke(canvas, currentStroke!, paint);
+    } else {
+      canvas.drawPath(currentStroke!.highQualityPath, paint);
+    }
 
     if (currentStroke is DimensionStroke) {
       _drawDimensionText(canvas, currentStroke as DimensionStroke);
@@ -643,6 +707,63 @@ class CanvasPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2,
     );
+  }
+
+  void _drawLaserSpotlight(Canvas canvas) {
+    final position = page.laserSpotlightPosition;
+    if (position == null) return;
+
+    // Outer translucent halo (Goodnotes spotlight)
+    canvas.drawCircle(
+      position,
+      28,
+      Paint()
+        ..color = Colors.red.withValues(alpha: 0.25)
+        ..style = PaintingStyle.fill,
+    );
+    canvas.drawCircle(
+      position,
+      16,
+      Paint()
+        ..color = Colors.red.withValues(alpha: 0.45)
+        ..style = PaintingStyle.fill,
+    );
+    // Core vibrant dot
+    canvas.drawCircle(
+      position,
+      7,
+      Paint()
+        ..color = Colors.red
+        ..style = PaintingStyle.fill,
+    );
+    // Specular center dot
+    canvas.drawCircle(
+      position,
+      2.5,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.9)
+        ..style = PaintingStyle.fill,
+    );
+  }
+
+  void _drawStyledStroke(Canvas canvas, Stroke stroke, Paint paint) {
+    if (stroke.isEmpty) return;
+    final centerPath = stroke.centerlinePath;
+    final strokeWidth = stroke.options.size;
+    final isDotted = stroke.lineStyle == LineStyle.dotted;
+    final dashArray = isDotted
+        ? CircularIntervalList<double>([1.0, strokeWidth * 1.8])
+        : CircularIntervalList<double>([strokeWidth * 3.0, strokeWidth * 1.8]);
+
+    final styledPaint = Paint()
+      ..color = paint.color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final dashedPath = dashPath(centerPath, dashArray: dashArray);
+    canvas.drawPath(dashedPath, styledPaint);
   }
 
   static const double _pageIndicatorFontSize = 20;

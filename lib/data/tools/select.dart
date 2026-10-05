@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:saber/components/canvas/_arrow_stroke.dart';
 import 'package:saber/components/canvas/_dimension_stroke.dart';
 import 'package:saber/components/canvas/_stroke.dart';
+import 'package:saber/components/canvas/_tape_stroke.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/prefs.dart';
@@ -135,16 +136,18 @@ class Select extends Tool {
     selectResult.path.close();
     doneSelecting = true;
 
-    if (stows.lassoSelectHandwriting.value) {
-      for (int i = 0; i < strokes.length; i++) {
-        final stroke = strokes[i];
-        final percentInside = polygonPercentInside(
-          selectResult.path,
-          stroke.lowQualityPolygon,
-        );
-        if (percentInside > minPercentInside) {
-          selectResult.strokes.add(stroke);
-        }
+    for (int i = 0; i < strokes.length; i++) {
+      final stroke = strokes[i];
+      final isTape = stroke is TapeStroke;
+      if (isTape && !stows.lassoSelectTape.value) continue;
+      if (!isTape && !stows.lassoSelectHandwriting.value) continue;
+
+      final percentInside = polygonPercentInside(
+        selectResult.path,
+        stroke.lowQualityPolygon,
+      );
+      if (percentInside > minPercentInside) {
+        selectResult.strokes.add(stroke);
       }
     }
 
@@ -176,7 +179,10 @@ class Select extends Tool {
     var textSelected = selectResult.textSelected;
 
     if (!stows.lassoSelectHandwriting.value && strokes.isNotEmpty) {
-      strokes = [];
+      strokes = strokes.whereType<TapeStroke>().toList();
+    }
+    if (!stows.lassoSelectTape.value && strokes.isNotEmpty) {
+      strokes = strokes.where((s) => s is! TapeStroke).toList();
     }
     if (!stows.lassoSelectImages.value && images.isNotEmpty) {
       for (final image in images) {

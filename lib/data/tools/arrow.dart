@@ -14,12 +14,21 @@ import 'package:sbn/canvas_background_pattern.dart';
 class ArrowTool extends Pen {
   ArrowTool({
     this.arrowheadStyle = ArrowheadStyle.single,
+    this.connectorStyle = ConnectorStyle.straight,
   }) : super(
-          name: 'Arrow',
+          name: switch (connectorStyle) {
+            ConnectorStyle.elbow => 'Elbow Connector',
+            ConnectorStyle.curved => 'Curved Connector',
+            ConnectorStyle.straight => 'Arrow',
+          },
           sizeMin: 1,
           sizeMax: 25,
           sizeStep: 1,
-          icon: arrowIcon,
+          icon: switch (connectorStyle) {
+            ConnectorStyle.elbow => Icons.turn_right_rounded,
+            ConnectorStyle.curved => Icons.gesture,
+            ConnectorStyle.straight => arrowIcon,
+          },
           options: stows.lastBallpointPenOptions.value,
           pressureEnabled: false,
           color: Color(stows.lastBallpointPenColor.value),
@@ -28,6 +37,7 @@ class ArrowTool extends Pen {
 
   static const arrowIcon = Icons.arrow_right_alt;
   final ArrowheadStyle arrowheadStyle;
+  final ConnectorStyle connectorStyle;
 
   Offset? _dragStart;
   EditorPage? _activePage;
@@ -66,6 +76,7 @@ class ArrowTool extends Pen {
       start: _dragStart!,
       end: _dragStart!,
       arrowheadStyle: arrowheadStyle,
+      connectorStyle: connectorStyle,
     );
   }
 

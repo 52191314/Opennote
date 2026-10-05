@@ -10,14 +10,26 @@ import 'package:saber/components/canvas/_stroke.dart';
 import 'package:sbn/has_size.dart';
 import 'package:sbn/tool_id.dart';
 
+/// The visual texture/pattern rendered on the tape when concealed.
+enum TapePattern {
+  solid,
+  stripes,
+  dots,
+  grid;
+
+  static const defaultPattern = TapePattern.solid;
+}
+
 /// A stroke representing an interactive masking tape strip used for active recall.
 ///
 /// When [isConcealed] is true, the tape is drawn as an opaque colored strip
-/// concealing the text/drawing underneath. Tapping the tape toggles [isConcealed],
-/// rendering it as a translucent wash with an outline to reveal the answer.
+/// concealing the text/drawing underneath with an optional [pattern].
+/// Tapping the tape toggles [isConcealed], rendering it as a translucent wash
+/// with an outline to reveal the answer.
 class TapeStroke extends Stroke {
   Rect rect;
   bool isConcealed;
+  TapePattern pattern;
 
   TapeStroke({
     required super.color,
@@ -28,6 +40,7 @@ class TapeStroke extends Stroke {
     required super.toolId,
     required this.rect,
     this.isConcealed = true,
+    this.pattern = TapePattern.solid,
     super.fillColor,
     super.lineStyle,
   }) {
@@ -58,6 +71,12 @@ class TapeStroke extends Stroke {
     }
 
     final bool isConcealed = json['c_state'] as bool? ?? true;
+    final TapePattern pattern = switch (json['tp'] as String?) {
+      'stripes' => TapePattern.stripes,
+      'dots' => TapePattern.dots,
+      'grid' => TapePattern.grid,
+      _ => TapePattern.solid,
+    };
 
     return TapeStroke(
       color: color,
@@ -73,6 +92,7 @@ class TapeStroke extends Stroke {
         (json['rh'] as num?)?.toDouble() ?? 0,
       ),
       isConcealed: isConcealed,
+      pattern: pattern,
     );
   }
 
@@ -86,6 +106,7 @@ class TapeStroke extends Stroke {
       'rw': rect.width,
       'rh': rect.height,
       'c_state': isConcealed,
+      'tp': pattern.name,
       'pe': pressureEnabled,
       'c': color.toARGB32(),
       'ty': toolId.id,
@@ -197,4 +218,19 @@ class TapeStroke extends Stroke {
     rect = Rect.fromPoints(p1, p2);
     super.scaleAround(scaleX, scaleY, pivot);
   }
+
+  @override
+  TapeStroke copy() => TapeStroke(
+    color: color,
+    pressureEnabled: pressureEnabled,
+    options: options.copyWith(),
+    pageIndex: pageIndex,
+    page: page,
+    toolId: toolId,
+    rect: rect,
+    isConcealed: isConcealed,
+    pattern: pattern,
+    fillColor: fillColor,
+    lineStyle: lineStyle,
+  );
 }
