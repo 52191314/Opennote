@@ -31,6 +31,13 @@ class Canvas extends StatelessWidget {
     this.onDuplicateSelection,
     this.onDeleteSelection,
     this.onSetColor,
+    this.isResizeActive = false,
+    this.onToggleResize,
+    this.onTakeScreenshot,
+    this.onAddToElements,
+    this.onBringToFront,
+    this.onSendToBack,
+    this.onSmoothen,
     this.cropPossible = false,
     this.cropActive = false,
     this.onToggleCrop,
@@ -55,6 +62,13 @@ class Canvas extends StatelessWidget {
   final VoidCallback? onDuplicateSelection;
   final VoidCallback? onDeleteSelection;
   final void Function(Color color)? onSetColor;
+  final bool isResizeActive;
+  final VoidCallback? onToggleResize;
+  final VoidCallback? onTakeScreenshot;
+  final VoidCallback? onAddToElements;
+  final VoidCallback? onBringToFront;
+  final VoidCallback? onSendToBack;
+  final VoidCallback? onSmoothen;
   final bool cropPossible;
   final bool cropActive;
   final VoidCallback? onToggleCrop;
@@ -195,6 +209,13 @@ class Canvas extends StatelessWidget {
                         onDuplicateSelection: onDuplicateSelection,
                         onDeleteSelection: onDeleteSelection,
                         onSetColor: onSetColor,
+                        isResizeActive: isResizeActive,
+                        onToggleResize: onToggleResize,
+                        onTakeScreenshot: onTakeScreenshot,
+                        onAddToElements: onAddToElements,
+                        onBringToFront: onBringToFront,
+                        onSendToBack: onSendToBack,
+                        onSmoothen: onSmoothen,
                         cropPossible: cropPossible,
                         cropActive: cropActive,
                         onToggleCrop: onToggleCrop,

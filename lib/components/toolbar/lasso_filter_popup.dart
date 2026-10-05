@@ -63,10 +63,11 @@ class _LassoFilterPopupState extends State<LassoFilterPopup> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Selection Mode',
+                'LASSO TYPE',
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
@@ -80,7 +81,7 @@ class _LassoFilterPopupState extends State<LassoFilterPopup> {
                   ),
                   ButtonSegment<bool>(
                     value: true,
-                    label: Text('Rectangle'),
+                    label: Text('Rectangular'),
                     icon: Icon(Icons.crop_square_rounded, size: 16),
                   ),
                 ],
@@ -95,10 +96,11 @@ class _LassoFilterPopupState extends State<LassoFilterPopup> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Selection Filters',
+                'INCLUDED IN SELECTION',
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),

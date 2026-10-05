@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:collapsible/collapsible.dart';
 import 'package:file_picker/file_picker.dart';
@@ -21,6 +22,7 @@ import 'package:path/path.dart' as p;
 import 'package:pdfrx/pdfrx.dart';
 import 'package:saber/components/canvas/_arrow_stroke.dart';
 import 'package:saber/components/canvas/_asset_cache.dart';
+import 'package:saber/components/canvas/_canvas_painter.dart';
 import 'package:saber/components/canvas/_dimension_stroke.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/_tape_stroke.dart';
@@ -28,6 +30,7 @@ import 'package:saber/components/canvas/canvas.dart';
 import 'package:saber/components/canvas/canvas_gesture_detector.dart';
 import 'package:saber/components/canvas/canvas_image.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
+import 'package:saber/components/canvas/lasso_screenshot_dialog.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/components/canvas/shape_library_dialog.dart';
 import 'package:saber/components/editor/page_grid_overview.dart';
@@ -2432,6 +2435,85 @@ class EditorState extends State<Editor> {
     );
   }
 
+  void _toggleSelectionResize() {
+    setState(() {
+      Select.currentSelect.isResizeActive =
+          !Select.currentSelect.isResizeActive;
+    });
+  }
+
+  Future<void> _takeSelectionScreenshot() async {
+    if (currentTool is! Select) return;
+    final select = currentTool as Select;
+    if (!select.doneSelecting || select.selectResult.isEmpty) return;
+
+    final page = coreInfo.pages[select.selectResult.pageIndex];
+    final bounds = select.selectResult.path.getBounds();
+    if (bounds.isEmpty || bounds.width <= 0 || bounds.height <= 0) return;
+
+    final renderBounds = bounds.inflate(14.0);
+    final width = renderBounds.width.ceil().toDouble();
+    final height = renderBounds.height.ceil().toDouble();
+
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(
+      recorder,
+      Rect.fromLTWH(0, 0, width, height),
+    );
+
+    // Draw background
+    final bgPaint = Paint()..color = Colors.white;
+    canvas.drawRect(Rect.fromLTWH(0, 0, width, height), bgPaint);
+
+    // Translate coordinate system
+    canvas.translate(-renderBounds.left, -renderBounds.top);
+
+    final painter = CanvasPainter(
+      page: page,
+      strokes: select.selectResult.strokes,
+      laserStrokes: const [],
+      currentStroke: null,
+      currentSelection: null,
+      isDoneSelecting: true,
+      primaryColor: Theme.of(context).colorScheme.primary,
+      showPageIndicator: false,
+      pageIndex: select.selectResult.pageIndex,
+      totalPages: coreInfo.pages.length,
+      currentScale: 1.0,
+      defaultTextStyle:
+          Theme.of(context).textTheme.bodyMedium ?? const TextStyle(),
+      invert: false,
+    );
+    painter.paint(canvas, Size(renderBounds.right, renderBounds.bottom));
+
+    final picture = recorder.endRecording();
+    const scale = 2.0;
+    final uiImage = await picture.toImage(
+      (width * scale).toInt(),
+      (height * scale).toInt(),
+    );
+    final byteData = await uiImage.toByteData(format: ui.ImageByteFormat.png);
+    if (byteData == null) return;
+    final bytes = byteData.buffer.asUint8List();
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => LassoScreenshotDialog(
+        imageBytes: bytes,
+        onCopied: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Screenshot copied to clipboard'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   void _openElementsSheet() {
     showModalBottomSheet(
       context: context,
@@ -3454,6 +3536,13 @@ class EditorState extends State<Editor> {
             }
           : null,
       onSetColor: isCurrentPageSelected ? _setSelectionColor : null,
+      isResizeActive: isCurrentPageSelected && (select?.isResizeActive ?? false),
+      onToggleResize: isCurrentPageSelected ? _toggleSelectionResize : null,
+      onTakeScreenshot: isCurrentPageSelected ? _takeSelectionScreenshot : null,
+      onAddToElements: isCurrentPageSelected ? _addToElements : null,
+      onBringToFront: isCurrentPageSelected ? _bringSelectionToFront : null,
+      onSendToBack: isCurrentPageSelected ? _sendSelectionToBack : null,
+      onSmoothen: isCurrentPageSelected ? _smoothenSelection : null,
       cropPossible: isCurrentPageSelected && _cropPossible,
       cropActive: isCurrentPageSelected && _cropActive,
       onToggleCrop: isCurrentPageSelected ? _toggleCrop : null,

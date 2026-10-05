@@ -66,4 +66,5 @@ test/failures/
 # Agent artifacts and local databases
 .agents/
 *.db
+*.ipa
 

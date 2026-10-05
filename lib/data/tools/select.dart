@@ -34,6 +34,11 @@ class Select extends Tool {
   );
   var doneSelecting = false;
 
+  /// Whether the transform/resize bounding box handles are actively shown.
+  /// Follows Goodnotes mechanics where the selection contour is clean by default,
+  /// and transform handles appear upon tapping 'Resize' in the callout menu.
+  var isResizeActive = false;
+
   /// The starting position of the current drag (used for rectangle selection).
   Offset? _dragStartPosition;
 
@@ -46,6 +51,7 @@ class Select extends Tool {
       image.cropMode = false;
     }
     doneSelecting = false;
+    isResizeActive = false;
     selectResult = SelectResult(
       pageIndex: -1,
       strokes: [],
@@ -75,6 +81,7 @@ class Select extends Tool {
 
   void onDragStart(Offset position, int pageIndex) {
     doneSelecting = false;
+    isResizeActive = false;
     _dragStartPosition = position;
     selectResult = SelectResult(
       pageIndex: pageIndex,
@@ -148,7 +155,10 @@ class Select extends Tool {
         selectResult.path,
         stroke.lowQualityPolygon,
       );
-      if (percentInside > minPercentInside) {
+      if (percentInside > minPercentInside ||
+          (stroke.length <= 3 &&
+              stroke.lowQualityPolygon.isNotEmpty &&
+              selectResult.path.contains(stroke.lowQualityPolygon.first))) {
         selectResult.strokes.add(stroke);
       }
     }

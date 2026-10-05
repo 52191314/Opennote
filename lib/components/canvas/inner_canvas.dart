@@ -39,6 +39,13 @@ class InnerCanvas extends StatefulWidget {
     this.onDuplicateSelection,
     this.onDeleteSelection,
     this.onSetColor,
+    this.isResizeActive = false,
+    this.onToggleResize,
+    this.onTakeScreenshot,
+    this.onAddToElements,
+    this.onBringToFront,
+    this.onSendToBack,
+    this.onSmoothen,
     this.cropPossible = false,
     this.cropActive = false,
     this.onToggleCrop,
@@ -64,6 +71,13 @@ class InnerCanvas extends StatefulWidget {
   final VoidCallback? onDuplicateSelection;
   final VoidCallback? onDeleteSelection;
   final void Function(Color color)? onSetColor;
+  final bool isResizeActive;
+  final VoidCallback? onToggleResize;
+  final VoidCallback? onTakeScreenshot;
+  final VoidCallback? onAddToElements;
+  final VoidCallback? onBringToFront;
+  final VoidCallback? onSendToBack;
+  final VoidCallback? onSmoothen;
   final bool cropPossible;
   final bool cropActive;
   final VoidCallback? onToggleCrop;
@@ -260,6 +274,13 @@ class _InnerCanvasState extends State<InnerCanvas> {
                         onDuplicate: widget.onDuplicateSelection ?? () {},
                         onDelete: widget.onDeleteSelection!,
                         onSetColor: widget.onSetColor ?? (_) {},
+                        isResizeActive: widget.isResizeActive,
+                        onToggleResize: widget.onToggleResize,
+                        onTakeScreenshot: widget.onTakeScreenshot,
+                        onAddToElements: widget.onAddToElements,
+                        onBringToFront: widget.onBringToFront,
+                        onSendToBack: widget.onSendToBack,
+                        onSmoothen: widget.onSmoothen,
                         cropPossible: widget.cropPossible,
                         cropActive: widget.cropActive,
                         onToggleCrop: widget.onToggleCrop,

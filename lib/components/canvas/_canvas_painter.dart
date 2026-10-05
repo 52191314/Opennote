@@ -528,6 +528,51 @@ class CanvasPainter extends CustomPainter {
     // Remove the clunky red delete circle completely (delete is on floating callout & toolbar)
     page.selectionDeleteButtonRect = null;
 
+    final isTransformActive = Select.currentSelect.isResizeActive;
+    if (!isTransformActive) {
+      // Goodnotes clean selection state: delicate dashed contour without handle clutter.
+      // Dragging inside moves the selection immediately; handles appear when Resize is active.
+      page.selectionRotationHandleCenter = null;
+      page.selectionResizeHandles = null;
+
+      canvas.drawPath(
+        currentSelection!.path,
+        Paint()..color = primaryColor.withValues(alpha: 0.04),
+      );
+
+      canvas.drawPath(
+        dashPath(
+          currentSelection!.path,
+          dashArray: CircularIntervalList([6, 4]),
+        ),
+        Paint()
+          ..color = primaryColor.withValues(alpha: 0.85)
+          ..strokeWidth = 1.4
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round,
+      );
+
+      final singleStroke = currentSelection!.strokes.length == 1
+          ? currentSelection!.strokes.first
+          : null;
+      if (singleStroke is ArrowStroke) {
+        final vHandles = [singleStroke.start, singleStroke.end];
+        page.selectionVertexHandles = vHandles;
+        _drawVertexHandles(canvas, vHandles);
+      } else if (singleStroke is DimensionStroke) {
+        final vHandles = [
+          singleStroke.start,
+          singleStroke.end,
+          singleStroke.textPosition,
+        ];
+        page.selectionVertexHandles = vHandles;
+        _drawVertexHandles(canvas, vHandles);
+      } else {
+        page.selectionVertexHandles = null;
+      }
+      return;
+    }
+
     final padded = bounds.inflate(6.0);
     final center = padded.center;
     final rrect = RRect.fromRectAndRadius(padded, const Radius.circular(8));
