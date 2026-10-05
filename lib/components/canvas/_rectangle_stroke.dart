@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:math';
 
 import 'package:fixnum/fixnum.dart';
@@ -148,7 +151,7 @@ class RectangleStroke extends Stroke {
     final cosA = cos(angleRadians);
     final sinA = sin(angleRadians);
 
-    Offset _rotatePoint(Offset p) {
+    Offset rotatePoint(Offset p) {
       final dx = p.dx - center.dx;
       final dy = p.dy - center.dy;
       return Offset(
@@ -157,10 +160,10 @@ class RectangleStroke extends Stroke {
       );
     }
 
-    final topLeft = _rotatePoint(rect.topLeft);
-    final topRight = _rotatePoint(rect.topRight);
-    final bottomRight = _rotatePoint(rect.bottomRight);
-    final bottomLeft = _rotatePoint(rect.bottomLeft);
+    final topLeft = rotatePoint(rect.topLeft);
+    final topRight = rotatePoint(rect.topRight);
+    final bottomRight = rotatePoint(rect.bottomRight);
+    final bottomLeft = rotatePoint(rect.bottomLeft);
 
     final newLeft = min(
       topLeft.dx,

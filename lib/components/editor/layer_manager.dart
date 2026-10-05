@@ -82,7 +82,7 @@ class _LayerManagerState extends State<LayerManager> {
         children: [
           const Icon(Icons.layers, size: 24),
           const SizedBox(width: 8),
-          Text('Layers'),
+          const Text('Layers'),
           const Spacer(),
           IconButton(
             icon: const Icon(Icons.add),

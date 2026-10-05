@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:saber/components/theming/uni_icon.dart';
@@ -58,7 +61,7 @@ class _ShapeLibraryDialogState extends State<ShapeLibraryDialog> {
                   return InkWell(
                     borderRadius: BorderRadius.circular(8),
                     onTap: () => Navigator.of(context).pop(symbol.svg),
-                    child: Container(
+                    child: DecoratedBox(
                       decoration: BoxDecoration(
                         border: Border.all(color: theme.colorScheme.outline),
                         borderRadius: BorderRadius.circular(8),

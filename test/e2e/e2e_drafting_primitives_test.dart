@@ -9,7 +9,6 @@ import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_arrow_stroke.dart';
 import 'package:saber/components/canvas/_dimension_stroke.dart';
 import 'package:saber/components/canvas/_polygon_stroke.dart';
-import 'package:saber/components/canvas/_stroke.dart';
 import 'package:sbn/has_size.dart';
 import 'package:sbn/tool_id.dart';
 
@@ -493,11 +492,11 @@ void main() {
       });
 
       test('T2.10: Fractional distance readout formatting precision', () {
-        double dist = 123.4567;
-        String formattedMm = '${dist.toStringAsFixed(1)} mm';
+        const double dist = 123.4567;
+        final String formattedMm = '${dist.toStringAsFixed(1)} mm';
         expect(formattedMm, equals('123.5 mm'));
 
-        String formattedTwoDecimals = '${dist.toStringAsFixed(2)} mm';
+        final String formattedTwoDecimals = '${dist.toStringAsFixed(2)} mm';
         expect(formattedTwoDecimals, equals('123.46 mm'));
       });
     },

@@ -47,7 +47,7 @@ void main() {
 
       ruler.onDragStart(const Offset(0, 0), page, 0, null);
       // Drag at ~28 degrees
-      final rad28 = 28 * pi / 180;
+      const rad28 = 28 * pi / 180;
       ruler.onDragUpdate(Offset(100 * cos(rad28), 100 * sin(rad28)), null);
       final stroke = ruler.onDragEnd();
 
@@ -145,7 +145,7 @@ void main() {
       const double initialLineHeight = 20.0;
       const double updatedLineHeight = 35.0;
 
-      final testPoint = const Offset(38.0, 54.0);
+      const testPoint = Offset(38.0, 54.0);
 
       // Initial snap with 20 px
       final snappedInitial = Stroke.snapPointToGrid(
@@ -165,8 +165,8 @@ void main() {
     test(
       'Pair 5: Angle Snap 45° with Arrow Stroke Serialization Roundtrip',
       () {
-        final p1 = PointVector(0, 0, 1.0);
-        final rad43 = 43 * pi / 180;
+        const p1 = PointVector(0, 0, 1.0);
+        const rad43 = 43 * pi / 180;
         final p2 = PointVector(100 * cos(rad43), 100 * sin(rad43), 1.0);
 
         final (_, snappedP2) = Stroke.snapLineToAngle(p1, p2, 45.0);
@@ -275,10 +275,10 @@ void main() {
     test('Pair 8: Engineering Grid 10-Cell Span Dimension Measurement', () {
       const double lineHeight = 10.0;
       const int cellCount = 10;
-      final double totalSpan = lineHeight * cellCount; // 100.0
+      const double totalSpan = lineHeight * cellCount; // 100.0
 
-      final start = const Offset(50, 50);
-      final end = Offset(50 + totalSpan, 50);
+      const start = Offset(50, 50);
+      const end = Offset(50 + totalSpan, 50);
 
       final dim = DimensionStroke(
         color: Colors.black,
@@ -445,7 +445,7 @@ void main() {
 
       // 2. Drafts 3D isometric cube vertices
       // Center origin vertex
-      final origin = const Offset(200, 200);
+      const origin = Offset(200, 200);
       // Top vertical edge: 90 degrees
       final topV = Offset(origin.dx, origin.dy - L);
       // Right diagonal edge: +30 degrees down

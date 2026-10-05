@@ -3055,8 +3055,7 @@ class EditorState extends State<Editor> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Tooltip(
-                            message:
-                                'Document Hub (Thumbnails, Bookmarks & Outline)',
+                            message: t.editor.pages,
                             child: InkWell(
                               borderRadius: const BorderRadius.horizontal(
                                 left: Radius.circular(16),

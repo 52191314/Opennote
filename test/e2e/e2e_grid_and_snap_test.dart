@@ -113,7 +113,7 @@ void main() {
 
         // Pick vertex n = 2, m = 3
         final double x0 = 2 * dx;
-        final double y0 = 3 * L;
+        const double y0 = 3 * L;
 
         // Diagonal 1 passes through (x0, y0): b1 = y0 - tan30 * x0
         final double b1 = y0 - tan30 * x0;
@@ -237,14 +237,14 @@ void main() {
 
       test('T1.7: Point exactly on grid vertex remains unchanged', () {
         const gridSize = 25.0;
-        final point = const Offset(50, 75);
+        const point = Offset(50, 75);
         final snapped = Stroke.snapPointToGrid(point, gridSize);
         expect(snapped, equals(point));
       });
 
       test('T1.8: Snap-to-grid spacing coupled to active page line height', () {
         const double pageLineHeight = 32.0;
-        final arbitraryPoint = const Offset(35, 60);
+        const arbitraryPoint = Offset(35, 60);
         final snapped = Stroke.snapPointToGrid(arbitraryPoint, pageLineHeight);
 
         expect(snapped.dx % pageLineHeight, closeTo(0, 1e-4));
@@ -339,9 +339,9 @@ void main() {
       // Tier 1: Feature Coverage (>=5 tests)
       // -------------------------------------------------------------
       test('T1.11: Angle snap 15 degrees', () {
-        final first = PointVector(0, 0, 1.0);
+        const first = PointVector(0, 0, 1.0);
         // 16 degrees length 100
-        final rad16 = 16 * pi / 180;
+        const rad16 = 16 * pi / 180;
         final last = PointVector(100 * cos(rad16), 100 * sin(rad16), 1.0);
 
         final (_, snappedLast) = Stroke.snapLineToAngle(first, last, 15.0);
@@ -351,9 +351,9 @@ void main() {
       });
 
       test('T1.12: Angle snap 30 degrees', () {
-        final first = PointVector(0, 0, 1.0);
+        const first = PointVector(0, 0, 1.0);
         // 28 degrees length 100
-        final rad28 = 28 * pi / 180;
+        const rad28 = 28 * pi / 180;
         final last = PointVector(100 * cos(rad28), 100 * sin(rad28), 1.0);
 
         final (_, snappedLast) = Stroke.snapLineToAngle(first, last, 30.0);
@@ -363,9 +363,9 @@ void main() {
       });
 
       test('T1.13: Angle snap 45 degrees', () {
-        final first = PointVector(0, 0, 1.0);
+        const first = PointVector(0, 0, 1.0);
         // 42 degrees length 100
-        final rad42 = 42 * pi / 180;
+        const rad42 = 42 * pi / 180;
         final last = PointVector(100 * cos(rad42), 100 * sin(rad42), 1.0);
 
         final (_, snappedLast) = Stroke.snapLineToAngle(first, last, 45.0);
@@ -375,7 +375,7 @@ void main() {
       });
 
       test('T1.14: Angle snap near horizontal and vertical', () {
-        final first = PointVector(0, 0, 1.0);
+        const first = PointVector(0, 0, 1.0);
 
         // Near horizontal (2 deg) with 15 deg step
         final lastH = PointVector(
@@ -397,8 +397,8 @@ void main() {
       });
 
       test('T1.15: Angle snap strictly preserves line length', () {
-        final first = PointVector(50, 50, 1.0);
-        final last = PointVector(170, 110, 1.0);
+        const first = PointVector(50, 50, 1.0);
+        const last = PointVector(170, 110, 1.0);
         final originalLength = sqrt(
           pow(last.dx - first.dx, 2) + pow(last.dy - first.dy, 2),
         );
@@ -415,17 +415,17 @@ void main() {
       // Tier 2: Boundary & Corner Cases (>=5 tests)
       // -------------------------------------------------------------
       test('T2.11: Zero-length line angle snap returns unchanged points', () {
-        final p = PointVector(10, 10, 1.0);
+        const p = PointVector(10, 10, 1.0);
         final (f, l) = Stroke.snapLineToAngle(p, p, 15.0);
         expect(f.dx, equals(p.dx));
         expect(l.dx, equals(p.dx));
       });
 
       test('T2.12: Angle snapping across all 4 quadrants', () {
-        final first = PointVector(0, 0, 1.0);
+        const first = PointVector(0, 0, 1.0);
 
         // Quadrant 2: 125 deg -> snaps to 120 deg
-        final rad125 = 125 * pi / 180;
+        const rad125 = 125 * pi / 180;
         final lastQ2 = PointVector(100 * cos(rad125), 100 * sin(rad125), 1.0);
         final (_, snappedQ2) = Stroke.snapLineToAngle(first, lastQ2, 30.0);
         expect(
@@ -434,7 +434,7 @@ void main() {
         );
 
         // Quadrant 3: -145 deg -> snaps to -150 deg
-        final radNeg145 = -145 * pi / 180;
+        const radNeg145 = -145 * pi / 180;
         final lastQ3 = PointVector(
           100 * cos(radNeg145),
           100 * sin(radNeg145),
@@ -447,7 +447,7 @@ void main() {
         );
 
         // Quadrant 4: -35 deg -> snaps to -30 deg
-        final radNeg35 = -35 * pi / 180;
+        const radNeg35 = -35 * pi / 180;
         final lastQ4 = PointVector(
           100 * cos(radNeg35),
           100 * sin(radNeg35),
@@ -461,8 +461,8 @@ void main() {
       });
 
       test('T2.13: Negative angles below horizontal axis', () {
-        final first = PointVector(0, 0, 1.0);
-        final radNeg43 = -43 * pi / 180;
+        const first = PointVector(0, 0, 1.0);
+        const radNeg43 = -43 * pi / 180;
         final last = PointVector(100 * cos(radNeg43), 100 * sin(radNeg43), 1.0);
 
         final (_, snapped) = Stroke.snapLineToAngle(first, last, 45.0);
@@ -470,8 +470,8 @@ void main() {
       });
 
       test('T2.14: Large step 90 degrees cardinal snapping', () {
-        final first = PointVector(0, 0, 1.0);
-        final rad35 = 35 * pi / 180;
+        const first = PointVector(0, 0, 1.0);
+        const rad35 = 35 * pi / 180;
         final last = PointVector(100 * cos(rad35), 100 * sin(rad35), 1.0);
 
         final (_, snapped) = Stroke.snapLineToAngle(first, last, 90.0);
@@ -489,7 +489,7 @@ void main() {
           toolId: ToolId.ruler,
         );
         stroke.addPoint(const Offset(0, 0));
-        final rad28 = 28 * pi / 180;
+        const rad28 = 28 * pi / 180;
         stroke.addPoint(Offset(100 * cos(rad28), 100 * sin(rad28)));
 
         stroke.snapToAngle(30.0);

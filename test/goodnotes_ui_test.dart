@@ -110,11 +110,11 @@ void main() {
         expect(insertPagePressed, isTrue);
 
         // Verify Undo & Redo buttons
-        expect(find.byIcon(CupertinoIcons.arrow_uturn_left), findsOneWidget);
-        expect(find.byIcon(CupertinoIcons.arrow_uturn_right), findsOneWidget);
-        await tester.tap(find.byIcon(CupertinoIcons.arrow_uturn_left));
+        expect(find.byIcon(Icons.undo), findsOneWidget);
+        expect(find.byIcon(Icons.redo), findsOneWidget);
+        await tester.tap(find.byIcon(Icons.undo));
         expect(undoPressed, isTrue);
-        await tester.tap(find.byIcon(CupertinoIcons.arrow_uturn_right));
+        await tester.tap(find.byIcon(Icons.redo));
         expect(redoPressed, isTrue);
 
         // Verify Bookmark button

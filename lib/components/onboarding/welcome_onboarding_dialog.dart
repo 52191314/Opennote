@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:saber/data/is_this_a_test.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/routes.dart';
 
@@ -13,6 +14,7 @@ class WelcomeOnboardingDialog extends StatefulWidget {
 
   /// Shows the onboarding dialog if the user has not seen it yet.
   static Future<void> showIfNeeded(BuildContext context) async {
+    if (isThisATest) return;
     if (stows.hasSeenOnboarding.value) return;
     stows.hasSeenOnboarding.value = true;
     await show(context);

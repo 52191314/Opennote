@@ -48,7 +48,7 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
   });
 
   /// The preset colors available for sticky notes.
-  static const List<Color> stickyNoteColors = [
+  static const stickyNoteColors = <Color>[
     Color(0xFFFFF59D), // yellow
     Color(0xFFFFCDD2), // pink
     Color(0xFFC8E6C9), // green

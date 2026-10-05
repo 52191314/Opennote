@@ -1,15 +1,11 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 library;
 
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_arrow_stroke.dart';
-import 'package:saber/components/canvas/_circle_stroke.dart';
 import 'package:saber/components/canvas/_dimension_stroke.dart';
-import 'package:saber/components/canvas/_rectangle_stroke.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/data/editor/editor_exporter.dart';
 import 'package:saber/data/editor/editor_history.dart';

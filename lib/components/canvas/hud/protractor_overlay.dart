@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -14,8 +17,8 @@ class ProtractorOverlay extends StatefulWidget {
 }
 
 class _ProtractorOverlayState extends State<ProtractorOverlay> {
-  Offset _position = const Offset(100, 100);
-  double _radius = 120;
+  var _position = const Offset(100, 100);
+  final double _radius = 120;
 
   @override
   Widget build(BuildContext context) {

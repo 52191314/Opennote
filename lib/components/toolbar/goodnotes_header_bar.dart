@@ -86,11 +86,13 @@ class GoodnotesHeaderBar extends StatelessWidget
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.of(context);
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final isCompact = screenWidth < 520;
-    final isUltraCompact = screenWidth < 420;
+    final isCompact = screenWidth < 700;
+    final isUltraCompact = screenWidth < 540;
+
+    final topPadding = MediaQuery.paddingOf(context).top;
 
     return Container(
-      height: preferredSize.height,
+      height: preferredSize.height + topPadding,
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(
@@ -100,7 +102,12 @@ class GoodnotesHeaderBar extends StatelessWidget
           ),
         ),
       ),
-      padding: EdgeInsets.symmetric(horizontal: isCompact ? 4.0 : 8.0),
+      padding: EdgeInsets.fromLTRB(
+        isCompact ? 4.0 : 8.0,
+        topPadding,
+        isCompact ? 4.0 : 8.0,
+        0,
+      ),
       child: Row(
         children: [
           // 1. Back button to document browser
@@ -114,56 +121,57 @@ class GoodnotesHeaderBar extends StatelessWidget
           ),
 
           // 2. Document Hub & Page Thumbnail Overview
-          Tooltip(
-            message: 'Document Hub (Thumbnails, Bookmarks & Outline)',
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: onOpenThumbnails,
-              child: Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isCompact ? 6 : 8,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withValues(
-                    alpha: 0.5,
+          if (screenWidth >= 330) ...[
+            Tooltip(
+              message: t.editor.pages,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: onOpenThumbnails,
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isCompact ? 6 : 8,
+                    vertical: 4,
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.35),
-                    width: 0.75,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isInfiniteCanvas
-                          ? Icons.all_inclusive_rounded
-                          : Icons.grid_view_rounded,
-                      size: 15,
-                      color: colorScheme.onSurfaceVariant,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.5,
                     ),
-                    if (!isUltraCompact) ...[
-                      const SizedBox(width: 5),
-                      Text(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+                      width: 0.75,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
                         isInfiniteCanvas
-                            ? 'Infinite'
-                            : '${currentPageIndex + 1} / ${totalPages == 0 ? 1 : totalPages}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                            ? Icons.all_inclusive_rounded
+                            : Icons.grid_view_rounded,
+                        size: 15,
+                        color: colorScheme.onSurfaceVariant,
                       ),
+                      if (!isUltraCompact) ...[
+                        const SizedBox(width: 5),
+                        Text(
+                          isInfiniteCanvas
+                              ? 'Infinite'
+                              : '${currentPageIndex + 1} / ${totalPages == 0 ? 1 : totalPages}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-
-          const SizedBox(width: 6),
+            const SizedBox(width: 6),
+          ],
 
           // 3. Document Tab (Notebook styling with title + close)
           if (!isUltraCompact)
@@ -184,53 +192,55 @@ class GoodnotesHeaderBar extends StatelessWidget
                     width: 0.75,
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      CupertinoIcons.doc_text_fill,
-                      size: 14,
-                      color: colorScheme.primary,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: customTitle != null
-                          ? Text(
-                              customTitle!,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onSurface,
-                              ),
-                            )
-                          : Form(
-                              key: filenameFormKey,
-                              autovalidateMode:
-                                  AutovalidateMode.onUserInteraction,
-                              child: TextFormField(
-                                decoration: const InputDecoration(
-                                  border: InputBorder.none,
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.zero,
-                                ),
+                child: ClipRect(
+                  child: Row(
+                    children: [
+                      Icon(
+                        CupertinoIcons.doc_text_fill,
+                        size: 14,
+                        color: colorScheme.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: customTitle != null
+                            ? Text(
+                                customTitle!,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: colorScheme.onSurface,
                                 ),
-                                controller: filenameTextEditingController,
-                                onChanged: renameFile,
-                                autofocus: needsNaming,
-                                validator: validateFilename,
+                              )
+                            : Form(
+                                key: filenameFormKey,
+                                autovalidateMode:
+                                    AutovalidateMode.onUserInteraction,
+                                child: TextFormField(
+                                  decoration: const InputDecoration(
+                                    border: InputBorder.none,
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: colorScheme.onSurface,
+                                  ),
+                                  controller: filenameTextEditingController,
+                                  onChanged: renameFile,
+                                  autofocus: needsNaming,
+                                  validator: validateFilename,
+                                ),
                               ),
-                            ),
-                    ),
-                    const SizedBox(width: 4),
-                    SaveIndicator(
-                      savingState: savingState,
-                      triggerSave: triggerSave,
-                    ),
-                  ],
+                      ),
+                      const SizedBox(width: 4),
+                      SaveIndicator(
+                        savingState: savingState,
+                        triggerSave: triggerSave,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             )
@@ -255,7 +265,7 @@ class GoodnotesHeaderBar extends StatelessWidget
             message: t.editor.toolbar.undo,
             child: IconButton(
               visualDensity: VisualDensity.compact,
-              icon: const Icon(CupertinoIcons.arrow_uturn_left, size: 18),
+              icon: const Icon(Icons.undo, size: 20),
               onPressed: (!readOnly && canUndo) ? undo : null,
             ),
           ),
@@ -263,30 +273,33 @@ class GoodnotesHeaderBar extends StatelessWidget
             message: t.editor.toolbar.redo,
             child: IconButton(
               visualDensity: VisualDensity.compact,
-              icon: const Icon(CupertinoIcons.arrow_uturn_right, size: 18),
+              icon: const Icon(Icons.redo, size: 20),
               onPressed: (!readOnly && canRedo) ? redo : null,
             ),
           ),
 
           // 6. Bookmark Star
-          Tooltip(
-            message: isBookmarked ? 'Remove bookmark' : 'Bookmark page',
-            child: IconButton(
-              visualDensity: VisualDensity.compact,
-              icon: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Icon(
-                  isBookmarked ? Icons.star_rounded : Icons.star_border_rounded,
-                  key: ValueKey(isBookmarked),
-                  size: 20,
-                  color: isBookmarked
-                      ? Colors.amber.shade700
-                      : colorScheme.onSurfaceVariant,
+          if (screenWidth >= 380)
+            Tooltip(
+              message: isBookmarked ? 'Remove bookmark' : 'Bookmark page',
+              child: IconButton(
+                visualDensity: VisualDensity.compact,
+                icon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    isBookmarked
+                        ? Icons.star_rounded
+                        : Icons.star_border_rounded,
+                    key: ValueKey(isBookmarked),
+                    size: 20,
+                    color: isBookmarked
+                        ? Colors.amber.shade700
+                        : colorScheme.onSurfaceVariant,
+                  ),
                 ),
+                onPressed: readOnly ? null : onToggleBookmark,
               ),
-              onPressed: readOnly ? null : onToggleBookmark,
             ),
-          ),
 
           // 7. Share / Export
           if (screenWidth >= 440)
@@ -300,33 +313,34 @@ class GoodnotesHeaderBar extends StatelessWidget
             ),
 
           // 8. Hand Scroll / Read-Only Mode toggle (Goodnotes navigation toggle)
-          Tooltip(
-            message: isHandScrollMode
-                ? 'Hand Reading Mode (Drawing disabled)'
-                : 'Editing Mode (Draw with Pen/Finger)',
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: isHandScrollMode
-                    ? colorScheme.primaryContainer
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: IconButton(
-                visualDensity: VisualDensity.compact,
-                icon: Icon(
-                  isHandScrollMode
-                      ? CupertinoIcons.hand_raised_fill
-                      : CupertinoIcons.hand_raised,
-                  size: 18,
+          if (screenWidth >= 350)
+            Tooltip(
+              message: isHandScrollMode
+                  ? 'Hand Reading Mode (Drawing disabled)'
+                  : 'Editing Mode (Draw with Pen/Finger)',
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
                   color: isHandScrollMode
-                      ? colorScheme.primary
-                      : colorScheme.onSurfaceVariant,
+                      ? colorScheme.primaryContainer
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                onPressed: onToggleHandScrollMode,
+                child: IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: Icon(
+                    isHandScrollMode
+                        ? CupertinoIcons.hand_raised_fill
+                        : CupertinoIcons.hand_raised,
+                    size: 18,
+                    color: isHandScrollMode
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant,
+                  ),
+                  onPressed: onToggleHandScrollMode,
+                ),
               ),
             ),
-          ),
 
           // 9. More (...) menu
           Tooltip(
