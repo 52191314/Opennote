@@ -5,7 +5,10 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
+import 'package:saber/components/canvas/_asset_cache.dart';
 import 'package:saber/components/canvas/_stroke.dart';
+import 'package:saber/components/canvas/image/editor_image.dart';
+import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/tools/scribble_detector.dart';
 import 'package:sbn/has_size.dart';
@@ -188,6 +191,76 @@ void main() {
       final endErased = detector.end();
       expect(endErased, contains(strokeToErase));
       expect(detector.state, ScribbleState.undetermined);
+    });
+
+    test('Erases underlying EditorImage sticker when scribbling across it', () {
+      final detector = ScribbleDetector();
+      detector.start(const Offset(100, 100));
+
+      final testPage = EditorPage(size: const Size(600, 800));
+      final sticker = StickerImage(
+        id: 1,
+        assetCache: AssetCache(),
+        emoji: '⭐',
+        pageIndex: 0,
+        pageSize: const Size(600, 800),
+        onMoveImage: null,
+        onDeleteImage: null,
+        onMiscChange: null,
+        dstRect: const Rect.fromLTWH(110, 95, 40, 40),
+      );
+      testPage.images.add(sticker);
+
+      final points = <Offset>[];
+      for (double x = 105; x <= 160; x += 5) points.add(Offset(x, 100));
+      for (double x = 155; x >= 100; x -= 5) points.add(Offset(x, 103));
+      for (double x = 105; x <= 160; x += 5) points.add(Offset(x, 106));
+      for (double x = 155; x >= 100; x -= 5) points.add(Offset(x, 109));
+
+      for (final pt in points) {
+        detector.update(
+          pt,
+          [],
+          2.0,
+          page: testPage,
+          lineHeight: 30,
+        );
+      }
+
+      expect(detector.state, ScribbleState.erasing);
+      expect(testPage.images, isEmpty);
+      expect(detector.erasedImages, contains(sticker));
+
+      final endImages = detector.getAndClearErasedImages();
+      expect(endImages, contains(sticker));
+      expect(detector.erasedImages, isEmpty);
+    });
+
+    test('Erases typed text line when scribbling across text content', () {
+      final detector = ScribbleDetector();
+      detector.start(const Offset(100, 50));
+
+      final testPage = EditorPage(size: const Size(600, 800));
+      testPage.quill.controller.document.insert(0, 'First line of text\nSecond line\n');
+
+      final points = <Offset>[];
+      for (double x = 105; x <= 160; x += 5) points.add(Offset(x, 50));
+      for (double x = 155; x >= 100; x -= 5) points.add(Offset(x, 53));
+      for (double x = 105; x <= 160; x += 5) points.add(Offset(x, 56));
+      for (double x = 155; x >= 100; x -= 5) points.add(Offset(x, 59));
+
+      for (final pt in points) {
+        detector.update(
+          pt,
+          [],
+          2.0,
+          page: testPage,
+          lineHeight: 30,
+        );
+      }
+
+      expect(detector.state, ScribbleState.erasing);
+      expect(detector.erasedText, isTrue);
     });
   });
 }

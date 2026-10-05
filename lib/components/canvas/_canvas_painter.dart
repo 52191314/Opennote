@@ -809,7 +809,7 @@ class CanvasPainter extends CustomPainter {
   bool shouldUsePencilShader(double strokeSize) =>
       currentScale >= _zoomThreshold && (strokeSize * currentScale) >= 3;
 
-  static const _zoomThreshold = 0.9;
+  static const _zoomThreshold = 0.5;
   Path _selectPath(Stroke stroke) => switch (currentScale) {
     < _zoomThreshold => stroke.lowQualityPath,
     _ => stroke.highQualityPath,

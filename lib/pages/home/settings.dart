@@ -11,6 +11,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:saber/components/navbar/responsive_navbar.dart';
+import 'package:saber/components/onboarding/welcome_onboarding_dialog.dart';
 import 'package:saber/components/settings/app_info.dart';
 import 'package:saber/components/settings/nextcloud_profile.dart';
 import 'package:saber/components/settings/settings_button.dart';
@@ -708,6 +709,12 @@ class _SettingsPageState extends State<SettingsPage> {
                       t.settings.prefDescriptions.allowInsecureConnections,
                   icon: Icons.private_connectivity,
                   pref: stows.allowInsecureConnections,
+                ),
+                SettingsButton(
+                  title: 'Welcome Guide & Onboarding',
+                  subtitle: 'Gestures, study tape, smooth inking, and elements',
+                  icon: Icons.school_outlined,
+                  onPressed: () => WelcomeOnboardingDialog.show(context),
                 ),
                 SettingsButton(
                   title: t.logs.viewLogs,

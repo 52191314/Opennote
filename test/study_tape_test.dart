@@ -7,6 +7,7 @@ import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/_tape_stroke.dart';
 import 'package:saber/data/editor/page.dart';
+import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/tools/page_templates.dart';
 import 'package:saber/data/tools/pen.dart';
 import 'package:saber/data/tools/study_tape.dart';
@@ -20,6 +21,9 @@ class _FakePage implements HasSize {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  FlavorConfig.setup();
+
   group('Study Tape Stroke & Tool', () {
     test('TapeStroke initializes with default concealed state', () {
       final page = _FakePage();

@@ -1,7 +1,11 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:saber/components/home/sentry_consent_dialog.dart';
 import 'package:saber/components/navbar/responsive_navbar.dart';
+import 'package:saber/components/onboarding/welcome_onboarding_dialog.dart';
 import 'package:saber/components/settings/update_manager.dart';
 import 'package:saber/components/theming/dynamic_material_app.dart';
 import 'package:saber/pages/home/browse.dart';
@@ -43,6 +47,7 @@ class _HomePageState extends State<HomePage> {
     if (!mounted) return;
     UpdateManager.showUpdateDialog(context);
     SentryConsentDialog.showIfNeeded(context);
+    WelcomeOnboardingDialog.showIfNeeded(context);
   }
 
   void _setState() {

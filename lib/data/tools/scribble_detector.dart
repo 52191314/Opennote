@@ -1,23 +1,28 @@
-/// 🤖 Generated wholely or partially with DeepSeek v4 Flash; Google Antigravity
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 library;
 
 import 'dart:math';
-import 'dart:ui' show Offset;
+import 'dart:ui' show Offset, Rect;
 
 import 'package:saber/components/canvas/_stroke.dart';
+import 'package:saber/components/canvas/image/editor_image.dart';
+import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/tools/eraser.dart';
 
 /// Detects when the user is scribbling back-and-forth with the pen tool
-/// and switches to erase mode for those strokes.
+/// and switches to erase mode for strokes, images, and text.
 class ScribbleDetector {
   /// Current state of the detection for the active gesture.
-  ScribbleState state = ScribbleState.undetermined;
+  var state = ScribbleState.undetermined;
 
   final List<Offset> _points = [];
   final List<Stroke> _erasedStrokes = [];
+  final List<EditorImage> _erasedImages = [];
+  final _erasedLineIndices = <int>{};
+  var erasedText = false;
   Eraser? _eraser;
 
-  /// Effective eraser radius used when erasing scribbled-over strokes.
+  /// Effective eraser radius used when erasing scribbled-over strokes and elements.
   static const eraserRadius = 24.0;
 
   /// Maximum points to retain in the sliding window.
@@ -29,10 +34,16 @@ class ScribbleDetector {
   static const maxDiagonal = 450.0;
   static const pathLengthRatio = 1.6;
 
+  /// Read-only view of images erased during this gesture.
+  List<EditorImage> get erasedImages => List.unmodifiable(_erasedImages);
+
   /// Reset the detector for a new gesture.
   void start(Offset firstPoint) {
     _points.clear();
     _erasedStrokes.clear();
+    _erasedImages.clear();
+    _erasedLineIndices.clear();
+    erasedText = false;
     _eraser = null;
     state = ScribbleState.undetermined;
     _points.add(firstPoint);
@@ -40,19 +51,26 @@ class ScribbleDetector {
 
   /// Feed a new pen position.
   ///
+  /// Erases overlapping strokes, images, and text lines when scribble is detected.
   /// Returns the list of strokes that should be erased
   /// (empty list means continue drawing normally).
   List<Stroke> update(
     Offset point,
     List<Stroke> existingStrokes,
-    double penStrokeWidth,
-  ) {
+    double penStrokeWidth, {
+    EditorPage? page,
+    double? lineHeight,
+  }) {
     _points.add(point);
     if (_points.length > maxBufferedPoints) {
       _points.removeAt(0);
     }
 
     if (state == ScribbleState.erasing) {
+      if (page != null) {
+        eraseImagesAt(point, page.images);
+        eraseTextAt(point, page, lineHeight ?? 30.0);
+      }
       return _eraseAt(point, existingStrokes);
     }
 
@@ -60,6 +78,10 @@ class ScribbleDetector {
       state = ScribbleState.erasing;
       final newlyErased = <Stroke>[];
       for (final p in _points) {
+        if (page != null) {
+          eraseImagesAt(p, page.images);
+          eraseTextAt(p, page, lineHeight ?? 30.0);
+        }
         newlyErased.addAll(_eraseAt(p, existingStrokes));
       }
       return newlyErased;
@@ -79,12 +101,100 @@ class ScribbleDetector {
     return erased;
   }
 
+  /// Returns and clears images erased during this gesture.
+  List<EditorImage> getAndClearErasedImages() {
+    final images = List<EditorImage>.of(_erasedImages);
+    _erasedImages.clear();
+    return images;
+  }
+
   /// Clear all state.
   void reset() {
     _eraser = null;
     _points.clear();
     _erasedStrokes.clear();
+    _erasedImages.clear();
+    _erasedLineIndices.clear();
+    erasedText = false;
     state = ScribbleState.undetermined;
+  }
+
+  /// Erases images/stickers overlapping with the eraser radius at [position].
+  List<EditorImage> eraseImagesAt(
+    Offset position,
+    List<EditorImage> existingImages,
+  ) {
+    if (existingImages.isEmpty) return const [];
+    final newlyErased = <EditorImage>[];
+    final eraserCircle = Rect.fromCircle(
+      center: position,
+      radius: eraserRadius * 0.8,
+    );
+    for (final image in List<EditorImage>.of(existingImages)) {
+      if (image.dstRect.overlaps(eraserCircle) && !_erasedImages.contains(image)) {
+        newlyErased.add(image);
+        _erasedImages.add(image);
+        existingImages.remove(image);
+      }
+    }
+    return newlyErased;
+  }
+
+  /// Erases text lines in [page.quill] overlapping with [position].
+  bool eraseTextAt(
+    Offset position,
+    EditorPage page,
+    double lineHeight,
+  ) {
+    if (page.quill.controller.document.isEmpty()) return false;
+    final textRect = page.computeTextContentRect(lineHeight);
+    if (textRect == Rect.zero) return false;
+
+    final eraserRect = Rect.fromCircle(
+      center: position,
+      radius: eraserRadius * 0.8,
+    );
+    if (!textRect.overlaps(eraserRect)) return false;
+
+    final plainText = page.quill.controller.document.toPlainText();
+    final lines = plainText.split('\n');
+    if (lines.isNotEmpty && lines.last.isEmpty) {
+      lines.removeLast();
+    }
+    if (lines.isEmpty) return false;
+
+    final top = lineHeight * 1.2 + page.textContentOffset.dy;
+    final relY = position.dy - top;
+    final lineIndex = (relY / lineHeight).floor().clamp(0, lines.length - 1);
+
+    if (_erasedLineIndices.contains(lineIndex)) return false;
+    _erasedLineIndices.add(lineIndex);
+
+    // If single line or only one non-empty line left, clear document
+    if (lines.length <= 1) {
+      page.quill.controller.replaceText(
+        0,
+        page.quill.controller.document.length,
+        '',
+        null,
+      );
+      erasedText = true;
+      return true;
+    }
+
+    // Delete the scribbled line
+    int offset = 0;
+    for (int i = 0; i < lineIndex; i++) {
+      offset += lines[i].length + 1;
+    }
+    final length = lines[lineIndex].length + (lineIndex < lines.length - 1 ? 1 : 0);
+    if (length > 0 && offset + length <= page.quill.controller.document.length) {
+      page.quill.controller.replaceText(offset, length, '', null);
+      erasedText = true;
+      return true;
+    }
+
+    return false;
   }
 
   /// Analyze the buffered points to determine if the user is scribbling.

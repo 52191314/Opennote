@@ -125,7 +125,7 @@ class Pen extends Tool {
 
   void onDragUpdate(Offset position, double? pressure) {
     Offset snappedPosition = position;
-    if (stows.snapToGrid.value) {
+    if (toolId == ToolId.shapePen && stows.snapToGrid.value) {
       final lh = (_activePage?.lineHeight ?? 0) > 0
           ? _activePage!.lineHeight!.toDouble()
           : stows.gridSize.value;

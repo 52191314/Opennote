@@ -805,10 +805,13 @@ class EditorState extends State<Editor> {
 
       if (stows.scribbleToErase.value) {
         final penStrokeWidth = pen.options.size;
+        final lh = (page.lineHeight ?? stows.gridSize.value).toDouble();
         final erased = scribbleDetector.update(
           position,
           page.activeLayerStrokes,
           penStrokeWidth,
+          page: page,
+          lineHeight: lh > 0 ? lh : 30.0,
         );
 
         if (scribbleDetector.state == ScribbleState.erasing) {
@@ -1056,20 +1059,21 @@ class EditorState extends State<Editor> {
         circleToSelectDetector.cancel();
         if (scribbleDetector.state == ScribbleState.erasing) {
           final erased = scribbleDetector.end();
+          final erasedImages = scribbleDetector.getAndClearErasedImages();
           // Discard the partial stroke that was started before scribble detection
           (currentTool as Pen).onDragEnd();
           page.eraserCursorPosition = null;
           page.eraserCursorRadius = null;
-          if (erased.isNotEmpty) {
+          if (erased.isNotEmpty || erasedImages.isNotEmpty) {
             history.recordChange(
               EditorHistoryItem(
                 type: .erase,
                 pageIndex: dragPageIndex!,
                 strokes: erased,
-                images: [],
+                images: erasedImages,
               ),
             );
-          } else {
+          } else if (!scribbleDetector.erasedText) {
             shouldSave = false;
           }
           return;
@@ -2033,6 +2037,15 @@ class EditorState extends State<Editor> {
     }
     for (final image in images) {
       page.images.remove(image);
+    }
+    if (select.selectResult.textSelected &&
+        !page.quill.controller.document.isEmpty()) {
+      page.quill.controller.replaceText(
+        0,
+        page.quill.controller.document.length,
+        '',
+        null,
+      );
     }
 
     page.selectionDeleteButtonRect = null;

@@ -87,7 +87,7 @@ class Stroke {
 
   Path? _lowQualityPath, _highQualityPath;
   Path get lowQualityPath =>
-      _lowQualityPath ??= getPath(lowQualityPolygon, smooth: false);
+      _lowQualityPath ??= getPath(lowQualityPolygon, smooth: true);
   Path get highQualityPath => _highQualityPath ??= getPath(highQualityPolygon);
 
   void shift(Offset offset) {
@@ -142,7 +142,7 @@ class Stroke {
 
     // Rebuild paths from rotated polygons
     _lowQualityPath = _lowQualityPolygon != null
-        ? getPath(_lowQualityPolygon!, smooth: false)
+        ? getPath(_lowQualityPolygon!, smooth: true)
         : null;
     _highQualityPath = _highQualityPolygon != null
         ? getPath(_highQualityPolygon!)
@@ -417,8 +417,8 @@ class Stroke {
       options: switch (quality) {
         .low => options.copyWith(
           simulatePressure: false,
-          smoothing: 0,
-          streamline: 0,
+          smoothing: options.smoothing * 0.5,
+          streamline: options.streamline * 0.5,
         ),
         .high => options,
       },
@@ -437,14 +437,14 @@ class Stroke {
 
   /// Returns a [Path] that represents the stroke.
   ///
-  /// If [smooth] is true, and the stroke is complete,
+  /// If [smooth] is true, and the polygon has at least 3 points,
   /// the path will be a smooth curve between the points in [polygon].
   ///
   /// Otherwise, the path will use straight lines between each point
   /// in [polygon] for performance.
   @protected
   Path getPath(List<Offset> polygon, {bool smooth = true}) {
-    if (smooth && options.isComplete) {
+    if (smooth && polygon.length >= 3) {
       return smoothPathFromPolygon(polygon);
     }
 

@@ -223,6 +223,13 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
+  /// Whether the user has completed or dismissed the initial onboarding guide.
+  final hasSeenOnboarding = PlainStow<bool>(
+    'hasSeenOnboarding',
+    false,
+    volatile: !_isOnMainIsolate,
+  );
+
   final selectionRectMode = PlainStow(
     'selectionRectMode',
     false,
