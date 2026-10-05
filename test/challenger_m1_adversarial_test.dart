@@ -320,8 +320,18 @@ void main() {
           AdaptiveSwitchListTile,
           'Text Boxes',
         );
+        final tapeTile = find.widgetWithText(
+          AdaptiveSwitchListTile,
+          'Study Tape',
+        );
+        if (tapeTile.evaluate().isNotEmpty) {
+          await tester.ensureVisible(tapeTile);
+          await tester.tap(tapeTile);
+          await tester.pumpAndSettle();
+        }
 
         // Turn off HW (2 active: img, txt)
+        await tester.ensureVisible(hwTile);
         await tester.tap(hwTile);
         await tester.pump();
         expect(stows.lassoSelectHandwriting.value, isFalse);

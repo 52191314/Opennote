@@ -435,7 +435,7 @@ void main() {
         options: StrokeOptions(size: 2.0),
         pressureEnabled: false,
         color: Colors.black,
-        toolId: .fountainPen,
+        toolId: .shapePen,
       );
       final page = EditorPage();
       page.lineHeight = 25;

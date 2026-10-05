@@ -86,10 +86,10 @@ jobs:
       - name: Disable Flutter CLI animations
         run: flutter config --no-cli-animations
 
-      - run: ./patches/pre/remove_dev_dependencies.sh
-      - run: ./patches/pre/remove_linux_dependencies.sh
+      - run: bash ./patches/pre/remove_dev_dependencies.sh
+      - run: bash ./patches/pre/remove_linux_dependencies.sh
       - run: flutter pub get
-      - run: ./patches/post/patch_rust_versions.sh
+      - run: bash ./patches/post/patch_rust_versions.sh
 
       - name: Build for iOS
         run: |

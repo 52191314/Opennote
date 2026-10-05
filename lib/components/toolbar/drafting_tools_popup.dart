@@ -50,10 +50,11 @@ class DraftingToolsPopup extends StatelessWidget {
             ],
           ),
           padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
               Padding(
                 padding: const EdgeInsets.only(left: 4, bottom: 12),
                 child: Text(
@@ -144,6 +145,7 @@ class DraftingToolsPopup extends StatelessWidget {
                 },
               ),
             ],
+          ),
           ),
         ),
       ),
