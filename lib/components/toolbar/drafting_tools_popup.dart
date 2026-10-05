@@ -55,97 +55,99 @@ class DraftingToolsPopup extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 12),
-                child: Text(
-                  'Shapes & Drafting',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: colorScheme.onSurface,
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 12),
+                  child: Text(
+                    'Shapes & Drafting',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                 ),
-              ),
-              _DraftingOptionTile(
-                icon: const FaIcon(FontAwesomeIcons.shapes, size: 16),
-                title: 'Shape Library',
-                subtitle: 'Insert geometric primitives & symbols',
-                selected: false,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  onPickShape();
-                },
-              ),
-              const SizedBox(height: 6),
-              _DraftingOptionTile(
-                icon: const FaIcon(Ruler.rulerIcon, size: 16),
-                title: t.editor.pens.ruler,
-                subtitle: 'On-screen straightedge guide',
-                selected: currentTool is Ruler,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  onSelectTool(Ruler());
-                },
-              ),
-              const SizedBox(height: 6),
-              _DraftingOptionTile(
-                icon: const Icon(Icons.arrow_right_alt, size: 20),
-                title: 'Straight Arrow',
-                subtitle: 'Direct pointer arrow',
-                selected:
-                    currentTool is ArrowTool &&
-                    (currentTool as ArrowTool).connectorStyle ==
-                        ConnectorStyle.straight,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  onSelectTool(
-                    ArrowTool(connectorStyle: ConnectorStyle.straight),
-                  );
-                },
-              ),
-              const SizedBox(height: 6),
-              _DraftingOptionTile(
-                icon: const Icon(Icons.turn_right_rounded, size: 20),
-                title: 'Elbow Connector',
-                subtitle: 'Orthogonal stepped connector line',
-                selected:
-                    currentTool is ArrowTool &&
-                    (currentTool as ArrowTool).connectorStyle ==
-                        ConnectorStyle.elbow,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  onSelectTool(ArrowTool(connectorStyle: ConnectorStyle.elbow));
-                },
-              ),
-              const SizedBox(height: 6),
-              _DraftingOptionTile(
-                icon: const Icon(Icons.gesture, size: 20),
-                title: 'Curved Connector',
-                subtitle: 'Smooth bezier spline connector',
-                selected:
-                    currentTool is ArrowTool &&
-                    (currentTool as ArrowTool).connectorStyle ==
-                        ConnectorStyle.curved,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  onSelectTool(
-                    ArrowTool(connectorStyle: ConnectorStyle.curved),
-                  );
-                },
-              ),
-              const SizedBox(height: 6),
-              _DraftingOptionTile(
-                icon: const Icon(Icons.straighten, size: 18),
-                title: 'Dimension Line',
-                subtitle: 'Measured line with real-world dimensions',
-                selected: currentTool is DimensionTool,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  onSelectTool(DimensionTool());
-                },
-              ),
-            ],
-          ),
+                _DraftingOptionTile(
+                  icon: const FaIcon(FontAwesomeIcons.shapes, size: 16),
+                  title: 'Shape Library',
+                  subtitle: 'Insert geometric primitives & symbols',
+                  selected: false,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    onPickShape();
+                  },
+                ),
+                const SizedBox(height: 6),
+                _DraftingOptionTile(
+                  icon: const FaIcon(Ruler.rulerIcon, size: 16),
+                  title: t.editor.pens.ruler,
+                  subtitle: 'On-screen straightedge guide',
+                  selected: currentTool is Ruler,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    onSelectTool(Ruler());
+                  },
+                ),
+                const SizedBox(height: 6),
+                _DraftingOptionTile(
+                  icon: const Icon(Icons.arrow_right_alt, size: 20),
+                  title: 'Straight Arrow',
+                  subtitle: 'Direct pointer arrow',
+                  selected:
+                      currentTool is ArrowTool &&
+                      (currentTool as ArrowTool).connectorStyle ==
+                          ConnectorStyle.straight,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    onSelectTool(
+                      ArrowTool(connectorStyle: ConnectorStyle.straight),
+                    );
+                  },
+                ),
+                const SizedBox(height: 6),
+                _DraftingOptionTile(
+                  icon: const Icon(Icons.turn_right_rounded, size: 20),
+                  title: 'Elbow Connector',
+                  subtitle: 'Orthogonal stepped connector line',
+                  selected:
+                      currentTool is ArrowTool &&
+                      (currentTool as ArrowTool).connectorStyle ==
+                          ConnectorStyle.elbow,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    onSelectTool(
+                      ArrowTool(connectorStyle: ConnectorStyle.elbow),
+                    );
+                  },
+                ),
+                const SizedBox(height: 6),
+                _DraftingOptionTile(
+                  icon: const Icon(Icons.gesture, size: 20),
+                  title: 'Curved Connector',
+                  subtitle: 'Smooth bezier spline connector',
+                  selected:
+                      currentTool is ArrowTool &&
+                      (currentTool as ArrowTool).connectorStyle ==
+                          ConnectorStyle.curved,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    onSelectTool(
+                      ArrowTool(connectorStyle: ConnectorStyle.curved),
+                    );
+                  },
+                ),
+                const SizedBox(height: 6),
+                _DraftingOptionTile(
+                  icon: const Icon(Icons.straighten, size: 18),
+                  title: 'Dimension Line',
+                  subtitle: 'Measured line with real-world dimensions',
+                  selected: currentTool is DimensionTool,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    onSelectTool(DimensionTool());
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),

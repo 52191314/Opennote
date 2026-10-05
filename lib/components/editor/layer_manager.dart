@@ -88,9 +88,11 @@ class _LayerManagerState extends State<LayerManager> {
                     _layers.insert(newIndex, layer);
                     if (_activeIndex == oldIndex) {
                       _activeIndex = newIndex;
-                    } else if (_activeIndex > oldIndex && _activeIndex <= newIndex) {
+                    } else if (_activeIndex > oldIndex &&
+                        _activeIndex <= newIndex) {
                       _activeIndex--;
-                    } else if (_activeIndex < oldIndex && _activeIndex >= newIndex) {
+                    } else if (_activeIndex < oldIndex &&
+                        _activeIndex >= newIndex) {
                       _activeIndex++;
                     }
                   });
