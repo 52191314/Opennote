@@ -134,5 +134,59 @@ void main() {
         expect(painter.shouldRepaint(oldPainter), isTrue);
       },
     );
+
+    test('CanvasBackgroundPainter does not freeze with unclipped canvas bounds', () {
+      final recorder = PictureRecorder();
+      final canvas = Canvas(recorder);
+
+      // Verify unclipped canvas sentinel
+      final clip = canvas.getLocalClipBounds();
+      expect(clip.width, greaterThan(1e8));
+
+      for (final pattern in [
+        CanvasBackgroundPattern.grid,
+        CanvasBackgroundPattern.dots,
+        CanvasBackgroundPattern.lined,
+      ]) {
+        final painter = CanvasBackgroundPainter(
+          invert: false,
+          backgroundColor: const Color(0xFFFFFFFF),
+          backgroundPattern: pattern,
+          lineHeight: 30,
+          lineThickness: 2,
+          isInfiniteCanvas: true,
+        );
+
+        final stopwatch = Stopwatch()..start();
+        painter.paint(canvas, const Size(1000, 1400));
+        stopwatch.stop();
+
+        expect(
+          stopwatch.elapsedMilliseconds,
+          lessThan(100),
+          reason: 'Pattern $pattern should render safely in < 100ms without freezing',
+        );
+      }
+    });
+
+    test('CanvasBackgroundPainter.getPatternElements safely guards against invalid lineHeight and extreme bounds', () {
+      // Guard against zero / negative lineHeight
+      final zeroHeightElements = CanvasBackgroundPainter.getPatternElements(
+        pattern: CanvasBackgroundPattern.grid,
+        size: const Size(1000, 1400),
+        lineHeight: 0,
+      ).toList();
+      expect(zeroHeightElements, isEmpty);
+
+      // Guard against runaway bounds sentinel
+      const sentinelBounds = Rect.largest;
+      final sentinelElements = CanvasBackgroundPainter.getPatternElements(
+        pattern: CanvasBackgroundPattern.dots,
+        size: const Size(1000, 1400),
+        lineHeight: 30,
+        bounds: sentinelBounds,
+      ).toList();
+      expect(sentinelElements, isEmpty);
+    });
   });
 }

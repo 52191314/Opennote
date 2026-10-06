@@ -43,9 +43,20 @@ class CanvasBackgroundPainter extends CustomPainter {
     final Rect visibleRect;
     if (isInfiniteCanvas) {
       final clip = canvas.getLocalClipBounds();
-      visibleRect = (clip.isFinite && !clip.isEmpty)
-          ? clip
-          : (Offset.zero & size);
+      if (_isValidViewport(clip)) {
+        visibleRect = clip;
+      } else {
+        // Safe bounded canvas region around the page for infinite canvas
+        const margin = 2000.0;
+        final baseWidth = size.width.isFinite && size.width > 0 ? size.width : 1000.0;
+        final baseHeight = size.height.isFinite && size.height > 0 ? size.height : 1400.0;
+        visibleRect = Rect.fromLTRB(
+          -margin,
+          -margin,
+          baseWidth + margin,
+          baseHeight + margin,
+        );
+      }
     } else {
       visibleRect = Offset.zero & size;
     }
@@ -86,6 +97,25 @@ class CanvasBackgroundPainter extends CustomPainter {
     }
   }
 
+  /// Whether a clip rect represents a real, finite visible viewport rather
+  /// than an unclipped Skia/Impeller sentinel (e.g. [-1e9, -1e9, 1e9, 1e9])
+  /// or a runaway dimension.
+  static bool _isValidViewport(Rect rect) {
+    if (!rect.isFinite || rect.isEmpty) return false;
+    // Skia unclipped sentinels use ±1e9. Any boundary beyond ±1e8
+    // or span exceeding 15,000 pixels is unclipped/invalid.
+    if (rect.left <= -1e8 ||
+        rect.top <= -1e8 ||
+        rect.right >= 1e8 ||
+        rect.bottom >= 1e8) {
+      return false;
+    }
+    if (rect.width > 15000 || rect.height > 15000) {
+      return false;
+    }
+    return true;
+  }
+
   @override
   bool shouldRepaint(CanvasBackgroundPainter oldDelegate) =>
       isInfiniteCanvas ||
@@ -105,7 +135,18 @@ class CanvasBackgroundPainter extends CustomPainter {
     int lineThickness = 3,
     Rect? bounds,
   }) sync* {
+    if (lineHeight <= 0) return;
     if (bounds != null) {
+      if (!bounds.isFinite || bounds.isEmpty) return;
+      // Clamp bounds to prevent runaway memory allocation or freeze
+      final clampedBounds = Rect.fromLTRB(
+        bounds.left.clamp(-20000.0, 20000.0),
+        bounds.top.clamp(-20000.0, 20000.0),
+        bounds.right.clamp(-20000.0, 20000.0),
+        bounds.bottom.clamp(-20000.0, 20000.0),
+      );
+      if (clampedBounds.isEmpty) return;
+
       switch (pattern) {
         case .none:
           return;
@@ -113,63 +154,71 @@ class CanvasBackgroundPainter extends CustomPainter {
         case .collegeRtl:
         case .lined:
           final startY =
-              (bounds.top / lineHeight).floor() * lineHeight.toDouble();
+              (clampedBounds.top / lineHeight).floor() * lineHeight.toDouble();
           final endY =
-              (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+              (clampedBounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+          final count = ((endY - startY) / lineHeight).ceil();
+          if (count > 2000) return;
           for (double y = startY; y <= endY; y += lineHeight) {
             yield PatternElement(
-              Offset(bounds.left, y),
-              Offset(bounds.right, y),
+              Offset(clampedBounds.left, y),
+              Offset(clampedBounds.right, y),
               isLine: true,
             );
           }
           if (pattern == .collegeLtr) {
             yield PatternElement(
-              Offset(lineHeight * 2, bounds.top),
-              Offset(lineHeight * 2, bounds.bottom),
+              Offset(lineHeight * 2, clampedBounds.top),
+              Offset(lineHeight * 2, clampedBounds.bottom),
               isLine: true,
               secondaryColor: true,
             );
           } else if (pattern == .collegeRtl) {
             yield PatternElement(
-              Offset(size.width - lineHeight * 2, bounds.top),
-              Offset(size.width - lineHeight * 2, bounds.bottom),
+              Offset(size.width - lineHeight * 2, clampedBounds.top),
+              Offset(size.width - lineHeight * 2, clampedBounds.bottom),
               isLine: true,
               secondaryColor: true,
             );
           }
         case .grid:
           final startX =
-              (bounds.left / lineHeight).floor() * lineHeight.toDouble();
+              (clampedBounds.left / lineHeight).floor() * lineHeight.toDouble();
           final endX =
-              (bounds.right / lineHeight).ceil() * lineHeight.toDouble();
+              (clampedBounds.right / lineHeight).ceil() * lineHeight.toDouble();
           final startY =
-              (bounds.top / lineHeight).floor() * lineHeight.toDouble();
+              (clampedBounds.top / lineHeight).floor() * lineHeight.toDouble();
           final endY =
-              (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+              (clampedBounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+          final countX = ((endX - startX) / lineHeight).ceil();
+          final countY = ((endY - startY) / lineHeight).ceil();
+          if (countX > 2000 || countY > 2000) return;
           for (double y = startY; y <= endY; y += lineHeight) {
             yield PatternElement(
-              Offset(bounds.left, y),
-              Offset(bounds.right, y),
+              Offset(clampedBounds.left, y),
+              Offset(clampedBounds.right, y),
               isLine: true,
             );
           }
           for (double x = startX; x <= endX; x += lineHeight) {
             yield PatternElement(
-              Offset(x, bounds.top),
-              Offset(x, bounds.bottom),
+              Offset(x, clampedBounds.top),
+              Offset(x, clampedBounds.bottom),
               isLine: true,
             );
           }
         case .dots:
           final startX =
-              (bounds.left / lineHeight).floor() * lineHeight.toDouble();
+              (clampedBounds.left / lineHeight).floor() * lineHeight.toDouble();
           final endX =
-              (bounds.right / lineHeight).ceil() * lineHeight.toDouble();
+              (clampedBounds.right / lineHeight).ceil() * lineHeight.toDouble();
           final startY =
-              (bounds.top / lineHeight).floor() * lineHeight.toDouble();
+              (clampedBounds.top / lineHeight).floor() * lineHeight.toDouble();
           final endY =
-              (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+              (clampedBounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+          final countX = ((endX - startX) / lineHeight).ceil();
+          final countY = ((endY - startY) / lineHeight).ceil();
+          if (countX * countY > 30000) return;
           for (double y = startY; y <= endY; y += lineHeight) {
             for (double x = startX; x <= endX; x += lineHeight) {
               yield PatternElement(Offset(x, y), Offset(x, y), isLine: false);
@@ -177,79 +226,87 @@ class CanvasBackgroundPainter extends CustomPainter {
           }
         case .engineeringGrid:
           final startX =
-              (bounds.left / lineHeight).floor() * lineHeight.toDouble();
+              (clampedBounds.left / lineHeight).floor() * lineHeight.toDouble();
           final endX =
-              (bounds.right / lineHeight).ceil() * lineHeight.toDouble();
+              (clampedBounds.right / lineHeight).ceil() * lineHeight.toDouble();
           final startY =
-              (bounds.top / lineHeight).floor() * lineHeight.toDouble();
+              (clampedBounds.top / lineHeight).floor() * lineHeight.toDouble();
           final endY =
-              (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+              (clampedBounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+          final countX = ((endX - startX) / lineHeight).ceil();
+          final countY = ((endY - startY) / lineHeight).ceil();
+          if (countX > 2000 || countY > 2000) return;
           for (double y = startY; y <= endY; y += lineHeight) {
             final isHeavy = (y / lineHeight).round() % 10 == 0;
             yield PatternElement(
-              Offset(bounds.left, y),
-              Offset(bounds.right, y),
+              Offset(clampedBounds.left, y),
+              Offset(clampedBounds.right, y),
               thickness: isHeavy ? lineThickness * 3.0 : null,
             );
           }
           for (double x = startX; x <= endX; x += lineHeight) {
             final isHeavy = (x / lineHeight).round() % 10 == 0;
             yield PatternElement(
-              Offset(x, bounds.top),
-              Offset(x, bounds.bottom),
+              Offset(x, clampedBounds.top),
+              Offset(x, clampedBounds.bottom),
               thickness: isHeavy ? lineThickness * 3.0 : null,
             );
           }
         case .isometric:
-          if (lineHeight <= 0) return;
           final l = lineHeight.toDouble();
           final dx = l * (sqrt(3) / 2);
+          if (dx <= 0) return;
           final tan30 = 1 / sqrt(3);
 
-          final colMin = (bounds.left / dx).floor();
-          final colMax = (bounds.right / dx).ceil();
+          final colMin = (clampedBounds.left / dx).floor();
+          final colMax = (clampedBounds.right / dx).ceil();
+          if (colMax - colMin > 2000) return;
           for (int col = colMin; col <= colMax; col++) {
             final x = col * dx;
             yield PatternElement(
-              Offset(x, bounds.top),
-              Offset(x, bounds.bottom),
+              Offset(x, clampedBounds.top),
+              Offset(x, clampedBounds.bottom),
             );
           }
 
-          final mMin = ((bounds.top - tan30 * bounds.right) / l).floor();
-          final mMax = ((bounds.bottom - tan30 * bounds.left) / l).ceil();
+          final mMin = ((clampedBounds.top - tan30 * clampedBounds.right) / l).floor();
+          final mMax = ((clampedBounds.bottom - tan30 * clampedBounds.left) / l).ceil();
+          if (mMax - mMin > 2000) return;
           for (int m = mMin; m <= mMax; m++) {
             final b = m * l;
-            final x1 = (bounds.top - b) / tan30;
-            final x2 = (bounds.bottom - b) / tan30;
+            final x1 = (clampedBounds.top - b) / tan30;
+            final x2 = (clampedBounds.bottom - b) / tan30;
             yield PatternElement(
-              Offset(x1, bounds.top),
-              Offset(x2, bounds.bottom),
+              Offset(x1, clampedBounds.top),
+              Offset(x2, clampedBounds.bottom),
             );
           }
 
-          final kMin = ((bounds.top + tan30 * bounds.left) / l).floor();
-          final kMax = ((bounds.bottom + tan30 * bounds.right) / l).ceil();
+          final kMin = ((clampedBounds.top + tan30 * clampedBounds.left) / l).floor();
+          final kMax = ((clampedBounds.bottom + tan30 * clampedBounds.right) / l).ceil();
+          if (kMax - kMin > 2000) return;
           for (int k = kMin; k <= kMax; k++) {
             final c = k * l;
-            final x1 = (c - bounds.top) / tan30;
-            final x2 = (c - bounds.bottom) / tan30;
+            final x1 = (c - clampedBounds.top) / tan30;
+            final x2 = (c - clampedBounds.bottom) / tan30;
             yield PatternElement(
-              Offset(x1, bounds.top),
-              Offset(x2, bounds.bottom),
+              Offset(x1, clampedBounds.top),
+              Offset(x2, clampedBounds.bottom),
             );
           }
         case .staffs:
         case .tablature:
         case .cornell:
           final startY =
-              (bounds.top / lineHeight).floor() * lineHeight.toDouble();
+              (clampedBounds.top / lineHeight).floor() * lineHeight.toDouble();
           final endY =
-              (bounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+              (clampedBounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+          final count = ((endY - startY) / lineHeight).ceil();
+          if (count > 2000) return;
           for (double y = startY; y <= endY; y += lineHeight) {
             yield PatternElement(
-              Offset(bounds.left, y),
-              Offset(bounds.right, y),
+              Offset(clampedBounds.left, y),
+              Offset(clampedBounds.right, y),
               isLine: true,
             );
           }

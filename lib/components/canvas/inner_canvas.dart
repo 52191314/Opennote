@@ -295,9 +295,6 @@ class _InnerCanvasState extends State<InnerCanvas> {
       ),
     );
 
-    if (widget.coreInfo.isInfiniteCanvas) {
-      return customPaint;
-    }
     return RepaintBoundary(child: customPaint);
   }
 }
