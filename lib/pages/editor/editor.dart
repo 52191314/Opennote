@@ -2050,8 +2050,8 @@ class EditorState extends State<Editor> {
   }
 
   void _deleteSelection(Select select, EditorPage page) {
-    final strokes = select.selectResult.strokes;
-    final images = select.selectResult.images;
+    final strokes = List<Stroke>.from(select.selectResult.strokes);
+    final images = List<EditorImage>.from(select.selectResult.images);
 
     for (final stroke in strokes) {
       page.removeStroke(stroke);
@@ -2061,18 +2061,15 @@ class EditorState extends State<Editor> {
     }
     if (select.selectResult.textSelected &&
         !page.quill.controller.document.isEmpty()) {
-      page.quill.controller.replaceText(
-        0,
-        page.quill.controller.document.length,
-        '',
-        null,
-      );
+      page.quill.controller.clear();
     }
 
     page.selectionDeleteButtonRect = null;
     page.selectionResizeHandles = null;
     page.selectionRotationHandleCenter = null;
+    page.selectionVertexHandles = null;
     select.unselect();
+    page.redrawStrokes();
 
     history.recordChange(
       EditorHistoryItem(
@@ -2083,6 +2080,7 @@ class EditorState extends State<Editor> {
       ),
     );
     autosaveAfterDelay();
+    setState(() {});
   }
 
   void _onCircleToSelectDetected(Path path) {

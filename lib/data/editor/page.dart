@@ -107,7 +107,8 @@ class EditorPage extends ChangeNotifier implements HasSize {
     final isEmpty = quill.controller.document.isEmpty();
     if (isEmpty) return Rect.zero;
     final plainText = quill.controller.document.toPlainText();
-    final lines = plainText.split('\n').length;
+    if (plainText.trim().isEmpty) return Rect.zero;
+    final lines = plainText.trimRight().split('\n').length;
     final estimatedHeight = lines * lineHeight;
     final left = lineHeight * 0.5;
     final top = lineHeight * 1.2;

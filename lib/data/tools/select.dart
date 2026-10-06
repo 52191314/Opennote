@@ -87,9 +87,8 @@ class Select extends Tool {
       pageIndex: pageIndex,
       strokes: [],
       images: [],
-      path: Path(),
+      path: Path()..moveTo(position.dx, position.dy),
     );
-    _updateSelectionPath(position);
   }
 
   void onDragUpdate(Offset position) {

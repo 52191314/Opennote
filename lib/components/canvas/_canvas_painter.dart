@@ -493,6 +493,13 @@ class CanvasPainter extends CustomPainter {
 
   void _drawSelection(Canvas canvas) {
     if (currentSelection == null) return;
+    if (isDoneSelecting && currentSelection!.isEmpty) {
+      page.selectionDeleteButtonRect = null;
+      page.selectionRotationHandleCenter = null;
+      page.selectionResizeHandles = null;
+      page.selectionVertexHandles = null;
+      return;
+    }
 
     // While actively drawing the lasso loop, show only a delicate in-progress contour
     if (!isDoneSelecting) {

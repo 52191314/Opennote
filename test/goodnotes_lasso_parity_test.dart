@@ -9,6 +9,7 @@ import 'package:saber/components/canvas/lasso_callout_menu.dart';
 import 'package:saber/components/canvas/lasso_screenshot_dialog.dart';
 import 'package:saber/components/toolbar/lasso_filter_popup.dart';
 import 'package:saber/components/toolbar/selection_bar.dart';
+import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/tools/select.dart';
 
@@ -40,6 +41,33 @@ void main() {
       select.isResizeActive = true;
       select.onDragStart(const Offset(10, 10), 0);
       expect(select.isResizeActive, isFalse);
+    });
+
+    test('onDragStart initializes path at start position and does not connect to (0, 0)', () {
+      final select = Select.currentSelect;
+      select.onDragStart(const Offset(300, 400), 0);
+      select.onDragUpdate(const Offset(350, 400));
+      select.onDragUpdate(const Offset(350, 450));
+      select.onDragUpdate(const Offset(300, 450));
+      select.onDragEnd(const [], const []);
+
+      final bounds = select.selectResult.path.getBounds();
+      expect(bounds.left, greaterThanOrEqualTo(290));
+      expect(bounds.top, greaterThanOrEqualTo(390));
+      expect(bounds.contains(Offset.zero), isFalse);
+    });
+
+    test('computeTextContentRect returns Rect.zero for empty or whitespace-only document', () {
+      final page = EditorPage(size: const Size(1000, 1400));
+      expect(page.computeTextContentRect(30.0), equals(Rect.zero));
+
+      page.quill.controller.document.insert(0, '\n   \n\n');
+      expect(page.computeTextContentRect(30.0), equals(Rect.zero));
+
+      page.quill.controller.document.insert(0, 'Hello world');
+      final rect = page.computeTextContentRect(30.0);
+      expect(rect, isNot(equals(Rect.zero)));
+      expect(rect.width, greaterThan(0));
     });
   });
 
