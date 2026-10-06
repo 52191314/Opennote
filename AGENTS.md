@@ -39,6 +39,16 @@ AI agents can find more instructions if needed on the wiki, e.g. [Maintainer not
   - **Immediate visual cleanup**: Clear in-flight ink previews (`Pen.currentStroke = null`) upon gesture detection to prevent frozen partial strokes on screen.
   - **Discoverability**: Expose tool settings in both relevant tool modals and global app settings with intuitive icons and sensible defaults.
 
+- **Toolbar & Tool State Integrity**:
+  - **Singleton identity preservation**: Never re-instantiate or overwrite tool singletons (`Pen.currentPen`, `Eraser.currentEraser`, `Select.currentSelect`, `DraftingTool.currentDrafting`, `StudyTape.currentStudyTape`) when the user selects a preset, style, or color. Mutate existing singletons in-place or update their options. Detaching `currentTool` from its singleton breaks reference checks (`_isCurrent(tool)`) and leaves toolbar and bottom bar buttons permanently stuck.
+
+- **Canvas Element & Media Stamping**:
+  - **Viewport & tap-based placement**: Never hardcode stamped element, note, sticker, shape, or photo placement to static coordinates (e.g. `(0, 0)`, `(20, 20)`, or static `page.size / 2`). On infinite canvas or scrolled views, static coordinates place elements offscreen in the extreme top-left corner. Always prioritize the user's recent canvas tap position (`_lastCanvasTapPosition` from `onDrawStart`), falling back to projecting the visible screen viewport center (`renderBox.globalToLocal(screenCenter)`).
+  - **Immediate auto-selection & handles**: Newly stamped elements and media must immediately be selected into `Select.currentSelect` (`selectStrokes` / `selectImages`) with handles updated (`_updateSelectionHandles`). This allows immediate user manipulation (move, resize, rotate) and ensures toolbar actions like 'Delete' immediately affect the newly placed element.
+
+- **Infinite Canvas Performance**:
+  - **Viewport culling for patterns**: In infinite canvas mode, canvas bounds are virtually unbounded. Repeating background grids, lines, and dot patterns must strictly be culled and clamped to the visible viewport rect (`cullRect` / visible viewport), never rendered across unconstrained or infinite canvas bounds.
+
 ## Builds & CI
 
 - **Do not trigger Android or Windows builds**: Never trigger `Build for Android` or `Build for Windows` GitHub Action workflows (e.g. via `gh workflow run` or manual dispatch).
