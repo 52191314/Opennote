@@ -60,6 +60,55 @@ class Select extends Tool {
     );
   }
 
+  /// Programmatically selects a list of [strokes] on [pageIndex].
+  void selectStrokes(List<Stroke> strokes, int pageIndex) {
+    if (strokes.isEmpty) {
+      unselect();
+      return;
+    }
+    doneSelecting = true;
+    isResizeActive = false;
+    final allPoints = <Offset>[];
+    for (final s in strokes) {
+      if (s.lowQualityPolygon.isNotEmpty) {
+        allPoints.addAll(s.lowQualityPolygon);
+      } else {
+        final b = s.highQualityPath.getBounds();
+        allPoints.addAll([b.topLeft, b.topRight, b.bottomRight, b.bottomLeft]);
+      }
+    }
+    selectResult = SelectResult(
+      pageIndex: pageIndex,
+      strokes: List<Stroke>.from(strokes),
+      images: [],
+      path: createTightSelectionPath(allPoints),
+      textSelected: false,
+    );
+  }
+
+  /// Programmatically selects a list of [images] on [pageIndex].
+  void selectImages(List<EditorImage> images, int pageIndex) {
+    if (images.isEmpty) {
+      unselect();
+      return;
+    }
+    doneSelecting = true;
+    isResizeActive = false;
+    Rect? totalRect;
+    for (final img in images) {
+      totalRect = totalRect == null
+          ? img.dstRect
+          : totalRect.expandToInclude(img.dstRect);
+    }
+    selectResult = SelectResult(
+      pageIndex: pageIndex,
+      strokes: [],
+      images: List<EditorImage>.from(images),
+      path: _createRectSelectionPath(totalRect ?? Rect.zero),
+      textSelected: false,
+    );
+  }
+
   Color? getDominantStrokeColor() {
     if (!doneSelecting) return null;
     if (selectResult.strokes.isEmpty) return null;

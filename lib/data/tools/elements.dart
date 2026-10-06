@@ -110,6 +110,11 @@ class ElementsManager extends ChangeNotifier {
         if (decoded is List) {
           for (final item in decoded) {
             if (item is Map<String, dynamic>) {
+              if (item['id'] == 'default_stickynote' &&
+                  (item['strokes'] as List?)?.length == 1) {
+                _items.add(_createStickyNoteElement());
+                continue;
+              }
               _items.add(ElementItem.fromJson(item));
             }
           }
@@ -225,24 +230,66 @@ class ElementsManager extends ChangeNotifier {
 
   static ElementItem _createStickyNoteElement() {
     final borderStroke = Stroke(
-      color: const Color(0xFFFFCA28),
+      color: const Color(0xFFFFB300),
       pressureEnabled: false,
       options: StrokeOptions(size: 3),
       pageIndex: 0,
       page: const HasSize(Size(100, 100)),
       toolId: ToolId.ballpointPen,
     );
-    borderStroke.addPoint(const Offset(10, 10), 0.6);
-    borderStroke.addPoint(const Offset(90, 10), 0.6);
-    borderStroke.addPoint(const Offset(90, 90), 0.6);
-    borderStroke.addPoint(const Offset(10, 90), 0.6);
-    borderStroke.addPoint(const Offset(10, 10), 0.6);
+    borderStroke.addPoint(const Offset(12, 10), 0.6);
+    borderStroke.addPoint(const Offset(88, 10), 0.6);
+    borderStroke.addPoint(const Offset(90, 12), 0.6);
+    borderStroke.addPoint(const Offset(90, 88), 0.6);
+    borderStroke.addPoint(const Offset(88, 90), 0.6);
+    borderStroke.addPoint(const Offset(12, 90), 0.6);
+    borderStroke.addPoint(const Offset(10, 88), 0.6);
+    borderStroke.addPoint(const Offset(10, 12), 0.6);
+    borderStroke.addPoint(const Offset(12, 10), 0.6);
+
+    final line1 = Stroke(
+      color: const Color(0xFFFFD54F),
+      pressureEnabled: false,
+      options: StrokeOptions(size: 2),
+      pageIndex: 0,
+      page: const HasSize(Size(100, 100)),
+      toolId: ToolId.ballpointPen,
+    );
+    line1.addPoint(const Offset(22, 32), 0.5);
+    line1.addPoint(const Offset(78, 32), 0.5);
+
+    final line2 = Stroke(
+      color: const Color(0xFFFFD54F),
+      pressureEnabled: false,
+      options: StrokeOptions(size: 2),
+      pageIndex: 0,
+      page: const HasSize(Size(100, 100)),
+      toolId: ToolId.ballpointPen,
+    );
+    line2.addPoint(const Offset(22, 50), 0.5);
+    line2.addPoint(const Offset(78, 50), 0.5);
+
+    final line3 = Stroke(
+      color: const Color(0xFFFFD54F),
+      pressureEnabled: false,
+      options: StrokeOptions(size: 2),
+      pageIndex: 0,
+      page: const HasSize(Size(100, 100)),
+      toolId: ToolId.ballpointPen,
+    );
+    line3.addPoint(const Offset(22, 68), 0.5);
+    line3.addPoint(const Offset(60, 68), 0.5);
 
     return ElementItem(
       id: 'default_stickynote',
       name: 'Sticky Note',
       category: 'General',
-      strokesJson: [_strokeToJson(borderStroke)],
+      strokesJson: [
+        _strokeToJson(borderStroke),
+        _strokeToJson(line1),
+        _strokeToJson(line2),
+        _strokeToJson(line3),
+      ],
     );
   }
 

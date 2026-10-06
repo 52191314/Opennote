@@ -236,6 +236,12 @@ class EditorState extends State<Editor> {
   DateTime? _lastTapTime;
   Offset? _lastTapPosition;
 
+  /// The position and page index of the most recent user canvas tap/click,
+  /// used to place newly added elements, photos, stickers, and shapes.
+  Offset? _lastCanvasTapPosition;
+  int? _lastCanvasTapPageIndex;
+  DateTime? _lastCanvasTapTime;
+
   /// Whether the user is currently resizing a selection.
   var _isResizing = false;
 
@@ -649,6 +655,9 @@ class EditorState extends State<Editor> {
   void onDrawStart(ScaleStartDetails details) {
     final page = coreInfo.pages[dragPageIndex!];
     final position = page.renderBox!.globalToLocal(details.focalPoint);
+    _lastCanvasTapPosition = position;
+    _lastCanvasTapPageIndex = dragPageIndex;
+    _lastCanvasTapTime = DateTime.now();
     history.canRedo = false;
 
     if (page.activeLayer.locked &&
@@ -1282,44 +1291,7 @@ class EditorState extends State<Editor> {
           shouldSave = false;
           select.onDragEnd(page.strokes, page.images, textRect: textRect);
 
-          if (select.selectResult.isEmpty) {
-            Select.currentSelect.unselect();
-            page.selectionDeleteButtonRect = null;
-            page.selectionRotationHandleCenter = null;
-            page.selectionResizeHandles = null;
-            page.selectionVertexHandles = null;
-          } else {
-            // Compute rotation handle position
-            final bounds = select.selectResult.path.getBounds();
-            page.selectionDeleteButtonRect = null;
-            page.selectionRotationHandleCenter = Offset(
-              bounds.center.dx,
-              bounds.top - 20,
-            );
-            final center = bounds.center;
-            page.selectionResizeHandles = [
-              Offset(bounds.left, bounds.top),
-              Offset(center.dx, bounds.top),
-              Offset(bounds.right, bounds.top),
-              Offset(bounds.right, center.dy),
-              Offset(bounds.right, bounds.bottom),
-              Offset(center.dx, bounds.bottom),
-              Offset(bounds.left, bounds.bottom),
-              Offset(bounds.left, center.dy),
-            ];
-            if (select.selectResult.strokes.length == 1) {
-              final s = select.selectResult.strokes.first;
-              if (s is ArrowStroke) {
-                page.selectionVertexHandles = [s.start, s.end];
-              } else if (s is DimensionStroke) {
-                page.selectionVertexHandles = [s.start, s.end, s.textPosition];
-              } else {
-                page.selectionVertexHandles = null;
-              }
-            } else {
-              page.selectionVertexHandles = null;
-            }
-          }
+          _updateSelectionHandles(page, select);
         }
       } else if (currentTool is LaserPointer) {
         shouldSave = false;
@@ -1771,6 +1743,17 @@ class EditorState extends State<Editor> {
           ),
     ];
 
+    final center = _getPlacementCenter(currentPageIndex);
+    for (int i = 0; i < images.length; i++) {
+      final img = images[i];
+      await img.loadIn();
+      final offset = Offset(i * 20.0, i * 20.0);
+      final imgCenter = center + offset;
+      final w = img.dstRect.width > 0 ? img.dstRect.width : 200.0;
+      final h = img.dstRect.height > 0 ? img.dstRect.height : 200.0;
+      img.dstRect = Rect.fromCenter(center: imgCenter, width: w, height: h);
+    }
+
     history.recordChange(
       EditorHistoryItem(
         type: .draw,
@@ -1781,6 +1764,9 @@ class EditorState extends State<Editor> {
     );
     createPage(currentPageIndex);
     coreInfo.pages[currentPageIndex].images.addAll(images);
+    Select.currentSelect.selectImages(images, currentPageIndex);
+    _updateSelectionHandles(coreInfo.pages[currentPageIndex], Select.currentSelect);
+    setState(() {});
     autosaveAfterDelay();
 
     return images.length;
@@ -1808,6 +1794,12 @@ class EditorState extends State<Editor> {
       assetCache: coreInfo.assetCache,
     );
 
+    await image.loadIn();
+    final center = _getPlacementCenter(currentPageIndex);
+    final w = image.dstRect.width > 0 ? image.dstRect.width : 200.0;
+    final h = image.dstRect.height > 0 ? image.dstRect.height : 200.0;
+    image.dstRect = Rect.fromCenter(center: center, width: w, height: h);
+
     history.recordChange(
       EditorHistoryItem(
         type: .draw,
@@ -1818,6 +1810,9 @@ class EditorState extends State<Editor> {
     );
     createPage(currentPageIndex);
     coreInfo.pages[currentPageIndex].images.add(image);
+    Select.currentSelect.selectImages([image], currentPageIndex);
+    _updateSelectionHandles(coreInfo.pages[currentPageIndex], Select.currentSelect);
+    setState(() {});
     autosaveAfterDelay();
   }
 
@@ -1827,6 +1822,7 @@ class EditorState extends State<Editor> {
 
     // Use the Select tool so that the user can move the new image
     currentTool = Select.currentSelect;
+    final center = _getPlacementCenter(currentPageIndex);
 
     final image = StickyNoteImage(
       id: coreInfo.nextImageId++,
@@ -1839,7 +1835,7 @@ class EditorState extends State<Editor> {
       onDeleteImage: onDeleteImage,
       onMiscChange: autosaveAfterDelay,
       onLoad: () => setState(() {}),
-      dstRect: const Rect.fromLTWH(20, 20, 200, 200),
+      dstRect: Rect.fromCenter(center: center, width: 200, height: 200),
     );
 
     history.recordChange(
@@ -1852,6 +1848,9 @@ class EditorState extends State<Editor> {
     );
     createPage(currentPageIndex);
     coreInfo.pages[currentPageIndex].images.add(image);
+    Select.currentSelect.selectImages([image], currentPageIndex);
+    _updateSelectionHandles(coreInfo.pages[currentPageIndex], Select.currentSelect);
+    setState(() {});
     autosaveAfterDelay();
   }
 
@@ -1863,6 +1862,7 @@ class EditorState extends State<Editor> {
     currentTool = Select.currentSelect;
 
     const double size = 64;
+    final center = _getPlacementCenter(currentPageIndex);
 
     final image = StickerImage(
       id: coreInfo.nextImageId++,
@@ -1874,7 +1874,7 @@ class EditorState extends State<Editor> {
       onDeleteImage: onDeleteImage,
       onMiscChange: autosaveAfterDelay,
       onLoad: () => setState(() {}),
-      dstRect: const Rect.fromLTWH(20, 20, size, size),
+      dstRect: Rect.fromCenter(center: center, width: size, height: size),
     );
 
     history.recordChange(
@@ -1887,6 +1887,9 @@ class EditorState extends State<Editor> {
     );
     createPage(currentPageIndex);
     coreInfo.pages[currentPageIndex].images.add(image);
+    Select.currentSelect.selectImages([image], currentPageIndex);
+    _updateSelectionHandles(coreInfo.pages[currentPageIndex], Select.currentSelect);
+    setState(() {});
     autosaveAfterDelay();
   }
 
@@ -2049,6 +2052,95 @@ class EditorState extends State<Editor> {
     await _pickPhotos(photoInfos);
   }
 
+  /// Updates selection handles (rotation, resize, and vertex handles) on [page]
+  /// to match [select.selectResult].
+  void _updateSelectionHandles(EditorPage page, Select select) {
+    if (select.selectResult.isEmpty) {
+      select.unselect();
+      page.selectionDeleteButtonRect = null;
+      page.selectionRotationHandleCenter = null;
+      page.selectionResizeHandles = null;
+      page.selectionVertexHandles = null;
+      return;
+    }
+    final bounds = select.selectResult.path.getBounds();
+    page.selectionDeleteButtonRect = null;
+    page.selectionRotationHandleCenter = Offset(
+      bounds.center.dx,
+      bounds.top - 20,
+    );
+    final center = bounds.center;
+    page.selectionResizeHandles = [
+      Offset(bounds.left, bounds.top),
+      Offset(center.dx, bounds.top),
+      Offset(bounds.right, bounds.top),
+      Offset(bounds.right, center.dy),
+      Offset(bounds.right, bounds.bottom),
+      Offset(center.dx, bounds.bottom),
+      Offset(bounds.left, bounds.bottom),
+      Offset(bounds.left, center.dy),
+    ];
+    if (select.selectResult.strokes.length == 1) {
+      final s = select.selectResult.strokes.first;
+      if (s is ArrowStroke) {
+        page.selectionVertexHandles = [s.start, s.end];
+      } else if (s is DimensionStroke) {
+        page.selectionVertexHandles = [s.start, s.end, s.textPosition];
+      } else {
+        page.selectionVertexHandles = null;
+      }
+    } else {
+      page.selectionVertexHandles = null;
+    }
+  }
+
+  /// Calculates the target center for placing new elements, photos, or shapes.
+  /// Prioritizes the user's most recent canvas tap if it occurred recently
+  /// (within 30 seconds) on [pageIndex]. Otherwise, projects the center of
+  /// the current visible screen/viewport into local page coordinates.
+  Offset _getPlacementCenter(int pageIndex) {
+    if (pageIndex < 0 || pageIndex >= coreInfo.pages.length) {
+      return const Offset(200, 200);
+    }
+
+    if (_lastCanvasTapPosition != null &&
+        _lastCanvasTapPageIndex == pageIndex &&
+        _lastCanvasTapTime != null &&
+        DateTime.now().difference(_lastCanvasTapTime!).inSeconds < 30) {
+      final tapPos = _lastCanvasTapPosition!;
+      _lastCanvasTapPosition = null;
+      _lastCanvasTapPageIndex = null;
+      _lastCanvasTapTime = null;
+      return tapPos;
+    }
+
+    final page = coreInfo.pages[pageIndex];
+    if (page.renderBox != null && mounted) {
+      try {
+        final mediaQuery = MediaQuery.maybeSizeOf(context);
+        final screenSize = mediaQuery ?? const Size(800, 600);
+        final screenCenter = Offset(screenSize.width / 2, screenSize.height / 2);
+        final localCenter = page.renderBox!.globalToLocal(screenCenter);
+        if (!coreInfo.isInfiniteCanvas) {
+          final clampedX = localCenter.dx.clamp(
+            50.0,
+            (page.size.width - 50.0).clamp(50.0, double.infinity),
+          );
+          final clampedY = localCenter.dy.clamp(
+            50.0,
+            (page.size.height - 50.0).clamp(50.0, double.infinity),
+          );
+          return Offset(clampedX, clampedY);
+        }
+        return localCenter;
+      } catch (_) {
+        // Fallback below
+      }
+    }
+
+    return Offset(page.size.width / 2, page.size.height / 2);
+  }
+
   void _deleteSelection(Select select, EditorPage page) {
     final strokes = List<Stroke>.from(select.selectResult.strokes);
     final images = List<EditorImage>.from(select.selectResult.images);
@@ -2107,24 +2199,7 @@ class EditorState extends State<Editor> {
     );
 
     currentTool = Select.currentSelect;
-
-    final bounds = Select.currentSelect.selectResult.path.getBounds();
-    page.selectionDeleteButtonRect = null;
-    page.selectionRotationHandleCenter = Offset(
-      bounds.center.dx,
-      bounds.top - 20,
-    );
-    final center = bounds.center;
-    page.selectionResizeHandles = [
-      Offset(bounds.left, bounds.top),
-      Offset(center.dx, bounds.top),
-      Offset(bounds.right, bounds.top),
-      Offset(bounds.right, center.dy),
-      Offset(bounds.right, bounds.bottom),
-      Offset(center.dx, bounds.bottom),
-      Offset(bounds.left, bounds.bottom),
-      Offset(bounds.left, center.dy),
-    ];
+    _updateSelectionHandles(page, Select.currentSelect);
 
     page.redrawStrokes();
     setState(() {});
@@ -2532,7 +2607,7 @@ class EditorState extends State<Editor> {
       return;
     }
 
-    final targetCenter = Offset(page.size.width / 2, page.size.height / 2);
+    final targetCenter = _getPlacementCenter(pageIndex);
     final newStrokes = item.instantiateStrokes(
       page: page,
       targetCenter: targetCenter,
@@ -2554,6 +2629,10 @@ class EditorState extends State<Editor> {
     );
 
     page.redrawStrokes();
+    currentTool = Select.currentSelect;
+    Select.currentSelect.selectStrokes(newStrokes, pageIndex);
+    _updateSelectionHandles(page, Select.currentSelect);
+    setState(() {});
     autosaveAfterDelay();
   }
 

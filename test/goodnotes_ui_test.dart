@@ -6,6 +6,8 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:perfect_freehand/perfect_freehand.dart';
+import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/components/home/preview_card.dart';
 import 'package:saber/components/toolbar/goodnotes_header_bar.dart';
@@ -18,6 +20,7 @@ import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
 import 'package:saber/data/tools/arrow.dart';
 import 'package:saber/data/tools/dimension.dart';
+import 'package:saber/data/tools/elements.dart';
 import 'package:saber/data/tools/eraser.dart';
 import 'package:saber/data/tools/highlighter.dart';
 import 'package:saber/data/tools/pen.dart';
@@ -27,6 +30,7 @@ import 'package:saber/data/tools/select.dart';
 import 'package:saber/data/tools/shape_pen.dart';
 import 'package:saber/data/tools/study_tape.dart';
 import 'package:saber/i18n/strings.g.dart';
+import 'package:sbn/has_size.dart';
 import 'package:sbn/tool_id.dart';
 
 void main() {
@@ -700,6 +704,62 @@ void main() {
 
         expect(selectedTool, isNotNull);
         expect(selectedTool, equals(Pen.currentPen));
+      },
+    );
+  });
+
+  group('Elements Placement and Programmatic Selection Tests', () {
+    test('ElementItem.instantiateStrokes aligns center to targetCenter', () {
+      final elem = ElementsManager.instance.items.firstWhere(
+        (e) => e.name == 'Sticky Note',
+      );
+      const target = Offset(450, 600);
+      final strokes = elem.instantiateStrokes(
+        page: const HasSize(Size(1000, 1000)),
+        targetCenter: target,
+      );
+      expect(strokes, isNotEmpty);
+
+      Rect? totalBounds;
+      for (final s in strokes) {
+        final b = s.highQualityPath.getBounds();
+        totalBounds = totalBounds == null ? b : totalBounds.expandToInclude(b);
+      }
+      expect(totalBounds, isNotNull);
+      expect((totalBounds!.center.dx - target.dx).abs(), lessThan(1.0));
+      expect((totalBounds.center.dy - target.dy).abs(), lessThan(1.0));
+    });
+
+    test(
+      'Select.selectStrokes programmatically selects strokes with tight bounding path',
+      () {
+        final select = Select.currentSelect;
+        select.unselect();
+        final stroke = Stroke(
+          color: Colors.black,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 2),
+          pageIndex: 0,
+          page: const HasSize(Size(500, 500)),
+          toolId: ToolId.ballpointPen,
+        );
+        stroke.addPoint(const Offset(100, 100), 0.5);
+        stroke.addPoint(const Offset(200, 200), 0.5);
+
+        expect(select.doneSelecting, isFalse);
+        select.selectStrokes([stroke], 0);
+
+        expect(select.doneSelecting, isTrue);
+        expect(select.selectResult.strokes, contains(stroke));
+        expect(select.selectResult.pageIndex, equals(0));
+        expect(select.selectResult.path.getBounds().isEmpty, isFalse);
+
+        final bounds = select.selectResult.path.getBounds();
+        expect(bounds.contains(const Offset(150, 150)), isTrue);
+
+        select.unselect();
+        expect(select.doneSelecting, isFalse);
+        expect(select.selectResult.strokes, isEmpty);
       },
     );
   });
