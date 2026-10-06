@@ -10,15 +10,24 @@ import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/components/home/preview_card.dart';
 import 'package:saber/components/toolbar/goodnotes_header_bar.dart';
 import 'package:saber/components/toolbar/goodnotes_toolbar.dart';
+import 'package:saber/components/toolbar/toolbar.dart';
+import 'package:saber/components/toolbar/toolbar_button.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
 import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/prefs.dart';
+import 'package:saber/data/tools/_tool.dart';
 import 'package:saber/data/tools/arrow.dart';
+import 'package:saber/data/tools/dimension.dart';
 import 'package:saber/data/tools/eraser.dart';
+import 'package:saber/data/tools/highlighter.dart';
 import 'package:saber/data/tools/pen.dart';
+import 'package:saber/data/tools/pencil.dart';
+import 'package:saber/data/tools/ruler.dart';
 import 'package:saber/data/tools/select.dart';
+import 'package:saber/data/tools/shape_pen.dart';
 import 'package:saber/data/tools/study_tape.dart';
 import 'package:saber/i18n/strings.g.dart';
+import 'package:sbn/tool_id.dart';
 
 void main() {
   setUpAll(() {
@@ -513,6 +522,184 @@ void main() {
 
         // Verify the embossed notebook title card is displayed
         expect(find.text('Biology 101'), findsWidgets);
+      },
+    );
+  });
+
+  group('Pen Identity and Tool Switching Tests', () {
+    test(
+      'Pen.isWritingPen correctly categorizes standard pens vs drafting/tape/other tools',
+      () {
+        expect(Pen.isWritingPen(Pen.fountainPen()), isTrue);
+        expect(Pen.isWritingPen(Pen.ballpointPen()), isTrue);
+        expect(Pen.isWritingPen(ShapePen()), isTrue);
+        expect(Pen.isWritingPen(Ruler()), isFalse);
+        expect(Pen.isWritingPen(ArrowTool()), isFalse);
+        expect(Pen.isWritingPen(DimensionTool()), isFalse);
+        expect(Pen.isWritingPen(StudyTapeTool()), isFalse);
+        expect(Pen.isWritingPen(Highlighter()), isFalse);
+        expect(Pen.isWritingPen(Pencil()), isFalse);
+        expect(Pen.isWritingPen(Eraser(size: 10)), isFalse);
+        expect(Pen.isWritingPen(Select.currentSelect), isFalse);
+        expect(Pen.isWritingPen(null), isFalse);
+      },
+    );
+
+    test('Pen.currentPen setter rejects non-writing Pen subclasses', () {
+      Pen.currentPen = Pen.fountainPen();
+      expect(Pen.currentPen.toolId, equals(ToolId.fountainPen));
+
+      expect(() => Pen.currentPen = Ruler(), throwsAssertionError);
+      expect(() => Pen.currentPen = ArrowTool(), throwsAssertionError);
+      expect(() => Pen.currentPen = DimensionTool(), throwsAssertionError);
+      expect(() => Pen.currentPen = StudyTapeTool(), throwsAssertionError);
+      expect(() => Pen.currentPen = Highlighter(), throwsAssertionError);
+      expect(() => Pen.currentPen = Pencil(), throwsAssertionError);
+
+      expect(Pen.currentPen.toolId, equals(ToolId.fountainPen));
+    });
+
+    testWidgets(
+      'GoodnotesToolbar: Tapping Pen button while on Ruler returns to Pen.currentPen',
+      (tester) async {
+        Pen.currentPen = Pen.fountainPen();
+        final quillFocus = ValueNotifier(null);
+        Tool? selectedTool;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: GoodnotesToolbar(
+                readOnly: false,
+                setTool: (tool) => selectedTool = tool,
+                currentTool: Ruler(),
+                setColor: (_) {},
+                quillFocus: quillFocus,
+                textEditing: false,
+                toggleTextEditing: () {},
+                pickPhoto: () {},
+                pickShape: () {},
+                paste: () {},
+                copySelection: () {},
+                pasteSelection: () {},
+                duplicateSelection: () {},
+                deleteSelection: () {},
+              ),
+            ),
+          ),
+        );
+
+        final penButton = find.byWidgetPredicate(
+          (w) => w is ToolbarIconButton && w.tooltip == Pen.currentPen.name,
+        );
+        expect(penButton, findsOneWidget);
+
+        final iconButtonWidget = tester.widget<ToolbarIconButton>(penButton);
+        expect(iconButtonWidget.selected, isFalse);
+
+        await tester.tap(penButton);
+        await tester.pump();
+
+        expect(selectedTool, isNotNull);
+        expect(selectedTool, equals(Pen.currentPen));
+        expect(find.text('Pen Options'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'GoodnotesToolbar: Tapping Pen button while already on Pen opens pen options dialog',
+      (tester) async {
+        Pen.currentPen = Pen.fountainPen();
+        final quillFocus = ValueNotifier(null);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: GoodnotesToolbar(
+                readOnly: false,
+                setTool: (_) {},
+                currentTool: Pen.currentPen,
+                setColor: (_) {},
+                quillFocus: quillFocus,
+                textEditing: false,
+                toggleTextEditing: () {},
+                pickPhoto: () {},
+                pickShape: () {},
+                paste: () {},
+                copySelection: () {},
+                pasteSelection: () {},
+                duplicateSelection: () {},
+                deleteSelection: () {},
+              ),
+            ),
+          ),
+        );
+
+        final penButton = find.byWidgetPredicate(
+          (w) => w is ToolbarIconButton && w.tooltip == Pen.currentPen.name,
+        );
+        final iconButtonWidget = tester.widget<ToolbarIconButton>(penButton);
+        expect(iconButtonWidget.selected, isTrue);
+
+        await tester.tap(penButton);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Pen Options'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Toolbar: Tapping Pen button while on DimensionTool returns to Pen.currentPen',
+      (tester) async {
+        Pen.currentPen = Pen.fountainPen();
+        Tool? selectedTool;
+
+        final quillFocus = ValueNotifier(null);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Toolbar(
+                readOnly: false,
+                setTool: (tool) => selectedTool = tool,
+                currentTool: DimensionTool(),
+                setColor: (_) {},
+                quillFocus: quillFocus,
+                textEditing: false,
+                toggleTextEditing: () {},
+                undo: () {},
+                isUndoPossible: false,
+                redo: () {},
+                isRedoPossible: false,
+                toggleFingerDrawing: () {},
+                pickPhoto: () {},
+                pickShape: () {},
+                paste: () {},
+                copySelection: () {},
+                pasteSelection: () {},
+                duplicateSelection: () {},
+                deleteSelection: () {},
+                exportAsSba: (_) async {},
+                exportAsPdf: (_) async {},
+                exportAsPng: (_) async {},
+              ),
+            ),
+          ),
+        );
+
+        final penButton = find.byWidgetPredicate(
+          (w) => w is ToolbarIconButton && w.tooltip == Pen.currentPen.name,
+        );
+        expect(penButton, findsOneWidget);
+
+        final iconButtonWidget = tester.widget<ToolbarIconButton>(penButton);
+        expect(iconButtonWidget.selected, isFalse);
+
+        await tester.tap(penButton);
+        await tester.pump();
+
+        expect(selectedTool, isNotNull);
+        expect(selectedTool, equals(Pen.currentPen));
       },
     );
   });

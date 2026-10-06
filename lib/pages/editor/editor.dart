@@ -2769,8 +2769,8 @@ class EditorState extends State<Editor> {
                 Highlighter.currentHighlighter = tool;
               } else if (tool is Pencil) {
                 Pencil.currentPencil = tool;
-              } else if (tool is Pen) {
-                Pen.currentPen = tool;
+              } else if (Pen.isWritingPen(tool)) {
+                Pen.currentPen = tool as Pen;
               }
               if (mounted) setState(() {});
             },
@@ -2841,8 +2841,8 @@ class EditorState extends State<Editor> {
                 Highlighter.currentHighlighter = tool;
               } else if (tool is Pencil) {
                 Pencil.currentPencil = tool;
-              } else if (tool is Pen) {
-                Pen.currentPen = tool;
+              } else if (Pen.isWritingPen(tool)) {
+                Pen.currentPen = tool as Pen;
               }
               if (mounted) setState(() {});
             },

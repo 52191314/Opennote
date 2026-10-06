@@ -545,10 +545,10 @@ class _ToolbarState extends State<Toolbar> {
               // 1. Pen
               ToolbarIconButton(
                 tooltip: Pen.currentPen.name,
-                selected: widget.currentTool == Pen.currentPen,
+                selected: Pen.isWritingPen(widget.currentTool),
                 enabled: !widget.readOnly,
                 onPressed: () {
-                  if (widget.currentTool == Pen.currentPen) {
+                  if (Pen.isWritingPen(widget.currentTool)) {
                     _showPenSettings(() => Pen.currentPen);
                   } else {
                     widget.setTool(Pen.currentPen);

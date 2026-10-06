@@ -317,8 +317,7 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
       _ => null,
     };
 
-    final isDrawingPen =
-        widget.currentTool is Pen && widget.currentTool is! Highlighter;
+    final isDrawingPen = Pen.isWritingPen(widget.currentTool);
     final isHighlighter = widget.currentTool is Highlighter;
     final isEraser = widget.currentTool is Eraser;
     final isLasso = widget.currentTool is Select;
@@ -353,13 +352,10 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                 // 1. Pen (Fountain / Ballpoint)
                 ToolbarIconButton(
                   tooltip: Pen.currentPen.name,
-                  selected:
-                      isDrawingPen &&
-                      widget.currentTool != Pencil.currentPencil,
+                  selected: isDrawingPen,
                   enabled: !widget.readOnly,
                   onPressed: () {
-                    if (isDrawingPen &&
-                        widget.currentTool != Pencil.currentPencil) {
+                    if (isDrawingPen) {
                       _showPenSettings(() => Pen.currentPen);
                     } else {
                       widget.setTool(Pen.currentPen);
