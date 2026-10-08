@@ -53,6 +53,7 @@ import 'package:saber/data/editor/editor_exporter.dart';
 import 'package:saber/data/editor/editor_history.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/editor/selection_clipboard.dart';
+import 'package:saber/data/editor/selection_resize.dart';
 import 'package:saber/data/extensions/change_notifier_extensions.dart';
 import 'package:saber/data/extensions/matrix4_extensions.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
@@ -247,11 +248,8 @@ class EditorState extends State<Editor> {
   /// Whether the user is currently resizing a selection.
   var _isResizing = false;
 
-  /// Index of the resize handle being dragged (0-7).
-  var _resizeHandleIndex = -1;
-
-  /// The initial bounds of the selection when resize started.
-  Rect _resizeStartBounds = Rect.zero;
+  /// The resize handle drag in progress, if any.
+  SelectionResize? _selectionResize;
 
   /// The initial angle (in radians) when the rotation gesture started.
   double _initialRotationAngle = 0;
@@ -745,8 +743,10 @@ class EditorState extends State<Editor> {
           for (int i = 0; i < resizeHandles.length; i++) {
             if ((position - resizeHandles[i]).distance < 16) {
               _isResizing = true;
-              _resizeHandleIndex = i;
-              _resizeStartBounds = select.selectResult.path.getBounds();
+              _selectionResize = SelectionResize(
+                startBounds: select.selectResult.path.getBounds(),
+                handleIndex: i,
+              );
               return;
             }
           }
@@ -905,70 +905,10 @@ class EditorState extends State<Editor> {
         page.redrawStrokes();
         return;
       }
-      if (_isResizing && select.doneSelecting) {
-        // Compute scale factors based on handle drag
-        // Handle indices: 0=topLeft, 1=topCenter, 2=topRight,
-        //                3=middleRight, 4=bottomRight, 5=bottomCenter,
-        //                6=bottomLeft, 7=middleLeft
-        final bounds = _resizeStartBounds;
-        final handleIdx = _resizeHandleIndex;
-
-        // Determine pivot (opposite corner/edge)
-        final pivot = switch (handleIdx) {
-          0 => bounds.bottomRight, // topLeft → pivot bottomRight
-          1 => Offset(
-            bounds.center.dx,
-            bounds.bottom,
-          ), // topCenter → pivot bottomCenter
-          2 => bounds.bottomLeft, // topRight → pivot bottomLeft
-          3 => Offset(
-            bounds.left,
-            bounds.center.dy,
-          ), // middleRight → pivot middleLeft
-          4 => bounds.topLeft, // bottomRight → pivot topLeft
-          5 => Offset(
-            bounds.center.dx,
-            bounds.top,
-          ), // bottomCenter → pivot topCenter
-          6 => bounds.topRight, // bottomLeft → pivot topRight
-          _ => Offset(
-            bounds.right,
-            bounds.center.dy,
-          ), // middleLeft → pivot middleRight
-        };
-
-        double scaleX, scaleY;
-
-        switch (handleIdx) {
-          case 0: // topLeft
-            scaleX = (bounds.right - position.dx) / bounds.width;
-            scaleY = (bounds.bottom - position.dy) / bounds.height;
-          case 1: // topCenter
-            scaleX = 1;
-            scaleY = (bounds.bottom - position.dy) / bounds.height;
-          case 2: // topRight
-            scaleX = (position.dx - bounds.left) / bounds.width;
-            scaleY = (bounds.bottom - position.dy) / bounds.height;
-          case 3: // middleRight
-            scaleX = (position.dx - bounds.left) / bounds.width;
-            scaleY = 1;
-          case 4: // bottomRight
-            scaleX = (position.dx - bounds.left) / bounds.width;
-            scaleY = (position.dy - bounds.top) / bounds.height;
-          case 5: // bottomCenter
-            scaleX = 1;
-            scaleY = (position.dy - bounds.top) / bounds.height;
-          case 6: // bottomLeft
-            scaleX = (bounds.right - position.dx) / bounds.width;
-            scaleY = (position.dy - bounds.top) / bounds.height;
-          default: // middleLeft
-            scaleX = (bounds.right - position.dx) / bounds.width;
-            scaleY = 1;
-        }
-
-        // Prevent flipping (minimum 10% size)
-        scaleX = scaleX.clamp(0.1, 10);
-        scaleY = scaleY.clamp(0.1, 10);
+      final resize = _selectionResize;
+      if (_isResizing && resize != null && select.doneSelecting) {
+        final pivot = resize.pivot;
+        final (x: scaleX, y: scaleY) = resize.stepTo(position);
 
         for (final stroke in select.selectResult.strokes) {
           stroke.scaleAround(scaleX, scaleY, pivot);
@@ -993,7 +933,7 @@ class EditorState extends State<Editor> {
           );
         }
         // Update selection path bounds
-        select.selectResult.path = _scalePath(
+        select.selectResult.path = scalePathAround(
           select.selectResult.path,
           scaleX,
           scaleY,
@@ -1083,7 +1023,7 @@ class EditorState extends State<Editor> {
       _isRotating = false;
       _initialRotationAngle = 0;
       _isResizing = false;
-      _resizeHandleIndex = -1;
+      _selectionResize = null;
       return;
     }
     bool shouldSave = true;
@@ -1330,7 +1270,7 @@ class EditorState extends State<Editor> {
     _isRotating = false;
     _initialRotationAngle = 0;
     _isResizing = false;
-    _resizeHandleIndex = -1;
+    _selectionResize = null;
 
     if (shouldSave) autosaveAfterDelay();
   }
@@ -2275,36 +2215,6 @@ class EditorState extends State<Editor> {
           newPath.moveTo(rotated.dx, rotated.dy);
         } else {
           newPath.lineTo(rotated.dx, rotated.dy);
-        }
-      }
-    }
-    return newPath;
-  }
-
-  static Path _scalePath(
-    Path path,
-    double scaleX,
-    double scaleY,
-    Offset pivot,
-  ) {
-    if (scaleX == 1 && scaleY == 1) return path;
-    final metrics = path.computeMetrics().toList();
-    if (metrics.isEmpty) return path;
-
-    final newPath = Path();
-    for (final metric in metrics) {
-      for (double dist = 0; dist < metric.length; dist += 5) {
-        final tangent = metric.getTangentForOffset(dist);
-        if (tangent == null) continue;
-        final pos = tangent.position;
-        final scaled = Offset(
-          pivot.dx + (pos.dx - pivot.dx) * scaleX,
-          pivot.dy + (pos.dy - pivot.dy) * scaleY,
-        );
-        if (dist == 0) {
-          newPath.moveTo(scaled.dx, scaled.dy);
-        } else {
-          newPath.lineTo(scaled.dx, scaled.dy);
         }
       }
     }
