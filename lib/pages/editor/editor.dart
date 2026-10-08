@@ -1765,7 +1765,10 @@ class EditorState extends State<Editor> {
     createPage(currentPageIndex);
     coreInfo.pages[currentPageIndex].images.addAll(images);
     Select.currentSelect.selectImages(images, currentPageIndex);
-    _updateSelectionHandles(coreInfo.pages[currentPageIndex], Select.currentSelect);
+    _updateSelectionHandles(
+      coreInfo.pages[currentPageIndex],
+      Select.currentSelect,
+    );
     setState(() {});
     autosaveAfterDelay();
 
@@ -1811,7 +1814,10 @@ class EditorState extends State<Editor> {
     createPage(currentPageIndex);
     coreInfo.pages[currentPageIndex].images.add(image);
     Select.currentSelect.selectImages([image], currentPageIndex);
-    _updateSelectionHandles(coreInfo.pages[currentPageIndex], Select.currentSelect);
+    _updateSelectionHandles(
+      coreInfo.pages[currentPageIndex],
+      Select.currentSelect,
+    );
     setState(() {});
     autosaveAfterDelay();
   }
@@ -1849,7 +1855,10 @@ class EditorState extends State<Editor> {
     createPage(currentPageIndex);
     coreInfo.pages[currentPageIndex].images.add(image);
     Select.currentSelect.selectImages([image], currentPageIndex);
-    _updateSelectionHandles(coreInfo.pages[currentPageIndex], Select.currentSelect);
+    _updateSelectionHandles(
+      coreInfo.pages[currentPageIndex],
+      Select.currentSelect,
+    );
     setState(() {});
     autosaveAfterDelay();
   }
@@ -1888,7 +1897,10 @@ class EditorState extends State<Editor> {
     createPage(currentPageIndex);
     coreInfo.pages[currentPageIndex].images.add(image);
     Select.currentSelect.selectImages([image], currentPageIndex);
-    _updateSelectionHandles(coreInfo.pages[currentPageIndex], Select.currentSelect);
+    _updateSelectionHandles(
+      coreInfo.pages[currentPageIndex],
+      Select.currentSelect,
+    );
     setState(() {});
     autosaveAfterDelay();
   }
@@ -2119,7 +2131,10 @@ class EditorState extends State<Editor> {
       try {
         final mediaQuery = MediaQuery.maybeSizeOf(context);
         final screenSize = mediaQuery ?? const Size(800, 600);
-        final screenCenter = Offset(screenSize.width / 2, screenSize.height / 2);
+        final screenCenter = Offset(
+          screenSize.width / 2,
+          screenSize.height / 2,
+        );
         final localCenter = page.renderBox!.globalToLocal(screenCenter);
         if (!coreInfo.isInfiniteCanvas) {
           final clampedX = localCenter.dx.clamp(
@@ -2529,10 +2544,7 @@ class EditorState extends State<Editor> {
     final height = renderBounds.height.ceil().toDouble();
 
     final recorder = ui.PictureRecorder();
-    final canvas = ui.Canvas(
-      recorder,
-      Rect.fromLTWH(0, 0, width, height),
-    );
+    final canvas = ui.Canvas(recorder, Rect.fromLTWH(0, 0, width, height));
 
     // Draw background
     final bgPaint = Paint()..color = Colors.white;
@@ -3613,7 +3625,8 @@ class EditorState extends State<Editor> {
             }
           : null,
       onSetColor: isCurrentPageSelected ? _setSelectionColor : null,
-      isResizeActive: isCurrentPageSelected && (select?.isResizeActive ?? false),
+      isResizeActive:
+          isCurrentPageSelected && (select?.isResizeActive ?? false),
       onToggleResize: isCurrentPageSelected ? _toggleSelectionResize : null,
       onTakeScreenshot: isCurrentPageSelected ? _takeSelectionScreenshot : null,
       onAddToElements: isCurrentPageSelected ? _addToElements : null,

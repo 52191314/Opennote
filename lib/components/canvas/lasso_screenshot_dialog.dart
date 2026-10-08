@@ -64,10 +64,7 @@ class _LassoScreenshotDialogState extends State<LassoScreenshotDialog> {
       await tempFile.writeAsBytes(widget.imageBytes);
 
       await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(tempFile.path)],
-          sharePositionOrigin: origin,
-        ),
+        ShareParams(files: [XFile(tempFile.path)], sharePositionOrigin: origin),
       );
     } finally {
       if (mounted) setState(() => _isSharing = false);
@@ -102,10 +99,7 @@ class _LassoScreenshotDialogState extends State<LassoScreenshotDialog> {
         ],
       ),
       content: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxWidth: 380,
-          maxHeight: 340,
-        ),
+        constraints: const BoxConstraints(maxWidth: 380, maxHeight: 340),
         child: Container(
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
@@ -119,10 +113,7 @@ class _LassoScreenshotDialogState extends State<LassoScreenshotDialog> {
           child: Center(
             child: InteractiveViewer(
               maxScale: 3.0,
-              child: Image.memory(
-                widget.imageBytes,
-                fit: BoxFit.contain,
-              ),
+              child: Image.memory(widget.imageBytes, fit: BoxFit.contain),
             ),
           ),
         ),

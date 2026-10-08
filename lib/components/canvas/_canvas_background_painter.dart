@@ -48,8 +48,12 @@ class CanvasBackgroundPainter extends CustomPainter {
       } else {
         // Safe bounded canvas region around the page for infinite canvas
         const margin = 2000.0;
-        final baseWidth = size.width.isFinite && size.width > 0 ? size.width : 1000.0;
-        final baseHeight = size.height.isFinite && size.height > 0 ? size.height : 1400.0;
+        final baseWidth = size.width.isFinite && size.width > 0
+            ? size.width
+            : 1000.0;
+        final baseHeight = size.height.isFinite && size.height > 0
+            ? size.height
+            : 1400.0;
         visibleRect = Rect.fromLTRB(
           -margin,
           -margin,
@@ -156,7 +160,8 @@ class CanvasBackgroundPainter extends CustomPainter {
           final startY =
               (clampedBounds.top / lineHeight).floor() * lineHeight.toDouble();
           final endY =
-              (clampedBounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+              (clampedBounds.bottom / lineHeight).ceil() *
+              lineHeight.toDouble();
           final count = ((endY - startY) / lineHeight).ceil();
           if (count > 2000) return;
           for (double y = startY; y <= endY; y += lineHeight) {
@@ -189,7 +194,8 @@ class CanvasBackgroundPainter extends CustomPainter {
           final startY =
               (clampedBounds.top / lineHeight).floor() * lineHeight.toDouble();
           final endY =
-              (clampedBounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+              (clampedBounds.bottom / lineHeight).ceil() *
+              lineHeight.toDouble();
           final countX = ((endX - startX) / lineHeight).ceil();
           final countY = ((endY - startY) / lineHeight).ceil();
           if (countX > 2000 || countY > 2000) return;
@@ -215,7 +221,8 @@ class CanvasBackgroundPainter extends CustomPainter {
           final startY =
               (clampedBounds.top / lineHeight).floor() * lineHeight.toDouble();
           final endY =
-              (clampedBounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+              (clampedBounds.bottom / lineHeight).ceil() *
+              lineHeight.toDouble();
           final countX = ((endX - startX) / lineHeight).ceil();
           final countY = ((endY - startY) / lineHeight).ceil();
           if (countX * countY > 30000) return;
@@ -232,7 +239,8 @@ class CanvasBackgroundPainter extends CustomPainter {
           final startY =
               (clampedBounds.top / lineHeight).floor() * lineHeight.toDouble();
           final endY =
-              (clampedBounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+              (clampedBounds.bottom / lineHeight).ceil() *
+              lineHeight.toDouble();
           final countX = ((endX - startX) / lineHeight).ceil();
           final countY = ((endY - startY) / lineHeight).ceil();
           if (countX > 2000 || countY > 2000) return;
@@ -269,8 +277,10 @@ class CanvasBackgroundPainter extends CustomPainter {
             );
           }
 
-          final mMin = ((clampedBounds.top - tan30 * clampedBounds.right) / l).floor();
-          final mMax = ((clampedBounds.bottom - tan30 * clampedBounds.left) / l).ceil();
+          final mMin = ((clampedBounds.top - tan30 * clampedBounds.right) / l)
+              .floor();
+          final mMax = ((clampedBounds.bottom - tan30 * clampedBounds.left) / l)
+              .ceil();
           if (mMax - mMin > 2000) return;
           for (int m = mMin; m <= mMax; m++) {
             final b = m * l;
@@ -282,8 +292,10 @@ class CanvasBackgroundPainter extends CustomPainter {
             );
           }
 
-          final kMin = ((clampedBounds.top + tan30 * clampedBounds.left) / l).floor();
-          final kMax = ((clampedBounds.bottom + tan30 * clampedBounds.right) / l).ceil();
+          final kMin = ((clampedBounds.top + tan30 * clampedBounds.left) / l)
+              .floor();
+          final kMax =
+              ((clampedBounds.bottom + tan30 * clampedBounds.right) / l).ceil();
           if (kMax - kMin > 2000) return;
           for (int k = kMin; k <= kMax; k++) {
             final c = k * l;
@@ -300,7 +312,8 @@ class CanvasBackgroundPainter extends CustomPainter {
           final startY =
               (clampedBounds.top / lineHeight).floor() * lineHeight.toDouble();
           final endY =
-              (clampedBounds.bottom / lineHeight).ceil() * lineHeight.toDouble();
+              (clampedBounds.bottom / lineHeight).ceil() *
+              lineHeight.toDouble();
           final count = ((endY - startY) / lineHeight).ceil();
           if (count > 2000) return;
           for (double y = startY; y <= endY; y += lineHeight) {
