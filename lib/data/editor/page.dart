@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:async';
@@ -326,6 +327,19 @@ class EditorPage extends ChangeNotifier implements HasSize {
     for (final layer in layers) {
       if (layer.locked) continue;
       if (layer.strokes.remove(stroke)) return true;
+    }
+    return false;
+  }
+
+  /// Swaps [oldStroke] for [newStroke],
+  /// keeping its layer and its place in the stacking order.
+  /// Returns false if [oldStroke] isn't on this page.
+  bool replaceStroke(Stroke oldStroke, Stroke newStroke) {
+    for (final layer in layers) {
+      final index = layer.strokes.indexOf(oldStroke);
+      if (index == -1) continue;
+      layer.strokes[index] = newStroke;
+      return true;
     }
     return false;
   }

@@ -54,6 +54,7 @@ import 'package:saber/data/editor/editor_history.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/editor/selection_clipboard.dart';
 import 'package:saber/data/editor/selection_resize.dart';
+import 'package:saber/data/editor/selection_transform.dart';
 import 'package:saber/data/extensions/change_notifier_extensions.dart';
 import 'package:saber/data/extensions/matrix4_extensions.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
@@ -250,6 +251,10 @@ class EditorState extends State<Editor> {
 
   /// The resize handle drag in progress, if any.
   SelectionResize? _selectionResize;
+
+  /// The resize, rotation, or vertex edit in progress, once it has changed
+  /// something. Recorded in [history] when the gesture ends.
+  SelectionTransform? _selectionTransform;
 
   /// The initial angle (in radians) when the rotation gesture started.
   double _initialRotationAngle = 0;
@@ -522,6 +527,9 @@ class EditorState extends State<Editor> {
 
         case .backgroundPattern:
           coreInfo.backgroundPattern = item.backgroundPatternChange!.previous;
+
+        case .transform:
+          SelectionTransform.revert(item, coreInfo.pages[item.pageIndex]);
       }
 
       if (item.type != .move) {
@@ -574,6 +582,8 @@ class EditorState extends State<Editor> {
             backgroundPatternChange: item.backgroundPatternChange!.reverse(),
           ),
         );
+      case .transform:
+        undo(SelectionTransform.reversed(item));
     }
   }
 
@@ -656,6 +666,7 @@ class EditorState extends State<Editor> {
     _lastCanvasTapPageIndex = dragPageIndex;
     _lastCanvasTapTime = DateTime.now();
     history.canRedo = false;
+    _selectionTransform = null;
 
     if (page.activeLayer.locked &&
         (currentTool is Pen || currentTool is Eraser)) {
@@ -867,7 +878,11 @@ class EditorState extends State<Editor> {
     } else if (currentTool is Select) {
       final select = currentTool as Select;
       if (_isDraggingVertex && _draggedVertexStroke != null) {
-        final stroke = _draggedVertexStroke!;
+        _selectionTransform ??= SelectionTransform.begin(
+          page,
+          select.selectResult,
+        );
+        final stroke = select.selectResult.strokes.first;
         if (stroke is ArrowStroke) {
           if (_draggedVertexIndex == 0) {
             stroke.start = position;
@@ -907,6 +922,10 @@ class EditorState extends State<Editor> {
       }
       final resize = _selectionResize;
       if (_isResizing && resize != null && select.doneSelecting) {
+        _selectionTransform ??= SelectionTransform.begin(
+          page,
+          select.selectResult,
+        );
         final pivot = resize.pivot;
         final (x: scaleX, y: scaleY) = resize.stepTo(position);
 
@@ -941,6 +960,10 @@ class EditorState extends State<Editor> {
         );
         page.redrawStrokes();
       } else if (_isRotating && select.doneSelecting) {
+        _selectionTransform ??= SelectionTransform.begin(
+          page,
+          select.selectResult,
+        );
         // Compute rotation angle
         final bounds = select.selectResult.path.getBounds();
         final center = bounds.center;
@@ -1127,14 +1150,7 @@ class EditorState extends State<Editor> {
             Offset(bounds.left, bounds.bottom),
             Offset(bounds.left, center.dy),
           ];
-          history.recordChange(
-            EditorHistoryItem(
-              type: .draw,
-              pageIndex: dragPageIndex!,
-              strokes: select.selectResult.strokes,
-              images: select.selectResult.images,
-            ),
-          );
+          _recordSelectionTransform(dragPageIndex!);
           return;
         }
 
@@ -1209,21 +1225,21 @@ class EditorState extends State<Editor> {
           // Otherwise fall through to finalize the lasso selection
         }
 
-        if (select.doneSelecting) {
+        if (_isRotating || _isResizing) {
+          _recordSelectionTransform(dragPageIndex!);
+        } else if (select.doneSelecting) {
           history.recordChange(
             EditorHistoryItem(
-              type: (_isRotating || _isResizing) ? .draw : .move,
+              type: .move,
               pageIndex: dragPageIndex!,
               strokes: select.selectResult.strokes,
               images: select.selectResult.images,
-              offset: (_isRotating || _isResizing)
-                  ? null
-                  : .fromLTRB(
-                      moveOffset.dx,
-                      moveOffset.dy,
-                      moveOffset.dx,
-                      moveOffset.dy,
-                    ),
+              offset: .fromLTRB(
+                moveOffset.dx,
+                moveOffset.dy,
+                moveOffset.dx,
+                moveOffset.dy,
+              ),
             ),
           );
         } else {
@@ -1273,6 +1289,15 @@ class EditorState extends State<Editor> {
     _selectionResize = null;
 
     if (shouldSave) autosaveAfterDelay();
+  }
+
+  /// Records the resize, rotation, or vertex edit that just ended,
+  /// unless the gesture ended before changing anything.
+  void _recordSelectionTransform(int pageIndex) {
+    final transform = _selectionTransform;
+    _selectionTransform = null;
+    if (transform == null) return;
+    history.recordChange(transform.finish(pageIndex: pageIndex));
   }
 
   void onInteractionEnd(ScaleEndDetails details) {
