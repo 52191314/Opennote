@@ -1,5 +1,6 @@
 /// 🤖 Modified with DeepSeek v4 Flash
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:async';
@@ -51,6 +52,7 @@ import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/editor_exporter.dart';
 import 'package:saber/data/editor/editor_history.dart';
 import 'package:saber/data/editor/page.dart';
+import 'package:saber/data/editor/selection_clipboard.dart';
 import 'package:saber/data/extensions/change_notifier_extensions.dart';
 import 'package:saber/data/extensions/matrix4_extensions.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
@@ -226,8 +228,8 @@ class EditorState extends State<Editor> {
     onCircleDetected: _onCircleToSelectDetected,
   );
 
-  /// Strokes copied to the internal clipboard (for paste).
-  List<Stroke>? _clipboardStrokes;
+  /// The selection copied to the internal clipboard (for paste).
+  SelectionClipboard? _clipboard;
 
   /// Whether the user is currently rotating a selection.
   var _isRotating = false;
@@ -258,9 +260,6 @@ class EditorState extends State<Editor> {
   var _isDraggingVertex = false;
   var _draggedVertexIndex = -1;
   Stroke? _draggedVertexStroke;
-
-  /// Images copied to the internal clipboard (for paste).
-  List<EditorImage>? _clipboardImages;
 
   @override
   void initState() {
@@ -2316,12 +2315,7 @@ class EditorState extends State<Editor> {
     final select = currentTool as Select;
     if (!select.doneSelecting) return;
     setState(() {
-      _clipboardStrokes = select.selectResult.strokes
-          .map((stroke) => stroke.copy())
-          .toList();
-      _clipboardImages = select.selectResult.images
-          .map((image) => image.copy())
-          .toList();
+      _clipboard = SelectionClipboard.copyOf(select.selectResult);
     });
   }
 
@@ -2331,39 +2325,24 @@ class EditorState extends State<Editor> {
     if (!select.doneSelecting) return;
 
     setState(() {
-      final page = coreInfo.pages[select.selectResult.pageIndex];
-      final strokes = select.selectResult.strokes;
-      final images = select.selectResult.images;
-
+      final pageIndex = select.selectResult.pageIndex;
       const duplicationFeedbackOffset = Offset(25, -25);
 
-      final duplicatedStrokes = strokes.map((stroke) {
-        return stroke.copy()..shift(duplicationFeedbackOffset);
-      }).toList();
-
-      final duplicatedImages = images.map((image) {
-        return image.copy()
-          ..id = coreInfo.nextImageId++
-          ..dstRect.shift(duplicationFeedbackOffset);
-      }).toList();
-
-      page.activeLayerStrokes.addAll(duplicatedStrokes);
-      page.images.addAll(duplicatedImages);
+      final duplicated = SelectionClipboard.copyOf(select.selectResult)
+          .pasteOnto(
+            coreInfo.pages[pageIndex],
+            pageIndex: pageIndex,
+            takeImageId: () => coreInfo.nextImageId++,
+            offset: duplicationFeedbackOffset,
+          );
 
       select.selectResult = select.selectResult.copyWith(
-        strokes: duplicatedStrokes,
-        images: duplicatedImages,
+        strokes: duplicated.strokes,
+        images: duplicated.images,
         path: select.selectResult.path.shift(duplicationFeedbackOffset),
       );
 
-      history.recordChange(
-        EditorHistoryItem(
-          type: .draw,
-          pageIndex: select.selectResult.pageIndex,
-          strokes: duplicatedStrokes,
-          images: duplicatedImages,
-        ),
-      );
+      history.recordChange(duplicated);
       autosaveAfterDelay();
     });
   }
@@ -2675,38 +2654,15 @@ class EditorState extends State<Editor> {
   }
 
   void _pasteSelection() {
-    if (_clipboardStrokes == null && _clipboardImages == null) return;
-    if ((_clipboardStrokes?.isEmpty ?? true) &&
-        (_clipboardImages?.isEmpty ?? true)) {
-      return;
-    }
+    final clipboard = _clipboard;
+    if (clipboard == null || clipboard.isEmpty) return;
     setState(() {
-      final page = coreInfo.pages[dragPageIndex ?? currentPageIndex];
-      const pasteOffset = Offset(30, -30);
-
-      if (_clipboardStrokes != null) {
-        for (final stroke in _clipboardStrokes!) {
-          final pasted = stroke.copy()..shift(pasteOffset);
-          pasted.pageIndex = page.strokes.firstOrNull?.pageIndex ?? 0;
-          page.activeLayerStrokes.add(pasted);
-        }
-      }
-
-      if (_clipboardImages != null) {
-        for (final image in _clipboardImages!) {
-          final pasted = image.copy()
-            ..id = coreInfo.nextImageId++
-            ..dstRect.shift(pasteOffset);
-          page.images.add(pasted);
-        }
-      }
-
+      final pageIndex = dragPageIndex ?? currentPageIndex;
       history.recordChange(
-        EditorHistoryItem(
-          type: .draw,
-          pageIndex: page.strokes.firstOrNull?.pageIndex ?? 0,
-          strokes: _clipboardStrokes ?? [],
-          images: _clipboardImages ?? [],
+        clipboard.pasteOnto(
+          coreInfo.pages[pageIndex],
+          pageIndex: pageIndex,
+          takeImageId: () => coreInfo.nextImageId++,
         ),
       );
       autosaveAfterDelay();
