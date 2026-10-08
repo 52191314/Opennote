@@ -60,9 +60,7 @@ AI agents can find more instructions if needed on the wiki, e.g. [Maintainer not
 - **Web Console**: `http://192.168.1.6:8006` (or `http://homelab:8006`).
 - **macOS Guest SSH**:
   - Host Port: `50922` -> Guest Port `22`
-  - Account Name: `x`
-  - Username: `xx`
-  - Password: `1314xxx`
+  - Credentials are not stored in this repository because it is public. Ask the maintainer for them, and never commit usernames, passwords, tokens, or keys here.
 - **Memory Safeguards**:
   - Host has a 16 GiB swapfile (`/swapfile_docker_osx`, total 20 GiB swap active).
   - Production containers (`vaultwarden`, `caddy`, `nexuspay`, etc.) are immunized with `oom_score_adj: -1000` via systemd `oom-guard.timer`.

@@ -311,8 +311,8 @@ class _CalloutButton extends StatelessWidget {
     final color = isDestructive
         ? Colors.redAccent
         : isActive
-            ? theme.colorScheme.primary
-            : theme.colorScheme.onSurface;
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurface;
 
     return Material(
       color: isActive

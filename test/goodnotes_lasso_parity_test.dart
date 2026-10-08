@@ -43,32 +43,38 @@ void main() {
       expect(select.isResizeActive, isFalse);
     });
 
-    test('onDragStart initializes path at start position and does not connect to (0, 0)', () {
-      final select = Select.currentSelect;
-      select.onDragStart(const Offset(300, 400), 0);
-      select.onDragUpdate(const Offset(350, 400));
-      select.onDragUpdate(const Offset(350, 450));
-      select.onDragUpdate(const Offset(300, 450));
-      select.onDragEnd(const [], const []);
+    test(
+      'onDragStart initializes path at start position and does not connect to (0, 0)',
+      () {
+        final select = Select.currentSelect;
+        select.onDragStart(const Offset(300, 400), 0);
+        select.onDragUpdate(const Offset(350, 400));
+        select.onDragUpdate(const Offset(350, 450));
+        select.onDragUpdate(const Offset(300, 450));
+        select.onDragEnd(const [], const []);
 
-      final bounds = select.selectResult.path.getBounds();
-      expect(bounds.left, greaterThanOrEqualTo(290));
-      expect(bounds.top, greaterThanOrEqualTo(390));
-      expect(bounds.contains(Offset.zero), isFalse);
-    });
+        final bounds = select.selectResult.path.getBounds();
+        expect(bounds.left, greaterThanOrEqualTo(290));
+        expect(bounds.top, greaterThanOrEqualTo(390));
+        expect(bounds.contains(Offset.zero), isFalse);
+      },
+    );
 
-    test('computeTextContentRect returns Rect.zero for empty or whitespace-only document', () {
-      final page = EditorPage(size: const Size(1000, 1400));
-      expect(page.computeTextContentRect(30.0), equals(Rect.zero));
+    test(
+      'computeTextContentRect returns Rect.zero for empty or whitespace-only document',
+      () {
+        final page = EditorPage(size: const Size(1000, 1400));
+        expect(page.computeTextContentRect(30.0), equals(Rect.zero));
 
-      page.quill.controller.document.insert(0, '\n   \n\n');
-      expect(page.computeTextContentRect(30.0), equals(Rect.zero));
+        page.quill.controller.document.insert(0, '\n   \n\n');
+        expect(page.computeTextContentRect(30.0), equals(Rect.zero));
 
-      page.quill.controller.document.insert(0, 'Hello world');
-      final rect = page.computeTextContentRect(30.0);
-      expect(rect, isNot(equals(Rect.zero)));
-      expect(rect.width, greaterThan(0));
-    });
+        page.quill.controller.document.insert(0, 'Hello world');
+        final rect = page.computeTextContentRect(30.0);
+        expect(rect, isNot(equals(Rect.zero)));
+        expect(rect.width, greaterThan(0));
+      },
+    );
   });
 
   group('LassoCalloutMenu Goodnotes Parity Widget Tests', () {
@@ -165,7 +171,9 @@ void main() {
       expect(backCalled, isTrue);
     });
 
-    testWidgets('Resize button reflects active state with Done label', (tester) async {
+    testWidgets('Resize button reflects active state with Done label', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -221,22 +229,78 @@ void main() {
     testWidgets('renders dialog preview and actions', (tester) async {
       // 10x10 transparent PNG header bytes
       final dummyPng = Uint8List.fromList([
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
-        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
-        0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41,
-        0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
-        0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00,
-        0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
-        0x42, 0x60, 0x82,
+        0x89,
+        0x50,
+        0x4E,
+        0x47,
+        0x0D,
+        0x0A,
+        0x1A,
+        0x0A,
+        0x00,
+        0x00,
+        0x00,
+        0x0D,
+        0x49,
+        0x48,
+        0x44,
+        0x52,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x08,
+        0x06,
+        0x00,
+        0x00,
+        0x00,
+        0x1F,
+        0x15,
+        0xC4,
+        0x89,
+        0x00,
+        0x00,
+        0x00,
+        0x0A,
+        0x49,
+        0x44,
+        0x41,
+        0x54,
+        0x78,
+        0x9C,
+        0x63,
+        0x00,
+        0x01,
+        0x00,
+        0x00,
+        0x05,
+        0x00,
+        0x01,
+        0x0D,
+        0x0A,
+        0x2D,
+        0xB4,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x49,
+        0x45,
+        0x4E,
+        0x44,
+        0xAE,
+        0x42,
+        0x60,
+        0x82,
       ]);
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: LassoScreenshotDialog(imageBytes: dummyPng),
-          ),
+          home: Scaffold(body: LassoScreenshotDialog(imageBytes: dummyPng)),
         ),
       );
 
@@ -280,13 +344,11 @@ void main() {
   });
 
   group('LassoFilterPopup Goodnotes UI Wording Tests', () {
-    testWidgets('displays LASSO TYPE and INCLUDED IN SELECTION headers', (tester) async {
+    testWidgets('displays LASSO TYPE and INCLUDED IN SELECTION headers', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: LassoFilterPopup(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: LassoFilterPopup())),
       );
 
       expect(find.text('LASSO TYPE'), findsOneWidget);

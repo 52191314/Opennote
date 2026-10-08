@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:async';
@@ -194,6 +195,8 @@ class EditorPage extends ChangeNotifier implements HasSize {
     this.backgroundImage,
     this.activeLayerIndex = 0,
     this.bookmarked = false,
+    this.textContentOffset = Offset.zero,
+    this.textContentRotation = 0,
   }) : assert(
          (size == null) || (width == null && height == null),
          "size and width/height shouldn't both be specified",
@@ -223,6 +226,8 @@ class EditorPage extends ChangeNotifier implements HasSize {
   }) {
     final size = Size(json['w'] ?? defaultWidth, json['h'] ?? defaultHeight);
     final hasisPage = HasSize(size);
+    final textContentOffset = _parseOffset(json['to']);
+    final textContentRotation = (json['tr'] as num?)?.toDouble() ?? 0;
 
     // New format: layers stored in 'l' key
     if (json['l'] != null) {
@@ -230,6 +235,8 @@ class EditorPage extends ChangeNotifier implements HasSize {
       return EditorPage(
         size: size,
         bookmarked: json['bm'] as bool? ?? false,
+        textContentOffset: textContentOffset,
+        textContentRotation: textContentRotation,
         layers: layersList
             .map(
               (layerJson) => Layer.fromJson(
@@ -273,6 +280,8 @@ class EditorPage extends ChangeNotifier implements HasSize {
     return EditorPage(
       size: size,
       bookmarked: json['bm'] as bool? ?? false,
+      textContentOffset: textContentOffset,
+      textContentRotation: textContentRotation,
       strokes: parseStrokesJson(
         json['s'] as List?,
         page: hasisPage,
@@ -308,10 +317,19 @@ class EditorPage extends ChangeNotifier implements HasSize {
     );
   }
 
+  /// Reads an offset saved as `[dx, dy]`, or [Offset.zero] if there is none.
+  static Offset _parseOffset(Object? json) {
+    if (json is! List || json.length != 2) return Offset.zero;
+    return Offset((json[0] as num).toDouble(), (json[1] as num).toDouble());
+  }
+
   Map<String, dynamic> toJson(OrderedAssetCache assets) => {
     'w': size.width,
     'h': size.height,
     if (bookmarked) 'bm': bookmarked,
+    if (textContentOffset != Offset.zero)
+      'to': [textContentOffset.dx, textContentOffset.dy],
+    if (textContentRotation != 0) 'tr': textContentRotation,
     if (layers.isNotEmpty) 'l': layers.map((layer) => layer.toJson()).toList(),
     if (images.isNotEmpty)
       'i': images.map((image) => image.toJson(assets)).toList(),
@@ -326,6 +344,19 @@ class EditorPage extends ChangeNotifier implements HasSize {
     for (final layer in layers) {
       if (layer.locked) continue;
       if (layer.strokes.remove(stroke)) return true;
+    }
+    return false;
+  }
+
+  /// Swaps [oldStroke] for [newStroke],
+  /// keeping its layer and its place in the stacking order.
+  /// Returns false if [oldStroke] isn't on this page.
+  bool replaceStroke(Stroke oldStroke, Stroke newStroke) {
+    for (final layer in layers) {
+      final index = layer.strokes.indexOf(oldStroke);
+      if (index == -1) continue;
+      layer.strokes[index] = newStroke;
+      return true;
     }
     return false;
   }
@@ -479,6 +510,8 @@ class EditorPage extends ChangeNotifier implements HasSize {
     EditorImage? backgroundImage,
     int? activeLayerIndex,
     bool? bookmarked,
+    Offset? textContentOffset,
+    double? textContentRotation,
   }) => EditorPage(
     size: size ?? this.size,
     strokes: strokes,
@@ -488,6 +521,8 @@ class EditorPage extends ChangeNotifier implements HasSize {
     backgroundImage: backgroundImage ?? this.backgroundImage,
     activeLayerIndex: activeLayerIndex ?? this.activeLayerIndex,
     bookmarked: bookmarked ?? this.bookmarked,
+    textContentOffset: textContentOffset ?? this.textContentOffset,
+    textContentRotation: textContentRotation ?? this.textContentRotation,
   );
 
   /// Clones this page for use in a screenshot.

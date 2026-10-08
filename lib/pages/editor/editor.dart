@@ -1,5 +1,6 @@
 /// 🤖 Modified with DeepSeek v4 Flash
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:async';
@@ -51,6 +52,9 @@ import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/editor_exporter.dart';
 import 'package:saber/data/editor/editor_history.dart';
 import 'package:saber/data/editor/page.dart';
+import 'package:saber/data/editor/selection_clipboard.dart';
+import 'package:saber/data/editor/selection_resize.dart';
+import 'package:saber/data/editor/selection_transform.dart';
 import 'package:saber/data/extensions/change_notifier_extensions.dart';
 import 'package:saber/data/extensions/matrix4_extensions.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
@@ -226,8 +230,8 @@ class EditorState extends State<Editor> {
     onCircleDetected: _onCircleToSelectDetected,
   );
 
-  /// Strokes copied to the internal clipboard (for paste).
-  List<Stroke>? _clipboardStrokes;
+  /// The selection copied to the internal clipboard (for paste).
+  SelectionClipboard? _clipboard;
 
   /// Whether the user is currently rotating a selection.
   var _isRotating = false;
@@ -245,11 +249,12 @@ class EditorState extends State<Editor> {
   /// Whether the user is currently resizing a selection.
   var _isResizing = false;
 
-  /// Index of the resize handle being dragged (0-7).
-  var _resizeHandleIndex = -1;
+  /// The resize handle drag in progress, if any.
+  SelectionResize? _selectionResize;
 
-  /// The initial bounds of the selection when resize started.
-  Rect _resizeStartBounds = Rect.zero;
+  /// The resize, rotation, or vertex edit in progress, once it has changed
+  /// something. Recorded in [history] when the gesture ends.
+  SelectionTransform? _selectionTransform;
 
   /// The initial angle (in radians) when the rotation gesture started.
   double _initialRotationAngle = 0;
@@ -258,9 +263,6 @@ class EditorState extends State<Editor> {
   var _isDraggingVertex = false;
   var _draggedVertexIndex = -1;
   Stroke? _draggedVertexStroke;
-
-  /// Images copied to the internal clipboard (for paste).
-  List<EditorImage>? _clipboardImages;
 
   @override
   void initState() {
@@ -525,6 +527,9 @@ class EditorState extends State<Editor> {
 
         case .backgroundPattern:
           coreInfo.backgroundPattern = item.backgroundPatternChange!.previous;
+
+        case .transform:
+          SelectionTransform.revert(item, coreInfo.pages[item.pageIndex]);
       }
 
       if (item.type != .move) {
@@ -577,6 +582,8 @@ class EditorState extends State<Editor> {
             backgroundPatternChange: item.backgroundPatternChange!.reverse(),
           ),
         );
+      case .transform:
+        undo(SelectionTransform.reversed(item));
     }
   }
 
@@ -659,6 +666,7 @@ class EditorState extends State<Editor> {
     _lastCanvasTapPageIndex = dragPageIndex;
     _lastCanvasTapTime = DateTime.now();
     history.canRedo = false;
+    _selectionTransform = null;
 
     if (page.activeLayer.locked &&
         (currentTool is Pen || currentTool is Eraser)) {
@@ -746,8 +754,10 @@ class EditorState extends State<Editor> {
           for (int i = 0; i < resizeHandles.length; i++) {
             if ((position - resizeHandles[i]).distance < 16) {
               _isResizing = true;
-              _resizeHandleIndex = i;
-              _resizeStartBounds = select.selectResult.path.getBounds();
+              _selectionResize = SelectionResize(
+                startBounds: select.selectResult.path.getBounds(),
+                handleIndex: i,
+              );
               return;
             }
           }
@@ -868,7 +878,11 @@ class EditorState extends State<Editor> {
     } else if (currentTool is Select) {
       final select = currentTool as Select;
       if (_isDraggingVertex && _draggedVertexStroke != null) {
-        final stroke = _draggedVertexStroke!;
+        _selectionTransform ??= SelectionTransform.begin(
+          page,
+          select.selectResult,
+        );
+        final stroke = select.selectResult.strokes.first;
         if (stroke is ArrowStroke) {
           if (_draggedVertexIndex == 0) {
             stroke.start = position;
@@ -906,70 +920,14 @@ class EditorState extends State<Editor> {
         page.redrawStrokes();
         return;
       }
-      if (_isResizing && select.doneSelecting) {
-        // Compute scale factors based on handle drag
-        // Handle indices: 0=topLeft, 1=topCenter, 2=topRight,
-        //                3=middleRight, 4=bottomRight, 5=bottomCenter,
-        //                6=bottomLeft, 7=middleLeft
-        final bounds = _resizeStartBounds;
-        final handleIdx = _resizeHandleIndex;
-
-        // Determine pivot (opposite corner/edge)
-        final pivot = switch (handleIdx) {
-          0 => bounds.bottomRight, // topLeft → pivot bottomRight
-          1 => Offset(
-            bounds.center.dx,
-            bounds.bottom,
-          ), // topCenter → pivot bottomCenter
-          2 => bounds.bottomLeft, // topRight → pivot bottomLeft
-          3 => Offset(
-            bounds.left,
-            bounds.center.dy,
-          ), // middleRight → pivot middleLeft
-          4 => bounds.topLeft, // bottomRight → pivot topLeft
-          5 => Offset(
-            bounds.center.dx,
-            bounds.top,
-          ), // bottomCenter → pivot topCenter
-          6 => bounds.topRight, // bottomLeft → pivot topRight
-          _ => Offset(
-            bounds.right,
-            bounds.center.dy,
-          ), // middleLeft → pivot middleRight
-        };
-
-        double scaleX, scaleY;
-
-        switch (handleIdx) {
-          case 0: // topLeft
-            scaleX = (bounds.right - position.dx) / bounds.width;
-            scaleY = (bounds.bottom - position.dy) / bounds.height;
-          case 1: // topCenter
-            scaleX = 1;
-            scaleY = (bounds.bottom - position.dy) / bounds.height;
-          case 2: // topRight
-            scaleX = (position.dx - bounds.left) / bounds.width;
-            scaleY = (bounds.bottom - position.dy) / bounds.height;
-          case 3: // middleRight
-            scaleX = (position.dx - bounds.left) / bounds.width;
-            scaleY = 1;
-          case 4: // bottomRight
-            scaleX = (position.dx - bounds.left) / bounds.width;
-            scaleY = (position.dy - bounds.top) / bounds.height;
-          case 5: // bottomCenter
-            scaleX = 1;
-            scaleY = (position.dy - bounds.top) / bounds.height;
-          case 6: // bottomLeft
-            scaleX = (bounds.right - position.dx) / bounds.width;
-            scaleY = (position.dy - bounds.top) / bounds.height;
-          default: // middleLeft
-            scaleX = (bounds.right - position.dx) / bounds.width;
-            scaleY = 1;
-        }
-
-        // Prevent flipping (minimum 10% size)
-        scaleX = scaleX.clamp(0.1, 10);
-        scaleY = scaleY.clamp(0.1, 10);
+      final resize = _selectionResize;
+      if (_isResizing && resize != null && select.doneSelecting) {
+        _selectionTransform ??= SelectionTransform.begin(
+          page,
+          select.selectResult,
+        );
+        final pivot = resize.pivot;
+        final (x: scaleX, y: scaleY) = resize.stepTo(position);
 
         for (final stroke in select.selectResult.strokes) {
           stroke.scaleAround(scaleX, scaleY, pivot);
@@ -994,7 +952,7 @@ class EditorState extends State<Editor> {
           );
         }
         // Update selection path bounds
-        select.selectResult.path = _scalePath(
+        select.selectResult.path = scalePathAround(
           select.selectResult.path,
           scaleX,
           scaleY,
@@ -1002,6 +960,10 @@ class EditorState extends State<Editor> {
         );
         page.redrawStrokes();
       } else if (_isRotating && select.doneSelecting) {
+        _selectionTransform ??= SelectionTransform.begin(
+          page,
+          select.selectResult,
+        );
         // Compute rotation angle
         final bounds = select.selectResult.path.getBounds();
         final center = bounds.center;
@@ -1084,7 +1046,7 @@ class EditorState extends State<Editor> {
       _isRotating = false;
       _initialRotationAngle = 0;
       _isResizing = false;
-      _resizeHandleIndex = -1;
+      _selectionResize = null;
       return;
     }
     bool shouldSave = true;
@@ -1188,14 +1150,7 @@ class EditorState extends State<Editor> {
             Offset(bounds.left, bounds.bottom),
             Offset(bounds.left, center.dy),
           ];
-          history.recordChange(
-            EditorHistoryItem(
-              type: .draw,
-              pageIndex: dragPageIndex!,
-              strokes: select.selectResult.strokes,
-              images: select.selectResult.images,
-            ),
-          );
+          _recordSelectionTransform(dragPageIndex!);
           return;
         }
 
@@ -1270,21 +1225,21 @@ class EditorState extends State<Editor> {
           // Otherwise fall through to finalize the lasso selection
         }
 
-        if (select.doneSelecting) {
+        if (_isRotating || _isResizing) {
+          _recordSelectionTransform(dragPageIndex!);
+        } else if (select.doneSelecting) {
           history.recordChange(
             EditorHistoryItem(
-              type: (_isRotating || _isResizing) ? .draw : .move,
+              type: .move,
               pageIndex: dragPageIndex!,
               strokes: select.selectResult.strokes,
               images: select.selectResult.images,
-              offset: (_isRotating || _isResizing)
-                  ? null
-                  : .fromLTRB(
-                      moveOffset.dx,
-                      moveOffset.dy,
-                      moveOffset.dx,
-                      moveOffset.dy,
-                    ),
+              offset: .fromLTRB(
+                moveOffset.dx,
+                moveOffset.dy,
+                moveOffset.dx,
+                moveOffset.dy,
+              ),
             ),
           );
         } else {
@@ -1331,9 +1286,18 @@ class EditorState extends State<Editor> {
     _isRotating = false;
     _initialRotationAngle = 0;
     _isResizing = false;
-    _resizeHandleIndex = -1;
+    _selectionResize = null;
 
     if (shouldSave) autosaveAfterDelay();
+  }
+
+  /// Records the resize, rotation, or vertex edit that just ended,
+  /// unless the gesture ended before changing anything.
+  void _recordSelectionTransform(int pageIndex) {
+    final transform = _selectionTransform;
+    _selectionTransform = null;
+    if (transform == null) return;
+    history.recordChange(transform.finish(pageIndex: pageIndex));
   }
 
   void onInteractionEnd(ScaleEndDetails details) {
@@ -1765,7 +1729,10 @@ class EditorState extends State<Editor> {
     createPage(currentPageIndex);
     coreInfo.pages[currentPageIndex].images.addAll(images);
     Select.currentSelect.selectImages(images, currentPageIndex);
-    _updateSelectionHandles(coreInfo.pages[currentPageIndex], Select.currentSelect);
+    _updateSelectionHandles(
+      coreInfo.pages[currentPageIndex],
+      Select.currentSelect,
+    );
     setState(() {});
     autosaveAfterDelay();
 
@@ -1811,7 +1778,10 @@ class EditorState extends State<Editor> {
     createPage(currentPageIndex);
     coreInfo.pages[currentPageIndex].images.add(image);
     Select.currentSelect.selectImages([image], currentPageIndex);
-    _updateSelectionHandles(coreInfo.pages[currentPageIndex], Select.currentSelect);
+    _updateSelectionHandles(
+      coreInfo.pages[currentPageIndex],
+      Select.currentSelect,
+    );
     setState(() {});
     autosaveAfterDelay();
   }
@@ -1849,7 +1819,10 @@ class EditorState extends State<Editor> {
     createPage(currentPageIndex);
     coreInfo.pages[currentPageIndex].images.add(image);
     Select.currentSelect.selectImages([image], currentPageIndex);
-    _updateSelectionHandles(coreInfo.pages[currentPageIndex], Select.currentSelect);
+    _updateSelectionHandles(
+      coreInfo.pages[currentPageIndex],
+      Select.currentSelect,
+    );
     setState(() {});
     autosaveAfterDelay();
   }
@@ -1888,7 +1861,10 @@ class EditorState extends State<Editor> {
     createPage(currentPageIndex);
     coreInfo.pages[currentPageIndex].images.add(image);
     Select.currentSelect.selectImages([image], currentPageIndex);
-    _updateSelectionHandles(coreInfo.pages[currentPageIndex], Select.currentSelect);
+    _updateSelectionHandles(
+      coreInfo.pages[currentPageIndex],
+      Select.currentSelect,
+    );
     setState(() {});
     autosaveAfterDelay();
   }
@@ -2119,7 +2095,10 @@ class EditorState extends State<Editor> {
       try {
         final mediaQuery = MediaQuery.maybeSizeOf(context);
         final screenSize = mediaQuery ?? const Size(800, 600);
-        final screenCenter = Offset(screenSize.width / 2, screenSize.height / 2);
+        final screenCenter = Offset(
+          screenSize.width / 2,
+          screenSize.height / 2,
+        );
         final localCenter = page.renderBox!.globalToLocal(screenCenter);
         if (!coreInfo.isInfiniteCanvas) {
           final clampedX = localCenter.dx.clamp(
@@ -2267,46 +2246,11 @@ class EditorState extends State<Editor> {
     return newPath;
   }
 
-  static Path _scalePath(
-    Path path,
-    double scaleX,
-    double scaleY,
-    Offset pivot,
-  ) {
-    if (scaleX == 1 && scaleY == 1) return path;
-    final metrics = path.computeMetrics().toList();
-    if (metrics.isEmpty) return path;
-
-    final newPath = Path();
-    for (final metric in metrics) {
-      for (double dist = 0; dist < metric.length; dist += 5) {
-        final tangent = metric.getTangentForOffset(dist);
-        if (tangent == null) continue;
-        final pos = tangent.position;
-        final scaled = Offset(
-          pivot.dx + (pos.dx - pivot.dx) * scaleX,
-          pivot.dy + (pos.dy - pivot.dy) * scaleY,
-        );
-        if (dist == 0) {
-          newPath.moveTo(scaled.dx, scaled.dy);
-        } else {
-          newPath.lineTo(scaled.dx, scaled.dy);
-        }
-      }
-    }
-    return newPath;
-  }
-
   void _copySelection() {
     final select = currentTool as Select;
     if (!select.doneSelecting) return;
     setState(() {
-      _clipboardStrokes = select.selectResult.strokes
-          .map((stroke) => stroke.copy())
-          .toList();
-      _clipboardImages = select.selectResult.images
-          .map((image) => image.copy())
-          .toList();
+      _clipboard = SelectionClipboard.copyOf(select.selectResult);
     });
   }
 
@@ -2316,39 +2260,24 @@ class EditorState extends State<Editor> {
     if (!select.doneSelecting) return;
 
     setState(() {
-      final page = coreInfo.pages[select.selectResult.pageIndex];
-      final strokes = select.selectResult.strokes;
-      final images = select.selectResult.images;
-
+      final pageIndex = select.selectResult.pageIndex;
       const duplicationFeedbackOffset = Offset(25, -25);
 
-      final duplicatedStrokes = strokes.map((stroke) {
-        return stroke.copy()..shift(duplicationFeedbackOffset);
-      }).toList();
-
-      final duplicatedImages = images.map((image) {
-        return image.copy()
-          ..id = coreInfo.nextImageId++
-          ..dstRect.shift(duplicationFeedbackOffset);
-      }).toList();
-
-      page.activeLayerStrokes.addAll(duplicatedStrokes);
-      page.images.addAll(duplicatedImages);
+      final duplicated = SelectionClipboard.copyOf(select.selectResult)
+          .pasteOnto(
+            coreInfo.pages[pageIndex],
+            pageIndex: pageIndex,
+            takeImageId: () => coreInfo.nextImageId++,
+            offset: duplicationFeedbackOffset,
+          );
 
       select.selectResult = select.selectResult.copyWith(
-        strokes: duplicatedStrokes,
-        images: duplicatedImages,
+        strokes: duplicated.strokes,
+        images: duplicated.images,
         path: select.selectResult.path.shift(duplicationFeedbackOffset),
       );
 
-      history.recordChange(
-        EditorHistoryItem(
-          type: .draw,
-          pageIndex: select.selectResult.pageIndex,
-          strokes: duplicatedStrokes,
-          images: duplicatedImages,
-        ),
-      );
+      history.recordChange(duplicated);
       autosaveAfterDelay();
     });
   }
@@ -2529,10 +2458,7 @@ class EditorState extends State<Editor> {
     final height = renderBounds.height.ceil().toDouble();
 
     final recorder = ui.PictureRecorder();
-    final canvas = ui.Canvas(
-      recorder,
-      Rect.fromLTWH(0, 0, width, height),
-    );
+    final canvas = ui.Canvas(recorder, Rect.fromLTWH(0, 0, width, height));
 
     // Draw background
     final bgPaint = Paint()..color = Colors.white;
@@ -2663,38 +2589,15 @@ class EditorState extends State<Editor> {
   }
 
   void _pasteSelection() {
-    if (_clipboardStrokes == null && _clipboardImages == null) return;
-    if ((_clipboardStrokes?.isEmpty ?? true) &&
-        (_clipboardImages?.isEmpty ?? true)) {
-      return;
-    }
+    final clipboard = _clipboard;
+    if (clipboard == null || clipboard.isEmpty) return;
     setState(() {
-      final page = coreInfo.pages[dragPageIndex ?? currentPageIndex];
-      const pasteOffset = Offset(30, -30);
-
-      if (_clipboardStrokes != null) {
-        for (final stroke in _clipboardStrokes!) {
-          final pasted = stroke.copy()..shift(pasteOffset);
-          pasted.pageIndex = page.strokes.firstOrNull?.pageIndex ?? 0;
-          page.activeLayerStrokes.add(pasted);
-        }
-      }
-
-      if (_clipboardImages != null) {
-        for (final image in _clipboardImages!) {
-          final pasted = image.copy()
-            ..id = coreInfo.nextImageId++
-            ..dstRect.shift(pasteOffset);
-          page.images.add(pasted);
-        }
-      }
-
+      final pageIndex = dragPageIndex ?? currentPageIndex;
       history.recordChange(
-        EditorHistoryItem(
-          type: .draw,
-          pageIndex: page.strokes.firstOrNull?.pageIndex ?? 0,
-          strokes: _clipboardStrokes ?? [],
-          images: _clipboardImages ?? [],
+        clipboard.pasteOnto(
+          coreInfo.pages[pageIndex],
+          pageIndex: pageIndex,
+          takeImageId: () => coreInfo.nextImageId++,
         ),
       );
       autosaveAfterDelay();
@@ -3613,7 +3516,8 @@ class EditorState extends State<Editor> {
             }
           : null,
       onSetColor: isCurrentPageSelected ? _setSelectionColor : null,
-      isResizeActive: isCurrentPageSelected && (select?.isResizeActive ?? false),
+      isResizeActive:
+          isCurrentPageSelected && (select?.isResizeActive ?? false),
       onToggleResize: isCurrentPageSelected ? _toggleSelectionResize : null,
       onTakeScreenshot: isCurrentPageSelected ? _takeSelectionScreenshot : null,
       onAddToElements: isCurrentPageSelected ? _addToElements : null,

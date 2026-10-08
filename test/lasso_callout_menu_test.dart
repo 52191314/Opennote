@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'package:flutter/material.dart';
@@ -53,7 +54,11 @@ void main() {
 
       expect(find.text('Cut'), findsOneWidget);
       expect(find.text('Copy'), findsOneWidget);
-      expect(find.text('Duplicate'), findsOneWidget);
+      expect(
+        find.text('Duplicate'),
+        findsNothing,
+        reason: 'Duplicate moved out of the callout to the selection bar',
+      );
       expect(find.text('Color'), findsOneWidget);
       expect(find.text('Delete'), findsOneWidget);
       expect(find.text('Crop'), findsNothing);
@@ -62,7 +67,6 @@ void main() {
     testWidgets('Invokes callbacks on action tap', (tester) async {
       bool cutTapped = false;
       bool copyTapped = false;
-      bool duplicateTapped = false;
       bool deleteTapped = false;
 
       await tester.pumpWidget(
@@ -71,7 +75,7 @@ void main() {
             body: LassoCalloutMenu(
               onCut: () => cutTapped = true,
               onCopy: () => copyTapped = true,
-              onDuplicate: () => duplicateTapped = true,
+              onDuplicate: () {},
               onDelete: () => deleteTapped = true,
               onSetColor: (_) {},
             ),
@@ -86,10 +90,6 @@ void main() {
       await tester.tap(find.text('Copy'));
       await tester.pump();
       expect(copyTapped, isTrue);
-
-      await tester.tap(find.text('Duplicate'));
-      await tester.pump();
-      expect(duplicateTapped, isTrue);
 
       await tester.tap(find.text('Delete'));
       await tester.pump();
