@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:math';
@@ -300,12 +301,14 @@ class ScribbleDetector {
   }
 
   /// Erase strokes at the given position using the eraser tool.
+  ///
+  /// Returns the strokes not already erased earlier in this gesture.
   List<Stroke> _eraseAt(Offset position, List<Stroke> existingStrokes) {
     _eraser ??= Eraser(size: eraserRadius);
-    final erased = _eraser!.checkForOverlappingStrokes(
-      position,
-      existingStrokes,
-    );
+    final erased = _eraser!
+        .checkForOverlappingStrokes(position, existingStrokes)
+        .where((stroke) => !_erasedStrokes.contains(stroke))
+        .toList();
     _erasedStrokes.addAll(erased);
     return erased;
   }

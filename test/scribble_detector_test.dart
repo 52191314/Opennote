@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:math';
@@ -197,6 +198,40 @@ void main() {
       final endErased = detector.end();
       expect(endErased, contains(strokeToErase));
       expect(detector.state, ScribbleState.undetermined);
+    });
+
+    test('Reports a stroke only once however many points cross it', () {
+      final detector = ScribbleDetector();
+      detector.start(const Offset(100, 100));
+
+      final strokeToErase = Stroke(
+        color: const Color(0xFF000000),
+        pressureEnabled: false,
+        options: StrokeOptions(size: 2),
+        pageIndex: 0,
+        page: const HasSize(Size(200, 200)),
+        toolId: ToolId.ballpointPen,
+      );
+      for (double x = 90; x <= 170; x += 10) {
+        strokeToErase.addPoint(Offset(x, 105));
+      }
+      final existingStrokes = <Stroke>[strokeToErase];
+
+      final points = <Offset>[];
+      for (double x = 105; x <= 160; x += 5) points.add(Offset(x, 100));
+      for (double x = 155; x >= 100; x -= 5) points.add(Offset(x, 103));
+      for (double x = 105; x <= 160; x += 5) points.add(Offset(x, 106));
+      for (double x = 155; x >= 100; x -= 5) points.add(Offset(x, 109));
+
+      final allErased = <Stroke>[];
+      for (final pt in points) {
+        allErased.addAll(detector.update(pt, existingStrokes, 2.0));
+      }
+
+      expect(allErased, [strokeToErase]);
+      expect(detector.end(), [
+        strokeToErase,
+      ], reason: 'Undo re-inserts every stroke in this list');
     });
 
     test('Erases underlying EditorImage sticker when scribbling across it', () {
