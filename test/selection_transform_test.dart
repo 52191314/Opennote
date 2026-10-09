@@ -113,6 +113,44 @@ void main() {
       expect(image.dstRect, movedRect);
     });
 
+    test('revert puts moved and rotated page text back, and redo moves it', () {
+      final page = EditorPage();
+      final selection = _selection([], [])..textSelected = true;
+
+      final transform = SelectionTransform.begin(page, selection);
+      page.textContentOffset = const Offset(30, 40);
+      page.textContentRotation = 0.5;
+      final item = transform.finish(pageIndex: 0);
+
+      SelectionTransform.revert(item, page);
+
+      expect(page.textContentOffset, Offset.zero);
+      expect(page.textContentRotation, 0);
+
+      SelectionTransform.revert(SelectionTransform.reversed(item), page);
+
+      expect(page.textContentOffset, const Offset(30, 40));
+      expect(page.textContentRotation, 0.5);
+    });
+
+    test('revert leaves page text alone when it was not selected', () {
+      final original = _stroke(const Offset(10, 20));
+      final page = EditorPage(
+        strokes: [original],
+        textContentOffset: const Offset(5, 5),
+      );
+      final selection = _selection([original], []);
+
+      final transform = SelectionTransform.begin(page, selection);
+      selection.strokes.single.scaleAround(2, 2, Offset.zero);
+      final item = transform.finish(pageIndex: 0);
+      page.textContentOffset = const Offset(70, 70);
+
+      SelectionTransform.revert(item, page);
+
+      expect(page.textContentOffset, const Offset(70, 70));
+    });
+
     test('undoing an earlier draw still finds the stroke after a revert', () {
       final original = _stroke(const Offset(10, 20));
       final page = EditorPage(strokes: [original]);

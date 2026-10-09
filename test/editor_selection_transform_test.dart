@@ -124,6 +124,43 @@ void main() {
     expect(page.strokes.single.points.last.y, moreOrLessEquals(rotatedEnd.y));
   });
 
+  testGoldens('Editor: moving selected page text can be undone and redone', (
+    tester,
+  ) async {
+    final editorState = await _pumpEditor(tester);
+    final page = editorState.coreInfo.pages.first;
+    final select = Select.currentSelect;
+    editorState.currentTool = select;
+    select.selectResult = SelectResult(
+      pageIndex: 0,
+      strokes: [],
+      images: [],
+      path: Path()..addRect(const Rect.fromLTWH(50, 50, 200, 100)),
+      textSelected: true,
+    );
+    select.doneSelecting = true;
+
+    await _drag(
+      tester,
+      editorState,
+      page,
+      from: const Offset(100, 100),
+      to: const [Offset(110, 110), Offset(130, 140)],
+    );
+
+    _expectOffset(page.textContentOffset, const Offset(30, 40));
+
+    editorState.undo();
+    await tester.pump();
+
+    _expectOffset(page.textContentOffset, Offset.zero);
+
+    editorState.redo();
+    await tester.pump();
+
+    _expectOffset(page.textContentOffset, const Offset(30, 40));
+  });
+
   testGoldens('Editor: touching a handle without dragging records nothing', (
     tester,
   ) async {
@@ -138,6 +175,11 @@ void main() {
     expect(editorState.history.canUndo, isFalse);
     expect(page.strokes.single.points.last.x, moreOrLessEquals(_end.dx));
   });
+}
+
+void _expectOffset(Offset actual, Offset expected) {
+  expect(actual.dx, moreOrLessEquals(expected.dx, epsilon: 1e-6));
+  expect(actual.dy, moreOrLessEquals(expected.dy, epsilon: 1e-6));
 }
 
 Future<EditorState> _pumpEditor(WidgetTester tester) async {
@@ -155,6 +197,8 @@ Future<EditorState> _pumpEditor(WidgetTester tester) async {
       ),
     ),
   );
+
+  await tester.pump();
 
   final editorState = tester.state<EditorState>(find.byType(Editor));
   addTearDown(editorState.cancelAutosaveAndMarkSaved);

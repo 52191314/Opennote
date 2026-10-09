@@ -154,6 +154,7 @@ class EditorHistoryItem {
     this.backgroundPatternChange,
     this.replacedStrokes,
     this.imageRectChange,
+    this.textPlacementChange,
   }) : assert(
          type != .transform ||
              (replacedStrokes?.length == strokes.length &&
@@ -207,6 +208,11 @@ class EditorHistoryItem {
   /// before and after the change.
   final Map<EditorImage, Change<Rect>>? imageRectChange;
 
+  /// For [EditorHistoryItemType.move] and [EditorHistoryItemType.transform]:
+  /// where the page's text was before and after the change,
+  /// or null if the text wasn't part of the selection.
+  final Change<TextPlacement>? textPlacementChange;
+
   EditorHistoryItem copyWith({
     EditorHistoryItemType? type,
     int? pageIndex,
@@ -219,6 +225,7 @@ class EditorHistoryItem {
     Change<CanvasBackgroundPattern>? backgroundPatternChange,
     List<Stroke>? replacedStrokes,
     Map<EditorImage, Change<Rect>>? imageRectChange,
+    Change<TextPlacement>? textPlacementChange,
   }) {
     return EditorHistoryItem(
       type: type ?? this.type,
@@ -233,6 +240,7 @@ class EditorHistoryItem {
           backgroundPatternChange ?? this.backgroundPatternChange,
       replacedStrokes: replacedStrokes ?? this.replacedStrokes,
       imageRectChange: imageRectChange ?? this.imageRectChange,
+      textPlacementChange: textPlacementChange ?? this.textPlacementChange,
     );
   }
 }
