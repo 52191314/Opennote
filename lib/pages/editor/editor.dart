@@ -40,6 +40,7 @@ import 'package:saber/components/theming/dynamic_material_app.dart';
 import 'package:saber/components/theming/saber_theme.dart';
 import 'package:saber/components/toolbar/color_bar.dart';
 import 'package:saber/components/toolbar/editor_bottom_sheet.dart';
+import 'package:saber/components/toolbar/editor_toolbar_actions.dart';
 import 'package:saber/components/toolbar/elements_sheet.dart';
 import 'package:saber/components/toolbar/export_bar.dart';
 import 'package:saber/components/toolbar/goodnotes_header_bar.dart';
@@ -2111,6 +2112,34 @@ class EditorState extends State<Editor> implements EditorGestureHost {
     lastSeenPointerCount = 0;
   }
 
+  /// Describes the editor to whichever toolbar is showing.
+  EditorToolbarActions _toolbarActions() => EditorToolbarActions(
+    readOnly: coreInfo.readOnly,
+    setTool: _setTool,
+    currentTool: currentTool,
+    setColor: _setToolColor,
+    quillFocus: quillFocus,
+    textEditing: currentTool == Tool.textEditing,
+    toggleTextEditing: _toggleTextEditing,
+    pickPhoto: _pickPhotos,
+    pickShape: _insertShapeFromLibrary,
+    paste: paste,
+    copySelection: _copySelection,
+    pasteSelection: _pasteSelection,
+    duplicateSelection: _duplicateSelection,
+    deleteSelection: _deleteCurrentSelection,
+    cropPossible: _cropPossible,
+    cropActive: _cropActive,
+    toggleCrop: _toggleCrop,
+    bringToFront: _bringSelectionToFront,
+    sendToBack: _sendSelectionToBack,
+    smoothen: _smoothenSelection,
+    addToElements: _addToElements,
+    openElementsSheet: _openElementsSheet,
+    onRevealAllTape: _revealAllTapeOnCurrentPage,
+    onConcealAllTape: _concealAllTapeOnCurrentPage,
+  );
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.of(context);
@@ -2189,67 +2218,22 @@ class EditorState extends State<Editor> implements EditorGestureHost {
           : null,
     );
 
+    final toolbarActions = _toolbarActions();
     final Widget toolbarContent = stows.goodnotesUiMode.value
         ? GoodnotesToolbar(
-            readOnly: coreInfo.readOnly,
-            setTool: _setTool,
-            currentTool: currentTool,
-            duplicateSelection: _duplicateSelection,
-            deleteSelection: _deleteCurrentSelection,
-            setColor: _setToolColor,
-            quillFocus: quillFocus,
-            textEditing: currentTool == Tool.textEditing,
-            toggleTextEditing: _toggleTextEditing,
-            pickPhoto: _pickPhotos,
-            pickShape: _insertShapeFromLibrary,
-            paste: paste,
-            copySelection: _copySelection,
-            pasteSelection: _pasteSelection,
-            cropPossible: _cropPossible,
-            cropActive: _cropActive,
-            toggleCrop: _toggleCrop,
-            bringToFront: _bringSelectionToFront,
-            sendToBack: _sendSelectionToBack,
-            smoothen: _smoothenSelection,
-            addToElements: _addToElements,
-            openElementsSheet: _openElementsSheet,
-            onRevealAllTape: _revealAllTapeOnCurrentPage,
-            onConcealAllTape: _concealAllTapeOnCurrentPage,
+            actions: toolbarActions,
             onClearPage: () => clearPage(currentPageIndex),
           )
         : Toolbar(
-            readOnly: coreInfo.readOnly,
-            setTool: _setTool,
-            currentTool: currentTool,
-            duplicateSelection: _duplicateSelection,
-            deleteSelection: _deleteCurrentSelection,
-            setColor: _setToolColor,
-            quillFocus: quillFocus,
-            textEditing: currentTool == Tool.textEditing,
-            toggleTextEditing: _toggleTextEditing,
+            actions: toolbarActions,
             undo: undo,
             isUndoPossible: history.canUndo,
             redo: redo,
             isRedoPossible: history.canRedo,
             toggleFingerDrawing: _toggleFingerDrawing,
-            pickPhoto: _pickPhotos,
-            pickShape: _insertShapeFromLibrary,
-            paste: paste,
-            copySelection: _copySelection,
-            pasteSelection: _pasteSelection,
-            cropPossible: _cropPossible,
-            cropActive: _cropActive,
-            toggleCrop: _toggleCrop,
-            bringToFront: _bringSelectionToFront,
-            sendToBack: _sendSelectionToBack,
-            smoothen: _smoothenSelection,
-            addToElements: _addToElements,
-            openElementsSheet: _openElementsSheet,
             exportAsSba: exportAsSba,
             exportAsPdf: exportAsPdf,
             exportAsPng: exportAsPng,
-            onRevealAllTape: _revealAllTapeOnCurrentPage,
-            onConcealAllTape: _concealAllTapeOnCurrentPage,
           );
 
     final Widget toolbar = Collapsible(

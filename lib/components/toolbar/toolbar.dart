@@ -17,6 +17,7 @@ import 'package:saber/components/theming/dynamic_material_app.dart';
 import 'package:saber/components/theming/uni_icon.dart';
 import 'package:saber/components/toolbar/color_bar.dart';
 import 'package:saber/components/toolbar/drafting_tools_popup.dart';
+import 'package:saber/components/toolbar/editor_toolbar_actions.dart';
 import 'package:saber/components/toolbar/eraser_size_popup.dart';
 import 'package:saber/components/toolbar/export_bar.dart';
 import 'package:saber/components/toolbar/lasso_filter_popup.dart';
@@ -25,10 +26,8 @@ import 'package:saber/components/toolbar/quick_palette_bar.dart';
 import 'package:saber/components/toolbar/selection_bar.dart';
 import 'package:saber/components/toolbar/tape_options_popup.dart';
 import 'package:saber/components/toolbar/toolbar_button.dart';
-import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:saber/data/prefs.dart';
-import 'package:saber/data/tools/_tool.dart';
 import 'package:saber/data/tools/arrow.dart';
 import 'package:saber/data/tools/dimension.dart';
 import 'package:saber/data/tools/eraser.dart';
@@ -44,49 +43,19 @@ import 'package:saber/i18n/strings.g.dart';
 class Toolbar extends StatefulWidget {
   const Toolbar({
     super.key,
-    required this.readOnly,
-    required this.setTool,
-    required this.currentTool,
-    required this.setColor,
-    required this.quillFocus,
-    required this.textEditing,
-    required this.toggleTextEditing,
+    required this.actions,
     required this.undo,
     required this.isUndoPossible,
     required this.redo,
     required this.isRedoPossible,
     required this.toggleFingerDrawing,
-    required this.pickPhoto,
-    required this.pickShape,
-    required this.paste,
-    required this.copySelection,
-    required this.pasteSelection,
-    required this.duplicateSelection,
-    required this.deleteSelection,
-    this.cropPossible = false,
-    this.cropActive = false,
-    this.toggleCrop,
-    this.bringToFront,
-    this.sendToBack,
-    this.smoothen,
-    this.addToElements,
-    this.openElementsSheet,
     required this.exportAsSba,
     required this.exportAsPdf,
     required this.exportAsPng,
-    this.onRevealAllTape,
-    this.onConcealAllTape,
   });
 
-  final bool readOnly;
-
-  final ValueChanged<Tool> setTool;
-  final Tool currentTool;
-  final ValueChanged<Color> setColor;
-
-  final ValueNotifier<QuillStruct?> quillFocus;
-  final bool textEditing;
-  final VoidCallback toggleTextEditing;
+  /// The editor state to show and the actions the tools trigger.
+  final EditorToolbarActions actions;
 
   final VoidCallback undo;
   final bool isUndoPossible;
@@ -95,31 +64,9 @@ class Toolbar extends StatefulWidget {
 
   final VoidCallback toggleFingerDrawing;
 
-  final VoidCallback pickPhoto;
-
-  final VoidCallback pickShape;
-
-  final VoidCallback paste;
-
-  final VoidCallback copySelection;
-  final VoidCallback pasteSelection;
-
-  final VoidCallback duplicateSelection;
-  final VoidCallback deleteSelection;
-  final bool cropPossible;
-  final bool cropActive;
-  final VoidCallback? toggleCrop;
-  final VoidCallback? bringToFront;
-  final VoidCallback? sendToBack;
-  final VoidCallback? smoothen;
-  final VoidCallback? addToElements;
-  final VoidCallback? openElementsSheet;
-
   final Future Function(BuildContext)? exportAsSba;
   final Future Function(BuildContext)? exportAsPdf;
   final Future Function(BuildContext)? exportAsPng;
-  final VoidCallback? onRevealAllTape;
-  final VoidCallback? onConcealAllTape;
 
   @override
   State<Toolbar> createState() => _ToolbarState();
@@ -175,7 +122,7 @@ class _ToolbarState extends State<Toolbar> {
     Keybinder.bind(_ctrlC!, toggleColorOptions);
     Keybinder.bind(_ctrlShiftS!, toggleExportBar);
     Keybinder.bind(_f11!, toggleFullscreen);
-    Keybinder.bind(_ctrlV!, widget.paste);
+    Keybinder.bind(_ctrlV!, widget.actions.paste);
   }
 
   void _removeKeybindings() {
@@ -188,7 +135,9 @@ class _ToolbarState extends State<Toolbar> {
   }
 
   void toggleEraser() {
-    widget.setTool(Eraser(size: stows.eraserSize.value)); // this toggles eraser
+    widget.actions.setTool(
+      Eraser(size: stows.eraserSize.value),
+    ); // this toggles eraser
   }
 
   void toggleColorOptions() {
@@ -196,7 +145,7 @@ class _ToolbarState extends State<Toolbar> {
     final brightness = Theme.brightnessOf(context);
     final invert = stows.editorAutoInvert.value && brightness == .dark;
 
-    final currentColor = switch (widget.currentTool) {
+    final currentColor = switch (widget.actions.currentTool) {
       final Pen pen => pen.color,
       final Select select => select.getDominantStrokeColor(),
       _ => null,
@@ -254,7 +203,7 @@ class _ToolbarState extends State<Toolbar> {
               ColorBar(
                 axis: Axis.horizontal,
                 setColor: (color) {
-                  widget.setColor(color);
+                  widget.actions.setColor(color);
                   Navigator.of(context).pop();
                 },
                 currentColor: currentColor,
@@ -382,7 +331,7 @@ class _ToolbarState extends State<Toolbar> {
               PenModal(
                 getTool: getTool,
                 setTool: (pen) {
-                  widget.setTool(pen);
+                  widget.actions.setTool(pen);
                   setState(() {});
                 },
               ),
@@ -397,12 +346,12 @@ class _ToolbarState extends State<Toolbar> {
     showDialog(
       context: context,
       builder: (context) => DraftingToolsPopup(
-        currentTool: widget.currentTool,
+        currentTool: widget.actions.currentTool,
         onSelectTool: (tool) {
-          widget.setTool(tool);
+          widget.actions.setTool(tool);
           setState(() {});
         },
-        onPickShape: widget.pickShape,
+        onPickShape: widget.actions.pickShape,
       ),
     );
   }
@@ -429,7 +378,7 @@ class _ToolbarState extends State<Toolbar> {
         ? Toolbar._buttonPaddingVertical
         : Toolbar._buttonPaddingHorizontal;
 
-    final currentColor = switch (widget.currentTool) {
+    final currentColor = switch (widget.actions.currentTool) {
       final Pen pen => pen.color,
       final Select select => select.getDominantStrokeColor(),
       _ => null,
@@ -437,7 +386,7 @@ class _ToolbarState extends State<Toolbar> {
 
     final bars = <Widget>[
       ValueListenableBuilder(
-        valueListenable: widget.quillFocus,
+        valueListenable: widget.actions.quillFocus,
         builder: (context, quill, _) {
           final baseButtonStyle =
               IconButtonTheme.of(context).style ?? const ButtonStyle();
@@ -461,7 +410,7 @@ class _ToolbarState extends State<Toolbar> {
                 ? CollapsibleAxis.horizontal
                 : CollapsibleAxis.vertical,
             maintainState: false,
-            collapsed: !widget.textEditing || quill == null,
+            collapsed: !widget.actions.textEditing || quill == null,
             child: quill != null
                 ? QuillSimpleToolbar(
                     controller: quill.controller,
@@ -489,7 +438,7 @@ class _ToolbarState extends State<Toolbar> {
             ? CollapsibleAxis.horizontal
             : CollapsibleAxis.vertical,
         maintainState: false,
-        collapsed: widget.currentTool is! Select,
+        collapsed: widget.actions.currentTool is! Select,
         child: Container(
           decoration: BoxDecoration(
             color: colorScheme.surface.withValues(alpha: 0.95),
@@ -502,17 +451,17 @@ class _ToolbarState extends State<Toolbar> {
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
           child: SelectionBar(
-            copySelection: widget.copySelection,
-            pasteSelection: widget.pasteSelection,
-            duplicateSelection: widget.duplicateSelection,
-            deleteSelection: widget.deleteSelection,
-            cropPossible: widget.cropPossible,
-            cropActive: widget.cropActive,
-            toggleCrop: widget.toggleCrop,
-            bringToFront: widget.bringToFront,
-            sendToBack: widget.sendToBack,
-            smoothen: widget.smoothen,
-            addToElements: widget.addToElements,
+            copySelection: widget.actions.copySelection,
+            pasteSelection: widget.actions.pasteSelection,
+            duplicateSelection: widget.actions.duplicateSelection,
+            deleteSelection: widget.actions.deleteSelection,
+            cropPossible: widget.actions.cropPossible,
+            cropActive: widget.actions.cropActive,
+            toggleCrop: widget.actions.toggleCrop,
+            bringToFront: widget.actions.bringToFront,
+            sendToBack: widget.actions.sendToBack,
+            smoothen: widget.actions.smoothen,
+            addToElements: widget.actions.addToElements,
           ),
         ),
       ),
@@ -546,13 +495,13 @@ class _ToolbarState extends State<Toolbar> {
               // 1. Pen
               ToolbarIconButton(
                 tooltip: Pen.currentPen.name,
-                selected: Pen.isWritingPen(widget.currentTool),
-                enabled: !widget.readOnly,
+                selected: Pen.isWritingPen(widget.actions.currentTool),
+                enabled: !widget.actions.readOnly,
                 onPressed: () {
-                  if (Pen.isWritingPen(widget.currentTool)) {
+                  if (Pen.isWritingPen(widget.actions.currentTool)) {
                     _showPenSettings(() => Pen.currentPen);
                   } else {
-                    widget.setTool(Pen.currentPen);
+                    widget.actions.setTool(Pen.currentPen);
                   }
                 },
                 onLongPress: () => _showPenSettings(() => Pen.currentPen),
@@ -563,13 +512,13 @@ class _ToolbarState extends State<Toolbar> {
               // 2. Pencil
               ToolbarIconButton(
                 tooltip: t.editor.pens.pencil,
-                selected: widget.currentTool == Pencil.currentPencil,
-                enabled: !widget.readOnly,
+                selected: widget.actions.currentTool == Pencil.currentPencil,
+                enabled: !widget.actions.readOnly,
                 onPressed: () {
-                  if (widget.currentTool == Pencil.currentPencil) {
+                  if (widget.actions.currentTool == Pencil.currentPencil) {
                     _showPenSettings(() => Pencil.currentPencil);
                   } else {
-                    widget.setTool(Pencil.currentPencil);
+                    widget.actions.setTool(Pencil.currentPencil);
                   }
                 },
                 onLongPress: () => _showPenSettings(() => Pencil.currentPencil),
@@ -580,13 +529,16 @@ class _ToolbarState extends State<Toolbar> {
               // 3. Highlighter
               ToolbarIconButton(
                 tooltip: t.editor.pens.highlighter,
-                selected: widget.currentTool == Highlighter.currentHighlighter,
-                enabled: !widget.readOnly,
+                selected:
+                    widget.actions.currentTool ==
+                    Highlighter.currentHighlighter,
+                enabled: !widget.actions.readOnly,
                 onPressed: () {
-                  if (widget.currentTool == Highlighter.currentHighlighter) {
+                  if (widget.actions.currentTool ==
+                      Highlighter.currentHighlighter) {
                     _showPenSettings(() => Highlighter.currentHighlighter);
                   } else {
-                    widget.setTool(Highlighter.currentHighlighter);
+                    widget.actions.setTool(Highlighter.currentHighlighter);
                   }
                 },
                 onLongPress: () =>
@@ -598,10 +550,10 @@ class _ToolbarState extends State<Toolbar> {
               // 4. Eraser
               ToolbarIconButton(
                 tooltip: t.editor.toolbar.toggleEraser,
-                selected: widget.currentTool is Eraser,
-                enabled: !widget.readOnly,
+                selected: widget.actions.currentTool is Eraser,
+                enabled: !widget.actions.readOnly,
                 onPressed: () {
-                  if (widget.currentTool is Eraser) {
+                  if (widget.actions.currentTool is Eraser) {
                     showDialog(
                       context: context,
                       builder: (_) => const EraserSizePopup(),
@@ -622,10 +574,10 @@ class _ToolbarState extends State<Toolbar> {
               ToolbarIconButton(
                 tooltip: t.editor.drafting.titleAlt,
                 selected:
-                    widget.currentTool is Ruler ||
-                    widget.currentTool is ArrowTool ||
-                    widget.currentTool is DimensionTool,
-                enabled: !widget.readOnly,
+                    widget.actions.currentTool is Ruler ||
+                    widget.actions.currentTool is ArrowTool ||
+                    widget.actions.currentTool is DimensionTool,
+                enabled: !widget.actions.readOnly,
                 onPressed: _showDraftingTools,
                 onLongPress: _showDraftingTools,
                 padding: buttonPadding,
@@ -635,16 +587,16 @@ class _ToolbarState extends State<Toolbar> {
               // 6. Lasso
               ToolbarIconButton(
                 tooltip: t.editor.toolbar.select,
-                selected: widget.currentTool is Select,
-                enabled: !widget.readOnly,
+                selected: widget.actions.currentTool is Select,
+                enabled: !widget.actions.readOnly,
                 onPressed: () {
-                  if (widget.currentTool is Select) {
+                  if (widget.actions.currentTool is Select) {
                     showDialog(
                       context: context,
                       builder: (_) => const LassoFilterPopup(),
                     );
                   } else {
-                    widget.setTool(Select.currentSelect);
+                    widget.actions.setTool(Select.currentSelect);
                   }
                 },
                 onLongPress: () => showDialog(
@@ -658,36 +610,37 @@ class _ToolbarState extends State<Toolbar> {
               // 7. Study Tape
               ToolbarIconButton(
                 tooltip: t.editor.tape.tooltip,
-                selected: widget.currentTool is StudyTapeTool,
-                enabled: !widget.readOnly,
+                selected: widget.actions.currentTool is StudyTapeTool,
+                enabled: !widget.actions.readOnly,
                 onPressed: () {
-                  if (widget.currentTool is StudyTapeTool) {
+                  if (widget.actions.currentTool is StudyTapeTool) {
                     showDialog(
                       context: context,
                       builder: (_) => TapeOptionsPopup(
-                        currentTapeTool: widget.currentTool as StudyTapeTool,
-                        onRevealAll: widget.onRevealAllTape,
-                        onConcealAll: widget.onConcealAllTape,
+                        currentTapeTool:
+                            widget.actions.currentTool as StudyTapeTool,
+                        onRevealAll: widget.actions.onRevealAllTape,
+                        onConcealAll: widget.actions.onConcealAllTape,
                         onTapeChanged: () => setState(() {}),
                       ),
                     );
                   } else {
-                    widget.setTool(StudyTapeTool());
+                    widget.actions.setTool(StudyTapeTool());
                   }
                 },
                 onLongPress: () {
-                  final tool = widget.currentTool is StudyTapeTool
-                      ? widget.currentTool as StudyTapeTool
+                  final tool = widget.actions.currentTool is StudyTapeTool
+                      ? widget.actions.currentTool as StudyTapeTool
                       : StudyTapeTool();
-                  if (widget.currentTool is! StudyTapeTool) {
-                    widget.setTool(tool);
+                  if (widget.actions.currentTool is! StudyTapeTool) {
+                    widget.actions.setTool(tool);
                   }
                   showDialog(
                     context: context,
                     builder: (_) => TapeOptionsPopup(
                       currentTapeTool: tool,
-                      onRevealAll: widget.onRevealAllTape,
-                      onConcealAll: widget.onConcealAllTape,
+                      onRevealAll: widget.actions.onRevealAllTape,
+                      onConcealAll: widget.actions.onConcealAllTape,
                       onTapeChanged: () => setState(() {}),
                     ),
                   );
@@ -700,8 +653,8 @@ class _ToolbarState extends State<Toolbar> {
               ToolbarIconButton(
                 tooltip: t.editor.elements.tooltip,
                 selected: false,
-                enabled: !widget.readOnly,
-                onPressed: () => widget.openElementsSheet?.call(),
+                enabled: !widget.actions.readOnly,
+                onPressed: () => widget.actions.openElementsSheet?.call(),
                 padding: buttonPadding,
                 child: const Icon(Icons.auto_awesome, size: 16),
               ),
@@ -709,8 +662,8 @@ class _ToolbarState extends State<Toolbar> {
               // 9. Photo
               ToolbarIconButton(
                 tooltip: t.editor.toolbar.photo,
-                enabled: !widget.readOnly,
-                onPressed: widget.pickPhoto,
+                enabled: !widget.actions.readOnly,
+                onPressed: widget.actions.pickPhoto,
                 padding: buttonPadding,
                 child: const AdaptiveIcon(
                   icon: Icons.photo,
@@ -721,9 +674,9 @@ class _ToolbarState extends State<Toolbar> {
               // 10. Text Box
               ToolbarIconButton(
                 tooltip: t.editor.toolbar.text,
-                selected: widget.textEditing,
-                enabled: !widget.readOnly,
-                onPressed: widget.toggleTextEditing,
+                selected: widget.actions.textEditing,
+                enabled: !widget.actions.readOnly,
+                onPressed: widget.actions.toggleTextEditing,
                 padding: buttonPadding,
                 child: const AdaptiveIcon(
                   icon: Icons.text_fields,
@@ -737,17 +690,19 @@ class _ToolbarState extends State<Toolbar> {
                     ? t.editor.tools.laserSpotlight
                     : t.editor.pens.laserPointer,
                 selected:
-                    widget.currentTool == LaserPointer.currentLaserPointer,
+                    widget.actions.currentTool ==
+                    LaserPointer.currentLaserPointer,
                 enabled: true,
                 onPressed: () {
-                  if (widget.currentTool == LaserPointer.currentLaserPointer) {
+                  if (widget.actions.currentTool ==
+                      LaserPointer.currentLaserPointer) {
                     stows.laserPointerMode.value =
                         stows.laserPointerMode.value == 'spotlight'
                         ? 'trail'
                         : 'spotlight';
                     setState(() {});
                   } else {
-                    widget.setTool(LaserPointer.currentLaserPointer);
+                    widget.actions.setTool(LaserPointer.currentLaserPointer);
                   }
                 },
                 onLongPress: () {
@@ -767,15 +722,16 @@ class _ToolbarState extends State<Toolbar> {
               ),
 
               // Contextual Quick Palette (3 Quick Colors + 3 Quick Sizes)
-              if (widget.currentTool is Pen || widget.currentTool is Select)
+              if (widget.actions.currentTool is Pen ||
+                  widget.actions.currentTool is Select)
                 Padding(
                   padding: isToolbarVertical
                       ? const EdgeInsets.symmetric(vertical: 2)
                       : const EdgeInsets.symmetric(horizontal: 4),
                   child: QuickPaletteBar(
                     axis: isToolbarVertical ? Axis.vertical : Axis.horizontal,
-                    currentTool: widget.currentTool,
-                    setColor: widget.setColor,
+                    currentTool: widget.actions.currentTool,
+                    setColor: widget.actions.setColor,
                     onUpdate: () => setState(() {}),
                     invert: invert,
                   ),
@@ -785,7 +741,7 @@ class _ToolbarState extends State<Toolbar> {
               ToolbarIconButton(
                 tooltip: t.editor.toolbar.toggleColors,
                 selected: false,
-                enabled: !widget.readOnly,
+                enabled: !widget.actions.readOnly,
                 onPressed: toggleColorOptions,
                 padding: buttonPadding,
                 child: currentColor == null
@@ -814,7 +770,7 @@ class _ToolbarState extends State<Toolbar> {
                     return ToolbarIconButton(
                       tooltip: t.editor.toolbar.toggleFingerDrawing,
                       selected: value,
-                      enabled: !widget.readOnly,
+                      enabled: !widget.actions.readOnly,
                       onPressed: widget.toggleFingerDrawing,
                       padding: buttonPadding,
                       child: const Icon(CupertinoIcons.hand_draw),
@@ -826,7 +782,7 @@ class _ToolbarState extends State<Toolbar> {
               ToolbarIconButton(
                 tooltip: t.editor.toolbar.fullscreen,
                 selected: DynamicMaterialApp.isFullscreen,
-                enabled: !widget.readOnly,
+                enabled: !widget.actions.readOnly,
                 onPressed: toggleFullscreen,
                 padding: buttonPadding,
                 child: AdaptiveIcon(
@@ -843,7 +799,7 @@ class _ToolbarState extends State<Toolbar> {
               if (isToolbarVertical) ...[
                 ToolbarIconButton(
                   tooltip: t.editor.toolbar.undo,
-                  enabled: !widget.readOnly && widget.isUndoPossible,
+                  enabled: !widget.actions.readOnly && widget.isUndoPossible,
                   onPressed: widget.undo,
                   padding: buttonPadding,
                   child: const AdaptiveIcon(
@@ -853,7 +809,7 @@ class _ToolbarState extends State<Toolbar> {
                 ),
                 ToolbarIconButton(
                   tooltip: t.editor.toolbar.redo,
-                  enabled: !widget.readOnly && widget.isRedoPossible,
+                  enabled: !widget.actions.readOnly && widget.isRedoPossible,
                   onPressed: widget.redo,
                   padding: buttonPadding,
                   child: const AdaptiveIcon(
