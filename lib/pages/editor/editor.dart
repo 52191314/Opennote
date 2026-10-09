@@ -6,7 +6,6 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:collapsible/collapsible.dart';
@@ -21,10 +20,8 @@ import 'package:keybinder/keybinder.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
 import 'package:pdfrx/pdfrx.dart';
-import 'package:saber/components/canvas/_arrow_stroke.dart';
 import 'package:saber/components/canvas/_asset_cache.dart';
 import 'package:saber/components/canvas/_canvas_painter.dart';
-import 'package:saber/components/canvas/_dimension_stroke.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/_tape_stroke.dart';
 import 'package:saber/components/canvas/canvas.dart';
@@ -51,10 +48,11 @@ import 'package:saber/components/toolbar/toolbar.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/editor_exporter.dart';
 import 'package:saber/data/editor/editor_history.dart';
+import 'package:saber/data/editor/gestures/select_gesture.dart';
+import 'package:saber/data/editor/gestures/tool_gesture.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/editor/selection_clipboard.dart';
 import 'package:saber/data/editor/selection_handles.dart';
-import 'package:saber/data/editor/selection_resize.dart';
 import 'package:saber/data/editor/selection_transform.dart';
 import 'package:saber/data/extensions/change_notifier_extensions.dart';
 import 'package:saber/data/extensions/matrix4_extensions.dart';
@@ -125,7 +123,7 @@ class Editor extends StatefulWidget {
   State<Editor> createState() => EditorState();
 }
 
-class EditorState extends State<Editor> {
+class EditorState extends State<Editor> implements EditorGestureHost {
   final log = Logger('EditorState');
 
   late var coreInfo = EditorCoreInfo.placeholder;
@@ -147,7 +145,11 @@ class EditorState extends State<Editor> {
     }
   }
 
+  @override
   var history = EditorHistory();
+
+  @override
+  int get lineHeight => coreInfo.lineHeight;
 
   late bool needsNaming = widget.needsNaming && stows.editorPromptRename.value;
 
@@ -234,36 +236,14 @@ class EditorState extends State<Editor> {
   /// The selection copied to the internal clipboard (for paste).
   SelectionClipboard? _clipboard;
 
-  /// Whether the user is currently rotating a selection.
-  var _isRotating = false;
-
-  /// The timestamp and position of the last tap (for double-tap detection).
-  DateTime? _lastTapTime;
-  Offset? _lastTapPosition;
+  /// Handles draw gestures made with the Select tool.
+  late final _selectGesture = SelectGesture(this);
 
   /// The position and page index of the most recent user canvas tap/click,
   /// used to place newly added elements, photos, stickers, and shapes.
   Offset? _lastCanvasTapPosition;
   int? _lastCanvasTapPageIndex;
   DateTime? _lastCanvasTapTime;
-
-  /// Whether the user is currently resizing a selection.
-  var _isResizing = false;
-
-  /// The resize handle drag in progress, if any.
-  SelectionResize? _selectionResize;
-
-  /// The resize, rotation, or vertex edit in progress, once it has changed
-  /// something. Recorded in [history] when the gesture ends.
-  SelectionTransform? _selectionTransform;
-
-  /// The initial angle (in radians) when the rotation gesture started.
-  double _initialRotationAngle = 0;
-
-  /// Whether the user is currently dragging a vertex of a drafting stroke.
-  var _isDraggingVertex = false;
-  var _draggedVertexIndex = -1;
-  Stroke? _draggedVertexStroke;
 
   @override
   void initState() {
@@ -673,7 +653,7 @@ class EditorState extends State<Editor> {
     _lastCanvasTapPageIndex = dragPageIndex;
     _lastCanvasTapTime = DateTime.now();
     history.canRedo = false;
-    _selectionTransform = null;
+    _selectGesture.forgetTransform();
 
     if (page.activeLayer.locked &&
         (currentTool is Pen || currentTool is Eraser)) {
@@ -706,89 +686,14 @@ class EditorState extends State<Editor> {
       }
       removeExcessPages();
     } else if (currentTool is Select) {
-      final select = currentTool as Select;
-
-      // Double-tap detection: two taps close in time and space
-      // trigger a re-selection even if a stroke is already selected.
-      if (select.doneSelecting &&
-          select.selectResult.pageIndex == dragPageIndex! &&
-          _lastTapTime != null &&
-          _lastTapPosition != null) {
-        final now = DateTime.now();
-        final timeDelta = now.difference(_lastTapTime!).inMilliseconds;
-        final posDelta = (position - _lastTapPosition!).distance;
-        if (timeDelta < 300 && posDelta < 20) {
-          select.unselect();
-          page.clearSelectionHandles();
-          _isDraggingVertex = false;
-          select.onDragStart(position, dragPageIndex!);
-          history.canRedo = true;
-          return;
-        }
-      }
-
-      if (select.doneSelecting &&
-          select.selectResult.pageIndex == dragPageIndex!) {
-        // Check if tap is on the delete button
-        final deleteRect = page.selectionDeleteButtonRect;
-        if (deleteRect != null && deleteRect.contains(position)) {
-          _deleteSelection(select, page);
-          return;
-        }
-
-        // Check if tap is on a vertex handle (ArrowStroke / DimensionStroke)
-        final vertexHandles = page.selectionVertexHandles;
-        if (vertexHandles != null && select.selectResult.strokes.length == 1) {
-          final stroke = select.selectResult.strokes.first;
-          if (stroke is ArrowStroke || stroke is DimensionStroke) {
-            for (int i = 0; i < vertexHandles.length; i++) {
-              if ((position - vertexHandles[i]).distance < 20) {
-                _isDraggingVertex = true;
-                _draggedVertexIndex = i;
-                _draggedVertexStroke = stroke;
-                return;
-              }
-            }
-          }
-        }
-
-        // Check if tap is on a resize handle
-        final resizeHandles = page.selectionResizeHandles;
-        if (resizeHandles != null) {
-          for (int i = 0; i < resizeHandles.length; i++) {
-            if ((position - resizeHandles[i]).distance < 16) {
-              _isResizing = true;
-              _selectionResize = SelectionResize(
-                startBounds: select.selectResult.path.getBounds(),
-                handleIndex: i,
-              );
-              return;
-            }
-          }
-        }
-
-        // Check if tap is on the rotation handle
-        final rotationHandle = page.selectionRotationHandleCenter;
-        if (rotationHandle != null &&
-            (position - rotationHandle).distance < 20) {
-          _isRotating = true;
-          _initialRotationAngle = 0;
-          return;
-        }
-
-        if (select.selectResult.path.contains(position)) {
-          // drag selection in onDrawUpdate
-        } else {
-          select.unselect();
-          page.clearSelectionHandles();
-          _isDraggingVertex = false;
-          select.onDragStart(position, dragPageIndex!);
-          history.canRedo = true;
-        }
-      } else {
-        select.onDragStart(position, dragPageIndex!);
-        history.canRedo = true; // selection doesn't affect history
-      }
+      final isTracked = _selectGesture.start(
+        GesturePointer(
+          page: page,
+          pageIndex: dragPageIndex!,
+          position: position,
+        ),
+      );
+      if (!isTracked) return;
     } else if (currentTool is LaserPointer) {
       (currentTool as LaserPointer).onDragStart(position, page, dragPageIndex!);
     } else if (currentTool is Ruler) {
@@ -877,151 +782,14 @@ class EditorState extends State<Editor> {
       page.redrawStrokes();
       removeExcessPages();
     } else if (currentTool is Select) {
-      final select = currentTool as Select;
-      if (_isDraggingVertex && _draggedVertexStroke != null) {
-        _selectionTransform ??= SelectionTransform.begin(
-          page,
-          select.selectResult,
-        );
-        final stroke = select.selectResult.strokes.first;
-        if (stroke is ArrowStroke) {
-          if (_draggedVertexIndex == 0) {
-            stroke.start = position;
-          } else if (_draggedVertexIndex == 1) {
-            stroke.end = position;
-          }
-          stroke.markPolygonNeedsUpdating();
-          select.selectResult.path = Select.createTightSelectionPath(
-            stroke.lowQualityPolygon,
-          );
-        } else if (stroke is DimensionStroke) {
-          if (_draggedVertexIndex == 0) {
-            stroke.start = position;
-            final dist = (stroke.end - stroke.start).distance;
-            stroke.text = '${dist.toStringAsFixed(1)} px';
-          } else if (_draggedVertexIndex == 1) {
-            stroke.end = position;
-            final dist = (stroke.end - stroke.start).distance;
-            stroke.text = '${dist.toStringAsFixed(1)} px';
-          } else if (_draggedVertexIndex == 2) {
-            final dir = stroke.end - stroke.start;
-            final length = dir.distance;
-            if (length > 0.001) {
-              final perp = Offset(-dir.dy / length, dir.dx / length);
-              stroke.offset =
-                  (position.dx - stroke.start.dx) * perp.dx +
-                  (position.dy - stroke.start.dy) * perp.dy;
-            }
-          }
-          stroke.markPolygonNeedsUpdating();
-          select.selectResult.path = Select.createTightSelectionPath(
-            stroke.lowQualityPolygon,
-          );
-        }
-        page.redrawStrokes();
-        return;
-      }
-      final resize = _selectionResize;
-      if (_isResizing && resize != null && select.doneSelecting) {
-        _selectionTransform ??= SelectionTransform.begin(
-          page,
-          select.selectResult,
-        );
-        final pivot = resize.pivot;
-        final (x: scaleX, y: scaleY) = resize.stepTo(position);
-
-        for (final stroke in select.selectResult.strokes) {
-          stroke.scaleAround(scaleX, scaleY, pivot);
-        }
-        for (final image in select.selectResult.images) {
-          final rect = image.dstRect;
-          final newCenter = Offset(
-            pivot.dx + (rect.center.dx - pivot.dx) * scaleX,
-            pivot.dy + (rect.center.dy - pivot.dy) * scaleY,
-          );
-          image.dstRect = Rect.fromCenter(
-            center: newCenter,
-            width: rect.width * scaleX,
-            height: rect.height * scaleY,
-          );
-        }
-        // Handle text resize: scale text offset relative to pivot
-        if (select.selectResult.textSelected) {
-          page.textContentOffset = Offset(
-            pivot.dx + (page.textContentOffset.dx - pivot.dx) * scaleX,
-            pivot.dy + (page.textContentOffset.dy - pivot.dy) * scaleY,
-          );
-        }
-        // Update selection path bounds
-        select.selectResult.path = scalePathAround(
-          select.selectResult.path,
-          scaleX,
-          scaleY,
-          pivot,
-        );
-        page.redrawStrokes();
-      } else if (_isRotating && select.doneSelecting) {
-        _selectionTransform ??= SelectionTransform.begin(
-          page,
-          select.selectResult,
-        );
-        // Compute rotation angle
-        final bounds = select.selectResult.path.getBounds();
-        final center = bounds.center;
-        final currentAngle = (position - center).direction;
-        if (_initialRotationAngle == 0) {
-          _initialRotationAngle = currentAngle;
-        }
-        final deltaAngle = currentAngle - _initialRotationAngle;
-        _initialRotationAngle = currentAngle;
-
-        for (final stroke in select.selectResult.strokes) {
-          stroke.rotateAround(deltaAngle, center);
-        }
-        for (final image in select.selectResult.images) {
-          // Rotate image around selection center
-          final rect = image.dstRect;
-          final cosA = cos(deltaAngle);
-          final sinA = sin(deltaAngle);
-          final dx = rect.center.dx - center.dx;
-          final dy = rect.center.dy - center.dy;
-          final newCenter = Offset(
-            center.dx + dx * cosA - dy * sinA,
-            center.dy + dx * sinA + dy * cosA,
-          );
-          image.dstRect = Rect.fromCenter(
-            center: newCenter,
-            width: rect.width,
-            height: rect.height,
-          );
-        }
-        // Handle text rotation
-        if (select.selectResult.textSelected) {
-          page.textContentRotation += deltaAngle;
-        }
-
-        // Update the selection path bounds
-        select.selectResult.path = _rotatePath(
-          select.selectResult.path,
-          deltaAngle,
-          center,
-        );
-        page.redrawStrokes();
-      } else if (select.doneSelecting) {
-        for (final stroke in select.selectResult.strokes) {
-          stroke.shift(offset);
-        }
-        for (final image in select.selectResult.images) {
-          image.dstRect = image.dstRect.shift(offset);
-        }
-        if (select.selectResult.textSelected) {
-          page.textContentOffset += offset;
-        }
-        select.selectResult.path = select.selectResult.path.shift(offset);
-      } else {
-        select.onDragUpdate(position);
-      }
-      page.redrawStrokes();
+      _selectGesture.update(
+        GesturePointer(
+          page: page,
+          pageIndex: dragPageIndex!,
+          position: position,
+          delta: offset,
+        ),
+      );
     } else if (currentTool is LaserPointer) {
       (currentTool as LaserPointer).onDragUpdate(position);
       page.redrawStrokes();
@@ -1044,10 +812,7 @@ class EditorState extends State<Editor> {
       page.penPreviewPosition = null;
       page.penPreviewRadius = null;
       page.penPreviewColor = null;
-      _isRotating = false;
-      _initialRotationAngle = 0;
-      _isResizing = false;
-      _selectionResize = null;
+      _selectGesture.releaseHandle();
       return;
     }
     bool shouldSave = true;
@@ -1129,78 +894,14 @@ class EditorState extends State<Editor> {
           ),
         );
       } else if (currentTool is Select) {
-        final select = currentTool as Select;
-        if (_isDraggingVertex) {
-          _isDraggingVertex = false;
-          _draggedVertexIndex = -1;
-          _draggedVertexStroke = null;
-          page.placeSelectionHandles(select.selectResult);
-          _recordSelectionTransform(dragPageIndex!);
-          return;
-        }
-
-        final textRect = page.computeTextContentRect(
-          coreInfo.lineHeight.toDouble(),
+        shouldSave = _selectGesture.end(
+          GesturePointer(
+            page: page,
+            pageIndex: dragPageIndex!,
+            position: previousPosition,
+            moved: moveOffset,
+          ),
         );
-
-        // Detect tap (no drag, no resize, no rotate)
-        if (moveOffset == .zero && !_isRotating && !_isResizing) {
-          if (!select.doneSelecting) {
-            // A new selection that ended without dragging → try tap-to-select
-            final bounds = select.selectResult.path.getBounds();
-            if (bounds.isEmpty || (bounds.width < 20 && bounds.height < 20)) {
-              select.tapSelect(
-                previousPosition,
-                page.strokes,
-                page.images,
-                dragPageIndex!,
-                textRect: textRect,
-              );
-              shouldSave = false;
-              _updateSelectionHandles(page, select);
-
-              // Track for double-tap detection
-              _lastTapTime = DateTime.now();
-              _lastTapPosition = previousPosition;
-              return;
-            }
-          }
-          if (select.doneSelecting) return; // tap on existing selection
-          // Otherwise fall through to finalize the lasso selection
-        }
-
-        if (_isRotating || _isResizing) {
-          _recordSelectionTransform(dragPageIndex!);
-        } else if (select.doneSelecting) {
-          history.recordChange(
-            EditorHistoryItem(
-              type: .move,
-              pageIndex: dragPageIndex!,
-              strokes: select.selectResult.strokes,
-              images: select.selectResult.images,
-              offset: .fromLTRB(
-                moveOffset.dx,
-                moveOffset.dy,
-                moveOffset.dx,
-                moveOffset.dy,
-              ),
-              textPlacementChange: select.selectResult.textSelected
-                  ? Change(
-                      previous: (
-                        offset: page.textContentOffset - moveOffset,
-                        rotation: page.textContentRotation,
-                      ),
-                      current: page.textPlacement,
-                    )
-                  : null,
-            ),
-          );
-        } else {
-          shouldSave = false;
-          select.onDragEnd(page.strokes, page.images, textRect: textRect);
-
-          _updateSelectionHandles(page, select);
-        }
       } else if (currentTool is LaserPointer) {
         shouldSave = false;
         final newStroke = (currentTool as LaserPointer).onDragEnd(
@@ -1235,22 +936,9 @@ class EditorState extends State<Editor> {
     page.penPreviewRadius = null;
     page.penPreviewColor = null;
 
-    // Reset rotation and resize state
-    _isRotating = false;
-    _initialRotationAngle = 0;
-    _isResizing = false;
-    _selectionResize = null;
+    _selectGesture.releaseHandle();
 
     if (shouldSave) autosaveAfterDelay();
-  }
-
-  /// Records the resize, rotation, or vertex edit that just ended,
-  /// unless the gesture ended before changing anything.
-  void _recordSelectionTransform(int pageIndex) {
-    final transform = _selectionTransform;
-    _selectionTransform = null;
-    if (transform == null) return;
-    history.recordChange(transform.finish(pageIndex: pageIndex));
   }
 
   void onInteractionEnd(ScaleEndDetails details) {
@@ -2036,6 +1724,10 @@ class EditorState extends State<Editor> {
     return Offset(page.size.width / 2, page.size.height / 2);
   }
 
+  @override
+  void deleteSelection(EditorPage page) =>
+      _deleteSelection(Select.currentSelect, page);
+
   void _deleteSelection(Select select, EditorPage page) {
     final strokes = List<Stroke>.from(select.selectResult.strokes);
     final images = List<EditorImage>.from(select.selectResult.images);
@@ -2125,38 +1817,6 @@ class EditorState extends State<Editor> {
     page.redrawStrokes();
     autosaveAfterDelay();
     setState(() {});
-  }
-
-  /// Rotates a [Path] by [angleRadians] around [center].
-  static Path _rotatePath(Path path, double angleRadians, Offset center) {
-    if (angleRadians == 0) return path;
-    final metrics = path.computeMetrics().toList();
-    if (metrics.isEmpty) return path;
-
-    final cosA = cos(angleRadians);
-    final sinA = sin(angleRadians);
-
-    // Extract the path vertices and rebuild
-    final newPath = Path();
-    for (final metric in metrics) {
-      for (double dist = 0; dist < metric.length; dist += 5) {
-        final tangent = metric.getTangentForOffset(dist);
-        if (tangent == null) continue;
-        final pos = tangent.position;
-        final dx = pos.dx - center.dx;
-        final dy = pos.dy - center.dy;
-        final rotated = Offset(
-          center.dx + dx * cosA - dy * sinA,
-          center.dy + dx * sinA + dy * cosA,
-        );
-        if (dist == 0) {
-          newPath.moveTo(rotated.dx, rotated.dy);
-        } else {
-          newPath.lineTo(rotated.dx, rotated.dy);
-        }
-      }
-    }
-    return newPath;
   }
 
   void _copySelection() {
