@@ -61,6 +61,7 @@ import 'package:saber/data/editor/selection_transform.dart';
 import 'package:saber/data/extensions/change_notifier_extensions.dart';
 import 'package:saber/data/extensions/matrix4_extensions.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
+import 'package:saber/data/file_manager/note_paths.dart';
 import 'package:saber/data/nextcloud/saber_syncer.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
@@ -96,27 +97,18 @@ class Editor extends StatefulWidget {
   final String? customTitle;
   final String? pdfPath;
 
-  /// The file extension used by the app.
-  /// Files with this extension are
-  /// encoded in BSON format.
-  static const extension = '.sbn2';
+  /// The file extension used by the app. See [NotePaths.extension].
+  static const extension = NotePaths.extension;
 
   /// The old file extension used by the app.
-  /// Files with this extension are
-  /// encoded in JSON format.
-  static const extensionOldJson = '.sbn';
+  /// See [NotePaths.extensionOldJson].
+  static const extensionOldJson = NotePaths.extensionOldJson;
 
   static const double gapBetweenPages = 16;
 
   /// Returns true if [path] belongs to a hidden file
   /// used by other functions of the app
-  static bool isReservedPath(String path) {
-    return _reservedFilePaths.any((regex) => regex.hasMatch(path));
-  }
-
-  static final _reservedFilePaths = <RegExp>[
-    RegExp(RegExp.escape(Whiteboard.filePath)),
-  ];
+  static bool isReservedPath(String path) => NotePaths.isReserved(path);
 
   /// Whether the platform can rasterize a pdf
   static var canRasterPdf = true;

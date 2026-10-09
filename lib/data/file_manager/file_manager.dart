@@ -1,3 +1,6 @@
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
+library;
+
 import 'dart:async';
 import 'dart:io';
 
@@ -11,10 +14,10 @@ import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:saber/data/file_manager/note_paths.dart';
 import 'package:saber/data/nextcloud/saber_syncer.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/i18n/strings.g.dart';
-import 'package:saber/pages/editor/editor.dart';
 import 'package:saver_gallery/saver_gallery.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -175,10 +178,10 @@ class FileManager {
     if (!fileWriteStream.hasListener) return;
 
     // remove extension
-    if (path.endsWith(Editor.extension)) {
-      path = path.substring(0, path.length - Editor.extension.length);
-    } else if (path.endsWith(Editor.extensionOldJson)) {
-      path = path.substring(0, path.length - Editor.extensionOldJson.length);
+    if (path.endsWith(NotePaths.extension)) {
+      path = path.substring(0, path.length - NotePaths.extension.length);
+    } else if (path.endsWith(NotePaths.extensionOldJson)) {
+      path = path.substring(0, path.length - NotePaths.extensionOldJson.length);
     }
 
     fileWriteStream.add(FileOperation(type, path));
@@ -251,10 +254,10 @@ class FileManager {
         if (lastModified != null) await file.setLastModified(lastModified);
       }),
       // if we're using a new format, also delete the old file
-      if (filePath.endsWith(Editor.extension))
+      if (filePath.endsWith(NotePaths.extension))
         getFile(
-          '${filePath.substring(0, filePath.length - Editor.extension.length)}'
-          '${Editor.extensionOldJson}',
+          '${filePath.substring(0, filePath.length - NotePaths.extension.length)}'
+          '${NotePaths.extensionOldJson}',
         ).delete()
         // ignore if the file doesn't exist
         .catchError((_) => File(''), test: (e) => e is PathNotFoundException),
@@ -263,10 +266,10 @@ class FileManager {
     void afterWrite() {
       broadcastFileWrite(FileOperationType.write, filePath);
       if (alsoUpload) syncer.uploader.enqueueRel(filePath);
-      if (filePath.endsWith(Editor.extension)) {
+      if (filePath.endsWith(NotePaths.extension)) {
         _removeReferences(
-          '${filePath.substring(0, filePath.length - Editor.extension.length)}'
-          '${Editor.extensionOldJson}',
+          '${filePath.substring(0, filePath.length - NotePaths.extension.length)}'
+          '${NotePaths.extensionOldJson}',
         );
       }
     }
@@ -386,7 +389,7 @@ class FileManager {
       toPath = fromPath.substring(0, fromPath.lastIndexOf('/') + 1) + toPath;
     }
 
-    if (!replaceExistingFile || Editor.isReservedPath(toPath)) {
+    if (!replaceExistingFile || NotePaths.isReserved(toPath)) {
       toPath = await suffixFilePathToMakeItUnique(
         toPath,
         currentPath: fromPath,
@@ -587,21 +590,21 @@ class FileManager {
           if (entity is Directory) return filePath;
 
           // filter out reserved files
-          if (Editor.isReservedPath(filePath)) return null;
+          if (NotePaths.isReserved(filePath)) return null;
 
-          late final isSbn2 = filePath.endsWith(Editor.extension);
-          late final isSbn1 = filePath.endsWith(Editor.extensionOldJson);
+          late final isSbn2 = filePath.endsWith(NotePaths.extension);
+          late final isSbn1 = filePath.endsWith(NotePaths.extensionOldJson);
 
           if (!includeExtensions) {
             if (isSbn2) {
               return filePath.substring(
                 0,
-                filePath.length - Editor.extension.length,
+                filePath.length - NotePaths.extension.length,
               );
             } else if (isSbn1) {
               return filePath.substring(
                 0,
-                filePath.length - Editor.extensionOldJson.length,
+                filePath.length - NotePaths.extensionOldJson.length,
               );
             } else {
               return null; // filePath is name of some asset
@@ -672,22 +675,22 @@ class FileManager {
     }
     return stows.recentFiles.value
         .map((String filePath) {
-          if (filePath.endsWith(Editor.extension)) {
+          if (filePath.endsWith(NotePaths.extension)) {
             return filePath.substring(
               0,
-              filePath.length - Editor.extension.length,
+              filePath.length - NotePaths.extension.length,
             );
-          } else if (filePath.endsWith(Editor.extensionOldJson)) {
+          } else if (filePath.endsWith(NotePaths.extensionOldJson)) {
             return filePath.substring(
               0,
-              filePath.length - Editor.extensionOldJson.length,
+              filePath.length - NotePaths.extensionOldJson.length,
             );
           } else {
             return filePath;
           }
         })
         .where(
-          (String file) => !Editor.isReservedPath(file),
+          (String file) => !NotePaths.isReserved(file),
         ) // filter out reserved file names
         .toList();
   }
@@ -730,7 +733,7 @@ class FileManager {
   /// to "/Untitled" will be returned as "/Untitled (2)" not "/Untitled (3)".
   ///
   /// If [currentPath] is provided, it must
-  /// end with [Editor.extension] or [Editor.extensionOldJson].
+  /// end with [NotePaths.extension] or [NotePaths.extensionOldJson].
   static Future<String> suffixFilePathToMakeItUnique(
     String filePath, {
     String? intendedExtension,
@@ -739,33 +742,33 @@ class FileManager {
     String newFilePath = filePath;
     bool hasExtension = false;
 
-    if (filePath.endsWith(Editor.extension)) {
+    if (filePath.endsWith(NotePaths.extension)) {
       filePath = filePath.substring(
         0,
-        filePath.length - Editor.extension.length,
+        filePath.length - NotePaths.extension.length,
       );
       newFilePath = filePath;
       hasExtension = true;
-      intendedExtension ??= Editor.extension;
-    } else if (filePath.endsWith(Editor.extensionOldJson)) {
+      intendedExtension ??= NotePaths.extension;
+    } else if (filePath.endsWith(NotePaths.extensionOldJson)) {
       filePath = filePath.substring(
         0,
-        filePath.length - Editor.extensionOldJson.length,
+        filePath.length - NotePaths.extensionOldJson.length,
       );
       newFilePath = filePath;
       hasExtension = true;
-      intendedExtension ??= Editor.extensionOldJson;
+      intendedExtension ??= NotePaths.extensionOldJson;
     } else {
-      intendedExtension ??= Editor.extension;
+      intendedExtension ??= NotePaths.extension;
     }
 
     int i = 1;
     while (true) {
-      if (!doesFileExist(newFilePath + Editor.extension) &&
-          !doesFileExist(newFilePath + Editor.extensionOldJson))
+      if (!doesFileExist(newFilePath + NotePaths.extension) &&
+          !doesFileExist(newFilePath + NotePaths.extensionOldJson))
         break;
-      if (newFilePath + Editor.extension == currentPath) break;
-      if (newFilePath + Editor.extensionOldJson == currentPath) break;
+      if (newFilePath + NotePaths.extension == currentPath) break;
+      if (newFilePath + NotePaths.extensionOldJson == currentPath) break;
       i++;
       newFilePath = '$filePath ($i)';
     }
