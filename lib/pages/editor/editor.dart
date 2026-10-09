@@ -48,6 +48,7 @@ import 'package:saber/components/toolbar/toolbar.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/editor_exporter.dart';
 import 'package:saber/data/editor/editor_history.dart';
+import 'package:saber/data/editor/gestures/pen_gesture.dart';
 import 'package:saber/data/editor/gestures/select_gesture.dart';
 import 'package:saber/data/editor/gestures/tool_gesture.dart';
 import 'package:saber/data/editor/page.dart';
@@ -61,7 +62,6 @@ import 'package:saber/data/nextcloud/saber_syncer.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
 import 'package:saber/data/tools/arrow.dart';
-import 'package:saber/data/tools/circle_to_select_detector.dart';
 import 'package:saber/data/tools/dimension.dart';
 import 'package:saber/data/tools/elements.dart';
 import 'package:saber/data/tools/eraser.dart';
@@ -70,7 +70,6 @@ import 'package:saber/data/tools/laser_pointer.dart';
 import 'package:saber/data/tools/pen.dart';
 import 'package:saber/data/tools/pencil.dart';
 import 'package:saber/data/tools/ruler.dart';
-import 'package:saber/data/tools/scribble_detector.dart';
 import 'package:saber/data/tools/select.dart';
 import 'package:saber/data/tools/shape_pen.dart';
 import 'package:saber/data/tools/study_tape.dart';
@@ -192,6 +191,7 @@ class EditorState extends State<Editor> implements EditorGestureHost {
         return StudyTapeTool.currentStudyTape;
     }
   }();
+  @override
   Tool get currentTool => _currentTool;
   set currentTool(Tool tool) {
     // If switching away from Select, exit crop mode on selected images
@@ -225,11 +225,10 @@ class EditorState extends State<Editor> implements EditorGestureHost {
   /// If we add customized button bindings, we may have to separate this again.
   var stylusButtonWasPressed = false;
 
-  /// Detects scribble-to-erase gestures when the pen tool is active.
-  final scribbleDetector = ScribbleDetector();
-
-  /// Detects circle-to-select loop gestures when the pen tool is active.
-  late final circleToSelectDetector = CircleToSelectDetector(
+  /// Handles draw gestures made with a pen, including scribble-to-erase
+  /// and circle-to-select.
+  late final _penGesture = PenGesture(
+    this,
     onCircleDetected: _onCircleToSelectDetected,
   );
 
@@ -355,6 +354,7 @@ class EditorState extends State<Editor> implements EditorGestureHost {
 
   /// Creates pages until the given page index exists,
   /// plus an extra blank page
+  @override
   void createPage(int pageIndex) {
     if (coreInfo.isInfiniteCanvas) {
       if (coreInfo.pages.isEmpty) {
@@ -661,19 +661,14 @@ class EditorState extends State<Editor> implements EditorGestureHost {
     }
 
     if (currentTool is Pen) {
-      // Set pen preview
-      final pen = currentTool as Pen;
-      page.penPreviewPosition = position;
-      page.penPreviewRadius = pen.options.size / 2;
-      page.penPreviewColor = pen.color;
-
-      if (stows.scribbleToErase.value) {
-        scribbleDetector.start(position);
-      }
-      if (stows.circleToSelect.value) {
-        circleToSelectDetector.start(position);
-      }
-      pen.onDragStart(position, page, dragPageIndex!, currentPressure);
+      _penGesture.start(
+        GesturePointer(
+          page: page,
+          pageIndex: dragPageIndex!,
+          position: position,
+          pressure: currentPressure,
+        ),
+      );
     } else if (currentTool is Eraser) {
       final eraser = currentTool as Eraser;
       page.eraserCursorPosition = position;
@@ -726,49 +721,15 @@ class EditorState extends State<Editor> implements EditorGestureHost {
     final offset = position - previousPosition;
 
     if (currentTool is Pen) {
-      final pen = currentTool as Pen;
-      // Update pen preview
-      page.penPreviewPosition = position;
-      page.penPreviewRadius = pen.options.size / 2;
-      page.penPreviewColor = pen.color;
-
-      if (stows.scribbleToErase.value) {
-        final penStrokeWidth = pen.options.size;
-        final lh = (page.lineHeight ?? stows.gridSize.value).toDouble();
-        final erased = scribbleDetector.update(
-          position,
-          page.activeLayerStrokes,
-          penStrokeWidth,
+      _penGesture.update(
+        GesturePointer(
           page: page,
-          lineHeight: lh > 0 ? lh : 30.0,
-        );
-
-        if (scribbleDetector.state == ScribbleState.erasing) {
-          if (Pen.currentStroke != null) {
-            Pen.currentStroke = null;
-          }
-          // In scribble-erase mode: erase overlapping strokes
-          for (final stroke in erased) {
-            page.removeStroke(stroke);
-          }
-          // Show eraser cursor with eraser radius
-          page.eraserCursorPosition = position;
-          page.eraserCursorRadius = ScribbleDetector.eraserRadius;
-          page.redrawStrokes();
-        } else {
-          // Still drawing or undetermined — draw normally
-          pen.onDragUpdate(position, currentPressure);
-          page.redrawStrokes();
-        }
-      } else {
-        // Scribble-to-erase disabled — normal drawing
-        (currentTool as Pen).onDragUpdate(position, currentPressure);
-        page.redrawStrokes();
-      }
-
-      if (stows.circleToSelect.value) {
-        circleToSelectDetector.update(position);
-      }
+          pageIndex: dragPageIndex!,
+          position: position,
+          delta: offset,
+          pressure: currentPressure,
+        ),
+      );
     } else if (currentTool is Eraser) {
       final eraser = currentTool as Eraser;
       page.eraserCursorPosition = position;
@@ -818,63 +779,12 @@ class EditorState extends State<Editor> implements EditorGestureHost {
     bool shouldSave = true;
     setState(() {
       if (currentTool is Pen) {
-        circleToSelectDetector.cancel();
-        if (scribbleDetector.state == ScribbleState.erasing) {
-          final erased = scribbleDetector.end();
-          final erasedImages = scribbleDetector.getAndClearErasedImages();
-          // Discard the partial stroke that was started before scribble detection
-          (currentTool as Pen).onDragEnd();
-          page.eraserCursorPosition = null;
-          page.eraserCursorRadius = null;
-          if (erased.isNotEmpty || erasedImages.isNotEmpty) {
-            history.recordChange(
-              EditorHistoryItem(
-                type: .erase,
-                pageIndex: dragPageIndex!,
-                strokes: erased,
-                images: erasedImages,
-              ),
-            );
-          } else if (!scribbleDetector.erasedText) {
-            shouldSave = false;
-          }
-          return;
-        }
-
-        final newStroke = (currentTool as Pen).onDragEnd();
-        if (newStroke == null) return;
-        if (newStroke.isEmpty) return;
-
-        // Check if a quick tap was on an existing TapeStroke to toggle conceal/reveal
-        if (newStroke.length <= 4) {
-          final p0 = newStroke.firstPoint;
-          final pEnd = newStroke.lastPoint;
-          if (p0 != null && pEnd != null && (pEnd - p0).distance < 15.0) {
-            for (final stroke in page.strokes.reversed) {
-              if (stroke is TapeStroke && stroke.rect.inflate(8).contains(p0)) {
-                stroke.toggleConceal();
-                page.redrawStrokes();
-                autosaveAfterDelay();
-                return;
-              }
-            }
-          }
-        }
-
-        if ((stows.autoStraightenLines.value || currentTool is Highlighter) &&
-            currentTool is! ShapePen &&
-            newStroke.isStraightLine()) {
-          newStroke.convertToLine();
-        }
-
-        createPage(newStroke.pageIndex);
-        page.insertStroke(newStroke);
-        history.recordChange(
-          EditorHistoryItem(
-            type: .draw,
+        shouldSave = _penGesture.end(
+          GesturePointer(
+            page: page,
             pageIndex: dragPageIndex!,
-            strokes: [newStroke],
-            images: [],
+            position: previousPosition,
+            moved: moveOffset,
           ),
         );
       } else if (currentTool is Eraser) {
@@ -1099,6 +1009,7 @@ class EditorState extends State<Editor> implements EditorGestureHost {
     syncer.downloader.bringToFront(syncFile);
   }
 
+  @override
   void autosaveAfterDelay() {
     if (history.isCurrentStateSaved) return cancelAutosaveAndMarkSaved();
 

@@ -5,6 +5,7 @@ import 'dart:ui';
 
 import 'package:saber/data/editor/editor_history.dart';
 import 'package:saber/data/editor/page.dart';
+import 'package:saber/data/tools/_tool.dart';
 
 /// How one tool responds to a pointer drawing on a page.
 ///
@@ -56,11 +57,20 @@ class GesturePointer {
 
 /// What a [ToolGesture] needs from the editor it draws in.
 abstract interface class EditorGestureHost {
+  /// The tool the pointer is drawing with.
+  Tool get currentTool;
+
   /// The undo history of the note.
   EditorHistory get history;
 
   /// The height of a ruled line in the note.
   int get lineHeight;
+
+  /// Makes sure the note has a page at [pageIndex].
+  void createPage(int pageIndex);
+
+  /// Saves the note once the user has stopped editing for a moment.
+  void autosaveAfterDelay();
 
   /// Deletes the current selection from [page].
   void deleteSelection(EditorPage page);

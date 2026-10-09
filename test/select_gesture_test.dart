@@ -15,6 +15,8 @@ import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/select.dart';
 
+import 'utils/fake_gesture_host.dart';
+
 const _start = Offset(100, 200);
 const _end = Offset(200, 250);
 
@@ -23,13 +25,13 @@ void main() {
   FlavorConfig.setup();
 
   group('SelectGesture', () {
-    late _FakeHost host;
+    late FakeGestureHost host;
     late SelectGesture gesture;
     late EditorPage page;
     late Stroke stroke;
 
     setUp(() {
-      host = _FakeHost();
+      host = FakeGestureHost();
       gesture = SelectGesture(host);
       page = EditorPage();
       stroke = _insertStroke(page);
@@ -214,18 +216,4 @@ Stroke _insertStroke(EditorPage page) {
   }
   page.insertStroke(stroke);
   return stroke;
-}
-
-class _FakeHost implements EditorGestureHost {
-  @override
-  final history = EditorHistory();
-
-  @override
-  int get lineHeight => 40;
-
-  /// The pages [deleteSelection] was called with.
-  final deletedFrom = <EditorPage>[];
-
-  @override
-  void deleteSelection(EditorPage page) => deletedFrom.add(page);
 }
