@@ -18,6 +18,7 @@ import 'package:saber/components/toolbar/pen_modal.dart';
 import 'package:saber/components/toolbar/quick_palette_bar.dart';
 import 'package:saber/components/toolbar/tape_options_popup.dart';
 import 'package:saber/components/toolbar/toolbar_button.dart';
+import 'package:saber/components/toolbar/toolbar_dialog.dart';
 import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
@@ -72,64 +73,16 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
   void _showPenSettings(Tool Function() getTool) {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 380),
-          decoration: BoxDecoration(
-            color: ColorScheme.of(context).surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: ColorScheme.of(
-                context,
-              ).outlineVariant.withValues(alpha: 0.5),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.edit_note_rounded,
-                    size: 22,
-                    color: ColorScheme.of(context).primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    t.editor.tools.penOptions,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: ColorScheme.of(context).onSurface,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 20),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              PenModal(
-                getTool: getTool,
-                setTool: (pen) {
-                  widget.actions.setTool(pen);
-                  setState(() {});
-                },
-              ),
-            ],
-          ),
+      builder: (_) => ToolbarDialog(
+        icon: Icons.edit_note_rounded,
+        iconSize: 22,
+        title: t.editor.tools.penOptions,
+        child: PenModal(
+          getTool: getTool,
+          setTool: (pen) {
+            widget.actions.setTool(pen);
+            setState(() {});
+          },
         ),
       ),
     );
@@ -179,7 +132,6 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
   }
 
   void _toggleColorOptions() {
-    final colorScheme = ColorScheme.of(context);
     final brightness = Theme.brightnessOf(context);
     final invert =
         stows.editorAutoInvert.value && brightness == Brightness.dark;
@@ -192,64 +144,18 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 420),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.palette_outlined,
-                    size: 20,
-                    color: colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    t.editor.toolbar.toggleColors,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 20),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              ColorBar(
-                axis: Axis.horizontal,
-                currentColor: currentColor,
-                setColor: (color) {
-                  widget.actions.setColor(color);
-                  setState(() {});
-                },
-                invert: invert,
-              ),
-            ],
-          ),
+      builder: (_) => ToolbarDialog(
+        icon: Icons.palette_outlined,
+        title: t.editor.toolbar.toggleColors,
+        maxWidth: 420,
+        child: ColorBar(
+          axis: Axis.horizontal,
+          currentColor: currentColor,
+          setColor: (color) {
+            widget.actions.setColor(color);
+            setState(() {});
+          },
+          invert: invert,
         ),
       ),
     );
