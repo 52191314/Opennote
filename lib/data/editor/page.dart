@@ -20,6 +20,9 @@ import 'package:sbn/has_size.dart';
 
 typedef CanvasKey = GlobalKey<State<InnerCanvas>>;
 
+/// Where a page's text sits relative to its default position.
+typedef TextPlacement = ({Offset offset, double rotation});
+
 class EditorPage extends ChangeNotifier implements HasSize {
   static const double defaultWidth = 1000;
   static const double defaultHeight = defaultWidth * 1.4;
@@ -123,6 +126,14 @@ class EditorPage extends ChangeNotifier implements HasSize {
 
   /// Rotation angle (in radians) applied to the text content.
   double textContentRotation = 0;
+
+  /// [textContentOffset] and [textContentRotation] together.
+  TextPlacement get textPlacement =>
+      (offset: textContentOffset, rotation: textContentRotation);
+  set textPlacement(TextPlacement placement) {
+    textContentOffset = placement.offset;
+    textContentRotation = placement.rotation;
+  }
 
   /// Position for the pen preview circle (shown when hovering/ready to draw).
   Offset? penPreviewPosition;

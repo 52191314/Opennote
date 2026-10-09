@@ -511,6 +511,11 @@ class EditorState extends State<Editor> {
               image.dstRect.bottom - item.offset!.bottom,
             );
           }
+          final textPlacementChange = item.textPlacementChange;
+          if (textPlacementChange != null) {
+            coreInfo.pages[item.pageIndex].textPlacement =
+                textPlacementChange.previous;
+          }
 
         case .quillChange:
           final quill = coreInfo.pages[item.pageIndex].quill;
@@ -562,6 +567,7 @@ class EditorState extends State<Editor> {
               -item.offset!.right,
               -item.offset!.bottom,
             ),
+            textPlacementChange: item.textPlacementChange?.reverse(),
           ),
         );
       case .quillChange:
@@ -1240,6 +1246,15 @@ class EditorState extends State<Editor> {
                 moveOffset.dx,
                 moveOffset.dy,
               ),
+              textPlacementChange: select.selectResult.textSelected
+                  ? Change(
+                      previous: (
+                        offset: page.textContentOffset - moveOffset,
+                        rotation: page.textContentRotation,
+                      ),
+                      current: page.textPlacement,
+                    )
+                  : null,
             ),
           );
         } else {
