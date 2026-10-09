@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:math';
@@ -7,11 +8,14 @@ import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart';
 import 'package:one_dollar_unistroke_recognizer/one_dollar_unistroke_recognizer.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
+import 'package:saber/components/canvas/_rect_rotation.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:sbn/has_size.dart';
 
 class RectangleStroke extends Stroke {
   Rect rect;
+
+  final _rotation = RectRotation();
 
   RectangleStroke({
     required super.color,
@@ -147,43 +151,7 @@ class RectangleStroke extends Stroke {
   @override
   void rotateAround(double angleRadians, Offset center) {
     if (angleRadians == 0) return;
-
-    final cosA = cos(angleRadians);
-    final sinA = sin(angleRadians);
-
-    Offset rotatePoint(Offset p) {
-      final dx = p.dx - center.dx;
-      final dy = p.dy - center.dy;
-      return Offset(
-        center.dx + dx * cosA - dy * sinA,
-        center.dy + dx * sinA + dy * cosA,
-      );
-    }
-
-    final topLeft = rotatePoint(rect.topLeft);
-    final topRight = rotatePoint(rect.topRight);
-    final bottomRight = rotatePoint(rect.bottomRight);
-    final bottomLeft = rotatePoint(rect.bottomLeft);
-
-    final newLeft = min(
-      topLeft.dx,
-      min(topRight.dx, min(bottomRight.dx, bottomLeft.dx)),
-    );
-    final newTop = min(
-      topLeft.dy,
-      min(topRight.dy, min(bottomRight.dy, bottomLeft.dy)),
-    );
-    final newRight = max(
-      topLeft.dx,
-      max(topRight.dx, max(bottomRight.dx, bottomLeft.dx)),
-    );
-    final newBottom = max(
-      topLeft.dy,
-      max(topRight.dy, max(bottomRight.dy, bottomLeft.dy)),
-    );
-
-    rect = Rect.fromLTRB(newLeft, newTop, newRight, newBottom);
-
+    rect = _rotation.rotate(rect, angleRadians, center);
     super.rotateAround(angleRadians, center);
   }
 
