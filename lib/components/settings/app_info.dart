@@ -1,8 +1,12 @@
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
+library;
+
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:saber/components/settings/update_manager.dart';
 import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/is_this_a_test.dart';
 import 'package:saber/data/prefs.dart';
@@ -23,7 +27,7 @@ class AppInfo extends StatelessWidget {
     'https://github.com/saber-notes/saber/blob/main/LICENSE.md',
   );
   static final Uri releasesUrl = Uri.parse(
-    'https://github.com/saber-notes/saber/releases',
+    'https://github.com/${UpdateManager.repository}/releases',
   );
 
   static String get info => [
