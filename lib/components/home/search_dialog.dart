@@ -1,4 +1,5 @@
 /// 🤖 Generated with DeepSeek v4 Flash
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:async';
@@ -232,7 +233,10 @@ class _SearchDialogState extends State<SearchDialog> {
               fileName: fileName,
               pageIndex: pageIdx,
               matchKind: 'text',
-              preview: 'Page ${pageIdx + 1}: "$snippet"',
+              preview: t.searchResults.textMatch(
+                page: pageIdx + 1,
+                snippet: snippet,
+              ),
             ),
           );
         }
@@ -301,7 +305,10 @@ class _SearchDialogState extends State<SearchDialog> {
                 fileName: fileName,
                 pageIndex: pageIndex,
                 matchKind: 'color',
-                preview: 'Page ${pageIndex + 1} – colour $hex',
+                preview: t.searchResults.colorMatch(
+                  page: pageIndex + 1,
+                  hex: hex,
+                ),
               ),
             );
             foundColor = true;
@@ -319,7 +326,10 @@ class _SearchDialogState extends State<SearchDialog> {
               fileName: fileName,
               pageIndex: pageIndex,
               matchKind: 'tool',
-              preview: 'Page ${pageIndex + 1} – tool: $toolType',
+              preview: t.searchResults.toolMatch(
+                page: pageIndex + 1,
+                tool: toolType,
+              ),
             ),
           );
           foundTool = true;

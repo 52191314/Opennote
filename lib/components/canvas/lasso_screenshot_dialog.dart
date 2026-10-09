@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:io';
@@ -6,6 +7,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:saber/i18n/strings.g.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 
@@ -85,7 +87,7 @@ class _LassoScreenshotDialogState extends State<LassoScreenshotDialog> {
           Icon(Icons.crop_free_rounded, color: colorScheme.primary, size: 24),
           const SizedBox(width: 10),
           Text(
-            'Screenshot',
+            t.editor.lasso.screenshot,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -94,7 +96,7 @@ class _LassoScreenshotDialogState extends State<LassoScreenshotDialog> {
           IconButton(
             icon: const Icon(Icons.close_rounded, size: 20),
             onPressed: () => Navigator.of(context).pop(),
-            tooltip: 'Close',
+            tooltip: t.editor.actions.close,
           ),
         ],
       ),
@@ -129,7 +131,7 @@ class _LassoScreenshotDialogState extends State<LassoScreenshotDialog> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.share_rounded, size: 18),
-          label: const Text('Share'),
+          label: Text(t.editor.actions.share),
           style: OutlinedButton.styleFrom(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -148,7 +150,7 @@ class _LassoScreenshotDialogState extends State<LassoScreenshotDialog> {
                   ),
                 )
               : const Icon(Icons.copy_rounded, size: 18),
-          label: const Text('Copy'),
+          label: Text(t.editor.actions.copy),
           style: FilledButton.styleFrom(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),

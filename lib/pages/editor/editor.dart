@@ -1813,7 +1813,7 @@ class EditorState extends State<Editor> {
       id: coreInfo.nextImageId++,
       assetCache: coreInfo.assetCache,
       color: const Color(0xFFFFF59D), // yellow default
-      text: 'New Note',
+      text: t.editor.stickyNote.defaultText,
       pageIndex: currentPageIndex,
       pageSize: coreInfo.pages[currentPageIndex].size,
       onMoveImage: onMoveImage,
@@ -2408,24 +2408,26 @@ class EditorState extends State<Editor> {
     if (strokes.isEmpty) return;
 
     final controller = TextEditingController(
-      text: 'Element ${ElementsManager.instance.items.length + 1}',
+      text: t.editor.elements.defaultName(
+        n: ElementsManager.instance.items.length + 1,
+      ),
     );
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add to Elements'),
+        title: Text(t.editor.elements.add),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Element Name',
-            hintText: 'Enter name for sticker',
+          decoration: InputDecoration(
+            labelText: t.editor.elements.nameLabel,
+            hintText: t.editor.elements.nameHint,
           ),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(t.common.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -2440,12 +2442,12 @@ class EditorState extends State<Editor> {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Added "$name" to Elements'),
+                  content: Text(t.editor.elements.added(name: name)),
                   duration: const Duration(seconds: 2),
                 ),
               );
             },
-            child: const Text('Save'),
+            child: Text(t.editor.actions.save),
           ),
         ],
       ),
@@ -2518,9 +2520,9 @@ class EditorState extends State<Editor> {
         imageBytes: bytes,
         onCopied: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Screenshot copied to clipboard'),
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: Text(t.editor.lasso.screenshotCopied),
+              duration: const Duration(seconds: 2),
             ),
           );
         },
@@ -2542,9 +2544,9 @@ class EditorState extends State<Editor> {
     final pageIndex = currentPageIndex.clamp(0, coreInfo.pages.length - 1);
     final page = coreInfo.pages[pageIndex];
     if (page.activeLayer.locked) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cannot stamp element on a locked layer')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(t.editor.elements.lockedLayer)));
       return;
     }
 
@@ -3196,8 +3198,8 @@ class EditorState extends State<Editor> {
                           ),
                           Tooltip(
                             message: currentPageBookmarked
-                                ? 'Remove bookmark'
-                                : 'Bookmark page',
+                                ? t.editor.bookmark.remove
+                                : t.editor.bookmark.add,
                             child: InkResponse(
                               radius: 16,
                               onTap: () => setState(() {

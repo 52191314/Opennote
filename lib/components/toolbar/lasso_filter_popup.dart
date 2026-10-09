@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'package:flutter/cupertino.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:saber/components/theming/adaptive_switch_list_tile.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/select.dart';
+import 'package:saber/i18n/strings.g.dart';
 import 'package:stow_plain/stow_plain.dart';
 
 /// A popup dialog allowing users to toggle lasso selection filters
@@ -56,14 +58,14 @@ class _LassoFilterPopupState extends State<LassoFilterPopup> {
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    'Lasso Options',
+                    t.editor.lasso.options,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ],
               ),
               const SizedBox(height: 16),
               Text(
-                'LASSO TYPE',
+                t.editor.lasso.typeHeading,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -73,16 +75,16 @@ class _LassoFilterPopupState extends State<LassoFilterPopup> {
               ),
               const SizedBox(height: 8),
               SegmentedButton<bool>(
-                segments: const [
+                segments: [
                   ButtonSegment<bool>(
                     value: false,
-                    label: Text('Freehand'),
-                    icon: Icon(CupertinoIcons.lasso, size: 16),
+                    label: Text(t.editor.lasso.freehand),
+                    icon: const Icon(CupertinoIcons.lasso, size: 16),
                   ),
                   ButtonSegment<bool>(
                     value: true,
-                    label: Text('Rectangular'),
-                    icon: Icon(Icons.crop_square_rounded, size: 16),
+                    label: Text(t.editor.lasso.rectangular),
+                    icon: const Icon(Icons.crop_square_rounded, size: 16),
                   ),
                 ],
                 selected: {stows.selectionRectMode.value},
@@ -96,7 +98,7 @@ class _LassoFilterPopupState extends State<LassoFilterPopup> {
               ),
               const SizedBox(height: 16),
               Text(
-                'INCLUDED IN SELECTION',
+                t.editor.lasso.includedHeading,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -107,32 +109,32 @@ class _LassoFilterPopupState extends State<LassoFilterPopup> {
               const SizedBox(height: 4),
               AdaptiveSwitchListTile(
                 secondary: const Icon(Icons.gesture),
-                title: const Text('Handwriting'),
-                subtitle: const Text('Pen, pencil, and highlighter strokes'),
+                title: Text(t.editor.lasso.handwriting),
+                subtitle: Text(t.editor.lasso.handwritingDescription),
                 value: stows.lassoSelectHandwriting.value,
                 onChanged: (val) => _toggle(stows.lassoSelectHandwriting, val),
                 contentPadding: EdgeInsets.zero,
               ),
               AdaptiveSwitchListTile(
                 secondary: const Icon(Icons.image_outlined),
-                title: const Text('Images'),
-                subtitle: const Text('Photos, stickers, and PDFs'),
+                title: Text(t.editor.lasso.images),
+                subtitle: Text(t.editor.lasso.imagesDescription),
                 value: stows.lassoSelectImages.value,
                 onChanged: (val) => _toggle(stows.lassoSelectImages, val),
                 contentPadding: EdgeInsets.zero,
               ),
               AdaptiveSwitchListTile(
                 secondary: const Icon(Icons.title),
-                title: const Text('Text Boxes'),
-                subtitle: const Text('Typed notes and text boxes'),
+                title: Text(t.editor.lasso.textBoxes),
+                subtitle: Text(t.editor.lasso.textBoxesDescription),
                 value: stows.lassoSelectText.value,
                 onChanged: (val) => _toggle(stows.lassoSelectText, val),
                 contentPadding: EdgeInsets.zero,
               ),
               AdaptiveSwitchListTile(
                 secondary: const Icon(Icons.view_headline_rounded),
-                title: const Text('Study Tape'),
-                subtitle: const Text('Masking tape strips'),
+                title: Text(t.editor.tape.title),
+                subtitle: Text(t.editor.lasso.tapeDescription),
                 value: stows.lassoSelectTape.value,
                 onChanged: (val) => _toggle(stows.lassoSelectTape, val),
                 contentPadding: EdgeInsets.zero,

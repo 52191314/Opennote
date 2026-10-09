@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:math';
@@ -6,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/tools/elements.dart';
+import 'package:saber/i18n/strings.g.dart';
 import 'package:sbn/has_size.dart';
 
 /// Modal bottom sheet or popup for browsing, selecting, and managing Elements (stickers/assets).
@@ -79,7 +81,7 @@ class _ElementsSheetState extends State<ElementsSheet> {
                 Icon(Icons.auto_awesome, size: 20, color: colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
-                  'Elements',
+                  t.editor.elements.title,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -122,7 +124,7 @@ class _ElementsSheetState extends State<ElementsSheet> {
             child: filteredItems.isEmpty
                 ? Center(
                     child: Text(
-                      'No elements in this collection',
+                      t.editor.elements.empty,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.outline,
                       ),
@@ -204,19 +206,22 @@ class _ElementsSheetState extends State<ElementsSheet> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Element?'),
-        content: Text('Delete "${item.name}" from your elements collection?'),
+        title: Text(t.editor.elements.deleteTitle),
+        content: Text(t.editor.elements.deleteConfirm(name: item.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(t.common.cancel),
           ),
           TextButton(
             onPressed: () {
               _manager.removeElement(item.id);
               Navigator.pop(ctx);
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text(
+              t.editor.actions.delete,
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),

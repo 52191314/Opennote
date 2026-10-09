@@ -1,8 +1,10 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:saber/i18n/strings.g.dart';
 
 /// Floating callout action pill appearing directly above/below a lasso selection
 /// providing quick in-context actions matching Goodnotes 6/7:
@@ -180,7 +182,7 @@ class _LassoCalloutMenuState extends State<LassoCalloutMenu> {
           if (widget.onBringToFront != null) ...[
             _CalloutButton(
               icon: Icons.flip_to_front_rounded,
-              label: 'Front',
+              label: t.editor.lasso.front,
               onTap: () {
                 widget.onBringToFront?.call();
                 setState(() => _showArrangeMenu = false);
@@ -191,7 +193,7 @@ class _LassoCalloutMenuState extends State<LassoCalloutMenu> {
             divider,
             _CalloutButton(
               icon: Icons.flip_to_back_rounded,
-              label: 'Back',
+              label: t.editor.lasso.back,
               onTap: () {
                 widget.onSendToBack?.call();
                 setState(() => _showArrangeMenu = false);
@@ -210,19 +212,19 @@ class _LassoCalloutMenuState extends State<LassoCalloutMenu> {
         children: [
           _CalloutButton(
             icon: Icons.content_cut_rounded,
-            label: 'Cut',
+            label: t.editor.actions.cut,
             onTap: widget.onCut,
           ),
           divider,
           _CalloutButton(
             icon: Icons.copy_rounded,
-            label: 'Copy',
+            label: t.editor.actions.copy,
             onTap: widget.onCopy,
           ),
           divider,
           _CalloutButton(
             icon: Icons.delete_outline_rounded,
-            label: 'Delete',
+            label: t.editor.actions.delete,
             isDestructive: true,
             onTap: widget.onDelete,
           ),
@@ -230,7 +232,9 @@ class _LassoCalloutMenuState extends State<LassoCalloutMenu> {
             divider,
             _CalloutButton(
               icon: Icons.open_in_full_rounded,
-              label: widget.isResizeActive ? 'Done' : 'Resize',
+              label: widget.isResizeActive
+                  ? t.common.done
+                  : t.editor.lasso.resize,
               isActive: widget.isResizeActive,
               onTap: widget.onToggleResize,
             ),
@@ -238,14 +242,14 @@ class _LassoCalloutMenuState extends State<LassoCalloutMenu> {
           divider,
           _CalloutButton(
             icon: Icons.palette_outlined,
-            label: 'Color',
+            label: t.editor.lasso.color,
             onTap: () => setState(() => _showColorPicker = true),
           ),
           if (widget.onTakeScreenshot != null) ...[
             divider,
             _CalloutButton(
               icon: Icons.crop_free_rounded,
-              label: 'Screenshot',
+              label: t.editor.lasso.screenshot,
               onTap: widget.onTakeScreenshot,
             ),
           ],
@@ -253,7 +257,7 @@ class _LassoCalloutMenuState extends State<LassoCalloutMenu> {
             divider,
             _CalloutButton(
               icon: Icons.bookmark_add_outlined,
-              label: 'Element',
+              label: t.editor.lasso.element,
               onTap: widget.onAddToElements,
             ),
           ],
@@ -261,7 +265,7 @@ class _LassoCalloutMenuState extends State<LassoCalloutMenu> {
             divider,
             _CalloutButton(
               icon: Icons.layers_outlined,
-              label: 'Arrange',
+              label: t.editor.lasso.arrange,
               onTap: () => setState(() => _showArrangeMenu = true),
             ),
           ],
@@ -269,7 +273,7 @@ class _LassoCalloutMenuState extends State<LassoCalloutMenu> {
             divider,
             _CalloutButton(
               icon: Icons.auto_fix_high_rounded,
-              label: 'Smoothen',
+              label: t.editor.lasso.smoothen,
               onTap: widget.onSmoothen,
             ),
           ],
@@ -279,7 +283,7 @@ class _LassoCalloutMenuState extends State<LassoCalloutMenu> {
               icon: widget.cropActive
                   ? Icons.check_rounded
                   : Icons.crop_rounded,
-              label: widget.cropActive ? 'Done' : 'Crop',
+              label: widget.cropActive ? t.common.done : t.editor.lasso.crop,
               isActive: widget.cropActive,
               onTap: widget.onToggleCrop,
             ),

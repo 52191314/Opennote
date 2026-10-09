@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:convert';
@@ -70,24 +71,24 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AdaptiveAlertDialog(
-              title: const Text('Edit Sticky Note'),
+              title: Text(t.editor.stickyNote.editTitle),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Text:'),
+                  Text(t.editor.stickyNote.textLabel),
                   const SizedBox(height: 8),
                   TextField(
                     controller: controller,
                     autofocus: true,
                     maxLines: 5,
                     minLines: 1,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: 'Type your note here...',
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      hintText: t.editor.stickyNote.hint,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text('Color:'),
+                  Text(t.editor.stickyNote.colorLabel),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 6,
@@ -119,7 +120,7 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
               actions: [
                 CupertinoDialogAction(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
+                  child: Text(t.common.cancel),
                 ),
                 CupertinoDialogAction(
                   isDefaultAction: true,
@@ -130,7 +131,7 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
                     widget.redrawImage();
                     Navigator.of(context).pop();
                   },
-                  child: const Text('Save'),
+                  child: Text(t.editor.actions.save),
                 ),
               ],
             );
@@ -149,7 +150,7 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
           onTap: () {
             _showStickyNoteEditor();
           },
-          title: 'Edit Text',
+          title: t.editor.stickyNote.editText,
           child: const Icon(Icons.edit),
         ),
       MergeSemantics(
@@ -214,16 +215,14 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
             case StickyNoteImage _:
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Sticky notes cannot be downloaded'),
-                ),
+                SnackBar(content: Text(t.editor.stickyNote.cannotDownload)),
               );
               Navigator.of(context).pop();
               return;
             case StickerImage _:
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Stickers cannot be downloaded')),
+                SnackBar(content: Text(t.editor.stickers.cannotDownload)),
               );
               Navigator.of(context).pop();
               return;

@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:async';
@@ -139,8 +140,8 @@ class CanvasHud extends HookWidget {
                   setLock: setShowProtractor!,
                   icon: showProtractor ? Icons.straighten : Icons.straighten,
                   tooltip: showProtractor
-                      ? 'Hide protractor'
-                      : 'Show protractor',
+                      ? t.editor.canvasHud.hideProtractor
+                      : t.editor.canvasHud.showProtractor,
                 ),
               ),
             Positioned(
@@ -151,8 +152,8 @@ class CanvasHud extends HookWidget {
                 setLock: (val) => stows.snapToGrid.value = val,
                 icon: snapGrid ? Icons.grid_on : Icons.grid_off,
                 tooltip: snapGrid
-                    ? 'Disable snap to grid'
-                    : 'Enable snap to grid',
+                    ? t.editor.canvasHud.disableSnapToGrid
+                    : t.editor.canvasHud.enableSnapToGrid,
               ),
             ),
             Positioned(
@@ -165,8 +166,8 @@ class CanvasHud extends HookWidget {
                     ? Icons.square_foot
                     : Icons.square_foot_outlined,
                 tooltip: snapAngle
-                    ? 'Disable snap to angle'
-                    : 'Enable snap to angle',
+                    ? t.editor.canvasHud.disableSnapToAngle
+                    : t.editor.canvasHud.enableSnapToAngle,
               ),
             ),
             Positioned(
@@ -195,12 +196,15 @@ class CanvasHud extends HookWidget {
                     borderRadius: const BorderRadius.all(Radius.circular(16)),
                   ),
                   child: Tooltip(
-                    message:
-                        'Angle step: ${angleStep == Stows.snapAngleStepIso30 ? "Iso 30°" : "$angleStep°"}',
+                    message: t.editor.canvasHud.angleStep(
+                      step: angleStep == Stows.snapAngleStepIso30
+                          ? t.editor.canvasHud.iso30
+                          : '$angleStep°',
+                    ),
                     child: Center(
                       child: Text(
                         angleStep == Stows.snapAngleStepIso30
-                            ? 'Iso'
+                            ? t.editor.canvasHud.iso
                             : '$angleStep°',
                         style: TextStyle(
                           color: ColorScheme.of(context).onSurface,
@@ -221,7 +225,9 @@ class CanvasHud extends HookWidget {
                   lock: bookmarked,
                   setLock: (_) => onToggleBookmarked!(),
                   icon: bookmarked ? Icons.star : Icons.star_border,
-                  tooltip: bookmarked ? 'Remove bookmark' : 'Bookmark page',
+                  tooltip: bookmarked
+                      ? t.editor.bookmark.remove
+                      : t.editor.bookmark.add,
                 ),
               ),
             Positioned(
@@ -262,12 +268,12 @@ class CanvasHud extends HookWidget {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.visibility, size: 20),
-                        tooltip: 'Reveal all study tape',
+                        tooltip: t.editor.tape.revealAllTooltip,
                         onPressed: onRevealAllTape,
                       ),
                       IconButton(
                         icon: const Icon(Icons.visibility_off, size: 20),
-                        tooltip: 'Conceal all study tape',
+                        tooltip: t.editor.tape.concealAllTooltip,
                         onPressed: onConcealAllTape,
                       ),
                     ],
