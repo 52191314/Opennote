@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -14,8 +17,8 @@ class ProtractorOverlay extends StatefulWidget {
 }
 
 class _ProtractorOverlayState extends State<ProtractorOverlay> {
-  Offset _position = const Offset(100, 100);
-  double _radius = 120;
+  var _position = const Offset(100, 100);
+  final double _radius = 120;
 
   @override
   Widget build(BuildContext context) {
@@ -85,19 +88,23 @@ class _ProtractorPainter extends CustomPainter {
       final radians = pi + deg * pi / 180;
       final isMajor = deg % 30 == 0;
       final isMid = deg % 10 == 0;
-      final innerR = isMajor ? radius - 20 : (isMid ? radius - 14 : radius - 10);
+      final innerR = isMajor
+          ? radius - 20
+          : (isMid ? radius - 14 : radius - 10);
       final outerR = radius - 2;
 
       canvas.drawLine(
         center + Offset(cos(radians) * innerR, sin(radians) * innerR),
         center + Offset(cos(radians) * outerR, sin(radians) * outerR),
-        strokePaint..color = isMajor ? const Color(0xCCFFFFFF) : const Color(0x66FFFFFF),
+        strokePaint
+          ..color = isMajor ? const Color(0xCCFFFFFF) : const Color(0x66FFFFFF),
       );
 
       // Label every 30 degrees
       if (isMajor && deg > 0 && deg < 180) {
         final labelR = radius - 30;
-        final tp = center + Offset(cos(radians) * labelR, sin(radians) * labelR);
+        final tp =
+            center + Offset(cos(radians) * labelR, sin(radians) * labelR);
         final textPainter = TextPainter(
           text: TextSpan(
             text: '$deg°',

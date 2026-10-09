@@ -137,9 +137,7 @@ class CanvasHud extends HookWidget {
                 child: CanvasGestureLockBtn(
                   lock: showProtractor,
                   setLock: setShowProtractor!,
-                  icon: showProtractor
-                      ? Icons.straighten
-                      : Icons.straighten,
+                  icon: showProtractor ? Icons.straighten : Icons.straighten,
                   tooltip: showProtractor
                       ? 'Hide protractor'
                       : 'Show protractor',
@@ -152,7 +150,9 @@ class CanvasHud extends HookWidget {
                 lock: snapGrid,
                 setLock: (val) => stows.snapToGrid.value = val,
                 icon: snapGrid ? Icons.grid_on : Icons.grid_off,
-                tooltip: snapGrid ? 'Disable snap to grid' : 'Enable snap to grid',
+                tooltip: snapGrid
+                    ? 'Disable snap to grid'
+                    : 'Enable snap to grid',
               ),
             ),
             Positioned(
@@ -161,8 +161,12 @@ class CanvasHud extends HookWidget {
               child: CanvasGestureLockBtn(
                 lock: snapAngle,
                 setLock: (val) => stows.snapToAngle.value = val,
-                icon: snapAngle ? Icons.square_foot : Icons.square_foot_outlined,
-                tooltip: snapAngle ? 'Disable snap to angle' : 'Enable snap to angle',
+                icon: snapAngle
+                    ? Icons.square_foot
+                    : Icons.square_foot_outlined,
+                tooltip: snapAngle
+                    ? 'Disable snap to angle'
+                    : 'Enable snap to angle',
               ),
             ),
             Positioned(
@@ -185,7 +189,9 @@ class CanvasHud extends HookWidget {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: ColorScheme.of(context).surface.withValues(alpha: 0.5),
+                    color: ColorScheme.of(
+                      context,
+                    ).surface.withValues(alpha: 0.5),
                     borderRadius: const BorderRadius.all(Radius.circular(16)),
                   ),
                   child: Tooltip(
@@ -193,7 +199,9 @@ class CanvasHud extends HookWidget {
                         'Angle step: ${angleStep == Stows.snapAngleStepIso30 ? "Iso 30°" : "$angleStep°"}',
                     child: Center(
                       child: Text(
-                        angleStep == Stows.snapAngleStepIso30 ? 'Iso' : '$angleStep°',
+                        angleStep == Stows.snapAngleStepIso30
+                            ? 'Iso'
+                            : '$angleStep°',
                         style: TextStyle(
                           color: ColorScheme.of(context).onSurface,
                           fontSize: 10,
@@ -232,12 +240,14 @@ class CanvasHud extends HookWidget {
                 bottom: 24,
                 right: 16,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                    color: ColorScheme.of(context)
-                        .surfaceContainerHighest
-                        .withValues(alpha: 0.9),
+                    color: ColorScheme.of(
+                      context,
+                    ).surfaceContainerHighest.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(

@@ -13,19 +13,18 @@ import 'package:sbn/canvas_background_pattern.dart';
 /// A tool that constructs and places a [DimensionStroke] between two points
 /// with a live Euclidean distance label.
 class DimensionTool extends Pen {
-  DimensionTool({
-    this.defaultOffset = 30.0,
-  }) : super(
-          name: 'Dimension',
-          sizeMin: 1,
-          sizeMax: 25,
-          sizeStep: 1,
-          icon: dimensionIcon,
-          options: stows.lastBallpointPenOptions.value,
-          pressureEnabled: false,
-          color: Color(stows.lastBallpointPenColor.value),
-          toolId: .dimension,
-        );
+  DimensionTool({this.defaultOffset = 30.0})
+    : super(
+        name: 'Dimension',
+        sizeMin: 1,
+        sizeMax: 25,
+        sizeStep: 1,
+        icon: dimensionIcon,
+        options: stows.lastBallpointPenOptions.value,
+        pressureEnabled: false,
+        color: Color(stows.lastBallpointPenColor.value),
+        toolId: .dimension,
+      );
 
   static const dimensionIcon = Icons.straighten;
   final double defaultOffset;

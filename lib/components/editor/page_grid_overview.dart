@@ -12,11 +12,7 @@ import 'package:saber/data/editor/page.dart';
 import 'package:saber/i18n/strings.g.dart';
 
 /// Filter selection for the page grid overview / document hub.
-enum PageGridFilter {
-  all,
-  bookmarked,
-  outline,
-}
+enum PageGridFilter { all, bookmarked, outline }
 
 /// A heading entry extracted from document text for the Outline view.
 class _OutlineHeadingEntry {
@@ -179,8 +175,8 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
               child: _filter == PageGridFilter.outline
                   ? _buildOutlineView(context, theme)
                   : (visibleIndices.isEmpty
-                      ? _buildEmptyState(theme)
-                      : _buildGrid(context, theme, visibleIndices)),
+                        ? _buildEmptyState(theme)
+                        : _buildGrid(context, theme, visibleIndices)),
             ),
           ],
         ),
@@ -200,11 +196,9 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
             final text = (op.data as String).trim();
             if (text.isEmpty) continue;
             final level = attributes['heading'] as int;
-            headings.add(_OutlineHeadingEntry(
-              pageIndex: i,
-              level: level,
-              text: text,
-            ));
+            headings.add(
+              _OutlineHeadingEntry(pageIndex: i, level: level, text: text),
+            );
           }
         }
       }
@@ -235,7 +229,9 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
             Text(
               'Type headings in text boxes to generate an automatic outline',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.7,
+                ),
               ),
             ),
           ],
@@ -260,7 +256,9 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+                    color: theme.colorScheme.primaryContainer.withValues(
+                      alpha: 0.5,
+                    ),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   alignment: Alignment.center,
@@ -279,7 +277,9 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
                     entry.text,
                     style: TextStyle(
                       fontSize: 15.0 - (entry.level - 1) * 1.0,
-                      fontWeight: entry.level <= 2 ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: entry.level <= 2
+                          ? FontWeight.w700
+                          : FontWeight.w500,
                       color: theme.colorScheme.onSurface,
                     ),
                     maxLines: 1,
@@ -289,7 +289,9 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
                 Icon(
                   Icons.chevron_right,
                   size: 18,
-                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                  color: theme.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.5,
+                  ),
                 ),
               ],
             ),
@@ -362,7 +364,9 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
                     IconButton(
                       key: const Key('close_overview_button'),
                       icon: const Icon(Icons.close),
-                      tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                      tooltip: MaterialLocalizations.of(
+                        context,
+                      ).closeButtonTooltip,
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
@@ -434,7 +438,9 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
             Text(
               'Star pages to view them here',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.7,
+                ),
               ),
             ),
           ],
@@ -579,8 +585,8 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
     final borderColor = isDragTargetHovered
         ? theme.colorScheme.tertiary
         : isActive
-            ? theme.colorScheme.primary
-            : theme.colorScheme.outlineVariant.withValues(alpha: 0.5);
+        ? theme.colorScheme.primary
+        : theme.colorScheme.outlineVariant.withValues(alpha: 0.5);
 
     final borderWidth = (isDragTargetHovered || isActive) ? 2.5 : 1.0;
 
@@ -603,9 +609,7 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildCardTopBar(theme, pageIndex, page, isActive),
-          Expanded(
-            child: _buildCardBody(pageIndex, page),
-          ),
+          Expanded(child: _buildCardBody(pageIndex, page)),
           _buildCardFooter(context, theme, pageIndex),
         ],
       ),
@@ -709,7 +713,11 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
     );
   }
 
-  Widget _buildCardFooter(BuildContext context, ThemeData theme, int pageIndex) {
+  Widget _buildCardFooter(
+    BuildContext context,
+    ThemeData theme,
+    int pageIndex,
+  ) {
     final canDelete = widget.coreInfo.pages.length > 1;
 
     return Padding(
@@ -777,10 +785,12 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
                     children: [
                       const Icon(Icons.cleaning_services_outlined, size: 18),
                       const SizedBox(width: 8),
-                      Text(t.editor.menu.clearPage(
-                        page: pageIndex + 1,
-                        totalPages: widget.coreInfo.pages.length,
-                      )),
+                      Text(
+                        t.editor.menu.clearPage(
+                          page: pageIndex + 1,
+                          totalPages: widget.coreInfo.pages.length,
+                        ),
+                      ),
                     ],
                   ),
                 ),

@@ -54,7 +54,10 @@ class CircleToSelectDetector {
     // Loop criteria:
     // 1. Min bounding box size of 20x20
     // 2. Start and end points are close relative to loop size
-    if (width > 20 && height > 20 && distanceToStart < 50.0 && distanceToStart * distanceToStart < diagonal * 0.25) {
+    if (width > 20 &&
+        height > 20 &&
+        distanceToStart < 50.0 &&
+        distanceToStart * distanceToStart < diagonal * 0.25) {
       _isClosedLoop = true;
       // Start hold timer: if stylus stays held near this endpoint, trigger circle-to-select
       _holdTimer = Timer(holdDuration, () {

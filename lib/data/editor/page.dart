@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:async';
@@ -18,6 +19,9 @@ import 'package:saber/data/tools/laser_pointer.dart';
 import 'package:sbn/has_size.dart';
 
 typedef CanvasKey = GlobalKey<State<InnerCanvas>>;
+
+/// Where a page's text sits relative to its default position.
+typedef TextPlacement = ({Offset offset, double rotation});
 
 class EditorPage extends ChangeNotifier implements HasSize {
   static const double defaultWidth = 1000;
@@ -53,8 +57,10 @@ class EditorPage extends ChangeNotifier implements HasSize {
   final QuillStruct quill;
 
   /// All strokes from all visible layers, flattened for rendering.
-  List<Stroke> get strokes =>
-      [for (final layer in layers) if (layer.visible) ...layer.strokes];
+  List<Stroke> get strokes => [
+    for (final layer in layers)
+      if (layer.visible) ...layer.strokes,
+  ];
 
   /// Strokes in the currently active layer (for mutation).
   List<Stroke> get activeLayerStrokes => activeLayer.strokes;
@@ -105,7 +111,8 @@ class EditorPage extends ChangeNotifier implements HasSize {
     final isEmpty = quill.controller.document.isEmpty();
     if (isEmpty) return Rect.zero;
     final plainText = quill.controller.document.toPlainText();
-    final lines = plainText.split('\n').length;
+    if (plainText.trim().isEmpty) return Rect.zero;
+    final lines = plainText.trimRight().split('\n').length;
     final estimatedHeight = lines * lineHeight;
     final left = lineHeight * 0.5;
     final top = lineHeight * 1.2;
@@ -119,6 +126,14 @@ class EditorPage extends ChangeNotifier implements HasSize {
 
   /// Rotation angle (in radians) applied to the text content.
   double textContentRotation = 0;
+
+  /// [textContentOffset] and [textContentRotation] together.
+  TextPlacement get textPlacement =>
+      (offset: textContentOffset, rotation: textContentRotation);
+  set textPlacement(TextPlacement placement) {
+    textContentOffset = placement.offset;
+    textContentRotation = placement.rotation;
+  }
 
   /// Position for the pen preview circle (shown when hovering/ready to draw).
   Offset? penPreviewPosition;
@@ -191,12 +206,15 @@ class EditorPage extends ChangeNotifier implements HasSize {
     this.backgroundImage,
     this.activeLayerIndex = 0,
     this.bookmarked = false,
+    this.textContentOffset = Offset.zero,
+    this.textContentRotation = 0,
   }) : assert(
          (size == null) || (width == null && height == null),
          "size and width/height shouldn't both be specified",
        ),
        size = size ?? Size(width ?? defaultWidth, height ?? defaultHeight),
-       layers = layers ??
+       layers =
+           layers ??
            (strokes != null
                ? [Layer(name: 'Default', strokes: strokes)]
                : [Layer(name: 'Default')]),
@@ -219,6 +237,8 @@ class EditorPage extends ChangeNotifier implements HasSize {
   }) {
     final size = Size(json['w'] ?? defaultWidth, json['h'] ?? defaultHeight);
     final hasisPage = HasSize(size);
+    final textContentOffset = _parseOffset(json['to']);
+    final textContentRotation = (json['tr'] as num?)?.toDouble() ?? 0;
 
     // New format: layers stored in 'l' key
     if (json['l'] != null) {
@@ -226,12 +246,18 @@ class EditorPage extends ChangeNotifier implements HasSize {
       return EditorPage(
         size: size,
         bookmarked: json['bm'] as bool? ?? false,
-        layers: layersList.map((layerJson) => Layer.fromJson(
-          layerJson as Map<String, dynamic>,
-          fileVersion: fileVersion,
-          pageIndex: 0,
-          page: hasisPage,
-        )).toList(),
+        textContentOffset: textContentOffset,
+        textContentRotation: textContentRotation,
+        layers: layersList
+            .map(
+              (layerJson) => Layer.fromJson(
+                layerJson as Map<String, dynamic>,
+                fileVersion: fileVersion,
+                pageIndex: 0,
+                page: hasisPage,
+              ),
+            )
+            .toList(),
         images: parseImagesJson(
           json['i'] as List?,
           inlineAssets: inlineAssets,
@@ -265,6 +291,8 @@ class EditorPage extends ChangeNotifier implements HasSize {
     return EditorPage(
       size: size,
       bookmarked: json['bm'] as bool? ?? false,
+      textContentOffset: textContentOffset,
+      textContentRotation: textContentRotation,
       strokes: parseStrokesJson(
         json['s'] as List?,
         page: hasisPage,
@@ -300,12 +328,20 @@ class EditorPage extends ChangeNotifier implements HasSize {
     );
   }
 
+  /// Reads an offset saved as `[dx, dy]`, or [Offset.zero] if there is none.
+  static Offset _parseOffset(Object? json) {
+    if (json is! List || json.length != 2) return Offset.zero;
+    return Offset((json[0] as num).toDouble(), (json[1] as num).toDouble());
+  }
+
   Map<String, dynamic> toJson(OrderedAssetCache assets) => {
     'w': size.width,
     'h': size.height,
     if (bookmarked) 'bm': bookmarked,
-    if (layers.isNotEmpty)
-      'l': layers.map((layer) => layer.toJson()).toList(),
+    if (textContentOffset != Offset.zero)
+      'to': [textContentOffset.dx, textContentOffset.dy],
+    if (textContentRotation != 0) 'tr': textContentRotation,
+    if (layers.isNotEmpty) 'l': layers.map((layer) => layer.toJson()).toList(),
     if (images.isNotEmpty)
       'i': images.map((image) => image.toJson(assets)).toList(),
     if (!quill.controller.document.isEmpty())
@@ -319,6 +355,19 @@ class EditorPage extends ChangeNotifier implements HasSize {
     for (final layer in layers) {
       if (layer.locked) continue;
       if (layer.strokes.remove(stroke)) return true;
+    }
+    return false;
+  }
+
+  /// Swaps [oldStroke] for [newStroke],
+  /// keeping its layer and its place in the stacking order.
+  /// Returns false if [oldStroke] isn't on this page.
+  bool replaceStroke(Stroke oldStroke, Stroke newStroke) {
+    for (final layer in layers) {
+      final index = layer.strokes.indexOf(oldStroke);
+      if (index == -1) continue;
+      layer.strokes[index] = newStroke;
+      return true;
     }
     return false;
   }
@@ -472,6 +521,8 @@ class EditorPage extends ChangeNotifier implements HasSize {
     EditorImage? backgroundImage,
     int? activeLayerIndex,
     bool? bookmarked,
+    Offset? textContentOffset,
+    double? textContentRotation,
   }) => EditorPage(
     size: size ?? this.size,
     strokes: strokes,
@@ -481,6 +532,8 @@ class EditorPage extends ChangeNotifier implements HasSize {
     backgroundImage: backgroundImage ?? this.backgroundImage,
     activeLayerIndex: activeLayerIndex ?? this.activeLayerIndex,
     bookmarked: bookmarked ?? this.bookmarked,
+    textContentOffset: textContentOffset ?? this.textContentOffset,
+    textContentRotation: textContentRotation ?? this.textContentRotation,
   );
 
   /// Clones this page for use in a screenshot.
@@ -492,14 +545,20 @@ class EditorPage extends ChangeNotifier implements HasSize {
   /// you're done with it.
   EditorPage cloneForRasterization({bool rasterizeAllStrokes = false}) {
     return copyWith(
-      layers: layers.map((layer) => Layer(
-        name: layer.name,
-        visible: layer.visible,
-        locked: layer.locked,
-        strokes: rasterizeAllStrokes
-            ? layer.strokes
-            : layer.strokes.where(EditorExporter.shouldRasterizeStroke).toList(),
-      )).toList(),
+      layers: layers
+          .map(
+            (layer) => Layer(
+              name: layer.name,
+              visible: layer.visible,
+              locked: layer.locked,
+              strokes: rasterizeAllStrokes
+                  ? layer.strokes
+                  : layer.strokes
+                        .where(EditorExporter.shouldRasterizeStroke)
+                        .toList(),
+            ),
+          )
+          .toList(),
       quill: quill.cloneForScreenshot(),
     );
   }

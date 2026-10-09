@@ -5,7 +5,7 @@ library;
 /// continuous sequence numbers, matching the Yjs State Vector design.
 class CrdtStateVector {
   CrdtStateVector([Map<String, int>? initialClocks])
-      : clocks = Map<String, int>.from(initialClocks ?? const {});
+    : clocks = Map<String, int>.from(initialClocks ?? const {});
 
   /// Clocks indexed by client/replica ID.
   final Map<String, int> clocks;

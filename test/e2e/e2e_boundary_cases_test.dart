@@ -29,16 +29,19 @@ void main() {
     // Boundary 1: Empty Note & Zero Selection
     // ------------------------------------------------------------------------
     group('Boundary 1: Empty Note & Zero Selection', () {
-      test('lasso drag over empty page produces empty result without exceptions', () {
-        final select = Select.currentSelect;
-        select.onDragStart(const Offset(10, 10), 0);
-        select.onDragUpdate(const Offset(10, 100));
-        select.onDragUpdate(const Offset(100, 100));
-        select.onDragUpdate(const Offset(100, 10));
-        select.onDragEnd(const [], const []);
+      test(
+        'lasso drag over empty page produces empty result without exceptions',
+        () {
+          final select = Select.currentSelect;
+          select.onDragStart(const Offset(10, 10), 0);
+          select.onDragUpdate(const Offset(10, 100));
+          select.onDragUpdate(const Offset(100, 100));
+          select.onDragUpdate(const Offset(100, 10));
+          select.onDragEnd(const [], const []);
 
-        expect(select.selectResult.isEmpty, isTrue);
-      });
+          expect(select.selectResult.isEmpty, isTrue);
+        },
+      );
 
       test('lasso tapSelect on whitespace unselects cleanly', () {
         final select = Select.currentSelect;
@@ -155,27 +158,34 @@ void main() {
     // Boundary 4: High-Vertex Long Drag Gestures
     // ------------------------------------------------------------------------
     group('Boundary 4: High-Vertex Long Drag Gestures', () {
-      test('winding lasso with 500+ points closes cleanly without performance degradation', () {
-        final select = Select.currentSelect;
-        select.onDragStart(const Offset(100, 100), 0);
+      test(
+        'winding lasso with 500+ points closes cleanly without performance degradation',
+        () {
+          final select = Select.currentSelect;
+          select.onDragStart(const Offset(100, 100), 0);
 
-        // Generate circular winding path with 500 steps
-        const numPoints = 500;
-        for (int i = 1; i <= numPoints; i++) {
-          final theta = i * 2 * pi / numPoints;
-          final x = 200 + 100 * cos(theta);
-          final y = 200 + 100 * sin(theta);
-          select.onDragUpdate(Offset(x, y));
-        }
+          // Generate circular winding path with 500 steps
+          const numPoints = 500;
+          for (int i = 1; i <= numPoints; i++) {
+            final theta = i * 2 * pi / numPoints;
+            final x = 200 + 100 * cos(theta);
+            final y = 200 + 100 * sin(theta);
+            select.onDragUpdate(Offset(x, y));
+          }
 
-        final strokeInCenter = createTestStroke(points: [const Offset(200, 200)]);
-        final strokeOutside = createTestStroke(points: [const Offset(400, 400)]);
+          final strokeInCenter = createTestStroke(
+            points: [const Offset(200, 200)],
+          );
+          final strokeOutside = createTestStroke(
+            points: [const Offset(400, 400)],
+          );
 
-        select.onDragEnd([strokeInCenter, strokeOutside], const []);
+          select.onDragEnd([strokeInCenter, strokeOutside], const []);
 
-        expect(select.selectResult.strokes, contains(strokeInCenter));
-        expect(select.selectResult.strokes, isNot(contains(strokeOutside)));
-      });
+          expect(select.selectResult.strokes, contains(strokeInCenter));
+          expect(select.selectResult.strokes, isNot(contains(strokeOutside)));
+        },
+      );
     });
 
     // ------------------------------------------------------------------------
@@ -189,8 +199,14 @@ void main() {
         select.onDragUpdate(const Offset(200, 200));
         select.onDragUpdate(const Offset(200, 0));
 
-        final strokePage0 = createTestStroke(pageIndex: 0, points: [const Offset(100, 100)]);
-        final strokePage1 = createTestStroke(pageIndex: 1, points: [const Offset(100, 100)]);
+        final strokePage0 = createTestStroke(
+          pageIndex: 0,
+          points: [const Offset(100, 100)],
+        );
+        final strokePage1 = createTestStroke(
+          pageIndex: 1,
+          points: [const Offset(100, 100)],
+        );
 
         // Select on page 0 only provides page 0 strokes
         select.onDragEnd([strokePage0], const []);
@@ -205,100 +221,125 @@ void main() {
     // Boundary 6: Extreme Coordinates & Geometric Extremes
     // ------------------------------------------------------------------------
     group('Boundary 6: Extreme Coordinates & Geometric Extremes', () {
-      test('strokes at huge coordinates (x=50000, y=100000) are handled safely', () {
-        final stroke = createTestStroke(
-          points: [const Offset(50000, 100000), const Offset(50050, 100050)],
-        );
+      test(
+        'strokes at huge coordinates (x=50000, y=100000) are handled safely',
+        () {
+          final stroke = createTestStroke(
+            points: [const Offset(50000, 100000), const Offset(50050, 100050)],
+          );
 
-        expect(stroke.points.first.dx, equals(50000.0));
-        expect(stroke.points.first.dy, equals(100000.0));
-        expect(stroke.lowQualityPolygon, isNotEmpty);
-      });
+          expect(stroke.points.first.dx, equals(50000.0));
+          expect(stroke.points.first.dy, equals(100000.0));
+          expect(stroke.lowQualityPolygon, isNotEmpty);
+        },
+      );
 
-      test('negative coordinates do not trigger integer or index exceptions', () {
-        final stroke = createTestStroke(
-          points: [const Offset(-200, -300), const Offset(-150, -250)],
-        );
+      test(
+        'negative coordinates do not trigger integer or index exceptions',
+        () {
+          final stroke = createTestStroke(
+            points: [const Offset(-200, -300), const Offset(-150, -250)],
+          );
 
-        expect(stroke.points.first.dx, equals(-200.0));
-        expect(stroke.points.first.dy, equals(-300.0));
-      });
+          expect(stroke.points.first.dx, equals(-200.0));
+          expect(stroke.points.first.dy, equals(-300.0));
+        },
+      );
 
-      test('zero-area image dstRect handles rectPercentInside without division by zero', () {
-        final path = Path()..addRect(const Rect.fromLTWH(0, 0, 100, 100));
-        const zeroRect = Rect.fromLTWH(50, 50, 0, 0);
+      test(
+        'zero-area image dstRect handles rectPercentInside without division by zero',
+        () {
+          final path = Path()..addRect(const Rect.fromLTWH(0, 0, 100, 100));
+          const zeroRect = Rect.fromLTWH(50, 50, 0, 0);
 
-        final percent = Select.rectPercentInside(path, zeroRect);
-        expect(percent.isFinite, isTrue);
-      });
+          final percent = Select.rectPercentInside(path, zeroRect);
+          expect(percent.isFinite, isTrue);
+        },
+      );
     });
 
     // ------------------------------------------------------------------------
     // Boundary 7: Study Tape Extremes & Zero Length
     // ------------------------------------------------------------------------
     group('Boundary 7: Study Tape Extremes & Zero Length', () {
-      test('zero-length tape strip (start == end) calculates valid bounding box', () {
-        final tape = TapeStrokeContract(
-          color: Colors.amber,
-          pageIndex: 0,
-          page: standardPageDef,
-          start: const Offset(150, 150),
-          end: const Offset(150, 150),
-          tapeWidth: 30.0,
-        );
+      test(
+        'zero-length tape strip (start == end) calculates valid bounding box',
+        () {
+          final tape = TapeStrokeContract(
+            color: Colors.amber,
+            pageIndex: 0,
+            page: standardPageDef,
+            start: const Offset(150, 150),
+            end: const Offset(150, 150),
+            tapeWidth: 30.0,
+          );
 
-        final poly = tape.getMaskPolygon();
-        expect(poly.length, equals(4));
-        expect(tape.containsPoint(const Offset(150, 150)), isTrue);
-        expect(tape.containsPoint(const Offset(200, 200)), isFalse);
-      });
+          final poly = tape.getMaskPolygon();
+          expect(poly.length, equals(4));
+          expect(tape.containsPoint(const Offset(150, 150)), isTrue);
+          expect(tape.containsPoint(const Offset(200, 200)), isFalse);
+        },
+      );
 
-      test('very wide tape strip (width=500 px) maintains correct geometric envelope', () {
-        final tape = TapeStrokeContract(
-          color: Colors.amber,
-          pageIndex: 0,
-          page: standardPageDef,
-          start: const Offset(100, 300),
-          end: const Offset(500, 300),
-          tapeWidth: 500.0,
-        );
+      test(
+        'very wide tape strip (width=500 px) maintains correct geometric envelope',
+        () {
+          final tape = TapeStrokeContract(
+            color: Colors.amber,
+            pageIndex: 0,
+            page: standardPageDef,
+            start: const Offset(100, 300),
+            end: const Offset(500, 300),
+            tapeWidth: 500.0,
+          );
 
-        expect(tape.containsPoint(const Offset(300, 300)), isTrue);
-        expect(tape.containsPoint(const Offset(300, 500)), isTrue);
-        expect(tape.containsPoint(const Offset(300, 100)), isTrue);
-        expect(tape.containsPoint(const Offset(300, 600)), isFalse);
-      });
+          expect(tape.containsPoint(const Offset(300, 300)), isTrue);
+          expect(tape.containsPoint(const Offset(300, 500)), isTrue);
+          expect(tape.containsPoint(const Offset(300, 100)), isTrue);
+          expect(tape.containsPoint(const Offset(300, 600)), isFalse);
+        },
+      );
     });
 
     // ------------------------------------------------------------------------
     // Boundary 8: Extreme Page Dimensions for Cornell Pattern
     // ------------------------------------------------------------------------
     group('Boundary 8: Extreme Page Dimensions for Cornell Pattern', () {
-      test('extremely tall page aspect ratio computes dividing lines without overflow', () {
-        const tallSize = Size(200, 8000);
-        final cueX = CornellGeometryOracle.getVerticalCueX(tallSize.width);
-        final summaryY = CornellGeometryOracle.getHorizontalSummaryY(tallSize.height);
+      test(
+        'extremely tall page aspect ratio computes dividing lines without overflow',
+        () {
+          const tallSize = Size(200, 8000);
+          final cueX = CornellGeometryOracle.getVerticalCueX(tallSize.width);
+          final summaryY = CornellGeometryOracle.getHorizontalSummaryY(
+            tallSize.height,
+          );
 
-        expect(cueX, closeTo(56.0, 0.01));
-        expect(summaryY, closeTo(6000.0, 0.01));
+          expect(cueX, closeTo(56.0, 0.01));
+          expect(summaryY, closeTo(6000.0, 0.01));
 
-        final elements = CanvasBackgroundPainter.getPatternElements(
-          pattern: CanvasBackgroundPattern.cornell,
-          size: tallSize,
-          lineHeight: 40,
-        ).toList();
+          final elements = CanvasBackgroundPainter.getPatternElements(
+            pattern: CanvasBackgroundPattern.cornell,
+            size: tallSize,
+            lineHeight: 40,
+          ).toList();
 
-        expect(elements, isNotEmpty);
-      });
+          expect(elements, isNotEmpty);
+        },
+      );
 
-      test('extremely wide page aspect ratio computes dividing lines safely', () {
-        const wideSize = Size(6000, 400);
-        final cueX = CornellGeometryOracle.getVerticalCueX(wideSize.width);
-        final summaryY = CornellGeometryOracle.getHorizontalSummaryY(wideSize.height);
+      test(
+        'extremely wide page aspect ratio computes dividing lines safely',
+        () {
+          const wideSize = Size(6000, 400);
+          final cueX = CornellGeometryOracle.getVerticalCueX(wideSize.width);
+          final summaryY = CornellGeometryOracle.getHorizontalSummaryY(
+            wideSize.height,
+          );
 
-        expect(cueX, closeTo(1680.0, 0.01));
-        expect(summaryY, closeTo(300.0, 0.01));
-      });
+          expect(cueX, closeTo(1680.0, 0.01));
+          expect(summaryY, closeTo(300.0, 0.01));
+        },
+      );
     });
 
     // ------------------------------------------------------------------------

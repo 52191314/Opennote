@@ -184,7 +184,8 @@ class TapeStrokeContract extends Stroke {
       final b = poly[(i + 1) % poly.length];
       if (((a.dy <= point.dy && point.dy < b.dy) ||
               (b.dy <= point.dy && point.dy < a.dy)) &&
-          (point.dx < (b.dx - a.dx) * (point.dy - a.dy) / (b.dy - a.dy) + a.dx)) {
+          (point.dx <
+              (b.dx - a.dx) * (point.dy - a.dy) / (b.dy - a.dy) + a.dx)) {
         crossings++;
       }
     }
@@ -213,8 +214,8 @@ class TapeStrokeContract extends Stroke {
     final int? colorInt = colorVal is int
         ? colorVal
         : (colorVal is num
-            ? colorVal.toInt()
-            : (colorVal != null ? int.tryParse(colorVal.toString()) : null));
+              ? colorVal.toInt()
+              : (colorVal != null ? int.tryParse(colorVal.toString()) : null));
     final color = colorInt != null ? Color(colorInt) : const Color(0xFFFFEB3B);
     final isConcealed = json['c_state'] as bool? ?? true;
     final tapeW = (json['tape_w'] as num?)?.toDouble() ?? 32.0;
@@ -238,7 +239,11 @@ class TapeStrokeContract extends Stroke {
 /// Helper methods for Page Grid and Document manipulation.
 class E2EPageManagerHelper {
   /// Reorders pages and updates page indices.
-  static void reorderPages(EditorCoreInfo coreInfo, int oldIndex, int newIndex) {
+  static void reorderPages(
+    EditorCoreInfo coreInfo,
+    int oldIndex,
+    int newIndex,
+  ) {
     if (oldIndex < 0 ||
         oldIndex >= coreInfo.pages.length ||
         newIndex < 0 ||
@@ -274,7 +279,9 @@ class E2EPageManagerHelper {
         }
         newStrokes.add(strokeCopy);
       }
-      newLayers.add(Layer(name: layer.name, strokes: newStrokes, visible: layer.visible));
+      newLayers.add(
+        Layer(name: layer.name, strokes: newStrokes, visible: layer.visible),
+      );
     }
 
     final newPage = EditorPage(

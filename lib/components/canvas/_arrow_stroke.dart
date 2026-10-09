@@ -132,7 +132,7 @@ class ArrowStroke extends Stroke {
   }
 
   @override
-  bool get isEmpty => start == end;
+  bool get isEmpty => (end - start).distance < 0.001;
   @override
   int get length => 50;
 
@@ -183,7 +183,7 @@ class ArrowStroke extends Stroke {
   /// Returns the polygon for this arrow (shaft + arrowheads).
   @override
   List<Offset> getPolygon({required StrokeQuality quality}) {
-    if (start == end) return [start, end];
+    if (isEmpty) return [start, end];
 
     final points = <Offset>[start];
 
@@ -200,7 +200,8 @@ class ArrowStroke extends Stroke {
         for (int i = 1; i <= 16; i++) {
           final t = i / 16.0;
           final it = 1.0 - t;
-          final pt = start * (it * it * it) +
+          final pt =
+              start * (it * it * it) +
               c1 * (3 * it * it * t) +
               c2 * (3 * it * t * t) +
               end * (t * t * t);
@@ -234,7 +235,7 @@ class ArrowStroke extends Stroke {
   @override
   Path getPath(List<Offset> polygon, {bool smooth = true}) {
     final path = Path();
-    if (start == end) return path;
+    if (isEmpty) return path;
 
     // Draw shaft according to connectorStyle
     switch (connectorStyle) {
@@ -300,7 +301,7 @@ class ArrowStroke extends Stroke {
 
   @override
   String toSvgPath() {
-    if (start == end) return '';
+    if (isEmpty) return '';
 
     String toSvgPoint(Offset point) {
       return '${point.dx} ${page.size.height - point.dy}';

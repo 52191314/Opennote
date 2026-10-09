@@ -116,8 +116,9 @@ class _EraserSizePopupState extends State<EraserSizePopup> {
               SliderTheme(
                 data: SliderTheme.of(context).copyWith(
                   activeTrackColor: colorScheme.primary,
-                  inactiveTrackColor:
-                      colorScheme.onSurface.withValues(alpha: 0.2),
+                  inactiveTrackColor: colorScheme.onSurface.withValues(
+                    alpha: 0.2,
+                  ),
                   thumbColor: colorScheme.primary,
                   overlayColor: colorScheme.primary.withValues(alpha: 0.12),
                   trackHeight: 4,
@@ -197,7 +198,9 @@ class _EraserSizePopupState extends State<EraserSizePopup> {
                   label: const Text('Clear Page'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: colorScheme.error,
-                    side: BorderSide(color: colorScheme.error.withValues(alpha: 0.5)),
+                    side: BorderSide(
+                      color: colorScheme.error.withValues(alpha: 0.5),
+                    ),
                   ),
                 ),
               ],

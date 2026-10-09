@@ -580,8 +580,8 @@ class Stroke {
         final ny = 0.25 * prev.y + 0.5 * curr.y + 0.25 * next.y;
         final np = curr.pressure != null
             ? 0.25 * (prev.pressure ?? curr.pressure!) +
-                0.5 * curr.pressure! +
-                0.25 * (next.pressure ?? curr.pressure!)
+                  0.5 * curr.pressure! +
+                  0.25 * (next.pressure ?? curr.pressure!)
             : null;
         smoothed.add(PointVector(nx, ny, np));
       }
@@ -663,7 +663,9 @@ class Stroke {
     final dx = lastPoint.dx - firstPoint.dx;
     final dy = lastPoint.dy - firstPoint.dy;
 
-    if (isIsometric || (angleStepDegrees != null && (angleStepDegrees > 0 || angleStepDegrees == -30))) {
+    if (isIsometric ||
+        (angleStepDegrees != null &&
+            (angleStepDegrees > 0 || angleStepDegrees == -30))) {
       return snapLineToAngle(
         firstPoint,
         lastPoint,

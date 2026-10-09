@@ -40,15 +40,27 @@ void main() {
   });
 
   group('1. ToolId Definitions for Drafting Primitives', () {
-    test('ToolId.arrow and ToolId.dimension are defined with proper identifiers', () {
-      expect(ToolId.arrow.id, equals('ArrowTool'));
-      expect(ToolId.dimension.id, equals('DimensionTool'));
-    });
+    test(
+      'ToolId.arrow and ToolId.dimension are defined with proper identifiers',
+      () {
+        expect(ToolId.arrow.id, equals('ArrowTool'));
+        expect(ToolId.dimension.id, equals('DimensionTool'));
+      },
+    );
 
-    test('ToolId.parsePenType resolves ArrowTool and DimensionTool identifiers', () {
-      expect(ToolId.parsePenType('ArrowTool', fallback: ToolId.fountainPen), equals(ToolId.arrow));
-      expect(ToolId.parsePenType('DimensionTool', fallback: ToolId.fountainPen), equals(ToolId.dimension));
-    });
+    test(
+      'ToolId.parsePenType resolves ArrowTool and DimensionTool identifiers',
+      () {
+        expect(
+          ToolId.parsePenType('ArrowTool', fallback: ToolId.fountainPen),
+          equals(ToolId.arrow),
+        );
+        expect(
+          ToolId.parsePenType('DimensionTool', fallback: ToolId.fountainPen),
+          equals(ToolId.dimension),
+        );
+      },
+    );
 
     test('ToolId.codec encodes and decodes drafting tool identifiers', () {
       final encodedArrow = ToolId.codec.encoder.convert(ToolId.arrow);
@@ -159,30 +171,33 @@ void main() {
       expect(tool.pressureEnabled, isFalse);
     });
 
-    test('DimensionTool drag interaction updates live Euclidean distance label', () {
-      final tool = DimensionTool();
-      final page = EditorPage();
+    test(
+      'DimensionTool drag interaction updates live Euclidean distance label',
+      () {
+        final tool = DimensionTool();
+        final page = EditorPage();
 
-      tool.onDragStart(const Offset(100, 100), page, 0, null);
-      expect(Pen.currentStroke, isA<DimensionStroke>());
-      final activeDim = Pen.currentStroke as DimensionStroke;
-      expect(activeDim.text, equals('0.0 px'));
+        tool.onDragStart(const Offset(100, 100), page, 0, null);
+        expect(Pen.currentStroke, isA<DimensionStroke>());
+        final activeDim = Pen.currentStroke as DimensionStroke;
+        expect(activeDim.text, equals('0.0 px'));
 
-      // Drag horizontally 150 px: distance = 150.0
-      tool.onDragUpdate(const Offset(250, 100), null);
-      expect(activeDim.end, equals(const Offset(250, 100)));
-      expect(activeDim.text, equals('150.0 px'));
+        // Drag horizontally 150 px: distance = 150.0
+        tool.onDragUpdate(const Offset(250, 100), null);
+        expect(activeDim.end, equals(const Offset(250, 100)));
+        expect(activeDim.text, equals('150.0 px'));
 
-      // Drag 3-4-5 triangle: dx = 30, dy = 40 => distance = 50.0
-      tool.onDragUpdate(const Offset(130, 140), null);
-      expect(activeDim.text, equals('50.0 px'));
+        // Drag 3-4-5 triangle: dx = 30, dy = 40 => distance = 50.0
+        tool.onDragUpdate(const Offset(130, 140), null);
+        expect(activeDim.text, equals('50.0 px'));
 
-      final finished = tool.onDragEnd() as DimensionStroke;
-      expect(finished.start, equals(const Offset(100, 100)));
-      expect(finished.end, equals(const Offset(130, 140)));
-      expect(finished.text, equals('50.0 px'));
-      expect(finished.options.isComplete, isTrue);
-    });
+        final finished = tool.onDragEnd() as DimensionStroke;
+        expect(finished.start, equals(const Offset(100, 100)));
+        expect(finished.end, equals(const Offset(130, 140)));
+        expect(finished.text, equals('50.0 px'));
+        expect(finished.options.isComplete, isTrue);
+      },
+    );
 
     test('DimensionTool zero-length drag is discarded', () {
       final tool = DimensionTool();
@@ -208,39 +223,56 @@ void main() {
 
       // Drag near 30 degrees
       const rad29 = 29 * pi / 180;
-      tool.onDragUpdate(Offset(20 + 100 * cos(rad29), 20 + 100 * sin(rad29)), null);
+      tool.onDragUpdate(
+        Offset(20 + 100 * cos(rad29), 20 + 100 * sin(rad29)),
+        null,
+      );
 
       final finished = tool.onDragEnd() as DimensionStroke;
-      final angle = atan2(finished.end.dy - finished.start.dy, finished.end.dx - finished.start.dx) * 180 / pi;
+      final angle =
+          atan2(
+            finished.end.dy - finished.start.dy,
+            finished.end.dx - finished.start.dx,
+          ) *
+          180 /
+          pi;
       expect(angle, closeTo(30.0, 0.05));
     });
   });
 
   group('4. DimensionStroke JSON Collision Fix (Defect 1)', () {
-    test('DimensionStroke writes txt and t keys in toJson without colliding with StrokeOptions', () {
-      final dim = DimensionStroke(
-        color: Colors.green,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 2.0),
-        pageIndex: 0,
-        page: pageDef,
-        toolId: ToolId.dimension,
-        start: const Offset(10, 10),
-        end: const Offset(110, 10),
-        text: '100.0 px',
-      );
+    test(
+      'DimensionStroke writes txt and t keys in toJson without colliding with StrokeOptions',
+      () {
+        final dim = DimensionStroke(
+          color: Colors.green,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 2.0),
+          pageIndex: 0,
+          page: pageDef,
+          toolId: ToolId.dimension,
+          start: const Offset(10, 10),
+          end: const Offset(110, 10),
+          text: '100.0 px',
+        );
 
-      final json = dim.toJson();
-      expect(json['shape'], equals('dimension'));
-      expect(json['txt'], equals('100.0 px'));
-      expect(json['t'], equals('100.0 px'));
+        final json = dim.toJson();
+        expect(json['shape'], equals('dimension'));
+        expect(json['txt'], equals('100.0 px'));
+        expect(json['t'], equals('100.0 px'));
 
-      // StrokeOptions.fromJson must NOT crash with type mismatch
-      final restored = DimensionStroke.fromJson(json, fileVersion: 1, pageIndex: 0, page: pageDef);
-      expect(restored.text, equals('100.0 px'));
-      expect(restored.start, equals(dim.start));
-      expect(restored.end, equals(dim.end));
-    });
+        // StrokeOptions.fromJson must NOT crash with type mismatch
+        final restored = DimensionStroke.fromJson(
+          json,
+          fileVersion: 1,
+          pageIndex: 0,
+          page: pageDef,
+        );
+        expect(restored.text, equals('100.0 px'));
+        expect(restored.start, equals(dim.start));
+        expect(restored.end, equals(dim.end));
+      },
+    );
 
     test('DimensionStroke fromJson falls back gracefully to legacy t key', () {
       final legacyJson = {
@@ -260,7 +292,12 @@ void main() {
       };
 
       // Ensure parsing legacy JSON without 'txt' does not throw type error
-      final restored = DimensionStroke.fromJson(legacyJson, fileVersion: 1, pageIndex: 0, page: pageDef);
+      final restored = DimensionStroke.fromJson(
+        legacyJson,
+        fileVersion: 1,
+        pageIndex: 0,
+        page: pageDef,
+      );
       expect(restored.text, equals('Legacy Label'));
       expect(restored.offset, equals(25.0));
       expect(restored.toolId, equals(ToolId.dimension));
@@ -283,92 +320,116 @@ void main() {
       expect(json.containsKey('txt'), isFalse);
       expect(json.containsKey('t'), isFalse);
 
-      final restored = DimensionStroke.fromJson(json, fileVersion: 1, pageIndex: 0, page: pageDef);
+      final restored = DimensionStroke.fromJson(
+        json,
+        fileVersion: 1,
+        pageIndex: 0,
+        page: pageDef,
+      );
       expect(restored.text, isEmpty);
     });
 
-    test('Integer coordinates from BSON are deserialized safely into double Offsets', () {
-      final bsonLikeJson = {
-        'shape': 'dimension',
-        'i': 0,
-        'ty': 'DimensionTool',
-        'pe': false,
-        'c': 0xFF000000,
-        'sx': 10, // integer
-        'sy': 20, // integer
-        'ex': 110, // integer
-        'ey': 120, // integer
-        'o': 30, // integer
-        'txt': 'Int Coord Text',
-      };
+    test(
+      'Integer coordinates from BSON are deserialized safely into double Offsets',
+      () {
+        final bsonLikeJson = {
+          'shape': 'dimension',
+          'i': 0,
+          'ty': 'DimensionTool',
+          'pe': false,
+          'c': 0xFF000000,
+          'sx': 10, // integer
+          'sy': 20, // integer
+          'ex': 110, // integer
+          'ey': 120, // integer
+          'o': 30, // integer
+          'txt': 'Int Coord Text',
+        };
 
-      final restored = DimensionStroke.fromJson(bsonLikeJson, fileVersion: 1, pageIndex: 0, page: pageDef);
-      expect(restored.start, equals(const Offset(10.0, 20.0)));
-      expect(restored.end, equals(const Offset(110.0, 120.0)));
-      expect(restored.offset, equals(30.0));
-    });
+        final restored = DimensionStroke.fromJson(
+          bsonLikeJson,
+          fileVersion: 1,
+          pageIndex: 0,
+          page: pageDef,
+        );
+        expect(restored.start, equals(const Offset(10.0, 20.0)));
+        expect(restored.end, equals(const Offset(110.0, 120.0)));
+        expect(restored.offset, equals(30.0));
+      },
+    );
   });
 
   group('5. Drafting Primitives Geometry & Polygons', () {
-    test('DimensionStroke computeVectors returns correct unit and perpendicular vectors', () {
-      final dim = DimensionStroke(
-        color: Colors.black,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 2.0),
-        pageIndex: 0,
-        page: pageDef,
-        toolId: ToolId.dimension,
-        start: Offset.zero,
-        end: const Offset(100, 0),
-        offset: 30.0,
-      );
+    test(
+      'DimensionStroke computeVectors returns correct unit and perpendicular vectors',
+      () {
+        final dim = DimensionStroke(
+          color: Colors.black,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 2.0),
+          pageIndex: 0,
+          page: pageDef,
+          toolId: ToolId.dimension,
+          start: Offset.zero,
+          end: const Offset(100, 0),
+          offset: 30.0,
+        );
 
-      final (unitDir, perp) = dim.computeVectors();
-      expect(unitDir, equals(const Offset(1.0, 0.0)));
-      expect(perp, equals(const Offset(0.0, 1.0)));
-    });
+        final (unitDir, perp) = dim.computeVectors();
+        expect(unitDir, equals(const Offset(1.0, 0.0)));
+        expect(perp, equals(const Offset(0.0, 1.0)));
+      },
+    );
 
-    test('DimensionStroke getPolygon encloses measured points, dimension line, and text position', () {
-      final dim = DimensionStroke(
-        color: Colors.black,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 2.0),
-        pageIndex: 0,
-        page: pageDef,
-        toolId: ToolId.dimension,
-        start: const Offset(10, 20),
-        end: const Offset(110, 20),
-        offset: 30.0,
-      );
+    test(
+      'DimensionStroke getPolygon encloses measured points, dimension line, and text position',
+      () {
+        final dim = DimensionStroke(
+          color: Colors.black,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 2.0),
+          pageIndex: 0,
+          page: pageDef,
+          toolId: ToolId.dimension,
+          start: const Offset(10, 20),
+          end: const Offset(110, 20),
+          offset: 30.0,
+        );
 
-      final poly = dim.getPolygon(quality: StrokeQuality.high);
-      expect(poly, contains(dim.start));
-      expect(poly, contains(dim.end));
-      expect(poly, contains(dim.textPosition));
-      expect(poly.length, greaterThanOrEqualTo(5));
-    });
+        final poly = dim.getPolygon(quality: StrokeQuality.high);
+        expect(poly, contains(dim.start));
+        expect(poly, contains(dim.end));
+        expect(poly, contains(dim.textPosition));
+        expect(poly.length, greaterThanOrEqualTo(5));
+      },
+    );
 
-    test('ArrowStroke toSvgPath and getPath produce non-empty paths for valid arrows', () {
-      final arrow = ArrowStroke(
-        color: Colors.black,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 3.0),
-        pageIndex: 0,
-        page: pageDef,
-        toolId: ToolId.arrow,
-        start: Offset.zero,
-        end: const Offset(100, 50),
-        arrowheadStyle: ArrowheadStyle.double,
-      );
+    test(
+      'ArrowStroke toSvgPath and getPath produce non-empty paths for valid arrows',
+      () {
+        final arrow = ArrowStroke(
+          color: Colors.black,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 3.0),
+          pageIndex: 0,
+          page: pageDef,
+          toolId: ToolId.arrow,
+          start: Offset.zero,
+          end: const Offset(100, 50),
+          arrowheadStyle: ArrowheadStyle.double,
+        );
 
-      final path = arrow.getPath(arrow.getPolygon(quality: StrokeQuality.high));
-      expect(path, isNotNull);
+        final path = arrow.getPath(
+          arrow.getPolygon(quality: StrokeQuality.high),
+        );
+        expect(path, isNotNull);
 
-      final svg = arrow.toSvgPath();
-      expect(svg, isNotEmpty);
-      expect(svg, contains('M'));
-      expect(svg, contains('L'));
-    });
+        final svg = arrow.toSvgPath();
+        expect(svg, isNotEmpty);
+        expect(svg, contains('M'));
+        expect(svg, contains('L'));
+      },
+    );
   });
 
   group('6. Select Tool Hit-Testing & Vertex Handles', () {
@@ -395,116 +456,129 @@ void main() {
       expect(select.selectResult.strokes, isEmpty);
     });
 
-    test('Select hit-tests DimensionStroke along offset line, extension lines, and text', () {
-      final select = Select.currentSelect;
-      final dim = DimensionStroke(
-        color: Colors.black,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 2.0),
-        pageIndex: 0,
-        page: pageDef,
-        toolId: ToolId.dimension,
-        start: const Offset(50, 50),
-        end: const Offset(250, 50),
-        offset: 40.0,
-        text: '200 mm',
-      );
+    test(
+      'Select hit-tests DimensionStroke along offset line, extension lines, and text',
+      () {
+        final select = Select.currentSelect;
+        final dim = DimensionStroke(
+          color: Colors.black,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 2.0),
+          pageIndex: 0,
+          page: pageDef,
+          toolId: ToolId.dimension,
+          start: const Offset(50, 50),
+          end: const Offset(250, 50),
+          offset: 40.0,
+          text: '200 mm',
+        );
 
-      // Tap near dimension line at (150, 92) (offset line is at y = 90)
-      select.tapSelect(const Offset(150, 92), [dim], [], 0);
-      expect(select.selectResult.strokes, hasLength(1));
-      expect(select.selectResult.strokes.first, equals(dim));
+        // Tap near dimension line at (150, 92) (offset line is at y = 90)
+        select.tapSelect(const Offset(150, 92), [dim], [], 0);
+        expect(select.selectResult.strokes, hasLength(1));
+        expect(select.selectResult.strokes.first, equals(dim));
 
-      // Tap near extension line at (50, 70)
-      select.tapSelect(const Offset(51, 70), [dim], [], 0);
-      expect(select.selectResult.strokes, hasLength(1));
+        // Tap near extension line at (50, 70)
+        select.tapSelect(const Offset(51, 70), [dim], [], 0);
+        expect(select.selectResult.strokes, hasLength(1));
 
-      // Tap far away misses
-      select.tapSelect(const Offset(500, 500), [dim], [], 0);
-      expect(select.selectResult.strokes, isEmpty);
-    });
+        // Tap far away misses
+        select.tapSelect(const Offset(500, 500), [dim], [], 0);
+        expect(select.selectResult.strokes, isEmpty);
+      },
+    );
 
-    test('SelectResult.vertexHandles returns correct vertices for ArrowStroke', () {
-      final arrow = ArrowStroke(
-        color: Colors.black,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 2.0),
-        pageIndex: 0,
-        page: pageDef,
-        toolId: ToolId.arrow,
-        start: const Offset(20, 30),
-        end: const Offset(120, 80),
-      );
+    test(
+      'SelectResult.vertexHandles returns correct vertices for ArrowStroke',
+      () {
+        final arrow = ArrowStroke(
+          color: Colors.black,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 2.0),
+          pageIndex: 0,
+          page: pageDef,
+          toolId: ToolId.arrow,
+          start: const Offset(20, 30),
+          end: const Offset(120, 80),
+        );
 
-      final result = SelectResult(
-        pageIndex: 0,
-        strokes: [arrow],
-        images: [],
-        path: Path(),
-      );
+        final result = SelectResult(
+          pageIndex: 0,
+          strokes: [arrow],
+          images: [],
+          path: Path(),
+        );
 
-      final handles = result.vertexHandles;
-      expect(handles, hasLength(2));
-      expect(handles[0], equals(const Offset(20, 30)));
-      expect(handles[1], equals(const Offset(120, 80)));
-    });
+        final handles = result.vertexHandles;
+        expect(handles, hasLength(2));
+        expect(handles[0], equals(const Offset(20, 30)));
+        expect(handles[1], equals(const Offset(120, 80)));
+      },
+    );
 
-    test('SelectResult.vertexHandles returns start, end, and textPosition for DimensionStroke', () {
-      final dim = DimensionStroke(
-        color: Colors.black,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 2.0),
-        pageIndex: 0,
-        page: pageDef,
-        toolId: ToolId.dimension,
-        start: Offset.zero,
-        end: const Offset(100, 0),
-        offset: 20.0,
-      );
+    test(
+      'SelectResult.vertexHandles returns start, end, and textPosition for DimensionStroke',
+      () {
+        final dim = DimensionStroke(
+          color: Colors.black,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 2.0),
+          pageIndex: 0,
+          page: pageDef,
+          toolId: ToolId.dimension,
+          start: Offset.zero,
+          end: const Offset(100, 0),
+          offset: 20.0,
+        );
 
-      final result = SelectResult(
-        pageIndex: 0,
-        strokes: [dim],
-        images: [],
-        path: Path(),
-      );
+        final result = SelectResult(
+          pageIndex: 0,
+          strokes: [dim],
+          images: [],
+          path: Path(),
+        );
 
-      final handles = result.vertexHandles;
-      expect(handles, hasLength(3));
-      expect(handles[0], equals(dim.start));
-      expect(handles[1], equals(dim.end));
-      expect(handles[2], equals(dim.textPosition));
-      expect(handles[2].dy, closeTo(20.0, 1e-4));
-    });
+        final handles = result.vertexHandles;
+        expect(handles, hasLength(3));
+        expect(handles[0], equals(dim.start));
+        expect(handles[1], equals(dim.end));
+        expect(handles[2], equals(dim.textPosition));
+        expect(handles[2].dy, closeTo(20.0, 1e-4));
+      },
+    );
   });
 
   group('7. Endpoint Vertex Drag Manipulation & History Integration', () {
-    test('Dragging DimensionStroke offset handle recalculates perpendicular offset', () {
-      final dim = DimensionStroke(
-        color: Colors.black,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 2.0),
-        pageIndex: 0,
-        page: pageDef,
-        toolId: ToolId.dimension,
-        start: const Offset(0, 50),
-        end: const Offset(100, 50),
-        offset: 20.0,
-      );
+    test(
+      'Dragging DimensionStroke offset handle recalculates perpendicular offset',
+      () {
+        final dim = DimensionStroke(
+          color: Colors.black,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 2.0),
+          pageIndex: 0,
+          page: pageDef,
+          toolId: ToolId.dimension,
+          start: const Offset(0, 50),
+          end: const Offset(100, 50),
+          offset: 20.0,
+        );
 
-      // Horizontal line from (0, 50) to (100, 50): dir = (100, 0), perp = (0, 1)
-      // New drag position at (50, 110) => new offset should be 110 - 50 = 60
-      const dragPos = Offset(50, 110);
-      final dir = dim.end - dim.start;
-      final length = dir.distance;
-      final perp = Offset(-dir.dy / length, dir.dx / length);
-      final calculatedOffset = (dragPos.dx - dim.start.dx) * perp.dx +
-          (dragPos.dy - dim.start.dy) * perp.dy;
+        // Horizontal line from (0, 50) to (100, 50): dir = (100, 0), perp = (0, 1)
+        // New drag position at (50, 110) => new offset should be 110 - 50 = 60
+        const dragPos = Offset(50, 110);
+        final dir = dim.end - dim.start;
+        final length = dir.distance;
+        final perp = Offset(-dir.dy / length, dir.dx / length);
+        final calculatedOffset =
+            (dragPos.dx - dim.start.dx) * perp.dx +
+            (dragPos.dy - dim.start.dy) * perp.dy;
 
-      dim.offset = calculatedOffset;
-      expect(dim.offset, closeTo(60.0, 1e-4));
-      expect(dim.textPosition.dy, closeTo(110.0, 1e-4));
-    });
+        dim.offset = calculatedOffset;
+        expect(dim.offset, closeTo(60.0, 1e-4));
+        expect(dim.textPosition.dy, closeTo(110.0, 1e-4));
+      },
+    );
 
     test('Drafting strokes cleanly integrate with EditorHistory undo/redo', () {
       final history = EditorHistory();
@@ -534,20 +608,24 @@ void main() {
       );
 
       page.insertStroke(arrow);
-      history.recordChange(EditorHistoryItem(
-        type: EditorHistoryItemType.draw,
-        pageIndex: 0,
-        strokes: [arrow],
-        images: [],
-      ));
+      history.recordChange(
+        EditorHistoryItem(
+          type: EditorHistoryItemType.draw,
+          pageIndex: 0,
+          strokes: [arrow],
+          images: [],
+        ),
+      );
 
       page.insertStroke(dim);
-      history.recordChange(EditorHistoryItem(
-        type: EditorHistoryItemType.draw,
-        pageIndex: 0,
-        strokes: [dim],
-        images: [],
-      ));
+      history.recordChange(
+        EditorHistoryItem(
+          type: EditorHistoryItemType.draw,
+          pageIndex: 0,
+          strokes: [dim],
+          images: [],
+        ),
+      );
 
       expect(page.strokes, hasLength(2));
 
@@ -624,19 +702,23 @@ void main() {
       final restoredArrowJson = BsonCodec.deserialize(arrowBson);
       final restoredDimJson = BsonCodec.deserialize(dimBson);
 
-      final restoredArrow = Stroke.fromJson(
-        restoredArrowJson,
-        fileVersion: 13,
-        pageIndex: 0,
-        page: pageDef,
-      ) as ArrowStroke;
+      final restoredArrow =
+          Stroke.fromJson(
+                restoredArrowJson,
+                fileVersion: 13,
+                pageIndex: 0,
+                page: pageDef,
+              )
+              as ArrowStroke;
 
-      final restoredDim = Stroke.fromJson(
-        restoredDimJson,
-        fileVersion: 13,
-        pageIndex: 0,
-        page: pageDef,
-      ) as DimensionStroke;
+      final restoredDim =
+          Stroke.fromJson(
+                restoredDimJson,
+                fileVersion: 13,
+                pageIndex: 0,
+                page: pageDef,
+              )
+              as DimensionStroke;
 
       expect(restoredArrow.start, equals(arrow.start));
       expect(restoredArrow.end, equals(arrow.end));

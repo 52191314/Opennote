@@ -11,17 +11,17 @@ import 'package:saber/i18n/strings.g.dart';
 
 class Highlighter extends Pen {
   Highlighter()
-      : super(
-          name: t.editor.pens.highlighter,
-          sizeMin: 10,
-          sizeMax: 100,
-          sizeStep: 10,
-          icon: highlighterIcon,
-          options: stows.lastHighlighterOptions.value,
-          pressureEnabled: false,
-          color: Colors.yellow.withAlpha(Highlighter.alpha),
-          toolId: .highlighter,
-        );
+    : super(
+        name: t.editor.pens.highlighter,
+        sizeMin: 10,
+        sizeMax: 100,
+        sizeStep: 10,
+        icon: highlighterIcon,
+        options: stows.lastHighlighterOptions.value,
+        pressureEnabled: false,
+        color: Colors.yellow.withAlpha(Highlighter.alpha),
+        toolId: .highlighter,
+      );
 
   static const alpha = 100;
 

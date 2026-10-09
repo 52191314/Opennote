@@ -135,7 +135,8 @@ class _PressureCurveSettingState extends State<_PressureCurveSetting> {
                   'Pen Pressure Curve',
                   style: TextStyle(
                     fontSize: 18,
-                    fontStyle: stows.penPressureCurve.value !=
+                    fontStyle:
+                        stows.penPressureCurve.value !=
                             stows.penPressureCurve.defaultValue
                         ? FontStyle.italic
                         : null,

@@ -76,11 +76,7 @@ class StickerImage extends EditorImage {
 
   @override
   Map<String, dynamic> toJson(OrderedAssetCache assets) =>
-      super.toJson(assets)
-        ..addAll({
-          'em': emoji,
-          'fs': fontSize,
-        });
+      super.toJson(assets)..addAll({'em': emoji, 'fs': fontSize});
 
   @override
   Future<void> firstLoad() async {
@@ -119,9 +115,7 @@ class StickerImage extends EditorImage {
         fit: BoxFit.contain,
         child: Text(
           emoji,
-          style: TextStyle(
-            fontSize: fontSize,
-          ),
+          style: TextStyle(fontSize: fontSize),
           textAlign: TextAlign.center,
         ),
       ),

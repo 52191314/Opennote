@@ -80,9 +80,7 @@ class PolygonStroke extends Stroke {
       'ty': toolId.id,
       'pe': pressureEnabled,
       'c': color.toARGB32(),
-      'v': vertices
-          .map((v) => {'x': v.dx, 'y': v.dy})
-          .toList(),
+      'v': vertices.map((v) => {'x': v.dx, 'y': v.dy}).toList(),
       'cl': closed,
       if (fillColor != null) 'fc': fillColor!.toARGB32(),
       if (lineStyle != LineStyle.solid) 'ls': lineStyle.name,

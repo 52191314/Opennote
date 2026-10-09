@@ -16,24 +16,24 @@ class ArrowTool extends Pen {
     this.arrowheadStyle = ArrowheadStyle.single,
     this.connectorStyle = ConnectorStyle.straight,
   }) : super(
-          name: switch (connectorStyle) {
-            ConnectorStyle.elbow => 'Elbow Connector',
-            ConnectorStyle.curved => 'Curved Connector',
-            ConnectorStyle.straight => 'Arrow',
-          },
-          sizeMin: 1,
-          sizeMax: 25,
-          sizeStep: 1,
-          icon: switch (connectorStyle) {
-            ConnectorStyle.elbow => Icons.turn_right_rounded,
-            ConnectorStyle.curved => Icons.gesture,
-            ConnectorStyle.straight => arrowIcon,
-          },
-          options: stows.lastBallpointPenOptions.value,
-          pressureEnabled: false,
-          color: Color(stows.lastBallpointPenColor.value),
-          toolId: .arrow,
-        );
+         name: switch (connectorStyle) {
+           ConnectorStyle.elbow => 'Elbow Connector',
+           ConnectorStyle.curved => 'Curved Connector',
+           ConnectorStyle.straight => 'Arrow',
+         },
+         sizeMin: 1,
+         sizeMax: 25,
+         sizeStep: 1,
+         icon: switch (connectorStyle) {
+           ConnectorStyle.elbow => Icons.turn_right_rounded,
+           ConnectorStyle.curved => Icons.gesture,
+           ConnectorStyle.straight => arrowIcon,
+         },
+         options: stows.lastBallpointPenOptions.value,
+         pressureEnabled: false,
+         color: Color(stows.lastBallpointPenColor.value),
+         toolId: .arrow,
+       );
 
   static const arrowIcon = Icons.arrow_right_alt;
   final ArrowheadStyle arrowheadStyle;

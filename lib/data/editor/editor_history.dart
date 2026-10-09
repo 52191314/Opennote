@@ -1,3 +1,6 @@
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:saber/components/canvas/_stroke.dart';
@@ -149,7 +152,16 @@ class EditorHistoryItem {
     this.quillChange,
     this.colorChange,
     this.backgroundPatternChange,
+    this.replacedStrokes,
+    this.imageRectChange,
+    this.textPlacementChange,
   }) : assert(
+         type != .transform ||
+             (replacedStrokes?.length == strokes.length &&
+                 imageRectChange?.length == images.length),
+         'transform must say what each stroke and image looked like before',
+       ),
+       assert(
          type != .move || offset != null,
          'Offset must be provided for move',
        ),
@@ -188,6 +200,19 @@ class EditorHistoryItem {
   final Map<Stroke, Change<Color>>? colorChange;
   final Change<CanvasBackgroundPattern>? backgroundPatternChange;
 
+  /// For [EditorHistoryItemType.transform]: the strokes that [strokes]
+  /// replaced on the page, in the same order.
+  final List<Stroke>? replacedStrokes;
+
+  /// For [EditorHistoryItemType.transform]: where each of [images] was
+  /// before and after the change.
+  final Map<EditorImage, Change<Rect>>? imageRectChange;
+
+  /// For [EditorHistoryItemType.move] and [EditorHistoryItemType.transform]:
+  /// where the page's text was before and after the change,
+  /// or null if the text wasn't part of the selection.
+  final Change<TextPlacement>? textPlacementChange;
+
   EditorHistoryItem copyWith({
     EditorHistoryItemType? type,
     int? pageIndex,
@@ -198,6 +223,9 @@ class EditorHistoryItem {
     DocChange? quillChange,
     Map<Stroke, Change<Color>>? colorChange,
     Change<CanvasBackgroundPattern>? backgroundPatternChange,
+    List<Stroke>? replacedStrokes,
+    Map<EditorImage, Change<Rect>>? imageRectChange,
+    Change<TextPlacement>? textPlacementChange,
   }) {
     return EditorHistoryItem(
       type: type ?? this.type,
@@ -210,6 +238,9 @@ class EditorHistoryItem {
       colorChange: colorChange ?? this.colorChange,
       backgroundPatternChange:
           backgroundPatternChange ?? this.backgroundPatternChange,
+      replacedStrokes: replacedStrokes ?? this.replacedStrokes,
+      imageRectChange: imageRectChange ?? this.imageRectChange,
+      textPlacementChange: textPlacementChange ?? this.textPlacementChange,
     );
   }
 }
@@ -224,4 +255,7 @@ enum EditorHistoryItemType {
   quillUndoneChange,
   changeColor,
   backgroundPattern,
+
+  /// Strokes and images were resized, rotated, or reshaped in place.
+  transform,
 }

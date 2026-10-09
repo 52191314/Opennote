@@ -4,13 +4,7 @@ library;
 import 'package:saber/data/sync/crdt/crdt_state_vector.dart';
 
 /// The operation category of a CRDT mutation.
-enum CrdtOpType {
-  addStroke,
-  deleteStroke,
-  updateStroke,
-  addPage,
-  deletePage;
-}
+enum CrdtOpType { addStroke, deleteStroke, updateStroke, addPage, deletePage }
 
 /// An immutable atomic operation in the CRDT document history.
 class CrdtOperation implements Comparable<CrdtOperation> {
@@ -46,13 +40,13 @@ class CrdtOperation implements Comparable<CrdtOperation> {
 
   /// Serializes to a JSON map.
   Map<String, dynamic> toJson() => {
-        'r': replicaId,
-        'k': clock,
-        't': timestamp,
-        'y': type.name,
-        'id': targetId,
-        'd': data,
-      };
+    'r': replicaId,
+    'k': clock,
+    't': timestamp,
+    'y': type.name,
+    'id': targetId,
+    'd': data,
+  };
 
   /// Deserializes an operation from JSON.
   factory CrdtOperation.fromJson(Map<String, dynamic> json) {
@@ -89,10 +83,7 @@ class CrdtOperation implements Comparable<CrdtOperation> {
 
 /// A transport bundle containing a list of [CrdtOperation]s.
 class CrdtUpdate {
-  const CrdtUpdate({
-    required this.operations,
-    this.stateVector,
-  });
+  const CrdtUpdate({required this.operations, this.stateVector});
 
   /// The discrete operations included in this update.
   final List<CrdtOperation> operations;
@@ -102,9 +93,9 @@ class CrdtUpdate {
 
   /// Serializes the update package to a JSON map.
   Map<String, dynamic> toJson() => {
-        'ops': operations.map((e) => e.toJson()).toList(),
-        if (stateVector != null) 'sv': stateVector!.toJson(),
-      };
+    'ops': operations.map((e) => e.toJson()).toList(),
+    if (stateVector != null) 'sv': stateVector!.toJson(),
+  };
 
   /// Deserializes an update package from JSON.
   factory CrdtUpdate.fromJson(Map<String, dynamic> json) {

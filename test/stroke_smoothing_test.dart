@@ -42,44 +42,50 @@ void main() {
       pen.onDragEnd();
     });
 
-    test('ShapePen DOES quantize intermediate drag points when snapToGrid is enabled', () {
-      final page = EditorPage(size: const Size(1000, 1000));
-      final shapePen = ShapePen();
+    test(
+      'ShapePen DOES quantize intermediate drag points when snapToGrid is enabled',
+      () {
+        final page = EditorPage(size: const Size(1000, 1000));
+        final shapePen = ShapePen();
 
-      shapePen.onDragStart(const Offset(10, 10), page, 0, null);
-      shapePen.onDragUpdate(const Offset(48, 52), null);
+        shapePen.onDragStart(const Offset(10, 10), page, 0, null);
+        shapePen.onDragUpdate(const Offset(48, 52), null);
 
-      final currentStroke = Pen.currentStroke;
-      expect(currentStroke, isNotNull);
-      final lastPoint = currentStroke!.points.last;
-      // 48 and 52 snap to 50 on a 50px grid
-      expect(lastPoint.x, equals(50.0));
-      expect(lastPoint.y, equals(50.0));
+        final currentStroke = Pen.currentStroke;
+        expect(currentStroke, isNotNull);
+        final lastPoint = currentStroke!.points.last;
+        // 48 and 52 snap to 50 on a 50px grid
+        expect(lastPoint.x, equals(50.0));
+        expect(lastPoint.y, equals(50.0));
 
-      shapePen.onDragEnd();
-    });
+        shapePen.onDragEnd();
+      },
+    );
 
-    test('getPath uses smooth quadratic beziers for in-flight uncompleted strokes with >= 3 points', () {
-      final testPage = EditorPage(size: const Size(500, 500));
-      final stroke = Stroke(
-        color: const Color(0xFF000000),
-        pressureEnabled: false,
-        options: StrokeOptions(size: 8, isComplete: false),
-        pageIndex: 0,
-        page: testPage,
-        toolId: ToolId.ballpointPen,
-      );
+    test(
+      'getPath uses smooth quadratic beziers for in-flight uncompleted strokes with >= 3 points',
+      () {
+        final testPage = EditorPage(size: const Size(500, 500));
+        final stroke = Stroke(
+          color: const Color(0xFF000000),
+          pressureEnabled: false,
+          options: StrokeOptions(size: 8, isComplete: false),
+          pageIndex: 0,
+          page: testPage,
+          toolId: ToolId.ballpointPen,
+        );
 
-      stroke.addPoint(const Offset(10, 10));
-      stroke.addPoint(const Offset(50, 80));
-      stroke.addPoint(const Offset(90, 20));
-      stroke.addPoint(const Offset(140, 100));
+        stroke.addPoint(const Offset(10, 10));
+        stroke.addPoint(const Offset(50, 80));
+        stroke.addPoint(const Offset(90, 20));
+        stroke.addPoint(const Offset(140, 100));
 
-      final path = stroke.highQualityPath;
-      // Path must be generated and valid
-      expect(path, isNotNull);
-      expect(path.getBounds().isEmpty, isFalse);
-    });
+        final path = stroke.highQualityPath;
+        // Path must be generated and valid
+        expect(path, isNotNull);
+        expect(path.getBounds().isEmpty, isFalse);
+      },
+    );
 
     test('lowQualityPath uses smooth: true', () {
       final testPage = EditorPage(size: const Size(500, 500));

@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'package:flutter/material.dart';
@@ -53,7 +54,11 @@ void main() {
 
       expect(find.text('Cut'), findsOneWidget);
       expect(find.text('Copy'), findsOneWidget);
-      expect(find.text('Duplicate'), findsOneWidget);
+      expect(
+        find.text('Duplicate'),
+        findsNothing,
+        reason: 'Duplicate moved out of the callout to the selection bar',
+      );
       expect(find.text('Color'), findsOneWidget);
       expect(find.text('Delete'), findsOneWidget);
       expect(find.text('Crop'), findsNothing);
@@ -62,7 +67,6 @@ void main() {
     testWidgets('Invokes callbacks on action tap', (tester) async {
       bool cutTapped = false;
       bool copyTapped = false;
-      bool duplicateTapped = false;
       bool deleteTapped = false;
 
       await tester.pumpWidget(
@@ -71,7 +75,7 @@ void main() {
             body: LassoCalloutMenu(
               onCut: () => cutTapped = true,
               onCopy: () => copyTapped = true,
-              onDuplicate: () => duplicateTapped = true,
+              onDuplicate: () {},
               onDelete: () => deleteTapped = true,
               onSetColor: (_) {},
             ),
@@ -87,58 +91,59 @@ void main() {
       await tester.pump();
       expect(copyTapped, isTrue);
 
-      await tester.tap(find.text('Duplicate'));
-      await tester.pump();
-      expect(duplicateTapped, isTrue);
-
       await tester.tap(find.text('Delete'));
       await tester.pump();
       expect(deleteTapped, isTrue);
     });
 
-    testWidgets('Tapping Color opens palette and picking color triggers onSetColor', (tester) async {
-      Color? pickedColor;
+    testWidgets(
+      'Tapping Color opens palette and picking color triggers onSetColor',
+      (tester) async {
+        Color? pickedColor;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: LassoCalloutMenu(
-              onCut: () {},
-              onCopy: () {},
-              onDuplicate: () {},
-              onDelete: () {},
-              onSetColor: (color) => pickedColor = color,
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: LassoCalloutMenu(
+                onCut: () {},
+                onCopy: () {},
+                onDuplicate: () {},
+                onDelete: () {},
+                onSetColor: (color) => pickedColor = color,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Tap Color
-      await tester.tap(find.text('Color'));
-      await tester.pumpAndSettle();
+        // Tap Color
+        await tester.tap(find.text('Color'));
+        await tester.pumpAndSettle();
 
-      // Should show back arrow and color discs
-      expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
-      expect(find.text('Cut'), findsNothing);
+        // Should show back arrow and color discs
+        expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
+        expect(find.text('Cut'), findsNothing);
 
-      // Tap the first color disc (GestureDetector or InkWell)
-      final discFinder = find.byType(GestureDetector);
-      expect(discFinder, findsWidgets);
+        // Tap the first color disc (GestureDetector or InkWell)
+        final discFinder = find.byType(GestureDetector);
+        expect(discFinder, findsWidgets);
 
-      // Tap one of the discs
-      await tester.tap(discFinder.at(1));
-      await tester.pump();
+        // Tap one of the discs
+        await tester.tap(discFinder.at(1));
+        await tester.pump();
 
-      expect(pickedColor, isNotNull);
+        expect(pickedColor, isNotNull);
 
-      // Back arrow returns to action pill
-      await tester.tap(find.byIcon(Icons.arrow_back_rounded));
-      await tester.pumpAndSettle();
+        // Back arrow returns to action pill
+        await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Cut'), findsOneWidget);
-    });
+        expect(find.text('Cut'), findsOneWidget);
+      },
+    );
 
-    testWidgets('Renders Crop button when cropPossible is true', (tester) async {
+    testWidgets('Renders Crop button when cropPossible is true', (
+      tester,
+    ) async {
       bool cropToggled = false;
 
       await tester.pumpWidget(

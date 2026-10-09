@@ -18,34 +18,28 @@ void main() {
     stows.lassoSelectHandwriting.value = true;
     stows.lassoSelectImages.value = true;
     stows.lassoSelectText.value = true;
+    stows.lassoSelectTape.value = true;
     stows.selectionRectMode.value = false;
     Select.currentSelect.unselect();
   });
 
   group('LassoFilterPopup', () {
-    testWidgets('renders dialog title and all three filter options', (tester) async {
+    testWidgets('renders dialog title and all filter options', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: LassoFilterPopup(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: LassoFilterPopup())),
       );
 
       expect(find.text('Lasso Options'), findsOneWidget);
       expect(find.text('Handwriting'), findsOneWidget);
       expect(find.text('Images'), findsOneWidget);
       expect(find.text('Text Boxes'), findsOneWidget);
-      expect(find.byType(AdaptiveSwitchListTile), findsNWidgets(3));
+      expect(find.text('Study Tape'), findsOneWidget);
+      expect(find.byType(AdaptiveSwitchListTile), findsNWidgets(4));
     });
 
     testWidgets('toggling Images switch updates stow', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: LassoFilterPopup(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: LassoFilterPopup())),
       );
 
       expect(stows.lassoSelectImages.value, isTrue);
@@ -59,27 +53,29 @@ void main() {
       expect(stows.lassoSelectImages.value, isFalse);
     });
 
-    testWidgets('safety constraint prevents disabling all three toggles', (tester) async {
+    testWidgets('safety constraint prevents disabling all toggles', (
+      tester,
+    ) async {
       stows.lassoSelectHandwriting.value = true;
       stows.lassoSelectImages.value = false;
       stows.lassoSelectText.value = false;
+      stows.lassoSelectTape.value = false;
 
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: LassoFilterPopup(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: LassoFilterPopup())),
       );
 
-      final handwritingTile = find.widgetWithText(AdaptiveSwitchListTile, 'Handwriting');
+      final handwritingTile = find.widgetWithText(
+        AdaptiveSwitchListTile,
+        'Handwriting',
+      );
       expect(handwritingTile, findsOneWidget);
 
       // Attempt to disable the last active toggle
       await tester.tap(handwritingTile);
       await tester.pumpAndSettle();
 
-      // Must remain true to avoid all three being disabled simultaneously
+      // Must remain true to avoid all being disabled simultaneously
       expect(stows.lassoSelectHandwriting.value, isTrue);
     });
 
@@ -94,14 +90,13 @@ void main() {
       Select.currentSelect.doneSelecting = true;
 
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: LassoFilterPopup(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: LassoFilterPopup())),
       );
 
-      final textTile = find.widgetWithText(AdaptiveSwitchListTile, 'Text Boxes');
+      final textTile = find.widgetWithText(
+        AdaptiveSwitchListTile,
+        'Text Boxes',
+      );
       await tester.tap(textTile);
       await tester.pumpAndSettle();
 

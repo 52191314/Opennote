@@ -209,8 +209,7 @@ class _CanvasImageState extends State<CanvasImage> {
           ),
           if (widget.selected) // tint image if selected
             ColoredBox(color: colorScheme.primary.withValues(alpha: 0.5)),
-          if (widget.image.cropMode)
-            _CropOverlay(image: widget.image),
+          if (widget.image.cropMode) _CropOverlay(image: widget.image),
           if (!widget.readOnly)
             for (double x = -20; x <= 20; x += 20)
               for (double y = -20; y <= 20; y += 20)
@@ -398,10 +397,7 @@ class _CanvasImageResizeHandle extends StatelessWidget {
 
                       // Clamp to natural size
                       if (image.naturalSize.width > 0) {
-                        newWidth = newWidth.clamp(
-                          1.0,
-                          image.naturalSize.width,
-                        );
+                        newWidth = newWidth.clamp(1.0, image.naturalSize.width);
                       }
                       if (image.naturalSize.height > 0) {
                         newHeight = newHeight.clamp(
@@ -411,8 +407,7 @@ class _CanvasImageResizeHandle extends StatelessWidget {
                       }
 
                       // resize from the correct corner
-                      double left = image.srcRect.left,
-                          top = image.srcRect.top;
+                      double left = image.srcRect.left, top = image.srcRect.top;
                       if (position.dx < 0) {
                         left = image.srcRect.right - newWidth;
                       }
@@ -467,8 +462,7 @@ class _CanvasImageResizeHandle extends StatelessWidget {
                       }
 
                       // resize from the correct corner
-                      double left = image.dstRect.left,
-                          top = image.dstRect.top;
+                      double left = image.dstRect.left, top = image.dstRect.top;
                       if (position.dx < 0) {
                         left = image.dstRect.right - newWidth;
                       }
@@ -476,12 +470,7 @@ class _CanvasImageResizeHandle extends StatelessWidget {
                         top = image.dstRect.bottom - newHeight;
                       }
 
-                      image.dstRect = .fromLTWH(
-                        left,
-                        top,
-                        newWidth,
-                        newHeight,
-                      );
+                      image.dstRect = .fromLTWH(left, top, newWidth, newHeight);
                     }
                     afterDrag();
                   }
@@ -544,9 +533,7 @@ class _CropOverlay extends StatelessWidget {
           top: 0,
           right: 0,
           height: cropRect.top,
-          child: ColoredBox(
-            color: Colors.black.withValues(alpha: 0.5),
-          ),
+          child: ColoredBox(color: Colors.black.withValues(alpha: 0.5)),
         ),
         // Bottom bar
         Positioned(
@@ -554,9 +541,7 @@ class _CropOverlay extends StatelessWidget {
           bottom: 0,
           right: 0,
           top: cropRect.bottom,
-          child: ColoredBox(
-            color: Colors.black.withValues(alpha: 0.5),
-          ),
+          child: ColoredBox(color: Colors.black.withValues(alpha: 0.5)),
         ),
         // Left bar
         Positioned(
@@ -564,9 +549,7 @@ class _CropOverlay extends StatelessWidget {
           top: cropRect.top,
           width: cropRect.left,
           height: cropRect.height,
-          child: ColoredBox(
-            color: Colors.black.withValues(alpha: 0.5),
-          ),
+          child: ColoredBox(color: Colors.black.withValues(alpha: 0.5)),
         ),
         // Right bar
         Positioned(
@@ -574,9 +557,7 @@ class _CropOverlay extends StatelessWidget {
           top: cropRect.top,
           left: cropRect.right,
           height: cropRect.height,
-          child: ColoredBox(
-            color: Colors.black.withValues(alpha: 0.5),
-          ),
+          child: ColoredBox(color: Colors.black.withValues(alpha: 0.5)),
         ),
       ],
     );

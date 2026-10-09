@@ -129,11 +129,7 @@ class _FloatingLayersOverlayState extends State<FloatingLayersOverlay>
                 ),
                 if (activeLayer.locked) ...[
                   const SizedBox(width: 4),
-                  Icon(
-                    Icons.lock,
-                    size: 13,
-                    color: colorScheme.error,
-                  ),
+                  Icon(Icons.lock, size: 13, color: colorScheme.error),
                 ],
                 const SizedBox(width: 4),
                 Icon(
@@ -173,14 +169,15 @@ class _FloatingLayersOverlayState extends State<FloatingLayersOverlay>
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.only(left: 12, right: 6, top: 8, bottom: 4),
+              padding: const EdgeInsets.only(
+                left: 12,
+                right: 6,
+                top: 8,
+                bottom: 4,
+              ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.layers,
-                    size: 18,
-                    color: colorScheme.primary,
-                  ),
+                  Icon(Icons.layers, size: 18, color: colorScheme.primary),
                   const SizedBox(width: 8),
                   Text(
                     'Layers (${page.layers.length})',
@@ -231,7 +228,10 @@ class _FloatingLayersOverlayState extends State<FloatingLayersOverlay>
                       borderRadius: BorderRadius.circular(8),
                       onTap: () => _selectActiveLayer(index),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
                         child: Row(
                           children: [
                             // Active indicator
@@ -242,7 +242,9 @@ class _FloatingLayersOverlayState extends State<FloatingLayersOverlay>
                               size: 16,
                               color: isActive
                                   ? colorScheme.primary
-                                  : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                  : colorScheme.onSurfaceVariant.withValues(
+                                      alpha: 0.6,
+                                    ),
                             ),
                             const SizedBox(width: 8),
 
@@ -283,7 +285,9 @@ class _FloatingLayersOverlayState extends State<FloatingLayersOverlay>
                                     ? colorScheme.onSurfaceVariant
                                     : colorScheme.outline,
                               ),
-                              tooltip: layer.visible ? 'Hide Layer' : 'Show Layer',
+                              tooltip: layer.visible
+                                  ? 'Hide Layer'
+                                  : 'Show Layer',
                               visualDensity: VisualDensity.compact,
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(
@@ -302,7 +306,9 @@ class _FloatingLayersOverlayState extends State<FloatingLayersOverlay>
                                     ? colorScheme.error
                                     : colorScheme.onSurfaceVariant,
                               ),
-                              tooltip: layer.locked ? 'Unlock Layer' : 'Lock Layer',
+                              tooltip: layer.locked
+                                  ? 'Unlock Layer'
+                                  : 'Lock Layer',
                               visualDensity: VisualDensity.compact,
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(
@@ -319,9 +325,13 @@ class _FloatingLayersOverlayState extends State<FloatingLayersOverlay>
                                 size: 16,
                                 color: page.layers.length > 1
                                     ? colorScheme.error.withValues(alpha: 0.8)
-                                    : colorScheme.outline.withValues(alpha: 0.3),
+                                    : colorScheme.outline.withValues(
+                                        alpha: 0.3,
+                                      ),
                               ),
-                              tooltip: page.layers.length > 1 ? 'Delete Layer' : null,
+                              tooltip: page.layers.length > 1
+                                  ? 'Delete Layer'
+                                  : null,
                               visualDensity: VisualDensity.compact,
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(

@@ -85,7 +85,8 @@ class CanvasPainter extends CustomPainter {
         // Laser strokes are always fading out, so always repaint if present
         (laserStrokes.isNotEmpty || oldDelegate.laserStrokes.isNotEmpty) ||
         // Laser spotlight active
-        (page.laserSpotlightPosition != oldDelegate.page.laserSpotlightPosition) ||
+        (page.laserSpotlightPosition !=
+            oldDelegate.page.laserSpotlightPosition) ||
         // Check for any other changes
         invert != oldDelegate.invert ||
         strokes.length != oldDelegate.strokes.length ||
@@ -237,12 +238,20 @@ class CanvasPainter extends CustomPainter {
           canvas.save();
           canvas.clipRRect(rrect);
           final stripePaint = Paint()
-            ..color = Color.lerp(baseColor, Colors.black, 0.15)!.withValues(alpha: 0.4)
+            ..color = Color.lerp(
+              baseColor,
+              Colors.black,
+              0.15,
+            )!.withValues(alpha: 0.4)
             ..strokeWidth = 3.0
             ..style = PaintingStyle.stroke;
           final rect = stroke.rect;
           const step = 10.0;
-          for (double x = rect.left - rect.height; x < rect.right + rect.height; x += step) {
+          for (
+            double x = rect.left - rect.height;
+            x < rect.right + rect.height;
+            x += step
+          ) {
             canvas.drawLine(
               Offset(x, rect.bottom),
               Offset(x + rect.height, rect.top),
@@ -254,7 +263,11 @@ class CanvasPainter extends CustomPainter {
           canvas.save();
           canvas.clipRRect(rrect);
           final dotPaint = Paint()
-            ..color = Color.lerp(baseColor, Colors.black, 0.18)!.withValues(alpha: 0.5)
+            ..color = Color.lerp(
+              baseColor,
+              Colors.black,
+              0.18,
+            )!.withValues(alpha: 0.5)
             ..style = PaintingStyle.fill;
           final rect = stroke.rect;
           const spacing = 8.0;
@@ -268,16 +281,28 @@ class CanvasPainter extends CustomPainter {
           canvas.save();
           canvas.clipRRect(rrect);
           final gridPaint = Paint()
-            ..color = Color.lerp(baseColor, Colors.black, 0.15)!.withValues(alpha: 0.35)
+            ..color = Color.lerp(
+              baseColor,
+              Colors.black,
+              0.15,
+            )!.withValues(alpha: 0.35)
             ..strokeWidth = 1.0
             ..style = PaintingStyle.stroke;
           final rect = stroke.rect;
           const spacing = 8.0;
           for (double x = rect.left + spacing; x < rect.right; x += spacing) {
-            canvas.drawLine(Offset(x, rect.top), Offset(x, rect.bottom), gridPaint);
+            canvas.drawLine(
+              Offset(x, rect.top),
+              Offset(x, rect.bottom),
+              gridPaint,
+            );
           }
           for (double y = rect.top + spacing; y < rect.bottom; y += spacing) {
-            canvas.drawLine(Offset(rect.left, y), Offset(rect.right, y), gridPaint);
+            canvas.drawLine(
+              Offset(rect.left, y),
+              Offset(rect.right, y),
+              gridPaint,
+            );
           }
           canvas.restore();
         case TapePattern.solid:
@@ -285,7 +310,11 @@ class CanvasPainter extends CustomPainter {
       }
 
       final borderPaint = Paint()
-        ..color = Color.lerp(baseColor, Colors.black, 0.15)!.withValues(alpha: 0.5)
+        ..color = Color.lerp(
+          baseColor,
+          Colors.black,
+          0.15,
+        )!.withValues(alpha: 0.5)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.0;
       canvas.drawRRect(rrect, borderPaint);
@@ -331,8 +360,10 @@ class CanvasPainter extends CustomPainter {
       width: textPainter.width + 12,
       height: textPainter.height + 6,
     );
-    final pillRRect =
-        RRect.fromRectAndRadius(pillRect, const Radius.circular(4));
+    final pillRRect = RRect.fromRectAndRadius(
+      pillRect,
+      const Radius.circular(4),
+    );
 
     final pillBg = invert ? Colors.black : Colors.white;
     canvas.drawRRect(
@@ -462,6 +493,13 @@ class CanvasPainter extends CustomPainter {
 
   void _drawSelection(Canvas canvas) {
     if (currentSelection == null) return;
+    if (isDoneSelecting && currentSelection!.isEmpty) {
+      page.selectionDeleteButtonRect = null;
+      page.selectionRotationHandleCenter = null;
+      page.selectionResizeHandles = null;
+      page.selectionVertexHandles = null;
+      return;
+    }
 
     // While actively drawing the lasso loop, show only a delicate in-progress contour
     if (!isDoneSelecting) {
@@ -497,6 +535,51 @@ class CanvasPainter extends CustomPainter {
     // Remove the clunky red delete circle completely (delete is on floating callout & toolbar)
     page.selectionDeleteButtonRect = null;
 
+    final isTransformActive = Select.currentSelect.isResizeActive;
+    if (!isTransformActive) {
+      // Goodnotes clean selection state: delicate dashed contour without handle clutter.
+      // Dragging inside moves the selection immediately; handles appear when Resize is active.
+      page.selectionRotationHandleCenter = null;
+      page.selectionResizeHandles = null;
+
+      canvas.drawPath(
+        currentSelection!.path,
+        Paint()..color = primaryColor.withValues(alpha: 0.04),
+      );
+
+      canvas.drawPath(
+        dashPath(
+          currentSelection!.path,
+          dashArray: CircularIntervalList([6, 4]),
+        ),
+        Paint()
+          ..color = primaryColor.withValues(alpha: 0.85)
+          ..strokeWidth = 1.4
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round,
+      );
+
+      final singleStroke = currentSelection!.strokes.length == 1
+          ? currentSelection!.strokes.first
+          : null;
+      if (singleStroke is ArrowStroke) {
+        final vHandles = [singleStroke.start, singleStroke.end];
+        page.selectionVertexHandles = vHandles;
+        _drawVertexHandles(canvas, vHandles);
+      } else if (singleStroke is DimensionStroke) {
+        final vHandles = [
+          singleStroke.start,
+          singleStroke.end,
+          singleStroke.textPosition,
+        ];
+        page.selectionVertexHandles = vHandles;
+        _drawVertexHandles(canvas, vHandles);
+      } else {
+        page.selectionVertexHandles = null;
+      }
+      return;
+    }
+
     final padded = bounds.inflate(6.0);
     final center = padded.center;
     final rrect = RRect.fromRectAndRadius(padded, const Radius.circular(8));
@@ -521,10 +604,7 @@ class CanvasPainter extends CustomPainter {
 
     // Subtle freehand path contour inside bounding box
     canvas.drawPath(
-      dashPath(
-        currentSelection!.path,
-        dashArray: CircularIntervalList([4, 4]),
-      ),
+      dashPath(currentSelection!.path, dashArray: CircularIntervalList([4, 4])),
       Paint()
         ..color = primaryColor.withValues(alpha: 0.25)
         ..strokeWidth = 1.0
@@ -532,7 +612,10 @@ class CanvasPainter extends CustomPainter {
     );
 
     // Draw modern rotation knob (centered above selection top edge)
-    final rotationHandleCenter = Offset(center.dx, padded.top - rotationHandleOffset);
+    final rotationHandleCenter = Offset(
+      center.dx,
+      padded.top - rotationHandleOffset,
+    );
     page.selectionRotationHandleCenter = rotationHandleCenter;
 
     // Connector line
@@ -573,11 +656,7 @@ class CanvasPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
     canvas.drawArc(
-      Rect.fromCenter(
-        center: rotationHandleCenter,
-        width: 8,
-        height: 8,
-      ),
+      Rect.fromCenter(center: rotationHandleCenter, width: 8, height: 8),
       -0.8,
       2.2,
       false,
@@ -617,14 +696,14 @@ class CanvasPainter extends CustomPainter {
 
     // Keep all 8 positions in selectionResizeHandles so edge & corner hit-testing remains functional
     page.selectionResizeHandles = [
-      padded.topLeft,                           // 0: topLeft
-      Offset(center.dx, padded.top),            // 1: topCenter
-      padded.topRight,                          // 2: topRight
-      Offset(padded.right, center.dy),          // 3: middleRight
-      padded.bottomRight,                       // 4: bottomRight
-      Offset(center.dx, padded.bottom),         // 5: bottomCenter
-      padded.bottomLeft,                        // 6: bottomLeft
-      Offset(padded.left, center.dy),           // 7: middleLeft
+      padded.topLeft, // 0: topLeft
+      Offset(center.dx, padded.top), // 1: topCenter
+      padded.topRight, // 2: topRight
+      Offset(padded.right, center.dy), // 3: middleRight
+      padded.bottomRight, // 4: bottomRight
+      Offset(center.dx, padded.bottom), // 5: bottomCenter
+      padded.bottomLeft, // 6: bottomLeft
+      Offset(padded.left, center.dy), // 7: middleLeft
     ];
 
     final singleStroke = currentSelection!.strokes.length == 1

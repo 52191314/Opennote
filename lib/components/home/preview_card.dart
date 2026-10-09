@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:async';
 
 import 'package:animations/animations.dart';
@@ -156,7 +159,9 @@ class _PreviewCardState extends State<PreviewCard> {
                                       alignment: .topCenter,
                                       fit: .cover,
                                     )
-                                  : const _FallbackThumbnail(),
+                                  : _FallbackThumbnail(
+                                      filePath: widget.filePath,
+                                    ),
                             ),
                           ),
                         ),
@@ -254,10 +259,128 @@ class _PreviewCardState extends State<PreviewCard> {
 }
 
 class _FallbackThumbnail extends StatelessWidget {
-  const _FallbackThumbnail();
+  const _FallbackThumbnail({this.filePath});
+
+  final String? filePath;
+
+  static const _notebookCoverColors = <Color>[
+    Color(0xFF2B4C7E), // Royal Moleskine Navy
+    Color(0xFF2E6F56), // Forest Sage
+    Color(0xFF8C3A3A), // Wine Burgundy
+    Color(0xFF7A4F82), // Plum Moleskine
+    Color(0xFF8D5B2C), // Saddle Leather
+    Color(0xFF37474F), // Slate Charcoal
+    Color(0xFF1B6B76), // Deep Teal
+  ];
 
   @override
   Widget build(BuildContext context) {
+    if (stows.goodnotesUiMode.value && filePath != null) {
+      final name = filePath!.substring(filePath!.lastIndexOf('/') + 1);
+      final colorIdx = filePath.hashCode.abs() % _notebookCoverColors.length;
+      final coverColor = _notebookCoverColors[colorIdx];
+
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          color: coverColor,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(
+              kYaruContainerRadius - kYaruFocusBorderWidth,
+            ),
+            topRight: Radius.circular(
+              kYaruContainerRadius - kYaruFocusBorderWidth,
+            ),
+          ),
+        ),
+        child: Stack(
+          children: [
+            // Left Spine Band
+            Positioned(
+              top: 0,
+              bottom: 0,
+              left: 0,
+              width: 14,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  border: Border(
+                    right: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      width: 1,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Top Ribbon Bookmark Peek
+            Positioned(
+              top: 0,
+              right: 20,
+              width: 12,
+              height: 20,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade700,
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(2),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 3,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Centered Notebook Label Card
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(
+                  left: 20,
+                  right: 14,
+                  top: 16,
+                  bottom: 16,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFDFBF7),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: const Color(0xFFDCD6CA),
+                    width: 0.75,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2C2A29),
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return ColoredBox(
       color: InnerCanvas.defaultBackgroundColor,
       child: Center(
@@ -267,7 +390,7 @@ class _FallbackThumbnail extends StatelessWidget {
             color: Stroke.defaultColor.withValues(alpha: 0.7),
             fontStyle: FontStyle.italic,
           ),
-          textAlign: .center,
+          textAlign: TextAlign.center,
         ),
       ),
     );

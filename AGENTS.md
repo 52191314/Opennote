@@ -39,6 +39,33 @@ AI agents can find more instructions if needed on the wiki, e.g. [Maintainer not
   - **Immediate visual cleanup**: Clear in-flight ink previews (`Pen.currentStroke = null`) upon gesture detection to prevent frozen partial strokes on screen.
   - **Discoverability**: Expose tool settings in both relevant tool modals and global app settings with intuitive icons and sensible defaults.
 
+- **Toolbar & Tool State Integrity**:
+  - **Singleton identity preservation**: Never re-instantiate or overwrite tool singletons (`Pen.currentPen`, `Eraser.currentEraser`, `Select.currentSelect`, `DraftingTool.currentDrafting`, `StudyTape.currentStudyTape`) when the user selects a preset, style, or color. Mutate existing singletons in-place or update their options. Detaching `currentTool` from its singleton breaks reference checks (`_isCurrent(tool)`) and leaves toolbar and bottom bar buttons permanently stuck.
+
+- **Canvas Element & Media Stamping**:
+  - **Viewport & tap-based placement**: Never hardcode stamped element, note, sticker, shape, or photo placement to static coordinates (e.g. `(0, 0)`, `(20, 20)`, or static `page.size / 2`). On infinite canvas or scrolled views, static coordinates place elements offscreen in the extreme top-left corner. Always prioritize the user's recent canvas tap position (`_lastCanvasTapPosition` from `onDrawStart`), falling back to projecting the visible screen viewport center (`renderBox.globalToLocal(screenCenter)`).
+  - **Immediate auto-selection & handles**: Newly stamped elements and media must immediately be selected into `Select.currentSelect` (`selectStrokes` / `selectImages`) with handles updated (`_updateSelectionHandles`). This allows immediate user manipulation (move, resize, rotate) and ensures toolbar actions like 'Delete' immediately affect the newly placed element.
+
+- **Infinite Canvas Performance**:
+  - **Viewport culling for patterns**: In infinite canvas mode, canvas bounds are virtually unbounded. Repeating background grids, lines, and dot patterns must strictly be culled and clamped to the visible viewport rect (`cullRect` / visible viewport), never rendered across unconstrained or infinite canvas bounds.
+
+## Builds & CI
+
+- **Do not trigger Android or Windows builds**: Never trigger `Build for Android` or `Build for Windows` GitHub Action workflows (e.g. via `gh workflow run` or manual dispatch).
+- **Target platforms**: Only run/monitor `Run tests` and `Build iOS` (or `Build for iOS`) workflows when pushing changes or inspecting CI status.
+
+### Homelab macOS Runner (`aspire5-server`)
+- **Host**: `homelab` (`192.168.1.6`), managed via Docker Compose at `/opt/dockur-macos`.
+- **macOS Container**: `macos-runner` (`dockurr/macos:latest` running macOS Sonoma 14 with KVM acceleration).
+- **Web Console**: `http://192.168.1.6:8006` (or `http://homelab:8006`).
+- **macOS Guest SSH**:
+  - Host Port: `50922` -> Guest Port `22`
+  - Credentials are not stored in this repository because it is public. Ask the maintainer for them, and never commit usernames, passwords, tokens, or keys here.
+- **Memory Safeguards**:
+  - Host has a 16 GiB swapfile (`/swapfile_docker_osx`, total 20 GiB swap active).
+  - Production containers (`vaultwarden`, `caddy`, `nexuspay`, etc.) are immunized with `oom_score_adj: -1000` via systemd `oom-guard.timer`.
+  - The macOS container has `oom_score_adj: 500` to sacrifice itself first if memory is starved.
+
 ## Commits
 - Follow the Conventional Commits format.
 - Always include one or more emojis that represent your commit. Additionally include the sparkle emoji ✨.

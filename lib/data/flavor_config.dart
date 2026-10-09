@@ -1,13 +1,16 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 class FlavorConfig {
   FlavorConfig._();
 
-  static late String _flavor;
+  static var _flavor = '';
   static String get flavor => _flavor;
 
-  static late String _appStore;
+  static var _appStore = '';
   static String get appStore => _appStore;
 
-  static late bool _shouldCheckForUpdatesByDefault;
+  static var _shouldCheckForUpdatesByDefault = true;
   static bool get shouldCheckForUpdatesByDefault =>
       _shouldCheckForUpdatesByDefault;
 

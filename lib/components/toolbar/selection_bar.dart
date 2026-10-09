@@ -16,6 +16,9 @@ class SelectionBar extends StatelessWidget {
   final bool cropPossible;
   final bool cropActive;
   final VoidCallback? toggleCrop;
+  final VoidCallback? toggleResize;
+  final bool isResizeActive;
+  final VoidCallback? takeScreenshot;
   final VoidCallback? bringToFront;
   final VoidCallback? sendToBack;
   final VoidCallback? smoothen;
@@ -30,6 +33,9 @@ class SelectionBar extends StatelessWidget {
     this.cropPossible = false,
     this.cropActive = false,
     this.toggleCrop,
+    this.toggleResize,
+    this.isResizeActive = false,
+    this.takeScreenshot,
     this.bringToFront,
     this.sendToBack,
     this.smoothen,
@@ -54,15 +60,15 @@ class SelectionBar extends StatelessWidget {
                     ? ColorScheme.of(context).secondary
                     : ColorScheme.of(context).onSurface,
                 backgroundColor: stows.selectionRectMode.value
-                    ? Theme.of(context)
-                        .colorScheme
-                        .secondary
-                        .withValues(alpha: 0.1)
+                    ? Theme.of(
+                        context,
+                      ).colorScheme.secondary.withValues(alpha: 0.1)
                     : Colors.transparent,
                 shape: const CircleBorder(),
               ),
-              tooltip:
-                  stows.selectionRectMode.value ? 'Rect Select' : 'Lasso Select',
+              tooltip: stows.selectionRectMode.value
+                  ? 'Rect Select'
+                  : 'Lasso Select',
               icon: Icon(
                 stows.selectionRectMode.value
                     ? Icons.crop_square
@@ -98,8 +104,7 @@ class SelectionBar extends StatelessWidget {
               tooltip: cropActive ? 'Done cropping' : 'Crop image',
               icon: Icon(
                 cropActive ? Icons.check : Icons.crop,
-                color:
-                    cropActive ? ColorScheme.of(context).primary : null,
+                color: cropActive ? ColorScheme.of(context).primary : null,
               ),
             ),
           IconButton(
@@ -173,6 +178,32 @@ class SelectionBar extends StatelessWidget {
               ),
               tooltip: 'Smoothen Handwriting',
               icon: const Icon(Icons.auto_fix_high_rounded),
+            ),
+          if (toggleResize != null)
+            IconButton(
+              onPressed: toggleResize,
+              style: TextButton.styleFrom(
+                foregroundColor: isResizeActive
+                    ? ColorScheme.of(context).primary
+                    : ColorScheme.of(context).secondary,
+                backgroundColor: isResizeActive
+                    ? ColorScheme.of(context).primary.withValues(alpha: 0.15)
+                    : Colors.transparent,
+                shape: const CircleBorder(),
+              ),
+              tooltip: isResizeActive ? 'Done Resizing' : 'Resize',
+              icon: const Icon(Icons.open_in_full_rounded),
+            ),
+          if (takeScreenshot != null)
+            IconButton(
+              onPressed: takeScreenshot,
+              style: TextButton.styleFrom(
+                foregroundColor: ColorScheme.of(context).secondary,
+                backgroundColor: Colors.transparent,
+                shape: const CircleBorder(),
+              ),
+              tooltip: 'Screenshot',
+              icon: const Icon(Icons.crop_free_rounded),
             ),
           if (addToElements != null)
             IconButton(

@@ -1,5 +1,6 @@
 /// 🤖 Generated with DeepSeek v4 Flash
 library;
+
 import 'package:flutter/material.dart';
 import 'package:saber/components/canvas/canvas_gesture_detector.dart';
 import 'package:saber/components/theming/saber_theme.dart';
@@ -58,11 +59,9 @@ class _DocumentOutlineViewState extends State<DocumentOutlineView> {
             final text = (op.data as String).trim();
             if (text.isEmpty) continue;
             final level = attributes['heading'] as int;
-            _headings.add(_HeadingEntry(
-              pageIndex: i,
-              level: level,
-              text: text,
-            ));
+            _headings.add(
+              _HeadingEntry(pageIndex: i, level: level, text: text),
+            );
           }
         }
       }

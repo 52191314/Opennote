@@ -50,99 +50,104 @@ class DraftingToolsPopup extends StatelessWidget {
             ],
           ),
           padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 12),
-                child: Text(
-                  'Shapes & Drafting',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: colorScheme.onSurface,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 12),
+                  child: Text(
+                    'Shapes & Drafting',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                 ),
-              ),
-              _DraftingOptionTile(
-                icon: const FaIcon(FontAwesomeIcons.shapes, size: 16),
-                title: 'Shape Library',
-                subtitle: 'Insert geometric primitives & symbols',
-                selected: false,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  onPickShape();
-                },
-              ),
-              const SizedBox(height: 6),
-              _DraftingOptionTile(
-                icon: const FaIcon(Ruler.rulerIcon, size: 16),
-                title: t.editor.pens.ruler,
-                subtitle: 'On-screen straightedge guide',
-                selected: currentTool is Ruler,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  onSelectTool(Ruler());
-                },
-              ),
-              const SizedBox(height: 6),
-              _DraftingOptionTile(
-                icon: const Icon(Icons.arrow_right_alt, size: 20),
-                title: 'Straight Arrow',
-                subtitle: 'Direct pointer arrow',
-                selected: currentTool is ArrowTool &&
-                    (currentTool as ArrowTool).connectorStyle ==
-                        ConnectorStyle.straight,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  onSelectTool(
-                    ArrowTool(connectorStyle: ConnectorStyle.straight),
-                  );
-                },
-              ),
-              const SizedBox(height: 6),
-              _DraftingOptionTile(
-                icon: const Icon(Icons.turn_right_rounded, size: 20),
-                title: 'Elbow Connector',
-                subtitle: 'Orthogonal stepped connector line',
-                selected: currentTool is ArrowTool &&
-                    (currentTool as ArrowTool).connectorStyle ==
-                        ConnectorStyle.elbow,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  onSelectTool(
-                    ArrowTool(connectorStyle: ConnectorStyle.elbow),
-                  );
-                },
-              ),
-              const SizedBox(height: 6),
-              _DraftingOptionTile(
-                icon: const Icon(Icons.gesture, size: 20),
-                title: 'Curved Connector',
-                subtitle: 'Smooth bezier spline connector',
-                selected: currentTool is ArrowTool &&
-                    (currentTool as ArrowTool).connectorStyle ==
-                        ConnectorStyle.curved,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  onSelectTool(
-                    ArrowTool(connectorStyle: ConnectorStyle.curved),
-                  );
-                },
-              ),
-              const SizedBox(height: 6),
-              _DraftingOptionTile(
-                icon: const Icon(Icons.straighten, size: 18),
-                title: 'Dimension Line',
-                subtitle: 'Measured line with real-world dimensions',
-                selected: currentTool is DimensionTool,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  onSelectTool(DimensionTool());
-                },
-              ),
-            ],
+                _DraftingOptionTile(
+                  icon: const FaIcon(FontAwesomeIcons.shapes, size: 16),
+                  title: 'Shape Library',
+                  subtitle: 'Insert geometric primitives & symbols',
+                  selected: false,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    onPickShape();
+                  },
+                ),
+                const SizedBox(height: 6),
+                _DraftingOptionTile(
+                  icon: const FaIcon(Ruler.rulerIcon, size: 16),
+                  title: t.editor.pens.ruler,
+                  subtitle: 'On-screen straightedge guide',
+                  selected: currentTool is Ruler,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    onSelectTool(Ruler());
+                  },
+                ),
+                const SizedBox(height: 6),
+                _DraftingOptionTile(
+                  icon: const Icon(Icons.arrow_right_alt, size: 20),
+                  title: 'Straight Arrow',
+                  subtitle: 'Direct pointer arrow',
+                  selected:
+                      currentTool is ArrowTool &&
+                      (currentTool as ArrowTool).connectorStyle ==
+                          ConnectorStyle.straight,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    onSelectTool(
+                      ArrowTool(connectorStyle: ConnectorStyle.straight),
+                    );
+                  },
+                ),
+                const SizedBox(height: 6),
+                _DraftingOptionTile(
+                  icon: const Icon(Icons.turn_right_rounded, size: 20),
+                  title: 'Elbow Connector',
+                  subtitle: 'Orthogonal stepped connector line',
+                  selected:
+                      currentTool is ArrowTool &&
+                      (currentTool as ArrowTool).connectorStyle ==
+                          ConnectorStyle.elbow,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    onSelectTool(
+                      ArrowTool(connectorStyle: ConnectorStyle.elbow),
+                    );
+                  },
+                ),
+                const SizedBox(height: 6),
+                _DraftingOptionTile(
+                  icon: const Icon(Icons.gesture, size: 20),
+                  title: 'Curved Connector',
+                  subtitle: 'Smooth bezier spline connector',
+                  selected:
+                      currentTool is ArrowTool &&
+                      (currentTool as ArrowTool).connectorStyle ==
+                          ConnectorStyle.curved,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    onSelectTool(
+                      ArrowTool(connectorStyle: ConnectorStyle.curved),
+                    );
+                  },
+                ),
+                const SizedBox(height: 6),
+                _DraftingOptionTile(
+                  icon: const Icon(Icons.straighten, size: 18),
+                  title: 'Dimension Line',
+                  subtitle: 'Measured line with real-world dimensions',
+                  selected: currentTool is DimensionTool,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    onSelectTool(DimensionTool());
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -180,7 +185,10 @@ class _DraftingOptionTile extends StatelessWidget {
               : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: selected
-              ? Border.all(color: colorScheme.primary.withValues(alpha: 0.5), width: 1)
+              ? Border.all(
+                  color: colorScheme.primary.withValues(alpha: 0.5),
+                  width: 1,
+                )
               : null,
         ),
         child: Row(
@@ -191,13 +199,17 @@ class _DraftingOptionTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: selected
                     ? colorScheme.primary
-                    : colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
+                    : colorScheme.surfaceContainerHighest.withValues(
+                        alpha: 0.7,
+                      ),
                 borderRadius: BorderRadius.circular(8),
               ),
               alignment: Alignment.center,
               child: IconTheme(
                 data: IconThemeData(
-                  color: selected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
+                  color: selected
+                      ? colorScheme.onPrimary
+                      : colorScheme.onSurfaceVariant,
                   size: 18,
                 ),
                 child: icon,
@@ -213,14 +225,18 @@ class _DraftingOptionTile extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: selected ? colorScheme.primary : colorScheme.onSurface,
+                      color: selected
+                          ? colorScheme.primary
+                          : colorScheme.onSurface,
                     ),
                   ),
                   Text(
                     subtitle,
                     style: TextStyle(
                       fontSize: 11.5,
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.75),
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.75,
+                      ),
                     ),
                   ),
                 ],

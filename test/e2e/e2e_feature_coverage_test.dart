@@ -80,7 +80,9 @@ void main() {
         select.onDragUpdate(const Offset(100, 0));
 
         final stroke = createTestStroke(points: [const Offset(50, 50)]);
-        final image = E2ETestImage(dstRect: const Rect.fromLTWH(20, 20, 40, 40));
+        final image = E2ETestImage(
+          dstRect: const Rect.fromLTWH(20, 20, 40, 40),
+        );
 
         select.onDragEnd([stroke], [image]);
 
@@ -88,24 +90,29 @@ void main() {
         expect(select.selectResult.images, isEmpty);
       });
 
-      test('onDragEnd excludes strokes when lassoSelectHandwriting is false', () {
-        final select = Select.currentSelect;
-        stows.lassoSelectImages.value = true;
-        stows.lassoSelectHandwriting.value = false;
+      test(
+        'onDragEnd excludes strokes when lassoSelectHandwriting is false',
+        () {
+          final select = Select.currentSelect;
+          stows.lassoSelectImages.value = true;
+          stows.lassoSelectHandwriting.value = false;
 
-        select.onDragStart(Offset.zero, 0);
-        select.onDragUpdate(const Offset(0, 100));
-        select.onDragUpdate(const Offset(100, 100));
-        select.onDragUpdate(const Offset(100, 0));
+          select.onDragStart(Offset.zero, 0);
+          select.onDragUpdate(const Offset(0, 100));
+          select.onDragUpdate(const Offset(100, 100));
+          select.onDragUpdate(const Offset(100, 0));
 
-        final stroke = createTestStroke(points: [const Offset(50, 50)]);
-        final image = E2ETestImage(dstRect: const Rect.fromLTWH(20, 20, 40, 40));
+          final stroke = createTestStroke(points: [const Offset(50, 50)]);
+          final image = E2ETestImage(
+            dstRect: const Rect.fromLTWH(20, 20, 40, 40),
+          );
 
-        select.onDragEnd([stroke], [image]);
+          select.onDragEnd([stroke], [image]);
 
-        expect(select.selectResult.strokes, isEmpty);
-        expect(select.selectResult.images, contains(image));
-      });
+          expect(select.selectResult.strokes, isEmpty);
+          expect(select.selectResult.images, contains(image));
+        },
+      );
 
       test('onDragEnd excludes text when lassoSelectText is false', () {
         final select = Select.currentSelect;
@@ -130,133 +137,157 @@ void main() {
         stows.lassoSelectImages.value = false;
         stows.lassoSelectHandwriting.value = true;
 
-        final image = E2ETestImage(dstRect: const Rect.fromLTWH(50, 50, 100, 100));
+        final image = E2ETestImage(
+          dstRect: const Rect.fromLTWH(50, 50, 100, 100),
+        );
         select.tapSelect(const Offset(80, 80), const [], [image], 0);
 
         expect(select.selectResult.images, isEmpty);
       });
 
-      test('pruneDisabledFilters removes elements when filter is toggled while active', () {
-        final select = Select.currentSelect;
-        stows.lassoSelectImages.value = true;
-        stows.lassoSelectHandwriting.value = true;
+      test(
+        'pruneDisabledFilters removes elements when filter is toggled while active',
+        () {
+          final select = Select.currentSelect;
+          stows.lassoSelectImages.value = true;
+          stows.lassoSelectHandwriting.value = true;
 
-        final stroke = createTestStroke(points: [const Offset(50, 50)]);
-        final image = E2ETestImage(dstRect: const Rect.fromLTWH(20, 20, 40, 40));
+          final stroke = createTestStroke(points: [const Offset(50, 50)]);
+          final image = E2ETestImage(
+            dstRect: const Rect.fromLTWH(20, 20, 40, 40),
+          );
 
-        select.selectResult = SelectResult(
-          pageIndex: 0,
-          strokes: [stroke],
-          images: [image],
-          path: Path(),
-        );
-        select.doneSelecting = true;
+          select.selectResult = SelectResult(
+            pageIndex: 0,
+            strokes: [stroke],
+            images: [image],
+            path: Path(),
+          );
+          select.doneSelecting = true;
 
-        stows.lassoSelectImages.value = false;
-        select.pruneDisabledFilters();
+          stows.lassoSelectImages.value = false;
+          select.pruneDisabledFilters();
 
-        expect(select.selectResult.images, isEmpty);
-        expect(select.selectResult.strokes, contains(stroke));
-      });
+          expect(select.selectResult.images, isEmpty);
+          expect(select.selectResult.strokes, contains(stroke));
+        },
+      );
     });
 
     // ------------------------------------------------------------------------
     // F3: Lasso Options UI Binding
     // ------------------------------------------------------------------------
     group('F3: Lasso Options UI Binding', () {
-      test('mutating stow toggles updates active selection bounds immediately', () {
-        final select = Select.currentSelect;
-        final image = E2ETestImage(dstRect: const Rect.fromLTWH(0, 0, 50, 50));
+      test(
+        'mutating stow toggles updates active selection bounds immediately',
+        () {
+          final select = Select.currentSelect;
+          final image = E2ETestImage(
+            dstRect: const Rect.fromLTWH(0, 0, 50, 50),
+          );
 
-        select.selectResult = SelectResult(
-          pageIndex: 0,
-          strokes: [],
-          images: [image],
-          path: Path(),
-        );
-        select.doneSelecting = true;
+          select.selectResult = SelectResult(
+            pageIndex: 0,
+            strokes: [],
+            images: [image],
+            path: Path(),
+          );
+          select.doneSelecting = true;
 
-        stows.lassoSelectImages.value = false;
-        select.pruneDisabledFilters();
+          stows.lassoSelectImages.value = false;
+          select.pruneDisabledFilters();
 
-        expect(select.selectResult.isEmpty, isTrue);
-        expect(select.doneSelecting, isFalse);
-      });
+          expect(select.selectResult.isEmpty, isTrue);
+          expect(select.doneSelecting, isFalse);
+        },
+      );
     });
 
     // ------------------------------------------------------------------------
     // F4: Page Thumbnail Grid View Model
     // ------------------------------------------------------------------------
     group('F4: Page Thumbnail Grid View Model', () {
-      test('coreInfo represents sequential pages with correct page indices', () {
-        final page0 = EditorPage();
-        final page1 = EditorPage();
-        final page2 = EditorPage();
-        final coreInfo = createTestCoreInfo(pages: [page0, page1, page2]);
+      test(
+        'coreInfo represents sequential pages with correct page indices',
+        () {
+          final page0 = EditorPage();
+          final page1 = EditorPage();
+          final page2 = EditorPage();
+          final coreInfo = createTestCoreInfo(pages: [page0, page1, page2]);
 
-        for (int i = 0; i < coreInfo.pages.length; i++) {
-          coreInfo.pages[i].updatePageIndex(i);
-        }
+          for (int i = 0; i < coreInfo.pages.length; i++) {
+            coreInfo.pages[i].updatePageIndex(i);
+          }
 
-        expect(coreInfo.pages.length, equals(3));
-        expect(coreInfo.pages[0].strokes, isEmpty);
-      });
+          expect(coreInfo.pages.length, equals(3));
+          expect(coreInfo.pages[0].strokes, isEmpty);
+        },
+      );
     });
 
     // ------------------------------------------------------------------------
     // F5: Tap-to-Jump Navigation
     // ------------------------------------------------------------------------
     group('F5: Tap-to-Jump Navigation', () {
-      test('scrollToPage calculates correct translation matrix for target page', () {
-        final pages = [
-          EditorPage(size: const Size(800, 1200)),
-          EditorPage(size: const Size(800, 1200)),
-          EditorPage(size: const Size(800, 1200)),
-        ];
-        for (int i = 0; i < pages.length; i++) {
-          pages[i].updatePageIndex(i);
-        }
-        final controller = TransformationController();
+      test(
+        'scrollToPage calculates correct translation matrix for target page',
+        () {
+          final pages = [
+            EditorPage(size: const Size(800, 1200)),
+            EditorPage(size: const Size(800, 1200)),
+            EditorPage(size: const Size(800, 1200)),
+          ];
+          for (int i = 0; i < pages.length; i++) {
+            pages[i].updatePageIndex(i);
+          }
+          final controller = TransformationController();
 
-        CanvasGestureDetector.scrollToPage(
-          pageIndex: 1,
-          pages: pages,
-          screenWidth: 800,
-          transformationController: controller,
-        );
+          CanvasGestureDetector.scrollToPage(
+            pageIndex: 1,
+            pages: pages,
+            screenWidth: 800,
+            transformationController: controller,
+          );
 
-        final expectedY = CanvasGestureDetector.getTopOfPage(
-          pageIndex: 1,
-          pages: pages,
-          screenWidth: 800,
-        );
-        expect(expectedY, greaterThan(0));
-        expect(controller.value.getTranslation().y, closeTo(-expectedY + 50, 1.0));
-      });
+          final expectedY = CanvasGestureDetector.getTopOfPage(
+            pageIndex: 1,
+            pages: pages,
+            screenWidth: 800,
+          );
+          expect(expectedY, greaterThan(0));
+          expect(
+            controller.value.getTranslation().y,
+            closeTo(-expectedY + 50, 1.0),
+          );
+        },
+      );
     });
 
     // ------------------------------------------------------------------------
     // F6: Page Drag-and-Drop Reorder
     // ------------------------------------------------------------------------
     group('F6: Page Drag-and-Drop Reorder', () {
-      test('reordering pages updates page list and syncs stroke page indices', () {
-        final page0 = EditorPage();
-        final page1 = EditorPage();
-        final strokeOnPage1 = createTestStroke(pageIndex: 1);
-        page1.layers.first.strokes.add(strokeOnPage1);
+      test(
+        'reordering pages updates page list and syncs stroke page indices',
+        () {
+          final page0 = EditorPage();
+          final page1 = EditorPage();
+          final strokeOnPage1 = createTestStroke(pageIndex: 1);
+          page1.layers.first.strokes.add(strokeOnPage1);
 
-        final coreInfo = createTestCoreInfo(pages: [page0, page1]);
-        for (int i = 0; i < coreInfo.pages.length; i++) {
-          coreInfo.pages[i].updatePageIndex(i);
-        }
+          final coreInfo = createTestCoreInfo(pages: [page0, page1]);
+          for (int i = 0; i < coreInfo.pages.length; i++) {
+            coreInfo.pages[i].updatePageIndex(i);
+          }
 
-        // Move page 1 to index 0
-        E2EPageManagerHelper.reorderPages(coreInfo, 1, 0);
+          // Move page 1 to index 0
+          E2EPageManagerHelper.reorderPages(coreInfo, 1, 0);
 
-        expect(coreInfo.pages[0], equals(page1));
-        expect(coreInfo.pages[1], equals(page0));
-        expect(strokeOnPage1.pageIndex, equals(0));
-      });
+          expect(coreInfo.pages[0], equals(page1));
+          expect(coreInfo.pages[1], equals(page0));
+          expect(strokeOnPage1.pageIndex, equals(0));
+        },
+      );
     });
 
     // ------------------------------------------------------------------------
@@ -279,26 +310,32 @@ void main() {
         expect(coreInfo.pages.length, equals(3));
       });
 
-      test('duplicatePage deep copies layers to avoid shared stroke references', () {
-        final page0 = EditorPage();
-        final originalStroke = createTestStroke(pageIndex: 0, points: [const Offset(10, 10)]);
-        page0.layers.first.strokes.add(originalStroke);
+      test(
+        'duplicatePage deep copies layers to avoid shared stroke references',
+        () {
+          final page0 = EditorPage();
+          final originalStroke = createTestStroke(
+            pageIndex: 0,
+            points: [const Offset(10, 10)],
+          );
+          page0.layers.first.strokes.add(originalStroke);
 
-        final coreInfo = createTestCoreInfo(pages: [page0]);
-        for (int i = 0; i < coreInfo.pages.length; i++) {
-          coreInfo.pages[i].updatePageIndex(i);
-        }
+          final coreInfo = createTestCoreInfo(pages: [page0]);
+          for (int i = 0; i < coreInfo.pages.length; i++) {
+            coreInfo.pages[i].updatePageIndex(i);
+          }
 
-        E2EPageManagerHelper.duplicatePageDeep(coreInfo, 0);
+          E2EPageManagerHelper.duplicatePageDeep(coreInfo, 0);
 
-        expect(coreInfo.pages.length, equals(2));
-        final duplicatedPage = coreInfo.pages[1];
-        expect(duplicatedPage.layers.first.strokes.length, equals(1));
+          expect(coreInfo.pages.length, equals(2));
+          final duplicatedPage = coreInfo.pages[1];
+          expect(duplicatedPage.layers.first.strokes.length, equals(1));
 
-        final copiedStroke = duplicatedPage.layers.first.strokes.first;
-        expect(identical(copiedStroke, originalStroke), isFalse);
-        expect(copiedStroke.pageIndex, equals(1));
-      });
+          final copiedStroke = duplicatedPage.layers.first.strokes.first;
+          expect(identical(copiedStroke, originalStroke), isFalse);
+          expect(copiedStroke.pageIndex, equals(1));
+        },
+      );
 
       test('deletePage deletes page when multiple pages exist', () {
         final coreInfo = createTestCoreInfo(
@@ -341,7 +378,9 @@ void main() {
 
         expect(json['bm'], isTrue);
 
-        final pageRestored = EditorPage(bookmarked: json['bm'] as bool? ?? false);
+        final pageRestored = EditorPage(
+          bookmarked: json['bm'] as bool? ?? false,
+        );
         expect(pageRestored.bookmarked, isTrue);
       });
 
@@ -362,60 +401,69 @@ void main() {
     // F9: Study Tape Tool & Model
     // ------------------------------------------------------------------------
     group('F9: Study Tape Tool & Model', () {
-      test('TapeStrokeContract initializes with isConcealed = true by default', () {
-        final tape = TapeStrokeContract(
-          color: const Color(0xFFFFEB3B),
-          pageIndex: 0,
-          page: standardPageDef,
-          start: const Offset(100, 200),
-          end: const Offset(300, 200),
-        );
+      test(
+        'TapeStrokeContract initializes with isConcealed = true by default',
+        () {
+          final tape = TapeStrokeContract(
+            color: const Color(0xFFFFEB3B),
+            pageIndex: 0,
+            page: standardPageDef,
+            start: const Offset(100, 200),
+            end: const Offset(300, 200),
+          );
 
-        expect(tape.isConcealed, isTrue);
-        expect(tape.tapeWidth, equals(32.0));
-      });
+          expect(tape.isConcealed, isTrue);
+          expect(tape.tapeWidth, equals(32.0));
+        },
+      );
 
-      test('TapeStrokeContract calculates accurate masking bounding polygon', () {
-        final tape = TapeStrokeContract(
-          color: const Color(0xFFFFEB3B),
-          pageIndex: 0,
-          page: standardPageDef,
-          start: const Offset(100, 200),
-          end: const Offset(300, 200),
-          tapeWidth: 20.0,
-        );
+      test(
+        'TapeStrokeContract calculates accurate masking bounding polygon',
+        () {
+          final tape = TapeStrokeContract(
+            color: const Color(0xFFFFEB3B),
+            pageIndex: 0,
+            page: standardPageDef,
+            start: const Offset(100, 200),
+            end: const Offset(300, 200),
+            tapeWidth: 20.0,
+          );
 
-        final poly = tape.getMaskPolygon();
-        expect(poly.length, equals(4));
+          final poly = tape.getMaskPolygon();
+          expect(poly.length, equals(4));
 
-        expect(poly[0].dy, closeTo(210.0, 0.01));
-        expect(poly[2].dy, closeTo(190.0, 0.01));
-      });
+          expect(poly[0].dy, closeTo(210.0, 0.01));
+          expect(poly[2].dy, closeTo(190.0, 0.01));
+        },
+      );
     });
 
     // ------------------------------------------------------------------------
     // F10: Study Tape Rendering
     // ------------------------------------------------------------------------
     group('F10: Study Tape Rendering Modes', () {
-      test('concealed tape presents opaque color; revealed presents translucent wash', () {
-        final tape = TapeStrokeContract(
-          color: const Color(0xFFFFEB3B),
-          pageIndex: 0,
-          page: standardPageDef,
-          start: const Offset(100, 100),
-          end: const Offset(200, 100),
-          isConcealed: true,
-        );
+      test(
+        'concealed tape presents opaque color; revealed presents translucent wash',
+        () {
+          final tape = TapeStrokeContract(
+            color: const Color(0xFFFFEB3B),
+            pageIndex: 0,
+            page: standardPageDef,
+            start: const Offset(100, 100),
+            end: const Offset(200, 100),
+            isConcealed: true,
+          );
 
-        expect(tape.isConcealed, isTrue);
-        final concealedAlpha = (tape.color.a * 255).round();
-        expect(concealedAlpha, equals(255));
+          expect(tape.isConcealed, isTrue);
+          final concealedAlpha = (tape.color.a * 255).round();
+          expect(concealedAlpha, equals(255));
 
-        tape.toggleConceal();
-        expect(tape.isConcealed, isFalse);
-        final revealedColor = tape.color.withValues(alpha: 0.25);
-        expect((revealedColor.a * 255).round(), lessThan(100));
-      });
+          tape.toggleConceal();
+          expect(tape.isConcealed, isFalse);
+          final revealedColor = tape.color.withValues(alpha: 0.25);
+          expect((revealedColor.a * 255).round(), lessThan(100));
+        },
+      );
     });
 
     // ------------------------------------------------------------------------
@@ -521,37 +569,44 @@ void main() {
         expect(penTool.id, equals('fountainPen'));
       });
 
-      test('stroke sorting places highlighter strokes below fountain pen strokes', () {
-        final page = EditorPage();
-        final inkStroke = createTestStroke(toolId: ToolId.fountainPen, color: Colors.black);
-        final hlStroke = createHighlighterStroke(color: Colors.yellow);
+      test(
+        'stroke sorting places highlighter strokes below fountain pen strokes',
+        () {
+          final page = EditorPage();
+          final inkStroke = createTestStroke(
+            toolId: ToolId.fountainPen,
+            color: Colors.black,
+          );
+          final hlStroke = createHighlighterStroke(color: Colors.yellow);
 
-        page.layers.first.strokes.addAll([inkStroke, hlStroke]);
+          page.layers.first.strokes.addAll([inkStroke, hlStroke]);
 
-        final sorted = List<Stroke>.from(page.layers.first.strokes)
-          ..sort((a, b) {
-            final aZ = a.toolId == ToolId.highlighter ? 0 : 1;
-            final bZ = b.toolId == ToolId.highlighter ? 0 : 1;
-            return aZ.compareTo(bZ);
-          });
+          final sorted = List<Stroke>.from(page.layers.first.strokes)
+            ..sort((a, b) {
+              final aZ = a.toolId == ToolId.highlighter ? 0 : 1;
+              final bZ = b.toolId == ToolId.highlighter ? 0 : 1;
+              return aZ.compareTo(bZ);
+            });
 
-        expect(sorted.first.toolId, equals(ToolId.highlighter));
-        expect(sorted.last.toolId, equals(ToolId.fountainPen));
-      });
+          expect(sorted.first.toolId, equals(ToolId.highlighter));
+          expect(sorted.last.toolId, equals(ToolId.fountainPen));
+        },
+      );
     });
 
     group('F14: Highlighter Hold-to-Straighten', () {
-      test('highlighter stroke converts to straight line segment with clean endpoints', () {
-        final stroke = createHighlighterStroke(
-          size: 2.0,
-          points: [
-            for (double x = 0; x <= 300; x += 10) Offset(x, 0),
-          ],
-        );
-        stroke.convertToLine();
-        expect(stroke.points.first.dx, equals(0));
-        expect(stroke.points.last.dx, equals(300));
-      });
+      test(
+        'highlighter stroke converts to straight line segment with clean endpoints',
+        () {
+          final stroke = createHighlighterStroke(
+            size: 2.0,
+            points: [for (double x = 0; x <= 300; x += 10) Offset(x, 0)],
+          );
+          stroke.convertToLine();
+          expect(stroke.points.first.dx, equals(0));
+          expect(stroke.points.last.dx, equals(300));
+        },
+      );
 
       test('convertToLine aligns points into a single straight segment', () {
         final stroke = createHighlighterStroke(
@@ -574,14 +629,19 @@ void main() {
     // F15: Cornell Notes Template Dividing Lines
     // ------------------------------------------------------------------------
     group('F15: Cornell Notes Template Dividing Lines', () {
-      test('Cornell template defines vertical cue line at 28% and summary at 75%', () {
-        const size = Size(1000, 1400);
-        final cueX = CornellGeometryOracle.getVerticalCueX(size.width);
-        final summaryY = CornellGeometryOracle.getHorizontalSummaryY(size.height);
+      test(
+        'Cornell template defines vertical cue line at 28% and summary at 75%',
+        () {
+          const size = Size(1000, 1400);
+          final cueX = CornellGeometryOracle.getVerticalCueX(size.width);
+          final summaryY = CornellGeometryOracle.getHorizontalSummaryY(
+            size.height,
+          );
 
-        expect(cueX, closeTo(280.0, 0.01));
-        expect(summaryY, closeTo(1050.0, 0.01));
-      });
+          expect(cueX, closeTo(280.0, 0.01));
+          expect(summaryY, closeTo(1050.0, 0.01));
+        },
+      );
 
       test('CanvasBackgroundPattern cornell enum value exists', () {
         expect(CanvasBackgroundPattern.cornell, isNotNull);

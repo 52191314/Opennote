@@ -77,46 +77,52 @@ void main() {
   });
 
   group('Goodnotes Eraser Highlighter-Only Tests', () {
-    test('Erases only highlighters when eraserEraseHighlighterOnly is true', () {
-      final eraser = Eraser(size: 15);
-      const pos = Offset(50, 50);
+    test(
+      'Erases only highlighters when eraserEraseHighlighterOnly is true',
+      () {
+        final eraser = Eraser(size: 15);
+        const pos = Offset(50, 50);
 
-      final penStroke = Stroke(
-        color: const Color(0xFF000000),
-        pressureEnabled: false,
-        options: StrokeOptions(size: 2),
-        pageIndex: 0,
-        page: const HasSize(Size(100, 100)),
-        toolId: .ballpointPen,
-      )..addPoint(pos);
+        final penStroke = Stroke(
+          color: const Color(0xFF000000),
+          pressureEnabled: false,
+          options: StrokeOptions(size: 2),
+          pageIndex: 0,
+          page: const HasSize(Size(100, 100)),
+          toolId: .ballpointPen,
+        )..addPoint(pos);
 
-      final highlighterStroke = Stroke(
-        color: const Color(0xFFFFF176),
-        pressureEnabled: false,
-        options: StrokeOptions(size: 10),
-        pageIndex: 0,
-        page: const HasSize(Size(100, 100)),
-        toolId: ToolId.highlighter,
-      )..addPoint(pos);
+        final highlighterStroke = Stroke(
+          color: const Color(0xFFFFF176),
+          pressureEnabled: false,
+          options: StrokeOptions(size: 10),
+          pageIndex: 0,
+          page: const HasSize(Size(100, 100)),
+          toolId: ToolId.highlighter,
+        )..addPoint(pos);
 
-      final allStrokes = <Stroke>[penStroke, highlighterStroke];
+        final allStrokes = <Stroke>[penStroke, highlighterStroke];
 
-      // Test with highlighter only = false
-      stows.eraserEraseHighlighterOnly.value = false;
-      final erasedBoth = eraser.checkForOverlappingStrokes(pos, allStrokes);
-      expect(erasedBoth.length, equals(2));
-      eraser.onDragEnd();
+        // Test with highlighter only = false
+        stows.eraserEraseHighlighterOnly.value = false;
+        final erasedBoth = eraser.checkForOverlappingStrokes(pos, allStrokes);
+        expect(erasedBoth.length, equals(2));
+        eraser.onDragEnd();
 
-      // Test with highlighter only = true
-      stows.eraserEraseHighlighterOnly.value = true;
-      final erasedHighlighterOnly = eraser.checkForOverlappingStrokes(pos, allStrokes);
-      expect(erasedHighlighterOnly.length, equals(1));
-      expect(erasedHighlighterOnly.first.toolId, equals(ToolId.highlighter));
-      eraser.onDragEnd();
+        // Test with highlighter only = true
+        stows.eraserEraseHighlighterOnly.value = true;
+        final erasedHighlighterOnly = eraser.checkForOverlappingStrokes(
+          pos,
+          allStrokes,
+        );
+        expect(erasedHighlighterOnly.length, equals(1));
+        expect(erasedHighlighterOnly.first.toolId, equals(ToolId.highlighter));
+        eraser.onDragEnd();
 
-      // Reset pref
-      stows.eraserEraseHighlighterOnly.value = false;
-    });
+        // Reset pref
+        stows.eraserEraseHighlighterOnly.value = false;
+      },
+    );
   });
 
   group('Goodnotes Prefs Default Values', () {
@@ -128,18 +134,24 @@ void main() {
       expect(penColors[2], equals(0xFFD32F2F)); // Red
     });
 
-    test('Default quick colors for highlighter are Yellow, Green, and Pink', () {
-      final highlighterColors = stows.quickColorsHighlighter.value;
-      expect(highlighterColors.length, equals(3));
-      expect(highlighterColors[0], equals(0xFFFFF176)); // Yellow
-      expect(highlighterColors[1], equals(0xFFA5D6A7)); // Green
-      expect(highlighterColors[2], equals(0xFFF48FB1)); // Pink
-    });
+    test(
+      'Default quick colors for highlighter are Yellow, Green, and Pink',
+      () {
+        final highlighterColors = stows.quickColorsHighlighter.value;
+        expect(highlighterColors.length, equals(3));
+        expect(highlighterColors[0], equals(0xFFFFF176)); // Yellow
+        expect(highlighterColors[1], equals(0xFFA5D6A7)); // Green
+        expect(highlighterColors[2], equals(0xFFF48FB1)); // Pink
+      },
+    );
 
-    test('Circle-to-select, two-finger tap undo, and scribble to erase are enabled by default', () {
-      expect(stows.circleToSelect.value, isTrue);
-      expect(stows.twoFingerTapUndo.value, isTrue);
-      expect(stows.scribbleToErase.value, isTrue);
-    });
+    test(
+      'Circle-to-select, two-finger tap undo, and scribble to erase are enabled by default',
+      () {
+        expect(stows.circleToSelect.value, isTrue);
+        expect(stows.twoFingerTapUndo.value, isTrue);
+        expect(stows.scribbleToErase.value, isTrue);
+      },
+    );
   });
 }

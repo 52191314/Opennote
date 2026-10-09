@@ -57,9 +57,7 @@ class ToolbarIconButton extends StatelessWidget {
     });
 
     final shape = WidgetStateProperty.all<OutlinedBorder>(
-      RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
+      RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     );
 
     final buttonStyle = ButtonStyle(
@@ -67,10 +65,13 @@ class ToolbarIconButton extends StatelessWidget {
       iconColor: foregroundColor,
       foregroundColor: foregroundColor,
       shape: shape,
+      visualDensity: VisualDensity.standard,
       iconSize: const WidgetStatePropertyAll(19),
-      padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
+      padding: const WidgetStatePropertyAll(
+        EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      ),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      minimumSize: const WidgetStatePropertyAll(Size(38, 38)),
+      minimumSize: const WidgetStatePropertyAll(Size(32, 32)),
     );
 
     Widget buttonContent = child;

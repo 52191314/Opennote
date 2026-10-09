@@ -47,7 +47,9 @@ void main() {
 
       // Parse all points in the SVG path to verify all Y coordinates are within [0, 400]
       // and accurately inverted
-      final parts = svg.split(RegExp(r'[ML]')).where((s) => s.trim().isNotEmpty);
+      final parts = svg
+          .split(RegExp(r'[ML]'))
+          .where((s) => s.trim().isNotEmpty);
       for (final part in parts) {
         final coords = part.trim().split(' ').map(double.parse).toList();
         expect(coords.length, 2);
@@ -104,7 +106,9 @@ void main() {
       expect(svg, contains('M20.0 370.0 L200.0 370.0'));
 
       // All points should have inverted Y coordinates within [0, 500]
-      final parts = svg.split(RegExp(r'[ML]')).where((s) => s.trim().isNotEmpty);
+      final parts = svg
+          .split(RegExp(r'[ML]'))
+          .where((s) => s.trim().isNotEmpty);
       for (final part in parts) {
         final coords = part.trim().split(' ').map(double.parse).toList();
         expect(coords.length, 2);
@@ -127,31 +131,44 @@ void main() {
       expect(elements, isNotEmpty);
 
       // Filter horizontal lines
-      final horizontalLines = elements.where(
-        (e) => e.start.dy == e.end.dy && e.start.dx == 0 && e.end.dx == size.width,
-      ).toList();
+      final horizontalLines = elements
+          .where(
+            (e) =>
+                e.start.dy == e.end.dy &&
+                e.start.dx == 0 &&
+                e.end.dx == size.width,
+          )
+          .toList();
 
       for (final line in horizontalLines) {
-        final lineIndex = ((line.start.dy - lineHeight * 2) / lineHeight).round();
+        final lineIndex = ((line.start.dy - lineHeight * 2) / lineHeight)
+            .round();
         if (lineIndex % 10 == 0) {
           expect(
             line.thickness,
             isNotNull,
-            reason: 'Horizontal line at y=${line.start.dy} (index $lineIndex) must be heavy',
+            reason:
+                'Horizontal line at y=${line.start.dy} (index $lineIndex) must be heavy',
           );
         } else {
           expect(
             line.thickness,
             isNull,
-            reason: 'Horizontal line at y=${line.start.dy} (index $lineIndex) must NOT be heavy',
+            reason:
+                'Horizontal line at y=${line.start.dy} (index $lineIndex) must NOT be heavy',
           );
         }
       }
 
       // Filter vertical lines
-      final verticalLines = elements.where(
-        (e) => e.start.dx == e.end.dx && e.start.dy == lineHeight * 2 && e.end.dy == size.height,
-      ).toList();
+      final verticalLines = elements
+          .where(
+            (e) =>
+                e.start.dx == e.end.dx &&
+                e.start.dy == lineHeight * 2 &&
+                e.end.dy == size.height,
+          )
+          .toList();
 
       for (final line in verticalLines) {
         final lineIndex = (line.start.dx / lineHeight).round();
@@ -159,13 +176,15 @@ void main() {
           expect(
             line.thickness,
             isNotNull,
-            reason: 'Vertical line at x=${line.start.dx} (index $lineIndex) must be heavy',
+            reason:
+                'Vertical line at x=${line.start.dx} (index $lineIndex) must be heavy',
           );
         } else {
           expect(
             line.thickness,
             isNull,
-            reason: 'Vertical line at x=${line.start.dx} (index $lineIndex) must NOT be heavy',
+            reason:
+                'Vertical line at x=${line.start.dx} (index $lineIndex) must NOT be heavy',
           );
         }
       }
@@ -173,117 +192,119 @@ void main() {
   });
 
   group('PDF Vector Export for Linear Strokes & Layer Visibility', () {
-    testWidgets('exports ArrowStroke and DimensionStroke and excludes hidden layers', (tester) async {
-      setupMockPathProvider();
-      setupMockPrinting();
-      FlavorConfig.setup();
-      await tester.runAsync(FileManager.init);
+    testWidgets(
+      'exports ArrowStroke and DimensionStroke and excludes hidden layers',
+      (tester) async {
+        setupMockPathProvider();
+        setupMockPrinting();
+        FlavorConfig.setup();
+        await tester.runAsync(FileManager.init);
 
-      const pageSize = Size(400, 600);
-      const hasSize = HasSize(pageSize);
+        const pageSize = Size(400, 600);
+        const hasSize = HasSize(pageSize);
 
-      final arrow = ArrowStroke(
-        color: Colors.blue,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 2.0),
-        pageIndex: 0,
-        page: hasSize,
-        toolId: .shapePen,
-        start: const Offset(50, 100),
-        end: const Offset(250, 300),
-        arrowheadStyle: ArrowheadStyle.single,
-      );
+        final arrow = ArrowStroke(
+          color: Colors.blue,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 2.0),
+          pageIndex: 0,
+          page: hasSize,
+          toolId: .shapePen,
+          start: const Offset(50, 100),
+          end: const Offset(250, 300),
+          arrowheadStyle: ArrowheadStyle.single,
+        );
 
-      final dimension = DimensionStroke(
-        color: Colors.red,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 1.5),
-        pageIndex: 0,
-        page: hasSize,
-        toolId: .shapePen,
-        start: const Offset(60, 200),
-        end: const Offset(260, 200),
-        offset: 40.0,
-        text: '200 px',
-      );
+        final dimension = DimensionStroke(
+          color: Colors.red,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 1.5),
+          pageIndex: 0,
+          page: hasSize,
+          toolId: .shapePen,
+          start: const Offset(60, 200),
+          end: const Offset(260, 200),
+          offset: 40.0,
+          text: '200 px',
+        );
 
-      final rect = RectangleStroke(
-        color: Colors.black,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 1.0),
-        pageIndex: 0,
-        page: hasSize,
-        toolId: .shapePen,
-        rect: const Rect.fromLTWH(50, 50, 100, 80),
-      );
+        final rect = RectangleStroke(
+          color: Colors.black,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 1.0),
+          pageIndex: 0,
+          page: hasSize,
+          toolId: .shapePen,
+          rect: const Rect.fromLTWH(50, 50, 100, 80),
+        );
 
-      final hiddenCircle = CircleStroke(
-        color: Colors.green,
-        pressureEnabled: false,
-        options: StrokeOptions(size: 2.0),
-        pageIndex: 0,
-        page: hasSize,
-        toolId: .shapePen,
-        center: const Offset(150, 150),
-        radius: 40.0,
-      );
+        final hiddenCircle = CircleStroke(
+          color: Colors.green,
+          pressureEnabled: false,
+          options: StrokeOptions(size: 2.0),
+          pageIndex: 0,
+          page: hasSize,
+          toolId: .shapePen,
+          center: const Offset(150, 150),
+          radius: 40.0,
+        );
 
-      final visibleLayer = Layer(
-        name: 'Visible Drafting',
-        visible: true,
-        strokes: [arrow, dimension, rect],
-      );
+        final visibleLayer = Layer(
+          name: 'Visible Drafting',
+          visible: true,
+          strokes: [arrow, dimension, rect],
+        );
 
-      final hiddenLayer = Layer(
-        name: 'Hidden Layer',
-        visible: false,
-        strokes: [hiddenCircle],
-      );
+        final hiddenLayer = Layer(
+          name: 'Hidden Layer',
+          visible: false,
+          strokes: [hiddenCircle],
+        );
 
-      final testPage = EditorPage(
-        size: pageSize,
-        layers: [visibleLayer, hiddenLayer],
-      );
+        final testPage = EditorPage(
+          size: pageSize,
+          layers: [visibleLayer, hiddenLayer],
+        );
 
-      final coreInfo = EditorCoreInfo(
-        filePath: 'test_drafting.sbn2',
-      )..pages.add(testPage);
+        final coreInfo = EditorCoreInfo(filePath: 'test_drafting.sbn2')
+          ..pages.add(testPage);
 
-      late BuildContext buildContext;
-      await tester.pumpWidget(
-        TranslationProvider(
-          child: MaterialApp(
-            home: Builder(
-              builder: (context) {
-                buildContext = context;
-                return const Scaffold(body: Text('PDF Export Test'));
-              },
+        late BuildContext buildContext;
+        await tester.pumpWidget(
+          TranslationProvider(
+            child: MaterialApp(
+              home: Builder(
+                builder: (context) {
+                  buildContext = context;
+                  return const Scaffold(body: Text('PDF Export Test'));
+                },
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Verify that hidden layer strokes are excluded from page.strokes
-      expect(testPage.strokes, contains(arrow));
-      expect(testPage.strokes, contains(dimension));
-      expect(testPage.strokes, contains(rect));
-      expect(testPage.strokes, isNot(contains(hiddenCircle)));
+        // Verify that hidden layer strokes are excluded from page.strokes
+        expect(testPage.strokes, contains(arrow));
+        expect(testPage.strokes, contains(dimension));
+        expect(testPage.strokes, contains(rect));
+        expect(testPage.strokes, isNot(contains(hiddenCircle)));
 
-      // Generate PDF
-      final pdfDoc = await tester.runAsync(
-        () => EditorExporter.generatePdf(coreInfo, buildContext),
-      );
+        // Generate PDF
+        final pdfDoc = await tester.runAsync(
+          () => EditorExporter.generatePdf(coreInfo, buildContext),
+        );
 
-      expect(pdfDoc, isNotNull);
-      expect(pdfDoc!.document.pdfPageList.pages.length, 1);
+        expect(pdfDoc, isNotNull);
+        expect(pdfDoc!.document.pdfPageList.pages.length, 1);
 
-      // Save PDF to verify valid binary generation without crashing
-      final bytes = await tester.runAsync(pdfDoc.save);
-      expect(bytes, isNotNull);
-      expect(bytes!.length, greaterThan(0));
+        // Save PDF to verify valid binary generation without crashing
+        final bytes = await tester.runAsync(pdfDoc.save);
+        expect(bytes, isNotNull);
+        expect(bytes!.length, greaterThan(0));
 
-      // PDF header magic bytes '%PDF'
-      expect(String.fromCharCodes(bytes.take(4)), '%PDF');
-    });
+        // PDF header magic bytes '%PDF'
+        expect(String.fromCharCodes(bytes.take(4)), '%PDF');
+      },
+    );
   });
 }

@@ -1,3 +1,6 @@
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
+library;
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -15,12 +18,23 @@ import 'package:saber/data/version.dart' as version;
 abstract class UpdateManager {
   static final log = Logger('UpdateManager');
 
+  /// The GitHub repository that updates are published from.
+  static const repository = '52191314/Opennote';
+
   static final Uri versionUrl = Uri.parse(
-    'https://raw.githubusercontent.com/saber-notes/saber/main/lib/data/version.dart',
+    'https://raw.githubusercontent.com/$repository/main/lib/data/version.dart',
   );
   static final Uri apiUrl = Uri.parse(
-    'https://api.github.com/repos/saber-notes/saber/releases/latest',
+    'https://api.github.com/repos/$repository/releases/latest',
   );
+
+  /// Where the changelog for build number [version] is published.
+  @visibleForTesting
+  static Uri changelogUrl({required String localeCode, required int version}) =>
+      Uri.parse(
+        'https://raw.githubusercontent.com/$repository/main/'
+        'metadata/$localeCode/changelogs/$version.txt',
+      );
 
   /// The availability of an update.
   static final ValueNotifier<UpdateStatus> status = ValueNotifier(.upToDate);
@@ -211,15 +225,14 @@ abstract class UpdateManager {
   }) async {
     newestVersion ??= UpdateManager.newestVersion;
     assert(newestVersion != null);
+    if (newestVersion == null) return null;
 
-    final url =
-        'https://raw.githubusercontent.com/saber-notes/saber/main/'
-        'metadata/$localeCode/changelogs/$newestVersion.txt';
+    final url = changelogUrl(localeCode: localeCode, version: newestVersion);
     log.info('Downloading changelog from $url');
 
     final http.Response response;
     try {
-      response = await http.get(Uri.parse(url));
+      response = await http.get(url);
     } catch (e, st) {
       log.severe('Failed to download changelog: $e', e, st);
       return null;

@@ -10,10 +10,7 @@ class EraserCursorPainter extends CustomPainter {
   final Offset? position;
   final double radius;
 
-  const EraserCursorPainter({
-    required this.position,
-    required this.radius,
-  });
+  const EraserCursorPainter({required this.position, required this.radius});
 
   @override
   void paint(Canvas canvas, Size size) {

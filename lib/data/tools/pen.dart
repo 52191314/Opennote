@@ -92,8 +92,25 @@ class Pen extends Tool {
       'Use Highlighter.currentHighlighter instead',
     );
     assert(currentPen is! Pencil, 'Use Pencil.currentPencil instead');
+    assert(
+      isWritingPen(currentPen),
+      'Only standard writing pens (fountain, ballpoint, shape) can be assigned to Pen.currentPen, got ${currentPen.runtimeType}',
+    );
+    if (!isWritingPen(currentPen)) return;
     _currentPen = currentPen;
   }
+
+  /// Whether [tool] is a standard writing pen (Fountain Pen, Ballpoint Pen, Shape Pen).
+  /// Excludes Highlighters, Pencils, Rulers, Connectors/Arrows, Dimension lines, and Study Tape.
+  static bool isWritingPen(Tool? tool) {
+    if (tool is! Pen) return false;
+    return tool.toolId == ToolId.fountainPen ||
+        tool.toolId == ToolId.ballpointPen ||
+        tool.toolId == ToolId.shapePen;
+  }
+
+  /// Whether this pen is a standard writing pen (Fountain Pen, Ballpoint Pen, Shape Pen).
+  bool get isWriting => isWritingPen(this);
 
   EditorPage? _activePage;
 
@@ -130,7 +147,8 @@ class Pen extends Tool {
           ? _activePage!.lineHeight!.toDouble()
           : stows.gridSize.value;
       if (lh > 0) {
-        if (_activePage?.backgroundPattern == CanvasBackgroundPattern.isometric) {
+        if (_activePage?.backgroundPattern ==
+            CanvasBackgroundPattern.isometric) {
           snappedPosition = Stroke.snapPointToIsometricGrid(position, lh);
         } else {
           snappedPosition = Stroke.snapPointToGrid(position, lh);

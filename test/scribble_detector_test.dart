@@ -76,9 +76,12 @@ void main() {
 
       final points = <Offset>[];
       for (int i = 1; i <= 10; i++) points.add(Offset(i * 1.5, i * 5.0));
-      for (int i = 1; i <= 10; i++) points.add(Offset(15 + i * 1.5, 50 - i * 3.5));
-      for (int i = 1; i <= 10; i++) points.add(Offset(30 + i * 1.5, 15 + i * 3.5));
-      for (int i = 1; i <= 10; i++) points.add(Offset(45 + i * 1.5, 50 - i * 5.0));
+      for (int i = 1; i <= 10; i++)
+        points.add(Offset(15 + i * 1.5, 50 - i * 3.5));
+      for (int i = 1; i <= 10; i++)
+        points.add(Offset(30 + i * 1.5, 15 + i * 3.5));
+      for (int i = 1; i <= 10; i++)
+        points.add(Offset(45 + i * 1.5, 50 - i * 5.0));
 
       for (final pt in points) {
         detector.update(pt, [], 2.0);
@@ -93,9 +96,12 @@ void main() {
 
       final points = <Offset>[];
       for (int i = 1; i <= 10; i++) points.add(Offset(i * 1.0, 50 - i * 4.0));
-      for (int i = 1; i <= 10; i++) points.add(Offset(10 + i * 1.0, 10 + i * 4.0));
-      for (int i = 1; i <= 10; i++) points.add(Offset(20 + i * 1.0, 50 - i * 4.0));
-      for (int i = 1; i <= 10; i++) points.add(Offset(30 + i * 1.0, 10 + i * 4.0));
+      for (int i = 1; i <= 10; i++)
+        points.add(Offset(10 + i * 1.0, 10 + i * 4.0));
+      for (int i = 1; i <= 10; i++)
+        points.add(Offset(20 + i * 1.0, 50 - i * 4.0));
+      for (int i = 1; i <= 10; i++)
+        points.add(Offset(30 + i * 1.0, 10 + i * 4.0));
 
       for (final pt in points) {
         detector.update(pt, [], 2.0);
@@ -218,13 +224,7 @@ void main() {
       for (double x = 155; x >= 100; x -= 5) points.add(Offset(x, 109));
 
       for (final pt in points) {
-        detector.update(
-          pt,
-          [],
-          2.0,
-          page: testPage,
-          lineHeight: 30,
-        );
+        detector.update(pt, [], 2.0, page: testPage, lineHeight: 30);
       }
 
       expect(detector.state, ScribbleState.erasing);
@@ -241,7 +241,10 @@ void main() {
       detector.start(const Offset(100, 50));
 
       final testPage = EditorPage(size: const Size(600, 800));
-      testPage.quill.controller.document.insert(0, 'First line of text\nSecond line\n');
+      testPage.quill.controller.document.insert(
+        0,
+        'First line of text\nSecond line\n',
+      );
 
       final points = <Offset>[];
       for (double x = 105; x <= 160; x += 5) points.add(Offset(x, 50));
@@ -250,13 +253,7 @@ void main() {
       for (double x = 155; x >= 100; x -= 5) points.add(Offset(x, 59));
 
       for (final pt in points) {
-        detector.update(
-          pt,
-          [],
-          2.0,
-          page: testPage,
-          lineHeight: 30,
-        );
+        detector.update(pt, [], 2.0, page: testPage, lineHeight: 30);
       }
 
       expect(detector.state, ScribbleState.erasing);

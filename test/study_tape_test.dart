@@ -88,9 +88,7 @@ void main() {
     });
 
     test('StudyTapeTool drag lifecycle constructs TapeStroke', () {
-      final page = EditorPage(
-        size: const Size(800, 1200),
-      );
+      final page = EditorPage(size: const Size(800, 1200));
 
       final tool = StudyTapeTool();
       expect(tool.toolId, equals(ToolId.studyTape));
@@ -121,8 +119,14 @@ void main() {
       final cornellCream = PageTemplate.all.firstWhere(
         (t) => t.name == 'Cornell Notes (Cream)',
       );
-      expect(cornellCream.backgroundPattern, equals(CanvasBackgroundPattern.cornell));
-      expect(cornellCream.backgroundColor, equals(PageTemplate.paperColorWarmCream));
+      expect(
+        cornellCream.backgroundPattern,
+        equals(CanvasBackgroundPattern.cornell),
+      );
+      expect(
+        cornellCream.backgroundColor,
+        equals(PageTemplate.paperColorWarmCream),
+      );
 
       final legalPad = PageTemplate.all.firstWhere(
         (t) => t.name == 'Legal Pad (Yellow)',

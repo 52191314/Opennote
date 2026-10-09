@@ -20,55 +20,58 @@ void main() {
       expect(stows.hasSeenOnboarding.value, isFalse);
     });
 
-    testWidgets('Renders WelcomeOnboardingDialog with carousel and navigation', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () => WelcomeOnboardingDialog.show(context),
-                child: const Text('Show Onboarding'),
+    testWidgets(
+      'Renders WelcomeOnboardingDialog with carousel and navigation',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => WelcomeOnboardingDialog.show(context),
+                  child: const Text('Show Onboarding'),
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.text('Show Onboarding'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Show Onboarding'));
+        await tester.pumpAndSettle();
 
-      // Check header and first card title
-      expect(find.text('Welcome Guide'), findsOneWidget);
-      expect(find.text('Silky Smooth Digital Paper'), findsOneWidget);
-      expect(find.text('Pressure Sensitive'), findsOneWidget);
+        // Check header and first card title
+        expect(find.text('Welcome Guide'), findsOneWidget);
+        expect(find.text('Silky Smooth Digital Paper'), findsOneWidget);
+        expect(find.text('Pressure Sensitive'), findsOneWidget);
 
-      // Verify Next button advances through carousel
-      expect(find.text('Next'), findsOneWidget);
-      await tester.tap(find.text('Next'));
-      await tester.pumpAndSettle();
+        // Verify Next button advances through carousel
+        expect(find.text('Next'), findsOneWidget);
+        await tester.tap(find.text('Next'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Magic Stylus Gestures'), findsOneWidget);
-      expect(find.text('Scribble to Erase'), findsOneWidget);
+        expect(find.text('Magic Stylus Gestures'), findsOneWidget);
+        expect(find.text('Scribble to Erase'), findsOneWidget);
 
-      await tester.tap(find.text('Next'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Next'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Study Tape & Active Recall'), findsOneWidget);
-      expect(find.text('Tap to Reveal'), findsOneWidget);
+        expect(find.text('Study Tape & Active Recall'), findsOneWidget);
+        expect(find.text('Tap to Reveal'), findsOneWidget);
 
-      await tester.tap(find.text('Next'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Next'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Elements & Infinite Canvas'), findsOneWidget);
-      expect(find.text('Try Playground'), findsOneWidget);
-      expect(find.text('Get Started'), findsOneWidget);
+        expect(find.text('Elements & Infinite Canvas'), findsOneWidget);
+        expect(find.text('Try Playground'), findsOneWidget);
+        expect(find.text('Get Started'), findsOneWidget);
 
-      // Dismiss dialog
-      await tester.tap(find.text('Get Started'));
-      await tester.pumpAndSettle();
+        // Dismiss dialog
+        await tester.tap(find.text('Get Started'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Silky Smooth Digital Paper'), findsNothing);
-      expect(stows.hasSeenOnboarding.value, isTrue);
-    });
+        expect(find.text('Silky Smooth Digital Paper'), findsNothing);
+        expect(stows.hasSeenOnboarding.value, isTrue);
+      },
+    );
   });
 }

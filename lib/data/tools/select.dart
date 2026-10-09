@@ -34,6 +34,11 @@ class Select extends Tool {
   );
   var doneSelecting = false;
 
+  /// Whether the transform/resize bounding box handles are actively shown.
+  /// Follows Goodnotes mechanics where the selection contour is clean by default,
+  /// and transform handles appear upon tapping 'Resize' in the callout menu.
+  var isResizeActive = false;
+
   /// The starting position of the current drag (used for rectangle selection).
   Offset? _dragStartPosition;
 
@@ -46,11 +51,61 @@ class Select extends Tool {
       image.cropMode = false;
     }
     doneSelecting = false;
+    isResizeActive = false;
     selectResult = SelectResult(
       pageIndex: -1,
       strokes: [],
       images: [],
       path: Path(),
+    );
+  }
+
+  /// Programmatically selects a list of [strokes] on [pageIndex].
+  void selectStrokes(List<Stroke> strokes, int pageIndex) {
+    if (strokes.isEmpty) {
+      unselect();
+      return;
+    }
+    doneSelecting = true;
+    isResizeActive = false;
+    final allPoints = <Offset>[];
+    for (final s in strokes) {
+      if (s.lowQualityPolygon.isNotEmpty) {
+        allPoints.addAll(s.lowQualityPolygon);
+      } else {
+        final b = s.highQualityPath.getBounds();
+        allPoints.addAll([b.topLeft, b.topRight, b.bottomRight, b.bottomLeft]);
+      }
+    }
+    selectResult = SelectResult(
+      pageIndex: pageIndex,
+      strokes: List<Stroke>.from(strokes),
+      images: [],
+      path: createTightSelectionPath(allPoints),
+      textSelected: false,
+    );
+  }
+
+  /// Programmatically selects a list of [images] on [pageIndex].
+  void selectImages(List<EditorImage> images, int pageIndex) {
+    if (images.isEmpty) {
+      unselect();
+      return;
+    }
+    doneSelecting = true;
+    isResizeActive = false;
+    Rect? totalRect;
+    for (final img in images) {
+      totalRect = totalRect == null
+          ? img.dstRect
+          : totalRect.expandToInclude(img.dstRect);
+    }
+    selectResult = SelectResult(
+      pageIndex: pageIndex,
+      strokes: [],
+      images: List<EditorImage>.from(images),
+      path: _createRectSelectionPath(totalRect ?? Rect.zero),
+      textSelected: false,
     );
   }
 
@@ -75,14 +130,14 @@ class Select extends Tool {
 
   void onDragStart(Offset position, int pageIndex) {
     doneSelecting = false;
+    isResizeActive = false;
     _dragStartPosition = position;
     selectResult = SelectResult(
       pageIndex: pageIndex,
       strokes: [],
       images: [],
-      path: Path(),
+      path: Path()..moveTo(position.dx, position.dy),
     );
-    _updateSelectionPath(position);
   }
 
   void onDragUpdate(Offset position) {
@@ -99,10 +154,12 @@ class Select extends Tool {
     if (stows.selectionRectMode.value) {
       // Rectangle selection
       selectResult.path = Path()
-        ..addRRect(RRect.fromRectAndRadius(
-          Rect.fromPoints(start, position),
-          const Radius.circular(4),
-        ));
+        ..addRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromPoints(start, position),
+            const Radius.circular(4),
+          ),
+        );
     } else {
       // Lasso selection (freeform)
       selectResult.path.lineTo(position.dx, position.dy);
@@ -146,7 +203,10 @@ class Select extends Tool {
         selectResult.path,
         stroke.lowQualityPolygon,
       );
-      if (percentInside > minPercentInside) {
+      if (percentInside > minPercentInside ||
+          (stroke.length <= 3 &&
+              stroke.lowQualityPolygon.isNotEmpty &&
+              selectResult.path.contains(stroke.lowQualityPolygon.first))) {
         selectResult.strokes.add(stroke);
       }
     }
@@ -154,7 +214,10 @@ class Select extends Tool {
     if (stows.lassoSelectImages.value) {
       for (int i = 0; i < images.length; i++) {
         final image = images[i];
-        final percentInside = rectPercentInside(selectResult.path, image.dstRect);
+        final percentInside = rectPercentInside(
+          selectResult.path,
+          image.dstRect,
+        );
         if (percentInside >= minPercentInside) {
           selectResult.images.add(image);
         }
@@ -309,11 +372,7 @@ class Select extends Tool {
 
   /// Returns true if [point] is within [radius] of any vertex
   /// or segment of [stroke].
-  static bool _isPointNearStroke(
-    Offset point,
-    Stroke stroke,
-    double radius,
-  ) {
+  static bool _isPointNearStroke(Offset point, Stroke stroke, double radius) {
     if (stroke is ArrowStroke) {
       return _distanceToSegment(point, stroke.start, stroke.end) <= radius;
     }
@@ -325,9 +384,11 @@ class Select extends Tool {
       final dimOffset = perp * stroke.offset;
       final dimStart = stroke.start + dimOffset;
       final dimEnd = stroke.end + dimOffset;
-      if (_distanceToSegment(point, stroke.start, stroke.end) <= radius) return true;
+      if (_distanceToSegment(point, stroke.start, stroke.end) <= radius)
+        return true;
       if (_distanceToSegment(point, dimStart, dimEnd) <= radius) return true;
-      if (_distanceToSegment(point, stroke.start, dimStart) <= radius) return true;
+      if (_distanceToSegment(point, stroke.start, dimStart) <= radius)
+        return true;
       if (_distanceToSegment(point, stroke.end, dimEnd) <= radius) return true;
       if ((point - stroke.textPosition).distance <= radius + 10) return true;
       return false;
@@ -369,11 +430,9 @@ class Select extends Tool {
     }
 
     final bounds = Rect.fromLTRB(minX, minY, maxX, maxY);
-    return Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        bounds.inflate(8),
-        const Radius.circular(4),
-      ));
+    return Path()..addRRect(
+      RRect.fromRectAndRadius(bounds.inflate(8), const Radius.circular(4)),
+    );
   }
 
   static Path _createTightSelectionPath(List<Offset> polygon) =>
@@ -381,11 +440,9 @@ class Select extends Tool {
 
   /// Creates a selection path around [rect], inflated by a small margin.
   static Path _createRectSelectionPath(Rect rect) {
-    return Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        rect.inflate(8),
-        const Radius.circular(4),
-      ));
+    return Path()..addRRect(
+      RRect.fromRectAndRadius(rect.inflate(8), const Radius.circular(4)),
+    );
   }
 }
 

@@ -39,6 +39,13 @@ class InnerCanvas extends StatefulWidget {
     this.onDuplicateSelection,
     this.onDeleteSelection,
     this.onSetColor,
+    this.isResizeActive = false,
+    this.onToggleResize,
+    this.onTakeScreenshot,
+    this.onAddToElements,
+    this.onBringToFront,
+    this.onSendToBack,
+    this.onSmoothen,
     this.cropPossible = false,
     this.cropActive = false,
     this.onToggleCrop,
@@ -64,6 +71,13 @@ class InnerCanvas extends StatefulWidget {
   final VoidCallback? onDuplicateSelection;
   final VoidCallback? onDeleteSelection;
   final void Function(Color color)? onSetColor;
+  final bool isResizeActive;
+  final VoidCallback? onToggleResize;
+  final VoidCallback? onTakeScreenshot;
+  final VoidCallback? onAddToElements;
+  final VoidCallback? onBringToFront;
+  final VoidCallback? onSendToBack;
+  final VoidCallback? onSmoothen;
   final bool cropPossible;
   final bool cropActive;
   final VoidCallback? onToggleCrop;
@@ -190,58 +204,65 @@ class _InnerCanvasState extends State<InnerCanvas> {
         height: widget.height,
         child: DeferredPointerHandler(
           child: Stack(
-              children: [
-                if (page.backgroundImage != null)
-                  CanvasImage(
-                    filePath: widget.coreInfo.filePath,
-                    image: page.backgroundImage!,
-                    pageSize: Size(widget.width, widget.height),
-                    setAsBackground: null,
-                    isBackground: true,
-                    readOnly: true,
-                  ),
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  width: widget.width,
-                  height: widget.height,
-                  child: IgnorePointer(
-                    ignoring: widget.coreInfo.readOnly || !widget.textEditing,
-                    child: Transform(
-                      transform: Matrix4.identity()
-                        ..translate(
-                          page.textContentOffset.dx,
-                          page.textContentOffset.dy,
-                        )
-                        ..rotateZ(page.textContentRotation),
-                      alignment: Alignment.topLeft,
-                      child: quillEditor,
-                    ),
+            children: [
+              if (page.backgroundImage != null)
+                CanvasImage(
+                  filePath: widget.coreInfo.filePath,
+                  image: page.backgroundImage!,
+                  pageSize: Size(widget.width, widget.height),
+                  setAsBackground: null,
+                  isBackground: true,
+                  readOnly: true,
+                ),
+              Positioned(
+                top: 0,
+                left: 0,
+                width: widget.width,
+                height: widget.height,
+                child: IgnorePointer(
+                  ignoring: widget.coreInfo.readOnly || !widget.textEditing,
+                  child: Transform(
+                    transform: Matrix4.identity()
+                      ..translateByDouble(
+                        page.textContentOffset.dx,
+                        page.textContentOffset.dy,
+                        0,
+                        1,
+                      )
+                      ..rotateZ(page.textContentRotation),
+                    alignment: Alignment.topLeft,
+                    child: quillEditor,
                   ),
                 ),
-                for (int i = 0; i < page.images.length; i++)
-                  CanvasImage(
-                    filePath: widget.coreInfo.filePath,
-                    image: page.images[i],
-                    pageSize: Size(widget.width, widget.height),
-                    setAsBackground: widget.setAsBackground,
-                    readOnly:
-                        widget.coreInfo.readOnly || !widget.currentToolIsSelect,
-                    selected:
-                        widget.currentSelection?.images.contains(
-                          page.images[i],
-                        ) ??
-                        false,
-                  ),
-                if (widget.currentToolIsSelect &&
-                    widget.isDoneSelecting &&
-                    widget.currentSelection != null &&
-                    widget.currentSelection!.isNotEmpty &&
-                    widget.onCopySelection != null &&
-                    widget.onDeleteSelection != null) () {
+              ),
+              for (int i = 0; i < page.images.length; i++)
+                CanvasImage(
+                  filePath: widget.coreInfo.filePath,
+                  image: page.images[i],
+                  pageSize: Size(widget.width, widget.height),
+                  setAsBackground: widget.setAsBackground,
+                  readOnly:
+                      widget.coreInfo.readOnly || !widget.currentToolIsSelect,
+                  selected:
+                      widget.currentSelection?.images.contains(
+                        page.images[i],
+                      ) ??
+                      false,
+                ),
+              if (widget.currentToolIsSelect &&
+                  widget.isDoneSelecting &&
+                  widget.currentSelection != null &&
+                  widget.currentSelection!.isNotEmpty &&
+                  widget.onCopySelection != null &&
+                  widget.onDeleteSelection != null)
+                () {
                   final bounds = widget.currentSelection!.path.getBounds();
-                  final left = (bounds.center.dx - 160.0).clamp(12.0, max(12.0, widget.width - 330.0)).toDouble();
-                  final top = bounds.top - 58 > 10 ? bounds.top - 58 : bounds.bottom + 14;
+                  final left = (bounds.center.dx - 160.0)
+                      .clamp(12.0, max(12.0, widget.width - 330.0))
+                      .toDouble();
+                  final top = bounds.top - 58 > 10
+                      ? bounds.top - 58
+                      : bounds.bottom + 14;
 
                   return Positioned(
                     left: left,
@@ -253,6 +274,13 @@ class _InnerCanvasState extends State<InnerCanvas> {
                         onDuplicate: widget.onDuplicateSelection ?? () {},
                         onDelete: widget.onDeleteSelection!,
                         onSetColor: widget.onSetColor ?? (_) {},
+                        isResizeActive: widget.isResizeActive,
+                        onToggleResize: widget.onToggleResize,
+                        onTakeScreenshot: widget.onTakeScreenshot,
+                        onAddToElements: widget.onAddToElements,
+                        onBringToFront: widget.onBringToFront,
+                        onSendToBack: widget.onSendToBack,
+                        onSmoothen: widget.onSmoothen,
                         cropPossible: widget.cropPossible,
                         cropActive: widget.cropActive,
                         onToggleCrop: widget.onToggleCrop,
@@ -261,15 +289,12 @@ class _InnerCanvasState extends State<InnerCanvas> {
                     ),
                   );
                 }(),
-              ],
-            ),
+            ],
           ),
         ),
-      );
+      ),
+    );
 
-    if (widget.coreInfo.isInfiniteCanvas) {
-      return customPaint;
-    }
     return RepaintBoundary(child: customPaint);
   }
 }

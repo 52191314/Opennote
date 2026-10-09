@@ -41,77 +41,91 @@ void main() {
       buildIosWorkflow = workflows['build-ios'] as YamlMap;
     });
 
-    test('validates build-ios workflow environment and runner configuration', () {
-      expect(
-        buildIosWorkflow['instance_type'],
-        equals('mac_mini_m2'),
-        reason: 'iOS builds require a macOS runner instance',
-      );
+    test(
+      'validates build-ios workflow environment and runner configuration',
+      () {
+        expect(
+          buildIosWorkflow['instance_type'],
+          equals('mac_mini_m2'),
+          reason: 'iOS builds require a macOS runner instance',
+        );
 
-      final maxDuration = buildIosWorkflow['max_build_duration'];
-      expect(maxDuration, isNotNull);
-      expect(
-        (maxDuration as num).toInt(),
-        lessThanOrEqualTo(60),
-        reason: 'Build timeout should be capped appropriately',
-      );
+        final maxDuration = buildIosWorkflow['max_build_duration'];
+        expect(maxDuration, isNotNull);
+        expect(
+          (maxDuration as num).toInt(),
+          lessThanOrEqualTo(60),
+          reason: 'Build timeout should be capped appropriately',
+        );
 
-      final environment = buildIosWorkflow['environment'] as YamlMap;
-      expect(
-        environment['flutter'],
-        equals('stable'),
-        reason: 'Flutter channel should be pinned to stable',
-      );
-      expect(
-        environment['xcode'],
-        equals('latest'),
-        reason: 'Xcode version should target latest for iOS 14+ SDK support',
-      );
-    });
+        final environment = buildIosWorkflow['environment'] as YamlMap;
+        expect(
+          environment['flutter'],
+          equals('stable'),
+          reason: 'Flutter channel should be pinned to stable',
+        );
+        expect(
+          environment['xcode'],
+          equals('latest'),
+          reason: 'Xcode version should target latest for iOS 14+ SDK support',
+        );
+      },
+    );
 
-    test('validates dependency retrieval script covers all nested packages', () {
-      final scripts = buildIosWorkflow['scripts'] as YamlList;
-      final depScript = scripts.firstWhere(
-        (script) =>
-            script is YamlMap &&
-            (script['name']?.toString().toLowerCase().contains('dependenc') ??
-                false),
-        orElse: () => null,
-      ) as YamlMap?;
+    test(
+      'validates dependency retrieval script covers all nested packages',
+      () {
+        final scripts = buildIosWorkflow['scripts'] as YamlList;
+        final depScript =
+            scripts.firstWhere(
+                  (script) =>
+                      script is YamlMap &&
+                      (script['name']?.toString().toLowerCase().contains(
+                            'dependenc',
+                          ) ??
+                          false),
+                  orElse: () => null,
+                )
+                as YamlMap?;
 
-      expect(
-        depScript,
-        isNotNull,
-        reason: 'Scripts must contain a step for fetching dependencies',
-      );
+        expect(
+          depScript,
+          isNotNull,
+          reason: 'Scripts must contain a step for fetching dependencies',
+        );
 
-      final scriptBody = depScript!['script'].toString();
-      expect(
-        scriptBody,
-        contains('flutter pub get'),
-        reason: 'Must resolve root project dependencies',
-      );
-      expect(
-        scriptBody,
-        contains('flutter pub get --directory=packages/sbn'),
-        reason: 'Must resolve packages/sbn dependencies',
-      );
-      expect(
-        scriptBody,
-        contains('flutter pub get --directory=packages/onyxsdk_pen'),
-        reason: 'Must resolve packages/onyxsdk_pen dependencies',
-      );
-    });
+        final scriptBody = depScript!['script'].toString();
+        expect(
+          scriptBody,
+          contains('flutter pub get'),
+          reason: 'Must resolve root project dependencies',
+        );
+        expect(
+          scriptBody,
+          contains('flutter pub get --directory=packages/sbn'),
+          reason: 'Must resolve packages/sbn dependencies',
+        );
+        expect(
+          scriptBody,
+          contains('flutter pub get --directory=packages/onyxsdk_pen'),
+          reason: 'Must resolve packages/onyxsdk_pen dependencies',
+        );
+      },
+    );
 
     test('validates unsigned iOS build flags and IPA packaging commands', () {
       final scripts = buildIosWorkflow['scripts'] as YamlList;
-      final buildScript = scripts.firstWhere(
-        (script) =>
-            script is YamlMap &&
-            (script['name']?.toString().toLowerCase().contains('package') ??
-                false),
-        orElse: () => null,
-      ) as YamlMap?;
+      final buildScript =
+          scripts.firstWhere(
+                (script) =>
+                    script is YamlMap &&
+                    (script['name']?.toString().toLowerCase().contains(
+                          'package',
+                        ) ??
+                        false),
+                orElse: () => null,
+              )
+              as YamlMap?;
 
       expect(
         buildScript,
@@ -173,7 +187,8 @@ void main() {
       expect(
         artifacts,
         contains('Opennote.ipa'),
-        reason: 'Artifacts must export Opennote.ipa for sideloading distribution',
+        reason:
+            'Artifacts must export Opennote.ipa for sideloading distribution',
       );
     });
 
@@ -200,11 +215,7 @@ void main() {
 
     setUpAll(() {
       podfile = File('ios/Podfile');
-      expect(
-        podfile.existsSync(),
-        isTrue,
-        reason: 'ios/Podfile must exist',
-      );
+      expect(podfile.existsSync(), isTrue, reason: 'ios/Podfile must exist');
       podfileContent = podfile.readAsStringSync();
     });
 
@@ -235,7 +246,8 @@ void main() {
       expect(
         commentedPlatformLines,
         isEmpty,
-        reason: 'The commented-out platform line must be removed or uncommented',
+        reason:
+            'The commented-out platform line must be removed or uncommented',
       );
     });
 
@@ -318,7 +330,8 @@ void main() {
       expect(
         pbxprojContent,
         contains('TARGETED_DEVICE_FAMILY = "1,2";'),
-        reason: 'Targeted device family must include both iPhone (1) and iPad (2)',
+        reason:
+            'Targeted device family must include both iPhone (1) and iPad (2)',
       );
     });
   });
@@ -384,14 +397,17 @@ void main() {
       final content = areaFile.readAsStringSync();
       expect(
         content,
-        contains('static bool? _isOnyxDevice = (kIsWeb || !Platform.isAndroid) ? false : null;'),
+        contains(
+          'static bool? _isOnyxDevice = (kIsWeb || !Platform.isAndroid) ? false : null;',
+        ),
         reason:
             '_isOnyxDevice must immediately short-circuit to false on non-Android (iOS/web)',
       );
       expect(
         content,
         contains('if (_isOnyxDevice != null) return _isOnyxDevice!;'),
-        reason: 'Must return cached false without calling native platform channels',
+        reason:
+            'Must return cached false without calling native platform channels',
       );
     });
   });
@@ -404,11 +420,7 @@ void main() {
       final content = sbnPubspecFile.readAsStringSync();
       final yaml = loadYaml(content) as YamlMap;
 
-      expect(
-        yaml['name'],
-        equals('sbn'),
-        reason: 'Package name must be sbn',
-      );
+      expect(yaml['name'], equals('sbn'), reason: 'Package name must be sbn');
 
       // Verify no flutter.plugin platform configuration exists
       final flutterSection = yaml['flutter'];
@@ -416,7 +428,8 @@ void main() {
         expect(
           flutterSection.containsKey('plugin'),
           isFalse,
-          reason: 'sbn package must be pure Dart/Flutter without native plugins',
+          reason:
+              'sbn package must be pure Dart/Flutter without native plugins',
         );
       }
 

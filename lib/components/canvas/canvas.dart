@@ -31,6 +31,13 @@ class Canvas extends StatelessWidget {
     this.onDuplicateSelection,
     this.onDeleteSelection,
     this.onSetColor,
+    this.isResizeActive = false,
+    this.onToggleResize,
+    this.onTakeScreenshot,
+    this.onAddToElements,
+    this.onBringToFront,
+    this.onSendToBack,
+    this.onSmoothen,
     this.cropPossible = false,
     this.cropActive = false,
     this.onToggleCrop,
@@ -55,6 +62,13 @@ class Canvas extends StatelessWidget {
   final VoidCallback? onDuplicateSelection;
   final VoidCallback? onDeleteSelection;
   final void Function(Color color)? onSetColor;
+  final bool isResizeActive;
+  final VoidCallback? onToggleResize;
+  final VoidCallback? onTakeScreenshot;
+  final VoidCallback? onAddToElements;
+  final VoidCallback? onBringToFront;
+  final VoidCallback? onSendToBack;
+  final VoidCallback? onSmoothen;
   final bool cropPossible;
   final bool cropActive;
   final VoidCallback? onToggleCrop;
@@ -155,52 +169,65 @@ class Canvas extends StatelessWidget {
       child: FittedBox(
         child: DecoratedBox(
           decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(6),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(
-                  alpha: 0.1,
+                  alpha: 0.12,
                 ), // dark regardless of theme
-                blurRadius: 10,
-                spreadRadius: 2,
+                blurRadius: 18,
+                spreadRadius: 1,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: !placeholder
-              ? SizedBox(
-                  width: page.size.width,
-                  height: page.size.height,
-                  child: OnyxSdkPenArea(
-                    refreshDelay: const Duration(seconds: 1),
-                    strokeStyle: _getOnyxTool(currentTool),
-                    strokeColor: _getOnyxColor(),
-                    strokeWidth: _getOnyxWidth(),
-                    child: InnerCanvas(
-                      key: page.innerCanvasKey,
-                      pageIndex: pageIndex,
-                      redrawPageListenable: page,
-                      width: page.size.width,
-                      height: page.size.height,
-                      textEditing: textEditing,
-                      coreInfo: coreInfo,
-                      currentStroke: currentStroke,
-                      currentStrokeDetectedShape: currentStrokeDetectedShape,
-                      currentSelection: currentSelection,
-                      isDoneSelecting: isDoneSelecting,
-                      onCutSelection: onCutSelection,
-                      onCopySelection: onCopySelection,
-                      onDuplicateSelection: onDuplicateSelection,
-                      onDeleteSelection: onDeleteSelection,
-                      onSetColor: onSetColor,
-                      cropPossible: cropPossible,
-                      cropActive: cropActive,
-                      onToggleCrop: onToggleCrop,
-                      setAsBackground: setAsBackground,
-                      currentToolIsSelect: currentTool.toolId == ToolId.select,
-                      currentScale: currentScale,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: !placeholder
+                ? SizedBox(
+                    width: page.size.width,
+                    height: page.size.height,
+                    child: OnyxSdkPenArea(
+                      refreshDelay: const Duration(seconds: 1),
+                      strokeStyle: _getOnyxTool(currentTool),
+                      strokeColor: _getOnyxColor(),
+                      strokeWidth: _getOnyxWidth(),
+                      child: InnerCanvas(
+                        key: page.innerCanvasKey,
+                        pageIndex: pageIndex,
+                        redrawPageListenable: page,
+                        width: page.size.width,
+                        height: page.size.height,
+                        textEditing: textEditing,
+                        coreInfo: coreInfo,
+                        currentStroke: currentStroke,
+                        currentStrokeDetectedShape: currentStrokeDetectedShape,
+                        currentSelection: currentSelection,
+                        isDoneSelecting: isDoneSelecting,
+                        onCutSelection: onCutSelection,
+                        onCopySelection: onCopySelection,
+                        onDuplicateSelection: onDuplicateSelection,
+                        onDeleteSelection: onDeleteSelection,
+                        onSetColor: onSetColor,
+                        isResizeActive: isResizeActive,
+                        onToggleResize: onToggleResize,
+                        onTakeScreenshot: onTakeScreenshot,
+                        onAddToElements: onAddToElements,
+                        onBringToFront: onBringToFront,
+                        onSendToBack: onSendToBack,
+                        onSmoothen: onSmoothen,
+                        cropPossible: cropPossible,
+                        cropActive: cropActive,
+                        onToggleCrop: onToggleCrop,
+                        setAsBackground: setAsBackground,
+                        currentToolIsSelect:
+                            currentTool.toolId == ToolId.select,
+                        currentScale: currentScale,
+                      ),
                     ),
-                  ),
-                )
-              : SizedBox(width: page.size.width, height: page.size.height),
+                  )
+                : SizedBox(width: page.size.width, height: page.size.height),
+          ),
         ),
       ),
     );

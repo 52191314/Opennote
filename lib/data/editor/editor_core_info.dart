@@ -115,8 +115,7 @@ class EditorCoreInfo {
        lineHeight = stows.lastLineHeight.value,
        lineThickness = stows.lastLineThickness.value,
        pages = [],
-       isInfiniteCanvas =
-           isInfiniteCanvas ?? stows.defaultInfiniteCanvas.value,
+       isInfiniteCanvas = isInfiniteCanvas ?? stows.defaultInfiniteCanvas.value,
        assetCache = AssetCache();
 
   EditorCoreInfo._({

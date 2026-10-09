@@ -3,7 +3,8 @@ library;
 
 import 'dart:convert';
 
-import 'package:flutter/cupertino.dart' show CupertinoDialogAction, CupertinoIcons;
+import 'package:flutter/cupertino.dart'
+    show CupertinoDialogAction, CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
@@ -47,7 +48,7 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
   });
 
   /// The preset colors available for sticky notes.
-  static const List<Color> stickyNoteColors = [
+  static const stickyNoteColors = <Color>[
     Color(0xFFFFF59D), // yellow
     Color(0xFFFFCDD2), // pink
     Color(0xFFC8E6C9), // green
@@ -94,7 +95,8 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
                     children: stickyNoteColors.map((color) {
                       final isSelected = color == selectedColor;
                       return GestureDetector(
-                        onTap: () => setDialogState(() => selectedColor = color),
+                        onTap: () =>
+                            setDialogState(() => selectedColor = color),
                         child: Container(
                           width: 32,
                           height: 32,
@@ -221,9 +223,7 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
             case StickerImage _:
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Stickers cannot be downloaded'),
-                ),
+                const SnackBar(content: Text('Stickers cannot be downloaded')),
               );
               Navigator.of(context).pop();
               return;

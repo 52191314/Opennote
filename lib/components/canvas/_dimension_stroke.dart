@@ -95,7 +95,8 @@ class DimensionStroke extends Stroke {
         (json['ey'] as num?)?.toDouble() ?? 0,
       ),
       offset: (json['o'] as num?)?.toDouble() ?? 30.0,
-      text: (json['txt'] as String?) ??
+      text:
+          (json['txt'] as String?) ??
           (json['t'] is String ? json['t'] as String : ''),
       headLength: (json['hl'] as num?)?.toDouble() ?? 10.0,
       headAngle: (json['ha'] as num?)?.toDouble() ?? 0.4,
@@ -242,9 +243,7 @@ class DimensionStroke extends Stroke {
     final dimOffset = perp * offset;
     final dimStart = start + dimOffset;
     final dimEnd = end + dimOffset;
-    return [
-      start.dy, end.dy, dimStart.dy, dimEnd.dy,
-    ].reduce(max);
+    return [start.dy, end.dy, dimStart.dy, dimEnd.dy].reduce(max);
   }
 
   @override

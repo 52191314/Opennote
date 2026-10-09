@@ -95,11 +95,16 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
           }
 
           if (template.initialContent != null) {
-            final page = widget.coreInfo.pages
-                .getOrNull(widget.currentPageIndex ?? -1);
+            final page = widget.coreInfo.pages.getOrNull(
+              widget.currentPageIndex ?? -1,
+            );
             if (page != null) {
-              page.quill.controller
-                  .replaceText(0, 0, template.initialContent!, null);
+              page.quill.controller.replaceText(
+                0,
+                0,
+                template.initialContent!,
+                null,
+              );
             }
           }
         },
@@ -165,8 +170,9 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
                   ),
                 ElevatedButton(
                   onPressed: () {
-                    final page = widget.coreInfo.pages
-                        .getOrNull(widget.currentPageIndex ?? -1);
+                    final page = widget.coreInfo.pages.getOrNull(
+                      widget.currentPageIndex ?? -1,
+                    );
                     if (page == null) return;
                     showDialog(
                       context: context,
@@ -412,10 +418,7 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
               ],
             ),
             const SizedBox(height: 16),
-            Text(
-              'Canvas Mode',
-              style: TextTheme.of(context).titleMedium,
-            ),
+            Text('Canvas Mode', style: TextTheme.of(context).titleMedium),
             const SizedBox(height: 8),
             SegmentedButton<bool>(
               segments: const [
@@ -442,10 +445,7 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
             ),
             const SizedBox(height: 16),
             if (!widget.coreInfo.isInfiniteCanvas) ...[
-              Text(
-                'Bookmark',
-                style: TextTheme.of(context).titleMedium,
-              ),
+              Text('Bookmark', style: TextTheme.of(context).titleMedium),
               Row(
                 children: [
                   Switch(
@@ -459,18 +459,18 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
                         : null,
                   ),
                   const SizedBox(width: 8),
-                  Text(page?.bookmarked ?? false
-                      ? 'Page is bookmarked'
-                      : 'Not bookmarked'),
+                  Text(
+                    page?.bookmarked ?? false
+                        ? 'Page is bookmarked'
+                        : 'Not bookmarked',
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
             ],
-            if (!widget.coreInfo.isInfiniteCanvas && widget.setPageSize != null) ...[
-              Text(
-                'Page Size',
-                style: TextTheme.of(context).titleMedium,
-              ),
+            if (!widget.coreInfo.isInfiniteCanvas &&
+                widget.setPageSize != null) ...[
+              Text('Page Size', style: TextTheme.of(context).titleMedium),
               const SizedBox(height: 8),
               Row(
                 children: [
