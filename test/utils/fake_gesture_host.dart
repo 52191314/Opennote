@@ -25,11 +25,23 @@ class FakeGestureHost implements EditorGestureHost {
   /// How many times [autosaveAfterDelay] was called.
   var autosaves = 0;
 
+  /// How many times [removeExcessPages] was called.
+  var excessPageRemovals = 0;
+
+  /// How many times [restoreToolAfterErasing] was called.
+  var toolRestores = 0;
+
   /// The pages [deleteSelection] was called with.
   final deletedFrom = <EditorPage>[];
 
   @override
   void createPage(int pageIndex) => createdPages.add(pageIndex);
+
+  @override
+  void removeExcessPages() => excessPageRemovals++;
+
+  @override
+  void restoreToolAfterErasing() => toolRestores++;
 
   @override
   void autosaveAfterDelay() => autosaves++;

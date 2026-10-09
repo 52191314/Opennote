@@ -48,7 +48,7 @@ class GesturePointer {
   /// How far the pointer moved since the previous event.
   final Offset delta;
 
-  /// How far the pointer moved in total. Only known when the gesture ends.
+  /// How far the pointer had moved in total before this event.
   final Offset moved;
 
   /// The pointer's pressure, if the device reports it.
@@ -68,6 +68,13 @@ abstract interface class EditorGestureHost {
 
   /// Makes sure the note has a page at [pageIndex].
   void createPage(int pageIndex);
+
+  /// Removes the blank pages left at the end of the note.
+  void removeExcessPages();
+
+  /// Switches back to the previous tool if the eraser was only borrowed,
+  /// for example by holding the stylus button.
+  void restoreToolAfterErasing();
 
   /// Saves the note once the user has stopped editing for a moment.
   void autosaveAfterDelay();

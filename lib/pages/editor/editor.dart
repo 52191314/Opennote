@@ -48,6 +48,8 @@ import 'package:saber/components/toolbar/toolbar.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/editor_exporter.dart';
 import 'package:saber/data/editor/editor_history.dart';
+import 'package:saber/data/editor/gestures/eraser_gesture.dart';
+import 'package:saber/data/editor/gestures/laser_gesture.dart';
 import 'package:saber/data/editor/gestures/pen_gesture.dart';
 import 'package:saber/data/editor/gestures/select_gesture.dart';
 import 'package:saber/data/editor/gestures/tool_gesture.dart';
@@ -238,6 +240,12 @@ class EditorState extends State<Editor> implements EditorGestureHost {
   /// Handles draw gestures made with the Select tool.
   late final _selectGesture = SelectGesture(this);
 
+  /// Handles draw gestures made with the eraser.
+  late final _eraserGesture = EraserGesture(this);
+
+  /// Handles draw gestures made with the laser pointer.
+  static const _laserGesture = LaserGesture();
+
   /// The position and page index of the most recent user canvas tap/click,
   /// used to place newly added elements, photos, stickers, and shapes.
   Offset? _lastCanvasTapPosition;
@@ -371,6 +379,7 @@ class EditorState extends State<Editor> implements EditorGestureHost {
     }
   }
 
+  @override
   void removeExcessPages() {
     if (coreInfo.isInfiniteCanvas) return;
     bool removedAPage = false;
@@ -654,201 +663,94 @@ class EditorState extends State<Editor> implements EditorGestureHost {
     _lastCanvasTapTime = DateTime.now();
     history.canRedo = false;
     _selectGesture.forgetTransform();
+    if (_isLockedForDrawing(page)) return;
 
-    if (page.activeLayer.locked &&
-        (currentTool is Pen || currentTool is Eraser)) {
-      return;
-    }
-
-    if (currentTool is Pen) {
-      _penGesture.start(
-        GesturePointer(
-          page: page,
-          pageIndex: dragPageIndex!,
-          position: position,
-          pressure: currentPressure,
-        ),
-      );
-    } else if (currentTool is Eraser) {
-      final eraser = currentTool as Eraser;
-      page.eraserCursorPosition = position;
-      page.eraserCursorRadius = eraser.size / 2;
-      for (final stroke in eraser.checkForOverlappingStrokes(
-        position,
-        page.activeLayerStrokes,
-      )) {
-        page.removeStroke(stroke);
-      }
-      removeExcessPages();
-    } else if (currentTool is Select) {
-      final isTracked = _selectGesture.start(
-        GesturePointer(
-          page: page,
-          pageIndex: dragPageIndex!,
-          position: position,
-        ),
-      );
-      if (!isTracked) return;
-    } else if (currentTool is LaserPointer) {
-      (currentTool as LaserPointer).onDragStart(position, page, dragPageIndex!);
-    } else if (currentTool is Ruler) {
-      (currentTool as Ruler).onDragStart(
-        position,
-        page,
-        dragPageIndex!,
-        currentPressure,
-      );
-    }
+    final isTracked = _gesture?.start(_pointerAt(page, position)) ?? true;
+    if (!isTracked) return;
 
     previousPosition = position;
     moveOffset = .zero;
-
-    if (currentTool is! Select) {
-      Select.currentSelect.unselect();
-    }
-
-    // setState to let canvas know about currentStroke
+    if (currentTool is! Select) Select.currentSelect.unselect();
     setState(() {});
   }
 
   void onDrawUpdate(ScaleUpdateDetails details) {
     final page = coreInfo.pages[dragPageIndex!];
-    if (page.activeLayer.locked &&
-        (currentTool is Pen || currentTool is Eraser)) {
-      return;
-    }
-    final position = page.renderBox!.globalToLocal(details.focalPoint);
-    final offset = position - previousPosition;
+    if (_isLockedForDrawing(page)) return;
 
-    if (currentTool is Pen) {
-      _penGesture.update(
-        GesturePointer(
-          page: page,
-          pageIndex: dragPageIndex!,
-          position: position,
-          delta: offset,
-          pressure: currentPressure,
-        ),
-      );
-    } else if (currentTool is Eraser) {
-      final eraser = currentTool as Eraser;
-      page.eraserCursorPosition = position;
-      page.eraserCursorRadius = eraser.size / 2;
-      for (final stroke in eraser.checkForOverlappingStrokes(
-        position,
-        page.activeLayerStrokes,
-      )) {
-        page.removeStroke(stroke);
-      }
-      page.redrawStrokes();
-      removeExcessPages();
-    } else if (currentTool is Select) {
-      _selectGesture.update(
-        GesturePointer(
-          page: page,
-          pageIndex: dragPageIndex!,
-          position: position,
-          delta: offset,
-        ),
-      );
-    } else if (currentTool is LaserPointer) {
-      (currentTool as LaserPointer).onDragUpdate(position);
-      page.redrawStrokes();
-    } else if (currentTool is Ruler) {
-      (currentTool as Ruler).onDragUpdate(position, currentPressure);
-      page.redrawStrokes();
-    }
+    final position = page.renderBox!.globalToLocal(details.focalPoint);
+    final delta = position - previousPosition;
+    _gesture?.update(_pointerAt(page, position, delta: delta));
     previousPosition = position;
-    moveOffset += offset;
+    moveOffset += delta;
   }
 
   void onDrawEnd(ScaleEndDetails details) {
     final page = coreInfo.pages[dragPageIndex!];
-    if (page.activeLayer.locked &&
-        (currentTool is Pen || currentTool is Eraser)) {
-      if (currentTool is Pen) (currentTool as Pen).onDragEnd();
-      if (currentTool is Eraser) (currentTool as Eraser).onDragEnd();
-      page.eraserCursorPosition = null;
-      page.eraserCursorRadius = null;
-      page.penPreviewPosition = null;
-      page.penPreviewRadius = null;
-      page.penPreviewColor = null;
-      _selectGesture.releaseHandle();
-      return;
-    }
-    bool shouldSave = true;
+    if (_isLockedForDrawing(page)) return _abandonDraw(page);
+
+    var shouldSave = true;
     setState(() {
-      if (currentTool is Pen) {
-        shouldSave = _penGesture.end(
-          GesturePointer(
-            page: page,
-            pageIndex: dragPageIndex!,
-            position: previousPosition,
-            moved: moveOffset,
-          ),
-        );
-      } else if (currentTool is Eraser) {
-        final erased = (currentTool as Eraser).onDragEnd();
-        if (stylusButtonWasPressed || stows.disableEraserAfterUse.value) {
-          // restore previous tool
-          stylusButtonWasPressed = false;
-          currentTool = _lastNonEraserTool;
-        }
-        if (erased.isEmpty) return;
-        history.recordChange(
-          EditorHistoryItem(
-            type: .erase,
-            pageIndex: dragPageIndex!,
-            strokes: erased,
-            images: [],
-          ),
-        );
-      } else if (currentTool is Select) {
-        shouldSave = _selectGesture.end(
-          GesturePointer(
-            page: page,
-            pageIndex: dragPageIndex!,
-            position: previousPosition,
-            moved: moveOffset,
-          ),
-        );
-      } else if (currentTool is LaserPointer) {
-        shouldSave = false;
-        final newStroke = (currentTool as LaserPointer).onDragEnd(
-          page.redrawStrokes,
-          (Stroke stroke) {
-            page.laserStrokes.remove(stroke);
-          },
-        );
-        if (newStroke != null) page.laserStrokes.add(newStroke);
-      } else if (currentTool is Ruler) {
-        final newStroke = (currentTool as Ruler).onDragEnd();
-        if (newStroke == null) return;
-        if (newStroke.isEmpty) return;
-
-        createPage(newStroke.pageIndex);
-        page.insertStroke(newStroke);
-        history.recordChange(
-          EditorHistoryItem(
-            type: .draw,
-            pageIndex: dragPageIndex!,
-            strokes: [newStroke],
-            images: [],
-          ),
-        );
-      }
+      shouldSave = _gesture?.end(_pointerAt(page, previousPosition)) ?? true;
     });
-
-    // Clear eraser cursor and pen preview after gesture ends
-    page.eraserCursorPosition = null;
-    page.eraserCursorRadius = null;
-    page.penPreviewPosition = null;
-    page.penPreviewRadius = null;
-    page.penPreviewColor = null;
-
+    _hideDrawCursors(page);
     _selectGesture.releaseHandle();
-
     if (shouldSave) autosaveAfterDelay();
+  }
+
+  /// The gesture that draws with [currentTool], if it is a drawing tool.
+  ToolGesture? get _gesture => switch (currentTool) {
+    Pen() => _penGesture,
+    Eraser() => _eraserGesture,
+    Select() => _selectGesture,
+    LaserPointer() => _laserGesture,
+    _ => null,
+  };
+
+  /// Whether [page]'s active layer is locked against [currentTool].
+  bool _isLockedForDrawing(EditorPage page) =>
+      page.activeLayer.locked && (currentTool is Pen || currentTool is Eraser);
+
+  GesturePointer _pointerAt(
+    EditorPage page,
+    Offset position, {
+    Offset delta = .zero,
+  }) => GesturePointer(
+    page: page,
+    pageIndex: dragPageIndex!,
+    position: position,
+    delta: delta,
+    moved: moveOffset,
+    pressure: currentPressure,
+  );
+
+  /// Ends a draw gesture that a locked layer refused, keeping nothing.
+  void _abandonDraw(EditorPage page) {
+    switch (currentTool) {
+      case final Pen pen:
+        pen.onDragEnd();
+      case final Eraser eraser:
+        eraser.onDragEnd();
+      default:
+    }
+    _hideDrawCursors(page);
+    _selectGesture.releaseHandle();
+  }
+
+  void _hideDrawCursors(EditorPage page) {
+    page
+      ..eraserCursorPosition = null
+      ..eraserCursorRadius = null
+      ..penPreviewPosition = null
+      ..penPreviewRadius = null
+      ..penPreviewColor = null;
+  }
+
+  @override
+  void restoreToolAfterErasing() {
+    if (!stylusButtonWasPressed && !stows.disableEraserAfterUse.value) return;
+    stylusButtonWasPressed = false;
+    currentTool = _lastNonEraserTool;
   }
 
   void onInteractionEnd(ScaleEndDetails details) {
