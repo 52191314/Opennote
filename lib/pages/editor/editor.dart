@@ -53,6 +53,7 @@ import 'package:saber/data/editor/editor_exporter.dart';
 import 'package:saber/data/editor/editor_history.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/editor/selection_clipboard.dart';
+import 'package:saber/data/editor/selection_handles.dart';
 import 'package:saber/data/editor/selection_resize.dart';
 import 'package:saber/data/editor/selection_transform.dart';
 import 'package:saber/data/extensions/change_notifier_extensions.dart';
@@ -718,10 +719,7 @@ class EditorState extends State<Editor> {
         final posDelta = (position - _lastTapPosition!).distance;
         if (timeDelta < 300 && posDelta < 20) {
           select.unselect();
-          page.selectionDeleteButtonRect = null;
-          page.selectionRotationHandleCenter = null;
-          page.selectionResizeHandles = null;
-          page.selectionVertexHandles = null;
+          page.clearSelectionHandles();
           _isDraggingVertex = false;
           select.onDragStart(position, dragPageIndex!);
           history.canRedo = true;
@@ -782,10 +780,7 @@ class EditorState extends State<Editor> {
           // drag selection in onDrawUpdate
         } else {
           select.unselect();
-          page.selectionDeleteButtonRect = null;
-          page.selectionRotationHandleCenter = null;
-          page.selectionResizeHandles = null;
-          page.selectionVertexHandles = null;
+          page.clearSelectionHandles();
           _isDraggingVertex = false;
           select.onDragStart(position, dragPageIndex!);
           history.canRedo = true;
@@ -1139,23 +1134,7 @@ class EditorState extends State<Editor> {
           _isDraggingVertex = false;
           _draggedVertexIndex = -1;
           _draggedVertexStroke = null;
-          final bounds = select.selectResult.path.getBounds();
-          page.selectionDeleteButtonRect = null;
-          page.selectionRotationHandleCenter = Offset(
-            bounds.center.dx,
-            bounds.top - 20,
-          );
-          final center = bounds.center;
-          page.selectionResizeHandles = [
-            Offset(bounds.left, bounds.top),
-            Offset(center.dx, bounds.top),
-            Offset(bounds.right, bounds.top),
-            Offset(bounds.right, center.dy),
-            Offset(bounds.right, bounds.bottom),
-            Offset(center.dx, bounds.bottom),
-            Offset(bounds.left, bounds.bottom),
-            Offset(bounds.left, center.dy),
-          ];
+          page.placeSelectionHandles(select.selectResult);
           _recordSelectionTransform(dragPageIndex!);
           return;
         }
@@ -1178,48 +1157,7 @@ class EditorState extends State<Editor> {
                 textRect: textRect,
               );
               shouldSave = false;
-
-              if (select.selectResult.isEmpty) {
-                Select.currentSelect.unselect();
-                page.selectionDeleteButtonRect = null;
-                page.selectionRotationHandleCenter = null;
-                page.selectionResizeHandles = null;
-                page.selectionVertexHandles = null;
-              } else {
-                final selectionBounds = select.selectResult.path.getBounds();
-                page.selectionDeleteButtonRect = null;
-                page.selectionRotationHandleCenter = Offset(
-                  selectionBounds.center.dx,
-                  selectionBounds.top - 20,
-                );
-                final center = selectionBounds.center;
-                page.selectionResizeHandles = [
-                  Offset(selectionBounds.left, selectionBounds.top),
-                  Offset(center.dx, selectionBounds.top),
-                  Offset(selectionBounds.right, selectionBounds.top),
-                  Offset(selectionBounds.right, center.dy),
-                  Offset(selectionBounds.right, selectionBounds.bottom),
-                  Offset(center.dx, selectionBounds.bottom),
-                  Offset(selectionBounds.left, selectionBounds.bottom),
-                  Offset(selectionBounds.left, center.dy),
-                ];
-                if (select.selectResult.strokes.length == 1) {
-                  final s = select.selectResult.strokes.first;
-                  if (s is ArrowStroke) {
-                    page.selectionVertexHandles = [s.start, s.end];
-                  } else if (s is DimensionStroke) {
-                    page.selectionVertexHandles = [
-                      s.start,
-                      s.end,
-                      s.textPosition,
-                    ];
-                  } else {
-                    page.selectionVertexHandles = null;
-                  }
-                } else {
-                  page.selectionVertexHandles = null;
-                }
-              }
+              _updateSelectionHandles(page, select);
 
               // Track for double-tap detection
               _lastTapTime = DateTime.now();
@@ -2045,45 +1983,8 @@ class EditorState extends State<Editor> {
 
   /// Updates selection handles (rotation, resize, and vertex handles) on [page]
   /// to match [select.selectResult].
-  void _updateSelectionHandles(EditorPage page, Select select) {
-    if (select.selectResult.isEmpty) {
-      select.unselect();
-      page.selectionDeleteButtonRect = null;
-      page.selectionRotationHandleCenter = null;
-      page.selectionResizeHandles = null;
-      page.selectionVertexHandles = null;
-      return;
-    }
-    final bounds = select.selectResult.path.getBounds();
-    page.selectionDeleteButtonRect = null;
-    page.selectionRotationHandleCenter = Offset(
-      bounds.center.dx,
-      bounds.top - 20,
-    );
-    final center = bounds.center;
-    page.selectionResizeHandles = [
-      Offset(bounds.left, bounds.top),
-      Offset(center.dx, bounds.top),
-      Offset(bounds.right, bounds.top),
-      Offset(bounds.right, center.dy),
-      Offset(bounds.right, bounds.bottom),
-      Offset(center.dx, bounds.bottom),
-      Offset(bounds.left, bounds.bottom),
-      Offset(bounds.left, center.dy),
-    ];
-    if (select.selectResult.strokes.length == 1) {
-      final s = select.selectResult.strokes.first;
-      if (s is ArrowStroke) {
-        page.selectionVertexHandles = [s.start, s.end];
-      } else if (s is DimensionStroke) {
-        page.selectionVertexHandles = [s.start, s.end, s.textPosition];
-      } else {
-        page.selectionVertexHandles = null;
-      }
-    } else {
-      page.selectionVertexHandles = null;
-    }
-  }
+  void _updateSelectionHandles(EditorPage page, Select select) =>
+      page.showSelectionHandles(select);
 
   /// Calculates the target center for placing new elements, photos, or shapes.
   /// Prioritizes the user's most recent canvas tap if it occurred recently
@@ -2150,10 +2051,7 @@ class EditorState extends State<Editor> {
       page.quill.controller.clear();
     }
 
-    page.selectionDeleteButtonRect = null;
-    page.selectionResizeHandles = null;
-    page.selectionRotationHandleCenter = null;
-    page.selectionVertexHandles = null;
+    page.clearSelectionHandles();
     select.unselect();
     page.redrawStrokes();
 
