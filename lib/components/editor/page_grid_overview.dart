@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:math';
@@ -220,14 +221,14 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
             ),
             const SizedBox(height: 12),
             Text(
-              'No headings found in document',
+              t.editor.outline.noHeadingsInDocument,
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              'Type headings in text boxes to generate an automatic outline',
+              t.editor.outline.howTo,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant.withValues(
                   alpha: 0.7,
@@ -313,18 +314,18 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
           segments: [
             ButtonSegment<PageGridFilter>(
               value: PageGridFilter.all,
-              label: Text('All ($totalPages)'),
+              label: Text(t.editor.pageGrid.all(n: totalPages)),
               icon: const Icon(Icons.grid_view, size: 16),
             ),
             ButtonSegment<PageGridFilter>(
               value: PageGridFilter.bookmarked,
-              label: Text('Bookmarked ($bookmarked)'),
+              label: Text(t.editor.pageGrid.bookmarked(n: bookmarked)),
               icon: const Icon(Icons.star, size: 16),
             ),
-            const ButtonSegment<PageGridFilter>(
+            ButtonSegment<PageGridFilter>(
               value: PageGridFilter.outline,
-              label: Text('Outline'),
-              icon: Icon(Icons.format_list_bulleted, size: 16),
+              label: Text(t.editor.outline.title),
+              icon: const Icon(Icons.format_list_bulleted, size: 16),
             ),
           ],
           selected: {_filter},
@@ -429,14 +430,14 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
             ),
             const SizedBox(height: 16),
             Text(
-              'No bookmarked pages',
+              t.editor.pageGrid.noBookmarks,
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Star pages to view them here',
+              t.editor.pageGrid.starPagesHint,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant.withValues(
                   alpha: 0.7,
@@ -635,7 +636,7 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                'CURRENT',
+                t.editor.pageGrid.current,
                 style: TextStyle(
                   color: theme.colorScheme.onPrimary,
                   fontSize: 9,
@@ -655,7 +656,9 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
                   ? Colors.amber
                   : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
-            tooltip: page.bookmarked ? 'Remove bookmark' : 'Bookmark page',
+            tooltip: page.bookmarked
+                ? t.editor.bookmark.remove
+                : t.editor.bookmark.add,
             onPressed: () => _toggleBookmark(pageIndex),
           ),
         ],
@@ -738,7 +741,7 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
             icon: const Icon(Icons.more_vert, size: 18),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-            tooltip: 'Page options',
+            tooltip: t.editor.pageGrid.pageOptions,
             onSelected: (value) {
               switch (value) {
                 case 'duplicate':

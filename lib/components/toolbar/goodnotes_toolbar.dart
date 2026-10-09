@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'package:flutter/cupertino.dart';
@@ -155,7 +156,7 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Pen Options',
+                    t.editor.tools.penOptions,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -421,7 +422,7 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
 
                 // 5. Shapes & Drafting (Ruler, Arrow, Dimension, Shapes)
                 ToolbarIconButton(
-                  tooltip: 'Shapes & Drafting',
+                  tooltip: t.editor.drafting.title,
                   selected: isDrafting,
                   enabled: !widget.readOnly,
                   onPressed: _showDraftingTools,
@@ -449,7 +450,7 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
 
                 // 7. Elements (Stickers)
                 ToolbarIconButton(
-                  tooltip: 'Elements (Stickers)',
+                  tooltip: t.editor.elements.tooltip,
                   selected: false,
                   enabled: !widget.readOnly,
                   onPressed: () => widget.openElementsSheet?.call(),
@@ -484,7 +485,7 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
 
                 // 10. Study Tape (Active recall)
                 ToolbarIconButton(
-                  tooltip: 'Study Tape (Active Recall)',
+                  tooltip: t.editor.tape.tooltip,
                   selected: isTape,
                   enabled: !widget.readOnly,
                   onPressed: () {
@@ -502,7 +503,7 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                 // 11. Laser Pointer
                 ToolbarIconButton(
                   tooltip: stows.laserPointerMode.value == 'spotlight'
-                      ? 'Laser Pointer (Spotlight Mode)'
+                      ? t.editor.tools.laserSpotlight
                       : t.editor.pens.laserPointer,
                   selected:
                       widget.currentTool == LaserPointer.currentLaserPointer,
@@ -568,9 +569,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                         Icons.visibility_off_rounded,
                         size: 14,
                       ),
-                      label: const Text(
-                        'Conceal All',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.tape.concealAll,
+                        style: const TextStyle(fontSize: 11),
                       ),
                       onPressed: widget.onConcealAllTape,
                     ),
@@ -578,9 +579,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     ActionChip(
                       visualDensity: VisualDensity.compact,
                       avatar: const Icon(Icons.visibility_rounded, size: 14),
-                      label: const Text(
-                        'Reveal All',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.tape.revealAll,
+                        style: const TextStyle(fontSize: 11),
                       ),
                       onPressed: widget.onRevealAllTape,
                     ),
@@ -588,9 +589,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     ActionChip(
                       visualDensity: VisualDensity.compact,
                       avatar: const Icon(Icons.palette_outlined, size: 14),
-                      label: const Text(
-                        'Patterns',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.tape.patterns,
+                        style: const TextStyle(fontSize: 11),
                       ),
                       onPressed: _showTapeOptions,
                     ),
@@ -600,9 +601,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     ActionChip(
                       visualDensity: VisualDensity.compact,
                       avatar: const Icon(Icons.category_rounded, size: 14),
-                      label: const Text(
-                        'Shape Library',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.drafting.shapeLibrary,
+                        style: const TextStyle(fontSize: 11),
                       ),
                       onPressed: widget.pickShape,
                     ),
@@ -610,9 +611,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     ActionChip(
                       visualDensity: VisualDensity.compact,
                       avatar: const Icon(Icons.straighten_rounded, size: 14),
-                      label: const Text(
-                        'Ruler',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.pens.ruler,
+                        style: const TextStyle(fontSize: 11),
                       ),
                       onPressed: () => widget.setTool(Ruler()),
                     ),
@@ -623,9 +624,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                         Icons.arrow_right_alt_rounded,
                         size: 14,
                       ),
-                      label: const Text(
-                        'Arrow',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.drafting.arrow,
+                        style: const TextStyle(fontSize: 11),
                       ),
                       onPressed: () => widget.setTool(ArrowTool()),
                     ),
@@ -633,9 +634,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     ActionChip(
                       visualDensity: VisualDensity.compact,
                       avatar: const Icon(Icons.architecture_rounded, size: 14),
-                      label: const Text(
-                        'Dimension',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.drafting.dimension,
+                        style: const TextStyle(fontSize: 11),
                       ),
                       onPressed: () => widget.setTool(DimensionTool()),
                     ),
@@ -644,7 +645,7 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                   else if (isEraser) ...[
                     // 3 Quick Sizes
                     _EraserQuickSizeButton(
-                      label: 'Fine',
+                      label: t.editor.tools.fine,
                       size: 15.0,
                       selected: (stows.eraserSize.value - 15.0).abs() < 5,
                       onTap: () =>
@@ -652,7 +653,7 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     ),
                     const SizedBox(width: 4),
                     _EraserQuickSizeButton(
-                      label: 'Medium',
+                      label: t.editor.tools.medium,
                       size: 30.0,
                       selected: (stows.eraserSize.value - 30.0).abs() < 5,
                       onTap: () =>
@@ -660,7 +661,7 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     ),
                     const SizedBox(width: 4),
                     _EraserQuickSizeButton(
-                      label: 'Broad',
+                      label: t.editor.tools.broad,
                       size: 60.0,
                       selected: (stows.eraserSize.value - 60.0).abs() < 5,
                       onTap: () =>
@@ -676,9 +677,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     // Highlighter-only toggle
                     FilterChip(
                       visualDensity: VisualDensity.compact,
-                      label: const Text(
-                        'Highlighter Only',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.eraser.highlighterOnlyShort,
+                        style: const TextStyle(fontSize: 11),
                       ),
                       selected: stows.eraserEraseHighlighterOnly.value,
                       onSelected: (val) => setState(
@@ -689,9 +690,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     // Erase stroke toggle
                     FilterChip(
                       visualDensity: VisualDensity.compact,
-                      label: const Text(
-                        'Entire Stroke',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.eraser.entireStroke,
+                        style: const TextStyle(fontSize: 11),
                       ),
                       selected: stows.eraserMode.value == 'object',
                       onSelected: (val) => setState(
@@ -709,22 +710,22 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                           Icons.delete_sweep_rounded,
                           size: 14,
                         ),
-                        label: const Text(
-                          'Clear Page',
-                          style: TextStyle(fontSize: 11),
+                        label: Text(
+                          t.editor.eraser.clearPage,
+                          style: const TextStyle(fontSize: 11),
                         ),
                         onPressed: () {
                           showDialog(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              title: const Text('Clear Page?'),
-                              content: const Text(
-                                'This will delete all ink, shapes, and media on this page.',
+                              title: Text(t.editor.eraser.clearPageTitle),
+                              content: Text(
+                                t.editor.eraser.clearPageDescription,
                               ),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.of(ctx).pop(),
-                                  child: const Text('Cancel'),
+                                  child: Text(t.common.cancel),
                                 ),
                                 FilledButton(
                                   style: FilledButton.styleFrom(
@@ -734,7 +735,7 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                                     Navigator.of(ctx).pop();
                                     widget.onClearPage?.call();
                                   },
-                                  child: const Text('Clear'),
+                                  child: Text(t.editor.actions.clear),
                                 ),
                               ],
                             ),
@@ -746,9 +747,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                   else if (isLasso) ...[
                     FilterChip(
                       visualDensity: VisualDensity.compact,
-                      label: const Text(
-                        'Handwriting',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.lasso.handwriting,
+                        style: const TextStyle(fontSize: 11),
                       ),
                       selected: stows.lassoSelectHandwriting.value,
                       onSelected: (val) => setState(
@@ -758,9 +759,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     const SizedBox(width: 4),
                     FilterChip(
                       visualDensity: VisualDensity.compact,
-                      label: const Text(
-                        'Images',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.lasso.images,
+                        style: const TextStyle(fontSize: 11),
                       ),
                       selected: stows.lassoSelectImages.value,
                       onSelected: (val) =>
@@ -769,9 +770,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     const SizedBox(width: 4),
                     FilterChip(
                       visualDensity: VisualDensity.compact,
-                      label: const Text(
-                        'Text Boxes',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.lasso.textBoxes,
+                        style: const TextStyle(fontSize: 11),
                       ),
                       selected: stows.lassoSelectText.value,
                       onSelected: (val) =>
@@ -780,7 +781,10 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     const SizedBox(width: 4),
                     FilterChip(
                       visualDensity: VisualDensity.compact,
-                      label: const Text('Tape', style: TextStyle(fontSize: 11)),
+                      label: Text(
+                        t.editor.tape.short,
+                        style: const TextStyle(fontSize: 11),
+                      ),
                       selected: stows.lassoSelectTape.value,
                       onSelected: (val) =>
                           setState(() => stows.lassoSelectTape.value = val),
@@ -789,7 +793,7 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       icon: const Icon(Icons.tune_rounded, size: 16),
-                      tooltip: 'Lasso Settings',
+                      tooltip: t.editor.lasso.settings,
                       onPressed: _showLassoOptions,
                     ),
                   ]
@@ -842,9 +846,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                       valueListenable: widget.quillFocus,
                       builder: (context, quill, _) {
                         if (quill == null) {
-                          return const Text(
-                            'Tap canvas to add or edit text',
-                            style: TextStyle(
+                          return Text(
+                            t.editor.tools.tapToAddText,
+                            style: const TextStyle(
                               fontSize: 12,
                               fontStyle: FontStyle.italic,
                             ),
@@ -869,7 +873,7 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                   // Default: General writing info
                   else ...[
                     Text(
-                      'Goodnotes Studio Toolbar',
+                      t.editor.tools.toolbarLabel,
                       style: TextStyle(
                         fontSize: 11.5,
                         color: colorScheme.onSurfaceVariant.withValues(

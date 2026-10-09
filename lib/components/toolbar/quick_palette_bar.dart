@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
 import 'package:saber/data/tools/highlighter.dart';
 import 'package:saber/data/tools/pen.dart';
+import 'package:saber/i18n/strings.g.dart';
 
 /// Pinned 3-color and 3-thickness quick access palette bar (Goodnotes ergonomics).
 /// Allows 1-tap switching between lecture colors and stroke widths.
@@ -310,7 +312,11 @@ class _ColorSlotPickerDialog extends StatelessWidget {
           ];
 
     return AlertDialog(
-      title: Text(isHighlighter ? 'Highlighter Color Slot' : 'Pen Color Slot'),
+      title: Text(
+        isHighlighter
+            ? t.editor.palette.highlighterSlot
+            : t.editor.palette.penSlot,
+      ),
       content: Wrap(
         spacing: 12,
         runSpacing: 12,
@@ -349,7 +355,7 @@ class _ColorSlotPickerDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(t.common.cancel),
         ),
       ],
     );
@@ -383,7 +389,7 @@ class _SizeSlotSliderDialogState extends State<_SizeSlotSliderDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Adjust Stroke Width'),
+      title: Text(t.editor.palette.adjustWidth),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -415,11 +421,11 @@ class _SizeSlotSliderDialogState extends State<_SizeSlotSliderDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(t.common.cancel),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(_currentSize),
-          child: const Text('Set Width'),
+          child: Text(t.editor.palette.setWidth),
         ),
       ],
     );

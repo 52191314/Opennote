@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'package:flutter/cupertino.dart';
@@ -67,8 +68,8 @@ class SelectionBar extends StatelessWidget {
                 shape: const CircleBorder(),
               ),
               tooltip: stows.selectionRectMode.value
-                  ? 'Rect Select'
-                  : 'Lasso Select',
+                  ? t.editor.lasso.rectSelect
+                  : t.editor.lasso.lassoSelect,
               icon: Icon(
                 stows.selectionRectMode.value
                     ? Icons.crop_square
@@ -86,7 +87,7 @@ class SelectionBar extends StatelessWidget {
               backgroundColor: Colors.transparent,
               shape: const CircleBorder(),
             ),
-            tooltip: 'Lasso Filters',
+            tooltip: t.editor.lasso.filters,
             icon: const Icon(Icons.tune),
           ),
           if (cropPossible)
@@ -101,7 +102,9 @@ class SelectionBar extends StatelessWidget {
                     : Colors.transparent,
                 shape: const CircleBorder(),
               ),
-              tooltip: cropActive ? 'Done cropping' : 'Crop image',
+              tooltip: cropActive
+                  ? t.editor.lasso.doneCropping
+                  : t.editor.lasso.cropImage,
               icon: Icon(
                 cropActive ? Icons.check : Icons.crop,
                 color: cropActive ? ColorScheme.of(context).primary : null,
@@ -114,7 +117,7 @@ class SelectionBar extends StatelessWidget {
               backgroundColor: Colors.transparent,
               shape: const CircleBorder(),
             ),
-            tooltip: 'Copy',
+            tooltip: t.editor.actions.copy,
             icon: const AdaptiveIcon(
               icon: Icons.file_copy,
               cupertinoIcon: CupertinoIcons.doc_on_clipboard,
@@ -127,7 +130,7 @@ class SelectionBar extends StatelessWidget {
               backgroundColor: Colors.transparent,
               shape: const CircleBorder(),
             ),
-            tooltip: 'Paste',
+            tooltip: t.editor.actions.paste,
             icon: const AdaptiveIcon(
               icon: Icons.content_paste,
               cupertinoIcon: CupertinoIcons.doc_on_clipboard,
@@ -154,7 +157,7 @@ class SelectionBar extends StatelessWidget {
                 backgroundColor: Colors.transparent,
                 shape: const CircleBorder(),
               ),
-              tooltip: 'Bring to Front',
+              tooltip: t.editor.lasso.bringToFront,
               icon: const Icon(Icons.flip_to_front_rounded),
             ),
           if (sendToBack != null)
@@ -165,7 +168,7 @@ class SelectionBar extends StatelessWidget {
                 backgroundColor: Colors.transparent,
                 shape: const CircleBorder(),
               ),
-              tooltip: 'Send to Back',
+              tooltip: t.editor.lasso.sendToBack,
               icon: const Icon(Icons.flip_to_back_rounded),
             ),
           if (smoothen != null)
@@ -176,7 +179,7 @@ class SelectionBar extends StatelessWidget {
                 backgroundColor: Colors.transparent,
                 shape: const CircleBorder(),
               ),
-              tooltip: 'Smoothen Handwriting',
+              tooltip: t.editor.lasso.smoothenHandwriting,
               icon: const Icon(Icons.auto_fix_high_rounded),
             ),
           if (toggleResize != null)
@@ -191,7 +194,9 @@ class SelectionBar extends StatelessWidget {
                     : Colors.transparent,
                 shape: const CircleBorder(),
               ),
-              tooltip: isResizeActive ? 'Done Resizing' : 'Resize',
+              tooltip: isResizeActive
+                  ? t.editor.lasso.doneResizing
+                  : t.editor.lasso.resize,
               icon: const Icon(Icons.open_in_full_rounded),
             ),
           if (takeScreenshot != null)
@@ -202,7 +207,7 @@ class SelectionBar extends StatelessWidget {
                 backgroundColor: Colors.transparent,
                 shape: const CircleBorder(),
               ),
-              tooltip: 'Screenshot',
+              tooltip: t.editor.lasso.screenshot,
               icon: const Icon(Icons.crop_free_rounded),
             ),
           if (addToElements != null)
@@ -213,7 +218,7 @@ class SelectionBar extends StatelessWidget {
                 backgroundColor: Colors.transparent,
                 shape: const CircleBorder(),
               ),
-              tooltip: 'Add to Elements',
+              tooltip: t.editor.elements.add,
               icon: const Icon(Icons.bookmark_add_outlined),
             ),
           IconButton(

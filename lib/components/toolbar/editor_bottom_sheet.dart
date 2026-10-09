@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:math' show min;
@@ -144,12 +145,12 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
                       Navigator.pop(context);
                       widget.onOpenPresentation!();
                     },
-                    child: const Wrap(
+                    child: Wrap(
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Icon(Icons.present_to_all, size: 18),
-                        SizedBox(width: 8),
-                        Text('Presentation'),
+                        const Icon(Icons.present_to_all, size: 18),
+                        const SizedBox(width: 8),
+                        Text(t.editor.sheet.presentation),
                       ],
                     ),
                   ),
@@ -159,12 +160,12 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
                       Navigator.pop(context);
                       widget.onOpenFlashcards!();
                     },
-                    child: const Wrap(
+                    child: Wrap(
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Icon(Icons.auto_stories, size: 18),
-                        SizedBox(width: 8),
-                        Text('Flashcards'),
+                        const Icon(Icons.auto_stories, size: 18),
+                        const SizedBox(width: 8),
+                        Text(t.editor.sheet.flashcards),
                       ],
                     ),
                   ),
@@ -182,11 +183,11 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
                       ),
                     );
                   },
-                  child: const Wrap(
+                  child: Wrap(
                     children: [
-                      Icon(Icons.layers),
-                      SizedBox(width: 8),
-                      Text('Layers'),
+                      const Icon(Icons.layers),
+                      const SizedBox(width: 8),
+                      Text(t.editor.layers.title),
                     ],
                   ),
                 ),
@@ -418,19 +419,22 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
               ],
             ),
             const SizedBox(height: 16),
-            Text('Canvas Mode', style: TextTheme.of(context).titleMedium),
+            Text(
+              t.editor.sheet.canvasMode,
+              style: TextTheme.of(context).titleMedium,
+            ),
             const SizedBox(height: 8),
             SegmentedButton<bool>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: false,
-                  label: Text('Paged'),
-                  icon: Icon(Icons.description_outlined),
+                  label: Text(t.editor.sheet.paged),
+                  icon: const Icon(Icons.description_outlined),
                 ),
                 ButtonSegment(
                   value: true,
-                  label: Text('Infinite Canvas (2D)'),
-                  icon: Icon(Icons.all_inclusive_rounded),
+                  label: Text(t.editor.sheet.infiniteCanvas),
+                  icon: const Icon(Icons.all_inclusive_rounded),
                 ),
               ],
               selected: {widget.coreInfo.isInfiniteCanvas},
@@ -445,7 +449,10 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
             ),
             const SizedBox(height: 16),
             if (!widget.coreInfo.isInfiniteCanvas) ...[
-              Text('Bookmark', style: TextTheme.of(context).titleMedium),
+              Text(
+                t.editor.sheet.bookmark,
+                style: TextTheme.of(context).titleMedium,
+              ),
               Row(
                 children: [
                   Switch(
@@ -461,8 +468,8 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
                   const SizedBox(width: 8),
                   Text(
                     page?.bookmarked ?? false
-                        ? 'Page is bookmarked'
-                        : 'Not bookmarked',
+                        ? t.editor.sheet.pageIsBookmarked
+                        : t.editor.sheet.notBookmarked,
                   ),
                 ],
               ),
@@ -470,16 +477,19 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
             ],
             if (!widget.coreInfo.isInfiniteCanvas &&
                 widget.setPageSize != null) ...[
-              Text('Page Size', style: TextTheme.of(context).titleMedium),
+              Text(
+                t.editor.sheet.pageSize,
+                style: TextTheme.of(context).titleMedium,
+              ),
               const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
                     child: TextField(
-                      decoration: const InputDecoration(
-                        labelText: 'Width',
+                      decoration: InputDecoration(
+                        labelText: t.editor.sheet.width,
                         isDense: true,
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.number,
                       controller: TextEditingController(
@@ -502,10 +512,10 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: TextField(
-                      decoration: const InputDecoration(
-                        labelText: 'Height',
+                      decoration: InputDecoration(
+                        labelText: t.editor.sheet.height,
                         isDense: true,
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.number,
                       controller: TextEditingController(
@@ -555,7 +565,7 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
                     },
                   ),
                   ActionChip(
-                    label: const Text('Square'),
+                    label: Text(t.editor.sheet.square),
                     onPressed: () {
                       if (page == null) return;
                       widget.setPageSize?.call(const Size(1000, 1000));
@@ -598,11 +608,11 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
                     widget.addStickyNote();
                     Navigator.pop(context);
                   },
-                  child: const Wrap(
+                  child: Wrap(
                     children: [
-                      Icon(Icons.note_add),
-                      SizedBox(width: 8),
-                      Text('Sticky Note'),
+                      const Icon(Icons.note_add),
+                      const SizedBox(width: 8),
+                      Text(t.editor.sheet.stickyNote),
                     ],
                   ),
                 ),
@@ -615,11 +625,11 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
                       ),
                     );
                   },
-                  child: const Wrap(
+                  child: Wrap(
                     children: [
-                      Icon(Icons.emoji_emotions),
-                      SizedBox(width: 8),
-                      Text('Sticker'),
+                      const Icon(Icons.emoji_emotions),
+                      const SizedBox(width: 8),
+                      Text(t.editor.sheet.sticker),
                     ],
                   ),
                 ),

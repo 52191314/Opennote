@@ -2,10 +2,12 @@
 ///
 /// A dialog that displays available stickers (emoji stamps) in a
 /// categorised grid for the user to pick from.
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'package:flutter/material.dart';
 import 'package:saber/data/tools/stickers.dart';
+import 'package:saber/i18n/strings.g.dart';
 
 /// Dialog that shows a grid of sticker categories and their emoji items.
 ///
@@ -46,7 +48,7 @@ class _StickerPickerDialogState extends State<StickerPickerDialog>
     const categories = Sticker.categories;
 
     return AlertDialog(
-      title: const Text('Stickers'),
+      title: Text(t.editor.stickers.title),
       content: SizedBox(
         width: 360,
         height: 420,
@@ -83,7 +85,7 @@ class _StickerPickerDialogState extends State<StickerPickerDialog>
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(t.common.cancel),
         ),
       ],
     );

@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:io';
@@ -363,7 +364,7 @@ class _ToolbarState extends State<Toolbar> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Pen Settings',
+                    t.editor.tools.penSettings,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -619,7 +620,7 @@ class _ToolbarState extends State<Toolbar> {
 
               // 5. Drafting & Shapes (Shapes, Ruler, Arrow, Dimension)
               ToolbarIconButton(
-                tooltip: 'Drafting & Shapes',
+                tooltip: t.editor.drafting.titleAlt,
                 selected:
                     widget.currentTool is Ruler ||
                     widget.currentTool is ArrowTool ||
@@ -656,7 +657,7 @@ class _ToolbarState extends State<Toolbar> {
 
               // 7. Study Tape
               ToolbarIconButton(
-                tooltip: 'Study Tape (Active Recall)',
+                tooltip: t.editor.tape.tooltip,
                 selected: widget.currentTool is StudyTapeTool,
                 enabled: !widget.readOnly,
                 onPressed: () {
@@ -697,7 +698,7 @@ class _ToolbarState extends State<Toolbar> {
 
               // 8. Elements (Stickers)
               ToolbarIconButton(
-                tooltip: 'Elements (Stickers)',
+                tooltip: t.editor.elements.tooltip,
                 selected: false,
                 enabled: !widget.readOnly,
                 onPressed: () => widget.openElementsSheet?.call(),
@@ -733,7 +734,7 @@ class _ToolbarState extends State<Toolbar> {
               // 11. Laser Pointer (Trail / Spotlight mode toggle)
               ToolbarIconButton(
                 tooltip: stows.laserPointerMode.value == 'spotlight'
-                    ? 'Laser Pointer (Spotlight Mode)'
+                    ? t.editor.tools.laserSpotlight
                     : t.editor.pens.laserPointer,
                 selected:
                     widget.currentTool == LaserPointer.currentLaserPointer,

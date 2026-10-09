@@ -1,8 +1,10 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'package:flutter/material.dart';
 import 'package:saber/data/editor/page.dart';
+import 'package:saber/i18n/strings.g.dart';
 
 /// A floating HUD widget that provides quick, non-intrusive access to canvas layers.
 ///
@@ -180,7 +182,7 @@ class _FloatingLayersOverlayState extends State<FloatingLayersOverlay>
                   Icon(Icons.layers, size: 18, color: colorScheme.primary),
                   const SizedBox(width: 8),
                   Text(
-                    'Layers (${page.layers.length})',
+                    t.editor.layers.titleWithCount(n: page.layers.length),
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -188,13 +190,13 @@ class _FloatingLayersOverlayState extends State<FloatingLayersOverlay>
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.add, size: 18),
-                    tooltip: 'Add Layer',
+                    tooltip: t.editor.layers.add,
                     visualDensity: VisualDensity.compact,
                     onPressed: _addLayer,
                   ),
                   IconButton(
                     icon: const Icon(Icons.close, size: 18),
-                    tooltip: 'Close',
+                    tooltip: t.editor.actions.close,
                     visualDensity: VisualDensity.compact,
                     onPressed: () => setState(() => _expanded = false),
                   ),
@@ -265,7 +267,9 @@ class _FloatingLayersOverlayState extends State<FloatingLayersOverlay>
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
-                                    '${layer.strokes.length} strokes',
+                                    t.editor.layers.strokeCount(
+                                      n: layer.strokes.length,
+                                    ),
                                     style: theme.textTheme.labelSmall?.copyWith(
                                       color: colorScheme.onSurfaceVariant,
                                     ),
@@ -286,8 +290,8 @@ class _FloatingLayersOverlayState extends State<FloatingLayersOverlay>
                                     : colorScheme.outline,
                               ),
                               tooltip: layer.visible
-                                  ? 'Hide Layer'
-                                  : 'Show Layer',
+                                  ? t.editor.layers.hide
+                                  : t.editor.layers.show,
                               visualDensity: VisualDensity.compact,
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(
@@ -307,8 +311,8 @@ class _FloatingLayersOverlayState extends State<FloatingLayersOverlay>
                                     : colorScheme.onSurfaceVariant,
                               ),
                               tooltip: layer.locked
-                                  ? 'Unlock Layer'
-                                  : 'Lock Layer',
+                                  ? t.editor.layers.unlock
+                                  : t.editor.layers.lock,
                               visualDensity: VisualDensity.compact,
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(
@@ -330,7 +334,7 @@ class _FloatingLayersOverlayState extends State<FloatingLayersOverlay>
                                       ),
                               ),
                               tooltip: page.layers.length > 1
-                                  ? 'Delete Layer'
+                                  ? t.editor.layers.delete
                                   : null,
                               visualDensity: VisualDensity.compact,
                               padding: EdgeInsets.zero,

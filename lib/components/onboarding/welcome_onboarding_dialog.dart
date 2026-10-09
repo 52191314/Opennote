@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:saber/data/is_this_a_test.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/routes.dart';
+import 'package:saber/i18n/strings.g.dart';
 
 /// Interactive onboarding modal introducing users to gestures, study tape,
 /// smooth inking, and elements.
@@ -38,38 +40,50 @@ class _WelcomeOnboardingDialogState extends State<WelcomeOnboardingDialog> {
   final _pageController = PageController();
   var _currentPage = 0;
 
-  static const _pages = <_OnboardingCardData>[
+  static List<_OnboardingCardData> get _pages => [
     _OnboardingCardData(
       icon: Icons.draw_rounded,
-      accentColor: Color(0xFF6750A4),
-      title: 'Silky Smooth Digital Paper',
-      description:
-          'Write and sketch with fountain, ballpoint, pencil, and highlighter tools. Featuring customizable pressure curves and paper templates (grid, dotted, cornell, isometric).',
-      tags: ['Pressure Sensitive', 'Smooth Curves', 'Paper Templates'],
+      accentColor: const Color(0xFF6750A4),
+      title: t.onboarding.paper.title,
+      description: t.onboarding.paper.description,
+      tags: [
+        t.onboarding.paper.tagPressure,
+        t.onboarding.paper.tagCurves,
+        t.onboarding.paper.tagTemplates,
+      ],
     ),
     _OnboardingCardData(
       icon: Icons.auto_fix_high_rounded,
-      accentColor: Color(0xFF00677D),
-      title: 'Magic Stylus Gestures',
-      description:
-          'Scribble back and forth over handwriting, text, or stickers to erase them instantly! Circle anything to lasso select, move, scale, rotate, and recolor.',
-      tags: ['Scribble to Erase', 'Circle to Select', 'Two-Finger Tap Undo'],
+      accentColor: const Color(0xFF00677D),
+      title: t.onboarding.gestures.title,
+      description: t.onboarding.gestures.description,
+      tags: [
+        t.onboarding.gestures.tagScribble,
+        t.onboarding.gestures.tagCircle,
+        t.onboarding.gestures.tagUndo,
+      ],
     ),
     _OnboardingCardData(
       icon: Icons.layers_rounded,
-      accentColor: Color(0xFFB52700),
-      title: 'Study Tape & Active Recall',
-      description:
-          'Conceal answers, formulas, and diagrams with study tape. Tap anytime to reveal or conceal, making revision fast and effortless.',
-      tags: ['Active Recall', 'Tap to Reveal', 'Study Mode'],
+      accentColor: const Color(0xFFB52700),
+      title: t.onboarding.tape.title,
+      description: t.onboarding.tape.description,
+      tags: [
+        t.onboarding.tape.tagRecall,
+        t.onboarding.tape.tagReveal,
+        t.onboarding.tape.tagStudy,
+      ],
     ),
     _OnboardingCardData(
       icon: Icons.dashboard_customize_rounded,
-      accentColor: Color(0xFF006C4C),
-      title: 'Elements & Infinite Canvas',
-      description:
-          'Collect stickers, diagrams, and shapes in the Elements tray. Switch effortlessly between structured pages and an infinite freeform canvas.',
-      tags: ['Elements Tray', 'Multi-Layer Canvas', 'Infinite Workspace'],
+      accentColor: const Color(0xFF006C4C),
+      title: t.onboarding.elements.title,
+      description: t.onboarding.elements.description,
+      tags: [
+        t.onboarding.elements.tagTray,
+        t.onboarding.elements.tagLayers,
+        t.onboarding.elements.tagWorkspace,
+      ],
     ),
   ];
 
@@ -115,7 +129,7 @@ class _WelcomeOnboardingDialogState extends State<WelcomeOnboardingDialog> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      'Welcome Guide',
+                      t.onboarding.title,
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: colorScheme.onPrimaryContainer,
                         fontWeight: FontWeight.w600,
@@ -267,7 +281,7 @@ class _WelcomeOnboardingDialogState extends State<WelcomeOnboardingDialog> {
                                 curve: Curves.easeOut,
                               );
                             },
-                            child: const Text('Back'),
+                            child: Text(t.editor.actions.back),
                           ),
                         const Spacer(),
                         FilledButton(
@@ -277,12 +291,12 @@ class _WelcomeOnboardingDialogState extends State<WelcomeOnboardingDialog> {
                               curve: Curves.easeOut,
                             );
                           },
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text('Next'),
-                              SizedBox(width: 6),
-                              Icon(Icons.arrow_forward, size: 16),
+                              Text(t.editor.actions.next),
+                              const SizedBox(width: 6),
+                              const Icon(Icons.arrow_forward, size: 16),
                             ],
                           ),
                         ),
@@ -294,7 +308,7 @@ class _WelcomeOnboardingDialogState extends State<WelcomeOnboardingDialog> {
                         Expanded(
                           child: OutlinedButton.icon(
                             icon: const Icon(Icons.edit_note, size: 18),
-                            label: const Text('Try Playground'),
+                            label: Text(t.onboarding.tryPlayground),
                             onPressed: () => _finishOnboarding(true),
                           ),
                         ),
@@ -302,7 +316,7 @@ class _WelcomeOnboardingDialogState extends State<WelcomeOnboardingDialog> {
                         Expanded(
                           child: FilledButton.icon(
                             icon: const Icon(Icons.check, size: 18),
-                            label: const Text('Get Started'),
+                            label: Text(t.onboarding.getStarted),
                             onPressed: () => _finishOnboarding(false),
                           ),
                         ),

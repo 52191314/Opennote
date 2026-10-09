@@ -1,10 +1,12 @@
 /// 🤖 Generated with DeepSeek v4 Flash
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'package:flutter/material.dart';
 import 'package:saber/components/canvas/canvas_gesture_detector.dart';
 import 'package:saber/components/theming/saber_theme.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
+import 'package:saber/i18n/strings.g.dart';
 
 /// A heading entry extracted from the document.
 class _HeadingEntry {
@@ -81,9 +83,9 @@ class _DocumentOutlineViewState extends State<DocumentOutlineView> {
   @override
   Widget build(BuildContext context) {
     if (_headings.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(16),
-        child: Center(child: Text('No headings found')),
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Center(child: Text(t.editor.outline.noHeadings)),
       );
     }
 

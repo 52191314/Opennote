@@ -45,6 +45,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$appInfo$en appInfo = Translations$appInfo$en.internal(_root);
 	late final Translations$update$en update = Translations$update$en.internal(_root);
 	late final Translations$editor$en editor = Translations$editor$en.internal(_root);
+	late final Translations$searchResults$en searchResults = Translations$searchResults$en.internal(_root);
+	late final Translations$onboarding$en onboarding = Translations$onboarding$en.internal(_root);
 }
 
 // Path: common
@@ -319,6 +321,65 @@ class Translations$editor$en {
 
 	/// en: 'Saving your changes... You can safely exit the editor when it's done'
 	String get needsToSaveBeforeExiting => 'Saving your changes... You can safely exit the editor when it\'s done';
+
+	late final Translations$editor$canvasHud$en canvasHud = Translations$editor$canvasHud$en.internal(_root);
+	late final Translations$editor$layers$en layers = Translations$editor$layers$en.internal(_root);
+	late final Translations$editor$pageGrid$en pageGrid = Translations$editor$pageGrid$en.internal(_root);
+	late final Translations$editor$presentation$en presentation = Translations$editor$presentation$en.internal(_root);
+	late final Translations$editor$elements$en elements = Translations$editor$elements$en.internal(_root);
+	late final Translations$editor$tools$en tools = Translations$editor$tools$en.internal(_root);
+	late final Translations$editor$stickyNote$en stickyNote = Translations$editor$stickyNote$en.internal(_root);
+	late final Translations$editor$actions$en actions = Translations$editor$actions$en.internal(_root);
+	late final Translations$editor$stickers$en stickers = Translations$editor$stickers$en.internal(_root);
+	late final Translations$editor$bookmark$en bookmark = Translations$editor$bookmark$en.internal(_root);
+	late final Translations$editor$tape$en tape = Translations$editor$tape$en.internal(_root);
+	late final Translations$editor$lasso$en lasso = Translations$editor$lasso$en.internal(_root);
+	late final Translations$editor$drafting$en drafting = Translations$editor$drafting$en.internal(_root);
+	late final Translations$editor$outline$en outline = Translations$editor$outline$en.internal(_root);
+	late final Translations$editor$sheet$en sheet = Translations$editor$sheet$en.internal(_root);
+	late final Translations$editor$eraser$en eraser = Translations$editor$eraser$en.internal(_root);
+	late final Translations$editor$header$en header = Translations$editor$header$en.internal(_root);
+	late final Translations$editor$palette$en palette = Translations$editor$palette$en.internal(_root);
+}
+
+// Path: searchResults
+class Translations$searchResults$en {
+	Translations$searchResults$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Page $page: "$snippet"'
+	String textMatch({required Object page, required Object snippet}) => 'Page ${page}: "${snippet}"';
+
+	/// en: 'Page $page – colour $hex'
+	String colorMatch({required Object page, required Object hex}) => 'Page ${page} – colour ${hex}';
+
+	/// en: 'Page $page – tool: $tool'
+	String toolMatch({required Object page, required Object tool}) => 'Page ${page} – tool: ${tool}';
+}
+
+// Path: onboarding
+class Translations$onboarding$en {
+	Translations$onboarding$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+	late final Translations$onboarding$paper$en paper = Translations$onboarding$paper$en.internal(_root);
+	late final Translations$onboarding$gestures$en gestures = Translations$onboarding$gestures$en.internal(_root);
+	late final Translations$onboarding$tape$en tape = Translations$onboarding$tape$en.internal(_root);
+	late final Translations$onboarding$elements$en elements = Translations$onboarding$elements$en.internal(_root);
+
+	/// en: 'Welcome Guide'
+	String get title => 'Welcome Guide';
+
+	/// en: 'Try Playground'
+	String get tryPlayground => 'Try Playground';
+
+	/// en: 'Get Started'
+	String get getStarted => 'Get Started';
 }
 
 // Path: home.tabs
@@ -706,6 +767,18 @@ class Translations$settings$prefLabels$en {
 
 	/// en: 'Error reporting'
 	String get sentry => 'Error reporting';
+
+	/// en: 'Pen Pressure Curve'
+	String get penPressureCurve => 'Pen Pressure Curve';
+
+	/// en: 'Scribble to erase'
+	String get scribbleToErase => 'Scribble to erase';
+
+	/// en: 'Default to Infinite Canvas (2D)'
+	String get defaultInfiniteCanvas => 'Default to Infinite Canvas (2D)';
+
+	/// en: 'Welcome Guide & Onboarding'
+	String get welcomeGuide => 'Welcome Guide & Onboarding';
 }
 
 // Path: settings.prefDescriptions
@@ -759,6 +832,18 @@ class Translations$settings$prefDescriptions$en {
 
 	/// en: 'Tell me about updates as soon as they're available'
 	String get shouldAlwaysAlertForUpdates => 'Tell me about updates as soon as they\'re available';
+
+	/// en: 'Adjust how stylus pressure maps to stroke width'
+	String get penPressureCurve => 'Adjust how stylus pressure maps to stroke width';
+
+	/// en: 'Scribble back and forth over strokes with the pen to erase them'
+	String get scribbleToErase => 'Scribble back and forth over strokes with the pen to erase them';
+
+	/// en: 'New notes open with an infinite 2D canvas instead of discrete pages'
+	String get defaultInfiniteCanvas => 'New notes open with an infinite 2D canvas instead of discrete pages';
+
+	/// en: 'Gestures, study tape, smooth inking, and elements'
+	String get welcomeGuide => 'Gestures, study tape, smooth inking, and elements';
 
 	late final Translations$settings$prefDescriptions$sentry$en sentry = Translations$settings$prefDescriptions$sentry$en.internal(_root);
 }
@@ -1370,6 +1455,822 @@ class Translations$editor$hud$en {
 
 	/// en: 'Lock panning to horizontal or vertical'
 	String get lockAxisAlignedPan => 'Lock panning to horizontal or vertical';
+}
+
+// Path: editor.canvasHud
+class Translations$editor$canvasHud$en {
+	Translations$editor$canvasHud$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Angle step: $step'
+	String angleStep({required Object step}) => 'Angle step: ${step}';
+
+	/// en: 'Iso 30°'
+	String get iso30 => 'Iso 30°';
+
+	/// en: 'Hide protractor'
+	String get hideProtractor => 'Hide protractor';
+
+	/// en: 'Show protractor'
+	String get showProtractor => 'Show protractor';
+
+	/// en: 'Disable snap to grid'
+	String get disableSnapToGrid => 'Disable snap to grid';
+
+	/// en: 'Enable snap to grid'
+	String get enableSnapToGrid => 'Enable snap to grid';
+
+	/// en: 'Disable snap to angle'
+	String get disableSnapToAngle => 'Disable snap to angle';
+
+	/// en: 'Enable snap to angle'
+	String get enableSnapToAngle => 'Enable snap to angle';
+
+	/// en: 'Iso'
+	String get iso => 'Iso';
+}
+
+// Path: editor.layers
+class Translations$editor$layers$en {
+	Translations$editor$layers$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Layers ($n)'
+	String titleWithCount({required Object n}) => 'Layers (${n})';
+
+	/// en: '$n strokes'
+	String strokeCount({required Object n}) => '${n} strokes';
+
+	/// en: 'Add Layer'
+	String get add => 'Add Layer';
+
+	/// en: 'Hide Layer'
+	String get hide => 'Hide Layer';
+
+	/// en: 'Show Layer'
+	String get show => 'Show Layer';
+
+	/// en: 'Unlock Layer'
+	String get unlock => 'Unlock Layer';
+
+	/// en: 'Lock Layer'
+	String get lock => 'Lock Layer';
+
+	/// en: 'Delete Layer'
+	String get delete => 'Delete Layer';
+
+	/// en: 'Layers'
+	String get title => 'Layers';
+
+	/// en: 'No layers'
+	String get none => 'No layers';
+
+	/// en: 'Merge Down'
+	String get mergeDown => 'Merge Down';
+}
+
+// Path: editor.pageGrid
+class Translations$editor$pageGrid$en {
+	Translations$editor$pageGrid$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'All ($n)'
+	String all({required Object n}) => 'All (${n})';
+
+	/// en: 'Bookmarked ($n)'
+	String bookmarked({required Object n}) => 'Bookmarked (${n})';
+
+	/// en: 'No bookmarked pages'
+	String get noBookmarks => 'No bookmarked pages';
+
+	/// en: 'Star pages to view them here'
+	String get starPagesHint => 'Star pages to view them here';
+
+	/// en: 'CURRENT'
+	String get current => 'CURRENT';
+
+	/// en: 'Page options'
+	String get pageOptions => 'Page options';
+}
+
+// Path: editor.presentation
+class Translations$editor$presentation$en {
+	Translations$editor$presentation$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Flashcard $current / $total · $studied studied'
+	String flashcardProgress({required Object current, required Object total, required Object studied}) => 'Flashcard ${current} / ${total}  ·  ${studied} studied';
+
+	/// en: 'Flashcard $n'
+	String flashcard({required Object n}) => 'Flashcard ${n}';
+
+	/// en: 'Exit flashcards (Esc)'
+	String get exitFlashcards => 'Exit flashcards (Esc)';
+
+	/// en: 'Exit presentation (Esc)'
+	String get exitPresentation => 'Exit presentation (Esc)';
+
+	/// en: 'Reset study progress'
+	String get resetProgress => 'Reset study progress';
+
+	/// en: 'Don't Know'
+	String get dontKnow => 'Don\'t Know';
+
+	/// en: 'Know'
+	String get know => 'Know';
+
+	/// en: 'Tap to reveal'
+	String get tapToReveal => 'Tap to reveal';
+}
+
+// Path: editor.elements
+class Translations$editor$elements$en {
+	Translations$editor$elements$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Delete "$name" from your elements collection?'
+	String deleteConfirm({required Object name}) => 'Delete "${name}" from your elements collection?';
+
+	/// en: 'Element $n'
+	String defaultName({required Object n}) => 'Element ${n}';
+
+	/// en: 'Added "$name" to Elements'
+	String added({required Object name}) => 'Added "${name}" to Elements';
+
+	/// en: 'Elements'
+	String get title => 'Elements';
+
+	/// en: 'No elements in this collection'
+	String get empty => 'No elements in this collection';
+
+	/// en: 'Delete Element?'
+	String get deleteTitle => 'Delete Element?';
+
+	/// en: 'Elements (Stickers)'
+	String get tooltip => 'Elements (Stickers)';
+
+	/// en: 'Add to Elements'
+	String get add => 'Add to Elements';
+
+	/// en: 'Element Name'
+	String get nameLabel => 'Element Name';
+
+	/// en: 'Enter name for sticker'
+	String get nameHint => 'Enter name for sticker';
+
+	/// en: 'Cannot stamp element on a locked layer'
+	String get lockedLayer => 'Cannot stamp element on a locked layer';
+}
+
+// Path: editor.tools
+class Translations$editor$tools$en {
+	Translations$editor$tools$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Stroke Style: $style'
+	String strokeStyle({required Object style}) => 'Stroke Style: ${style}';
+
+	/// en: 'Pen Options'
+	String get penOptions => 'Pen Options';
+
+	/// en: 'Laser Pointer (Spotlight Mode)'
+	String get laserSpotlight => 'Laser Pointer (Spotlight Mode)';
+
+	/// en: 'Fine'
+	String get fine => 'Fine';
+
+	/// en: 'Medium'
+	String get medium => 'Medium';
+
+	/// en: 'Broad'
+	String get broad => 'Broad';
+
+	/// en: 'Tap canvas to add or edit text'
+	String get tapToAddText => 'Tap canvas to add or edit text';
+
+	/// en: 'Goodnotes Studio Toolbar'
+	String get toolbarLabel => 'Goodnotes Studio Toolbar';
+
+	/// en: 'Draw in Straight Line: ON'
+	String get straightLineOn => 'Draw in Straight Line: ON';
+
+	/// en: 'Draw in Straight Line: OFF'
+	String get straightLineOff => 'Draw in Straight Line: OFF';
+
+	/// en: 'Scribble to Erase: ON'
+	String get scribbleOn => 'Scribble to Erase: ON';
+
+	/// en: 'Scribble to Erase: OFF'
+	String get scribbleOff => 'Scribble to Erase: OFF';
+
+	/// en: 'Curve'
+	String get curve => 'Curve';
+
+	/// en: 'Pen Settings'
+	String get penSettings => 'Pen Settings';
+}
+
+// Path: editor.stickyNote
+class Translations$editor$stickyNote$en {
+	Translations$editor$stickyNote$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Edit Sticky Note'
+	String get editTitle => 'Edit Sticky Note';
+
+	/// en: 'Text:'
+	String get textLabel => 'Text:';
+
+	/// en: 'Type your note here...'
+	String get hint => 'Type your note here...';
+
+	/// en: 'Color:'
+	String get colorLabel => 'Color:';
+
+	/// en: 'Edit Text'
+	String get editText => 'Edit Text';
+
+	/// en: 'Sticky notes cannot be downloaded'
+	String get cannotDownload => 'Sticky notes cannot be downloaded';
+
+	/// en: 'New Note'
+	String get defaultText => 'New Note';
+}
+
+// Path: editor.actions
+class Translations$editor$actions$en {
+	Translations$editor$actions$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Save'
+	String get save => 'Save';
+
+	/// en: 'Close'
+	String get close => 'Close';
+
+	/// en: 'Cut'
+	String get cut => 'Cut';
+
+	/// en: 'Copy'
+	String get copy => 'Copy';
+
+	/// en: 'Delete'
+	String get delete => 'Delete';
+
+	/// en: 'Share'
+	String get share => 'Share';
+
+	/// en: 'Back'
+	String get back => 'Back';
+
+	/// en: 'Next'
+	String get next => 'Next';
+
+	/// en: 'Clear'
+	String get clear => 'Clear';
+
+	/// en: 'Paste'
+	String get paste => 'Paste';
+}
+
+// Path: editor.stickers
+class Translations$editor$stickers$en {
+	Translations$editor$stickers$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Stickers cannot be downloaded'
+	String get cannotDownload => 'Stickers cannot be downloaded';
+
+	/// en: 'Stickers'
+	String get title => 'Stickers';
+}
+
+// Path: editor.bookmark
+class Translations$editor$bookmark$en {
+	Translations$editor$bookmark$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Bookmark page'
+	String get add => 'Bookmark page';
+
+	/// en: 'Remove bookmark'
+	String get remove => 'Remove bookmark';
+}
+
+// Path: editor.tape
+class Translations$editor$tape$en {
+	Translations$editor$tape$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Reveal all study tape'
+	String get revealAllTooltip => 'Reveal all study tape';
+
+	/// en: 'Conceal all study tape'
+	String get concealAllTooltip => 'Conceal all study tape';
+
+	/// en: 'Study Tape (Active Recall)'
+	String get tooltip => 'Study Tape (Active Recall)';
+
+	/// en: 'Conceal All'
+	String get concealAll => 'Conceal All';
+
+	/// en: 'Reveal All'
+	String get revealAll => 'Reveal All';
+
+	/// en: 'Patterns'
+	String get patterns => 'Patterns';
+
+	/// en: 'Tape'
+	String get short => 'Tape';
+
+	/// en: 'Study Tape'
+	String get title => 'Study Tape';
+
+	/// en: 'Study Tape Options'
+	String get options => 'Study Tape Options';
+
+	/// en: 'Tape Pattern'
+	String get pattern => 'Tape Pattern';
+
+	/// en: 'Solid'
+	String get solid => 'Solid';
+
+	/// en: 'Stripes'
+	String get stripes => 'Stripes';
+
+	/// en: 'Dots'
+	String get dots => 'Dots';
+
+	/// en: 'Grid'
+	String get grid => 'Grid';
+
+	/// en: 'Tape Color'
+	String get color => 'Tape Color';
+
+	/// en: 'Active Recall Study Controls'
+	String get studyControls => 'Active Recall Study Controls';
+}
+
+// Path: editor.lasso
+class Translations$editor$lasso$en {
+	Translations$editor$lasso$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Front'
+	String get front => 'Front';
+
+	/// en: 'Back'
+	String get back => 'Back';
+
+	/// en: 'Resize'
+	String get resize => 'Resize';
+
+	/// en: 'Color'
+	String get color => 'Color';
+
+	/// en: 'Screenshot'
+	String get screenshot => 'Screenshot';
+
+	/// en: 'Element'
+	String get element => 'Element';
+
+	/// en: 'Arrange'
+	String get arrange => 'Arrange';
+
+	/// en: 'Smoothen'
+	String get smoothen => 'Smoothen';
+
+	/// en: 'Crop'
+	String get crop => 'Crop';
+
+	/// en: 'Handwriting'
+	String get handwriting => 'Handwriting';
+
+	/// en: 'Images'
+	String get images => 'Images';
+
+	/// en: 'Text Boxes'
+	String get textBoxes => 'Text Boxes';
+
+	/// en: 'Lasso Settings'
+	String get settings => 'Lasso Settings';
+
+	/// en: 'Lasso Options'
+	String get options => 'Lasso Options';
+
+	/// en: 'LASSO TYPE'
+	String get typeHeading => 'LASSO TYPE';
+
+	/// en: 'Freehand'
+	String get freehand => 'Freehand';
+
+	/// en: 'Rectangular'
+	String get rectangular => 'Rectangular';
+
+	/// en: 'INCLUDED IN SELECTION'
+	String get includedHeading => 'INCLUDED IN SELECTION';
+
+	/// en: 'Pen, pencil, and highlighter strokes'
+	String get handwritingDescription => 'Pen, pencil, and highlighter strokes';
+
+	/// en: 'Photos, stickers, and PDFs'
+	String get imagesDescription => 'Photos, stickers, and PDFs';
+
+	/// en: 'Typed notes and text boxes'
+	String get textBoxesDescription => 'Typed notes and text boxes';
+
+	/// en: 'Masking tape strips'
+	String get tapeDescription => 'Masking tape strips';
+
+	/// en: 'Rect Select'
+	String get rectSelect => 'Rect Select';
+
+	/// en: 'Lasso Select'
+	String get lassoSelect => 'Lasso Select';
+
+	/// en: 'Lasso Filters'
+	String get filters => 'Lasso Filters';
+
+	/// en: 'Crop image'
+	String get cropImage => 'Crop image';
+
+	/// en: 'Done cropping'
+	String get doneCropping => 'Done cropping';
+
+	/// en: 'Bring to Front'
+	String get bringToFront => 'Bring to Front';
+
+	/// en: 'Send to Back'
+	String get sendToBack => 'Send to Back';
+
+	/// en: 'Smoothen Handwriting'
+	String get smoothenHandwriting => 'Smoothen Handwriting';
+
+	/// en: 'Done Resizing'
+	String get doneResizing => 'Done Resizing';
+
+	/// en: 'Screenshot copied to clipboard'
+	String get screenshotCopied => 'Screenshot copied to clipboard';
+}
+
+// Path: editor.drafting
+class Translations$editor$drafting$en {
+	Translations$editor$drafting$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Shape Library'
+	String get shapeLibrary => 'Shape Library';
+
+	/// en: 'Tap a symbol to insert it onto the canvas.'
+	String get shapeLibraryHint => 'Tap a symbol to insert it onto the canvas.';
+
+	/// en: 'Shapes & Drafting'
+	String get title => 'Shapes & Drafting';
+
+	/// en: 'Insert geometric primitives & symbols'
+	String get shapeLibraryDescription => 'Insert geometric primitives & symbols';
+
+	/// en: 'On-screen straightedge guide'
+	String get rulerDescription => 'On-screen straightedge guide';
+
+	/// en: 'Straight Arrow'
+	String get straightArrow => 'Straight Arrow';
+
+	/// en: 'Direct pointer arrow'
+	String get straightArrowDescription => 'Direct pointer arrow';
+
+	/// en: 'Elbow Connector'
+	String get elbowConnector => 'Elbow Connector';
+
+	/// en: 'Orthogonal stepped connector line'
+	String get elbowConnectorDescription => 'Orthogonal stepped connector line';
+
+	/// en: 'Curved Connector'
+	String get curvedConnector => 'Curved Connector';
+
+	/// en: 'Smooth bezier spline connector'
+	String get curvedConnectorDescription => 'Smooth bezier spline connector';
+
+	/// en: 'Dimension Line'
+	String get dimensionLine => 'Dimension Line';
+
+	/// en: 'Measured line with real-world dimensions'
+	String get dimensionLineDescription => 'Measured line with real-world dimensions';
+
+	/// en: 'Arrow'
+	String get arrow => 'Arrow';
+
+	/// en: 'Dimension'
+	String get dimension => 'Dimension';
+
+	/// en: 'Drafting & Shapes'
+	String get titleAlt => 'Drafting & Shapes';
+}
+
+// Path: editor.outline
+class Translations$editor$outline$en {
+	Translations$editor$outline$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'No headings found'
+	String get noHeadings => 'No headings found';
+
+	/// en: 'No headings found in document'
+	String get noHeadingsInDocument => 'No headings found in document';
+
+	/// en: 'Type headings in text boxes to generate an automatic outline'
+	String get howTo => 'Type headings in text boxes to generate an automatic outline';
+
+	/// en: 'Outline'
+	String get title => 'Outline';
+}
+
+// Path: editor.sheet
+class Translations$editor$sheet$en {
+	Translations$editor$sheet$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Presentation'
+	String get presentation => 'Presentation';
+
+	/// en: 'Flashcards'
+	String get flashcards => 'Flashcards';
+
+	/// en: 'Canvas Mode'
+	String get canvasMode => 'Canvas Mode';
+
+	/// en: 'Paged'
+	String get paged => 'Paged';
+
+	/// en: 'Infinite Canvas (2D)'
+	String get infiniteCanvas => 'Infinite Canvas (2D)';
+
+	/// en: 'Bookmark'
+	String get bookmark => 'Bookmark';
+
+	/// en: 'Page is bookmarked'
+	String get pageIsBookmarked => 'Page is bookmarked';
+
+	/// en: 'Not bookmarked'
+	String get notBookmarked => 'Not bookmarked';
+
+	/// en: 'Page Size'
+	String get pageSize => 'Page Size';
+
+	/// en: 'Width'
+	String get width => 'Width';
+
+	/// en: 'Height'
+	String get height => 'Height';
+
+	/// en: 'Square'
+	String get square => 'Square';
+
+	/// en: 'Sticky Note'
+	String get stickyNote => 'Sticky Note';
+
+	/// en: 'Sticker'
+	String get sticker => 'Sticker';
+}
+
+// Path: editor.eraser
+class Translations$editor$eraser$en {
+	Translations$editor$eraser$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Eraser Settings'
+	String get settings => 'Eraser Settings';
+
+	/// en: 'Eraser Style'
+	String get style => 'Eraser Style';
+
+	/// en: 'Object'
+	String get object => 'Object';
+
+	/// en: 'Precision'
+	String get precision => 'Precision';
+
+	/// en: 'Auto-Deselect'
+	String get autoDeselect => 'Auto-Deselect';
+
+	/// en: 'Return to pen after erasing stroke'
+	String get autoDeselectDescription => 'Return to pen after erasing stroke';
+
+	/// en: 'Erase Highlighter Only'
+	String get highlighterOnly => 'Erase Highlighter Only';
+
+	/// en: 'Preserve pen ink, arrows, and text'
+	String get highlighterOnlyDescription => 'Preserve pen ink, arrows, and text';
+
+	/// en: 'Erase Tape Only'
+	String get tapeOnly => 'Erase Tape Only';
+
+	/// en: 'Only erase study tape strips'
+	String get tapeOnlyDescription => 'Only erase study tape strips';
+
+	/// en: 'Clear Page'
+	String get clearPage => 'Clear Page';
+
+	/// en: 'Highlighter Only'
+	String get highlighterOnlyShort => 'Highlighter Only';
+
+	/// en: 'Entire Stroke'
+	String get entireStroke => 'Entire Stroke';
+
+	/// en: 'Clear Page?'
+	String get clearPageTitle => 'Clear Page?';
+
+	/// en: 'This will delete all ink, shapes, and media on this page.'
+	String get clearPageDescription => 'This will delete all ink, shapes, and media on this page.';
+}
+
+// Path: editor.header
+class Translations$editor$header$en {
+	Translations$editor$header$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Documents'
+	String get documents => 'Documents';
+
+	/// en: 'Infinite'
+	String get infinite => 'Infinite';
+
+	/// en: 'Hand Reading Mode (Drawing disabled)'
+	String get readingMode => 'Hand Reading Mode (Drawing disabled)';
+
+	/// en: 'Editing Mode (Draw with Pen/Finger)'
+	String get editingMode => 'Editing Mode (Draw with Pen/Finger)';
+
+	/// en: 'More Options'
+	String get moreOptions => 'More Options';
+}
+
+// Path: editor.palette
+class Translations$editor$palette$en {
+	Translations$editor$palette$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Pen Color Slot'
+	String get penSlot => 'Pen Color Slot';
+
+	/// en: 'Highlighter Color Slot'
+	String get highlighterSlot => 'Highlighter Color Slot';
+
+	/// en: 'Adjust Stroke Width'
+	String get adjustWidth => 'Adjust Stroke Width';
+
+	/// en: 'Set Width'
+	String get setWidth => 'Set Width';
+}
+
+// Path: onboarding.paper
+class Translations$onboarding$paper$en {
+	Translations$onboarding$paper$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Silky Smooth Digital Paper'
+	String get title => 'Silky Smooth Digital Paper';
+
+	/// en: 'Write and sketch with fountain, ballpoint, pencil, and highlighter tools. Featuring customizable pressure curves and paper templates (grid, dotted, cornell, isometric).'
+	String get description => 'Write and sketch with fountain, ballpoint, pencil, and highlighter tools. Featuring customizable pressure curves and paper templates (grid, dotted, cornell, isometric).';
+
+	/// en: 'Paper Templates'
+	String get tagTemplates => 'Paper Templates';
+
+	/// en: 'Smooth Curves'
+	String get tagCurves => 'Smooth Curves';
+
+	/// en: 'Pressure Sensitive'
+	String get tagPressure => 'Pressure Sensitive';
+}
+
+// Path: onboarding.gestures
+class Translations$onboarding$gestures$en {
+	Translations$onboarding$gestures$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Magic Stylus Gestures'
+	String get title => 'Magic Stylus Gestures';
+
+	/// en: 'Scribble back and forth over handwriting, text, or stickers to erase them instantly! Circle anything to lasso select, move, scale, rotate, and recolor.'
+	String get description => 'Scribble back and forth over handwriting, text, or stickers to erase them instantly! Circle anything to lasso select, move, scale, rotate, and recolor.';
+
+	/// en: 'Two-Finger Tap Undo'
+	String get tagUndo => 'Two-Finger Tap Undo';
+
+	/// en: 'Circle to Select'
+	String get tagCircle => 'Circle to Select';
+
+	/// en: 'Scribble to Erase'
+	String get tagScribble => 'Scribble to Erase';
+}
+
+// Path: onboarding.tape
+class Translations$onboarding$tape$en {
+	Translations$onboarding$tape$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Study Tape & Active Recall'
+	String get title => 'Study Tape & Active Recall';
+
+	/// en: 'Conceal answers, formulas, and diagrams with study tape. Tap anytime to reveal or conceal, making revision fast and effortless.'
+	String get description => 'Conceal answers, formulas, and diagrams with study tape. Tap anytime to reveal or conceal, making revision fast and effortless.';
+
+	/// en: 'Study Mode'
+	String get tagStudy => 'Study Mode';
+
+	/// en: 'Tap to Reveal'
+	String get tagReveal => 'Tap to Reveal';
+
+	/// en: 'Active Recall'
+	String get tagRecall => 'Active Recall';
+}
+
+// Path: onboarding.elements
+class Translations$onboarding$elements$en {
+	Translations$onboarding$elements$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Elements & Infinite Canvas'
+	String get title => 'Elements & Infinite Canvas';
+
+	/// en: 'Collect stickers, diagrams, and shapes in the Elements tray. Switch effortlessly between structured pages and an infinite freeform canvas.'
+	String get description => 'Collect stickers, diagrams, and shapes in the Elements tray. Switch effortlessly between structured pages and an infinite freeform canvas.';
+
+	/// en: 'Infinite Workspace'
+	String get tagWorkspace => 'Infinite Workspace';
+
+	/// en: 'Multi-Layer Canvas'
+	String get tagLayers => 'Multi-Layer Canvas';
+
+	/// en: 'Elements Tray'
+	String get tagTray => 'Elements Tray';
 }
 
 // Path: sentry.consent.description

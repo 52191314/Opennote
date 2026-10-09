@@ -1,9 +1,11 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:saber/components/theming/uni_icon.dart';
+import 'package:saber/i18n/strings.g.dart';
 
 /// A dialog for selecting pre-made engineering SVG symbols.
 ///
@@ -36,12 +38,15 @@ class _ShapeLibraryDialogState extends State<ShapeLibraryDialog> {
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Text('Shape Library', style: theme.textTheme.titleLarge),
+              child: Text(
+                t.editor.drafting.shapeLibrary,
+                style: theme.textTheme.titleLarge,
+              ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
-                'Tap a symbol to insert it onto the canvas.',
+                t.editor.drafting.shapeLibraryHint,
                 style: theme.textTheme.bodyMedium,
               ),
             ),
