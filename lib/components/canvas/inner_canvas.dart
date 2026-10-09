@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:math';
@@ -95,6 +96,11 @@ class InnerCanvas extends StatefulWidget {
 }
 
 class _InnerCanvasState extends State<InnerCanvas> {
+  final _quillScrollController = ScrollController();
+
+  /// What [_buildInputs] returned when this was last built.
+  Object? _lastBuildInputs;
+
   @override
   void initState() {
     super.initState();
@@ -102,18 +108,52 @@ class _InnerCanvasState extends State<InnerCanvas> {
   }
 
   @override
+  void didUpdateWidget(InnerCanvas oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.redrawPageListenable == widget.redrawPageListenable) return;
+    oldWidget.redrawPageListenable?.removeListener(_onPageChanged);
+    widget.redrawPageListenable?.addListener(_onPageChanged);
+  }
+
+  @override
   void dispose() {
     widget.redrawPageListenable?.removeListener(_onPageChanged);
+    _quillScrollController.dispose();
     super.dispose();
   }
 
+  /// Rebuilds only if the page changed something that [build] reads.
+  /// The page notifies on every pointer move while drawing, and repainting
+  /// the strokes is the painter's job, not a reason to rebuild.
   void _onPageChanged() {
-    // Rebuild to reflect text offset/rotation changes
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    if (_buildInputs() == _lastBuildInputs) return;
+    setState(() {});
+  }
+
+  /// Everything [build] reads that can change without the editor rebuilding
+  /// this widget: where the text is, which images there are, and where the
+  /// selection (and so its callout menu) is.
+  ///
+  /// Strokes are left out because [CanvasPainter] reads them as it paints.
+  Object? _buildInputs() {
+    final pages = widget.coreInfo.pages;
+    if (widget.pageIndex >= pages.length) return null;
+    final page = pages[widget.pageIndex];
+    final selection = widget.currentSelection;
+    return (
+      page.textPlacement,
+      page.backgroundImage,
+      Object.hashAll(page.images),
+      selection?.isNotEmpty,
+      selection?.path.getBounds(),
+      selection == null ? null : Object.hashAll(selection.images),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    _lastBuildInputs = _buildInputs();
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final brightness = theme.brightness;
@@ -152,7 +192,7 @@ class _InnerCanvasState extends State<InnerCanvas> {
                 bottom: widget.coreInfo.lineHeight * 0.5,
               ),
             ),
-            scrollController: ScrollController(),
+            scrollController: _quillScrollController,
             focusNode: widget.coreInfo.pages[widget.pageIndex].quill.focusNode,
           )
         : null;
@@ -183,7 +223,6 @@ class _InnerCanvasState extends State<InnerCanvas> {
       foregroundPainter: CanvasPainter(
         repaint: widget.redrawPageListenable,
         invert: invert,
-        strokes: page.strokes,
         laserStrokes: page.laserStrokes,
         currentStroke: widget.currentStroke,
         currentSelection: widget.currentSelection,

@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:math';
@@ -26,7 +27,7 @@ class CanvasPainter extends CustomPainter {
   const CanvasPainter({
     super.repaint,
     this.invert = false,
-    required this.strokes,
+    this.strokes,
     required this.laserStrokes,
     required this.currentStroke,
     required this.currentSelection,
@@ -42,7 +43,14 @@ class CanvasPainter extends CustomPainter {
   });
 
   final bool invert;
-  final List<Stroke> strokes;
+
+  /// The strokes to paint, or null to paint whatever strokes are on [page]
+  /// each time this paints.
+  ///
+  /// Leave this null for a canvas that is being edited: strokes are added,
+  /// erased and swapped between builds, and a list captured at build time
+  /// would go stale.
+  final List<Stroke>? strokes;
   final List<LaserStroke> laserStrokes;
   final Stroke? currentStroke;
   final SelectResult? currentSelection;
@@ -59,13 +67,14 @@ class CanvasPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final canvasRect = isInfiniteCanvas ? null : (Offset.zero & size);
+    final strokes = this.strokes ?? page.strokes;
 
-    _drawHighlighterStrokes(canvas, canvasRect);
+    _drawHighlighterStrokes(canvas, canvasRect, strokes);
     if (currentStroke?.toolId == .highlighter) {
       _drawCurrentStroke(canvas);
-      _drawNonHighlighterStrokes(canvas);
+      _drawNonHighlighterStrokes(canvas, strokes);
     } else {
-      _drawNonHighlighterStrokes(canvas);
+      _drawNonHighlighterStrokes(canvas, strokes);
       _drawCurrentStroke(canvas);
     }
     for (final stroke in laserStrokes) _drawLaserStroke(canvas, stroke);
@@ -89,7 +98,9 @@ class CanvasPainter extends CustomPainter {
             oldDelegate.page.laserSpotlightPosition) ||
         // Check for any other changes
         invert != oldDelegate.invert ||
-        strokes.length != oldDelegate.strokes.length ||
+        // Strokes read from the page can't be compared with the old ones
+        strokes == null ||
+        strokes!.length != oldDelegate.strokes?.length ||
         currentSelection != oldDelegate.currentSelection ||
         primaryColor != oldDelegate.primaryColor ||
         page != oldDelegate.page ||
@@ -100,7 +111,11 @@ class CanvasPainter extends CustomPainter {
         isInfiniteCanvas != oldDelegate.isInfiniteCanvas;
   }
 
-  void _drawHighlighterStrokes(Canvas canvas, Rect? canvasRect) {
+  void _drawHighlighterStrokes(
+    Canvas canvas,
+    Rect? canvasRect,
+    List<Stroke> strokes,
+  ) {
     final layerPaint = Paint()
       ..blendMode = invert ? BlendMode.lighten : BlendMode.darken
       ..color = Colors.white.withAlpha(Highlighter.alpha);
@@ -127,7 +142,7 @@ class CanvasPainter extends CustomPainter {
     if (needToRestoreCanvasLayer) canvas.restore();
   }
 
-  void _drawNonHighlighterStrokes(Canvas canvas) {
+  void _drawNonHighlighterStrokes(Canvas canvas, List<Stroke> strokes) {
     late final paint = Paint();
 
     for (final stroke in strokes) {
