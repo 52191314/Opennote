@@ -1,3 +1,6 @@
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
+library;
+
 import 'dart:async';
 import 'dart:io';
 
@@ -10,15 +13,24 @@ import 'package:sentry_logging/sentry_logging.dart';
 
 export 'package:sentry_flutter/sentry_flutter.dart' show SentryWidget;
 
+/// Whether this app has a Sentry project of its own to report crashes to.
+///
+/// Opennote doesn't yet: the DSN in [populateSentryOptions] is upstream
+/// Saber's, and Opennote crashes must not land with the Saber maintainers.
+/// Replace that DSN with an Opennote project's before setting this to true.
+const isSentryConfigured = false;
+
 /// Whether the Sentry SDK is available for use.
 /// Also see [isSentryEnabled].
 ///
 /// This flag will be:
 /// - false if the foss patches were applied before this build
+/// - false unless [isSentryConfigured] (except in tests)
 /// - false on Linux (except in tests)
 /// - true otherwise
 @pragma('vm:platform-const-if', !kDebugMode)
-bool get isSentryAvailable => !Platform.isLinux || isThisATest;
+bool get isSentryAvailable =>
+    isThisATest || (isSentryConfigured && !Platform.isLinux);
 
 /// Whether Sentry was initialized when the app started.
 ///
