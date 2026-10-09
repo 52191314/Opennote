@@ -2049,6 +2049,68 @@ class EditorState extends State<Editor> implements EditorGestureHost {
     }
   }
 
+  /// Switches to [tool]. Choosing the eraser while it is already in use
+  /// switches back to the tool used before it.
+  void _setTool(Tool tool) {
+    if (tool is Eraser && currentTool is Eraser) tool = _lastNonEraserTool;
+    currentTool = tool;
+    if (tool is Highlighter) {
+      Highlighter.currentHighlighter = tool;
+    } else if (tool is Pencil) {
+      Pencil.currentPencil = tool;
+    } else if (Pen.isWritingPen(tool)) {
+      Pen.currentPen = tool as Pen;
+    }
+    if (mounted) setState(() {});
+  }
+
+  /// Gives [color] to the current pen, or to the strokes in the selection.
+  void _setToolColor(Color color) {
+    setState(() {
+      updateColorBar(color);
+      switch (currentTool) {
+        case final Highlighter highlighter:
+          highlighter.color = color.withAlpha(Highlighter.alpha);
+        case final Pen pen:
+          pen.color = color;
+        case Select():
+          _setSelectionColor(color);
+        default:
+      }
+    });
+  }
+
+  void _deleteCurrentSelection() {
+    final select = currentTool as Select;
+    if (!select.doneSelecting) return;
+    final page = coreInfo.pages[select.selectResult.pageIndex];
+    setState(() => _deleteSelection(select, page));
+  }
+
+  /// Starts typing on the current page, or goes back to the pen.
+  void _toggleTextEditing() {
+    setState(() {
+      if (currentTool != Tool.textEditing) {
+        currentTool = Tool.textEditing;
+        quillFocus.value = coreInfo.pages[currentPageIndex].quill
+          ..focusNode.requestFocus();
+        return;
+      }
+      currentTool = Pen.currentPen;
+      for (final page in coreInfo.pages) {
+        page.quill.controller.moveCursorToPosition(
+          page.quill.controller.selection.extentOffset,
+        );
+        page.quill.focusNode.unfocus();
+      }
+    });
+  }
+
+  void _toggleFingerDrawing() {
+    stows.editorFingerDrawing.value = !stows.editorFingerDrawing.value;
+    lastSeenPointerCount = 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.of(context);
@@ -2130,59 +2192,14 @@ class EditorState extends State<Editor> implements EditorGestureHost {
     final Widget toolbarContent = stows.goodnotesUiMode.value
         ? GoodnotesToolbar(
             readOnly: coreInfo.readOnly,
-            setTool: (tool) {
-              if (tool is Eraser && currentTool is Eraser) {
-                tool = _lastNonEraserTool;
-              }
-              currentTool = tool;
-              if (tool is Highlighter) {
-                Highlighter.currentHighlighter = tool;
-              } else if (tool is Pencil) {
-                Pencil.currentPencil = tool;
-              } else if (Pen.isWritingPen(tool)) {
-                Pen.currentPen = tool as Pen;
-              }
-              if (mounted) setState(() {});
-            },
+            setTool: _setTool,
             currentTool: currentTool,
             duplicateSelection: _duplicateSelection,
-            deleteSelection: () {
-              final select = currentTool as Select;
-              if (!select.doneSelecting) return;
-              final page = coreInfo.pages[select.selectResult.pageIndex];
-              setState(() => _deleteSelection(select, page));
-            },
-            setColor: (color) {
-              setState(() {
-                updateColorBar(color);
-                if (currentTool is Highlighter) {
-                  (currentTool as Highlighter).color = color.withAlpha(
-                    Highlighter.alpha,
-                  );
-                } else if (currentTool is Pen) {
-                  (currentTool as Pen).color = color;
-                } else if (currentTool is Select) {
-                  _setSelectionColor(color);
-                }
-              });
-            },
+            deleteSelection: _deleteCurrentSelection,
+            setColor: _setToolColor,
             quillFocus: quillFocus,
             textEditing: currentTool == Tool.textEditing,
-            toggleTextEditing: () => setState(() {
-              if (currentTool == Tool.textEditing) {
-                currentTool = Pen.currentPen;
-                for (final page in coreInfo.pages) {
-                  page.quill.controller.moveCursorToPosition(
-                    page.quill.controller.selection.extentOffset,
-                  );
-                  page.quill.focusNode.unfocus();
-                }
-              } else {
-                currentTool = Tool.textEditing;
-                quillFocus.value = coreInfo.pages[currentPageIndex].quill
-                  ..focusNode.requestFocus();
-              }
-            }),
+            toggleTextEditing: _toggleTextEditing,
             pickPhoto: _pickPhotos,
             pickShape: _insertShapeFromLibrary,
             paste: paste,
@@ -2202,68 +2219,19 @@ class EditorState extends State<Editor> implements EditorGestureHost {
           )
         : Toolbar(
             readOnly: coreInfo.readOnly,
-            setTool: (tool) {
-              if (tool is Eraser && currentTool is Eraser) {
-                tool = _lastNonEraserTool;
-              }
-              currentTool = tool;
-              if (tool is Highlighter) {
-                Highlighter.currentHighlighter = tool;
-              } else if (tool is Pencil) {
-                Pencil.currentPencil = tool;
-              } else if (Pen.isWritingPen(tool)) {
-                Pen.currentPen = tool as Pen;
-              }
-              if (mounted) setState(() {});
-            },
+            setTool: _setTool,
             currentTool: currentTool,
             duplicateSelection: _duplicateSelection,
-            deleteSelection: () {
-              final select = currentTool as Select;
-              if (!select.doneSelecting) return;
-              final page = coreInfo.pages[select.selectResult.pageIndex];
-              setState(() => _deleteSelection(select, page));
-            },
-            setColor: (color) {
-              setState(() {
-                updateColorBar(color);
-                if (currentTool is Highlighter) {
-                  (currentTool as Highlighter).color = color.withAlpha(
-                    Highlighter.alpha,
-                  );
-                } else if (currentTool is Pen) {
-                  (currentTool as Pen).color = color;
-                } else if (currentTool is Select) {
-                  _setSelectionColor(color);
-                }
-              });
-            },
+            deleteSelection: _deleteCurrentSelection,
+            setColor: _setToolColor,
             quillFocus: quillFocus,
             textEditing: currentTool == Tool.textEditing,
-            toggleTextEditing: () => setState(() {
-              if (currentTool == Tool.textEditing) {
-                currentTool = Pen.currentPen;
-                for (final page in coreInfo.pages) {
-                  page.quill.controller.moveCursorToPosition(
-                    page.quill.controller.selection.extentOffset,
-                  );
-                  page.quill.focusNode.unfocus();
-                }
-              } else {
-                currentTool = Tool.textEditing;
-                quillFocus.value = coreInfo.pages[currentPageIndex].quill
-                  ..focusNode.requestFocus();
-              }
-            }),
+            toggleTextEditing: _toggleTextEditing,
             undo: undo,
             isUndoPossible: history.canUndo,
             redo: redo,
             isRedoPossible: history.canRedo,
-            toggleFingerDrawing: () {
-              stows.editorFingerDrawing.value =
-                  !stows.editorFingerDrawing.value;
-              lastSeenPointerCount = 0;
-            },
+            toggleFingerDrawing: _toggleFingerDrawing,
             pickPhoto: _pickPhotos,
             pickShape: _insertShapeFromLibrary,
             paste: paste,
