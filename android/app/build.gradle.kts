@@ -74,13 +74,21 @@ dependencies {
     implementation("com.google.android.material:material:1.14.0")
 }
 
+base {
+    archivesName.set("Opennote")
+}
+
 val abiCodes = mapOf("armeabi-v7a" to 1, "arm64-v8a" to 2, "x86_64" to 3)
 android.applicationVariants.configureEach {
     val variant = this
     variant.outputs.forEach { output ->
-        val abiVersionCode = abiCodes[output.filters.find { it.filterType == "ABI" }?.identifier]
+        val impl = output as ApkVariantOutputImpl
+        val abi = impl.filters.find { it.filterType == "ABI" }?.identifier
+        val abiVersionCode = abiCodes[abi]
         if (abiVersionCode != null) {
-            (output as ApkVariantOutputImpl).versionCodeOverride = variant.versionCode * 10 + abiVersionCode
+            impl.versionCodeOverride = variant.versionCode * 10 + abiVersionCode
         }
+        val abiSuffix = if (abi != null) "_$abi" else ""
+        impl.outputFileName = "Opennote_v${variant.versionName}${abiSuffix}.apk"
     }
 }
