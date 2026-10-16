@@ -47,6 +47,7 @@ import 'package:saber/components/toolbar/export_bar.dart';
 import 'package:saber/components/toolbar/goodnotes_header_bar.dart';
 import 'package:saber/components/toolbar/goodnotes_toolbar.dart';
 import 'package:saber/components/toolbar/toolbar.dart';
+import 'package:saber/data/editor/canvas_mode_conversion.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/editor_exporter.dart';
 import 'package:saber/data/editor/editor_history.dart';
@@ -2763,6 +2764,7 @@ class EditorState extends State<Editor>
         page.redrawStrokes();
         autosaveUntrackedChange();
       }),
+      setInfiniteCanvas: setInfiniteCanvas,
       removeBackgroundImage: () => setState(() {
         if (coreInfo.readOnly) return;
 
@@ -2918,6 +2920,35 @@ class EditorState extends State<Editor>
       clearPage: clearPage,
       deletePage: deletePage,
     );
+  }
+
+  /// Switches between paged and infinite canvas without hiding any content.
+  ///
+  /// An infinite canvas only shows the first page, so later pages are merged
+  /// into it. Going back to paged mode grows the first page to hold
+  /// everything. Both rewrite page indices, so undo history is cleared.
+  void setInfiniteCanvas(bool infinite) {
+    if (coreInfo.readOnly) return;
+    if (coreInfo.isInfiniteCanvas == infinite) return;
+
+    setState(() {
+      if (infinite) {
+        _mergePagesForInfiniteCanvas();
+      } else if (coreInfo.pages.isNotEmpty) {
+        fitFirstPageToContent(coreInfo.pages.first);
+      }
+      coreInfo.isInfiniteCanvas = infinite;
+      createPage(0);
+      history.clear();
+      autosaveUntrackedChange();
+    });
+  }
+
+  void _mergePagesForInfiniteCanvas() {
+    final first = coreInfo.pages.firstOrNull;
+    first?.quill.changeSubscription?.cancel();
+    mergePagesIntoFirst(coreInfo.pages);
+    listenToQuillChanges(coreInfo.pages.first.quill, 0);
   }
 
   void duplicatePage(int pageIndex) {

@@ -108,6 +108,15 @@ class EditorHistory {
     _hasUntrackedChange = true;
   }
 
+  /// Empties the undo and redo stacks, e.g. when a change like merging
+  /// pages invalidates the page indices stored in them.
+  void clear() {
+    _past.clear();
+    _future.clear();
+    _isRedoPossible = false;
+    _lastSaved = null;
+  }
+
   /// Whether the current state is saved to disk.
   ///
   /// Note that this explicitly checks the last change in the history,

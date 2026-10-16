@@ -1,5 +1,6 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
 library;
 
 import 'dart:math' show min;
@@ -31,6 +32,7 @@ class EditorBottomSheet extends StatefulWidget {
     required this.setBackgroundPattern,
     required this.setLineHeight,
     required this.setLineThickness,
+    required this.setInfiniteCanvas,
     required this.removeBackgroundImage,
     required this.redrawImage,
     required this.clearPage,
@@ -55,6 +57,7 @@ class EditorBottomSheet extends StatefulWidget {
   final void Function(CanvasBackgroundPattern) setBackgroundPattern;
   final void Function(int) setLineHeight;
   final void Function(int) setLineThickness;
+  final void Function(bool infinite) setInfiniteCanvas;
   final void Function(Size)? setPageSize;
   final VoidCallback? onOpenPresentation;
   final VoidCallback? onOpenFlashcards;
@@ -441,8 +444,7 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
               onSelectionChanged: !widget.coreInfo.readOnly
                   ? (newSelection) {
                       setState(() {
-                        widget.coreInfo.isInfiniteCanvas = newSelection.first;
-                        widget.redrawAndSave();
+                        widget.setInfiniteCanvas(newSelection.first);
                       });
                     }
                   : null,
