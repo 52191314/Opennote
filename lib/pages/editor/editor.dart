@@ -118,7 +118,9 @@ class Editor extends StatefulWidget {
   State<Editor> createState() => EditorState();
 }
 
-class EditorState extends State<Editor> implements EditorGestureHost {
+class EditorState extends State<Editor>
+    with WidgetsBindingObserver
+    implements EditorGestureHost {
   final log = Logger('EditorState');
 
   late var coreInfo = EditorCoreInfo.placeholder;
@@ -249,6 +251,7 @@ class EditorState extends State<Editor> implements EditorGestureHost {
   @override
   void initState() {
     DynamicMaterialApp.addFullscreenListener(_setState);
+    WidgetsBinding.instance.addObserver(this);
 
     _initAsync();
     _assignKeybindings();
@@ -905,32 +908,39 @@ class EditorState extends State<Editor> implements EditorGestureHost {
     syncer.downloader.bringToFront(syncFile);
   }
 
+  /// Schedules a save at most `stows.autosaveDelay` after the first unsaved
+  /// change. Further changes don't push the save back, so writing
+  /// continuously still saves every interval.
   @override
   void autosaveAfterDelay() {
     if (history.isCurrentStateSaved) return cancelAutosaveAndMarkSaved();
 
-    late final void Function() callback;
-
-    void startTimer() {
-      _delayedSaveTimer?.cancel();
-      if (stows.autosaveDelay.value < 0) return;
-      _delayedSaveTimer = Timer(
-        Duration(milliseconds: stows.autosaveDelay.value),
-        callback,
-      );
-    }
-
-    callback = () {
-      if (Pen.currentStroke != null) {
-        // don't save yet if the pen is currently drawing
-        startTimer();
-        return;
-      }
-      saveToFile();
-    };
-
     savingState.value = .waitingToSave;
-    startTimer();
+    if (_delayedSaveTimer?.isActive ?? false) return;
+    _startAutosaveTimer();
+  }
+
+  void _startAutosaveTimer() {
+    _delayedSaveTimer?.cancel();
+    if (stows.autosaveDelay.value < 0) return;
+    _delayedSaveTimer = Timer(
+      Duration(milliseconds: stows.autosaveDelay.value),
+      _autosaveNow,
+    );
+  }
+
+  void _autosaveNow() {
+    if (Pen.currentStroke != null) return _startAutosaveTimer();
+    saveToFile();
+  }
+
+  /// Saves as soon as the app leaves the foreground, since the system may
+  /// kill it before the autosave timer fires.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == .resumed) return;
+    if (savingState.value != .waitingToSave) return;
+    unawaited(saveToFile());
   }
 
   /// Like [autosaveAfterDelay], for changes that have no undo history entry
@@ -3110,6 +3120,7 @@ class EditorState extends State<Editor> implements EditorGestureHost {
     unawaited(_cleanUpAsync());
 
     DynamicMaterialApp.removeFullscreenListener(_setState);
+    WidgetsBinding.instance.removeObserver(this);
 
     _delayedSaveTimer?.cancel();
     _watchServerTimer?.cancel();
