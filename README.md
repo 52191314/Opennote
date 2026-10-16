@@ -106,6 +106,24 @@ If you like Saber, please consider supporting it by:
 - Donating via [PayPal](https://paypal.me/adilhanney)
 - Buying more storage on the Nextcloud server: see [Pricing](pricing.md)
 
+## Project structure
+
+```
+Opennote/
+├── lib/                 # Flutter app: components/, data/ (incl. tools/), i18n/, pages/, main.dart
+├── test/                # Unit and widget tests
+├── packages/            # Local packages (onyxsdk_pen, sbn)
+├── submodules/flutter   # Pinned Flutter SDK submodule (stable)
+├── patches/             # pre/ and post/ patches applied before/after `flutter pub get` (see patches/README.md)
+├── assets/ assets_raw/ shaders/   # Runtime assets; raw badge/icon sources; pencil.frag
+├── android/ ios/ linux/ macos/ windows/   # Platform runners
+├── flatpak/ snap/ installers/     # Linux and Windows packaging
+├── metadata/            # Store listings, screenshots and translations (fastlane layout)
+├── scripts/             # Version bump, icons, screenshots, PDFium and font helpers
+├── .github/ codemagic.yaml        # CI / release pipelines
+└── AGENTS.md / CLAUDE.md / GEMINI.md   # AI agent guidance (.agents/ holds skills)
+```
+
 ## Development notes
 
 Please see
