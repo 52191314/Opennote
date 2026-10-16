@@ -1,5 +1,6 @@
 /// 🤖 Modified with DeepSeek v4 Flash
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
 library;
 
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
+import 'package:saber/data/tools/stroke_touch.dart';
 import 'package:sbn/tool_id.dart';
 
 class Select extends Tool {
@@ -193,23 +195,7 @@ class Select extends Tool {
     selectResult.path.close();
     doneSelecting = true;
 
-    for (int i = 0; i < strokes.length; i++) {
-      final stroke = strokes[i];
-      final isTape = stroke is TapeStroke;
-      if (isTape && !stows.lassoSelectTape.value) continue;
-      if (!isTape && !stows.lassoSelectHandwriting.value) continue;
-
-      final percentInside = polygonPercentInside(
-        selectResult.path,
-        stroke.lowQualityPolygon,
-      );
-      if (percentInside > minPercentInside ||
-          (stroke.length <= 3 &&
-              stroke.lowQualityPolygon.isNotEmpty &&
-              selectResult.path.contains(stroke.lowQualityPolygon.first))) {
-        selectResult.strokes.add(stroke);
-      }
-    }
+    _selectStrokes(strokes);
 
     if (stows.lassoSelectImages.value) {
       for (int i = 0; i < images.length; i++) {
@@ -231,6 +217,43 @@ class Select extends Tool {
         selectResult.textSelected = true;
       }
     }
+  }
+
+  /// Adds the [strokes] the lasso selects, and the strokes connected to them
+  /// if `stows.lassoSelectConnected` is on.
+  void _selectStrokes(List<Stroke> strokes) {
+    final lassoed = [
+      for (final stroke in strokes)
+        if (_isFilteredIn(stroke) && _isLassoed(stroke)) stroke,
+    ];
+    selectResult.strokes.addAll(lassoed);
+
+    if (!stows.lassoSelectConnected.value) return;
+    if (!stows.lassoSelectHandwriting.value) return;
+    selectResult.strokes.addAll(
+      connectedStrokes(
+        from: lassoed,
+        among: strokes.where((stroke) => stroke is! TapeStroke),
+      ),
+    );
+  }
+
+  static bool _isFilteredIn(Stroke stroke) => stroke is TapeStroke
+      ? stows.lassoSelectTape.value
+      : stows.lassoSelectHandwriting.value;
+
+  /// Whether the lasso covers enough of [stroke] to select it.
+  bool _isLassoed(Stroke stroke) {
+    final polygon = stroke.lowQualityPolygon;
+    final percentInside = polygonPercentInside(selectResult.path, polygon);
+    if (percentInside > minPercentInside) return true;
+    if (stroke.length <= 3 &&
+        polygon.isNotEmpty &&
+        selectResult.path.contains(polygon.first)) {
+      return true;
+    }
+    return stows.lassoSelectPartial.value &&
+        strokeCenterline(stroke).any(selectResult.path.contains);
   }
 
   /// Prunes any elements from the active selection whose filter is currently disabled.

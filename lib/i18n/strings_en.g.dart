@@ -1918,6 +1918,21 @@ class Translations$editor$lasso$en {
 	/// en: 'Masking tape strips'
 	String get tapeDescription => 'Masking tape strips';
 
+	/// en: 'SMART SELECTION'
+	String get smartHeading => 'SMART SELECTION';
+
+	/// en: 'Select touched strokes'
+	String get partial => 'Select touched strokes';
+
+	/// en: 'Select a stroke even if the lasso only covers part of it'
+	String get partialDescription => 'Select a stroke even if the lasso only covers part of it';
+
+	/// en: 'Select connected strokes'
+	String get connected => 'Select connected strokes';
+
+	/// en: 'Also select strokes that touch the selected ones, like a whole cursive word'
+	String get connectedDescription => 'Also select strokes that touch the selected ones, like a whole cursive word';
+
 	/// en: 'Rect Select'
 	String get rectSelect => 'Rect Select';
 

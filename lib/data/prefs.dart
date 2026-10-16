@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
 library;
 
 import 'dart:async';
@@ -263,6 +264,22 @@ class Stows {
   /// Whether the lasso/select tool selects study tape strokes.
   final lassoSelectTape = PlainStow<bool>(
     'lassoSelectTape',
+    true,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Whether the lasso selects a stroke when it only covers part of it,
+  /// instead of requiring most of the stroke to be inside.
+  final lassoSelectPartial = PlainStow<bool>(
+    'lassoSelectPartial',
+    true,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Whether the lasso also selects the strokes that touch the ones it
+  /// selected, like the rest of a cursive word.
+  final lassoSelectConnected = PlainStow<bool>(
+    'lassoSelectConnected',
     true,
     volatile: !_isOnMainIsolate,
   );

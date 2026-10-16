@@ -1,5 +1,6 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
 library;
 
 import 'package:flutter/cupertino.dart';
@@ -137,6 +138,35 @@ class _LassoFilterPopupState extends State<LassoFilterPopup> {
                 subtitle: Text(t.editor.lasso.tapeDescription),
                 value: stows.lassoSelectTape.value,
                 onChanged: (val) => _toggle(stows.lassoSelectTape, val),
+                contentPadding: EdgeInsets.zero,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                t.editor.lasso.smartHeading,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 4),
+              AdaptiveSwitchListTile(
+                secondary: const Icon(Icons.select_all),
+                title: Text(t.editor.lasso.partial),
+                subtitle: Text(t.editor.lasso.partialDescription),
+                value: stows.lassoSelectPartial.value,
+                onChanged: (val) =>
+                    setState(() => stows.lassoSelectPartial.value = val),
+                contentPadding: EdgeInsets.zero,
+              ),
+              AdaptiveSwitchListTile(
+                secondary: const Icon(Icons.link),
+                title: Text(t.editor.lasso.connected),
+                subtitle: Text(t.editor.lasso.connectedDescription),
+                value: stows.lassoSelectConnected.value,
+                onChanged: (val) =>
+                    setState(() => stows.lassoSelectConnected.value = val),
                 contentPadding: EdgeInsets.zero,
               ),
             ],
