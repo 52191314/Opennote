@@ -1,6 +1,7 @@
 /// 🤖 Modified with DeepSeek v4 Flash
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
 library;
 
 import 'dart:async';
@@ -930,6 +931,14 @@ class EditorState extends State<Editor> implements EditorGestureHost {
 
     savingState.value = .waitingToSave;
     startTimer();
+  }
+
+  /// Like [autosaveAfterDelay], for changes that have no undo history entry
+  /// (canvas mode, line height, page size...) and so would otherwise count as
+  /// already saved.
+  void autosaveUntrackedChange() {
+    history.markUnsavedChange();
+    autosaveAfterDelay();
   }
 
   void cancelAutosaveAndMarkSaved() {
@@ -2337,7 +2346,7 @@ class EditorState extends State<Editor> implements EditorGestureHost {
                   final page = coreInfo.pages[pageIdx];
                   page.bookmarked = !page.bookmarked;
                   page.redrawStrokes();
-                  autosaveAfterDelay();
+                  autosaveUntrackedChange();
                 }),
                 onInsertPage: () => setState(() {
                   final currentPageIndex = this.currentPageIndex;
@@ -2524,7 +2533,7 @@ class EditorState extends State<Editor> implements EditorGestureHost {
                                 final page = coreInfo.pages[pageIdx];
                                 page.bookmarked = !page.bookmarked;
                                 page.redrawStrokes();
-                                autosaveAfterDelay();
+                                autosaveUntrackedChange();
                               }),
                               child: Padding(
                                 padding: EdgeInsets.symmetric(
@@ -2728,13 +2737,13 @@ class EditorState extends State<Editor> implements EditorGestureHost {
         if (coreInfo.readOnly) return;
         coreInfo.lineHeight = lineHeight;
         stows.lastLineHeight.value = lineHeight;
-        autosaveAfterDelay();
+        autosaveUntrackedChange();
       }),
       setLineThickness: (lineThickness) => setState(() {
         if (coreInfo.readOnly) return;
         coreInfo.lineThickness = lineThickness;
         stows.lastLineThickness.value = lineThickness;
-        autosaveAfterDelay();
+        autosaveUntrackedChange();
       }),
       setPageSize: (Size newSize) => setState(() {
         if (coreInfo.readOnly) return;
@@ -2742,7 +2751,7 @@ class EditorState extends State<Editor> implements EditorGestureHost {
         final page = coreInfo.pages[currentPageIndex];
         page.size = newSize;
         page.redrawStrokes();
-        autosaveAfterDelay();
+        autosaveUntrackedChange();
       }),
       removeBackgroundImage: () => setState(() {
         if (coreInfo.readOnly) return;
@@ -2752,7 +2761,7 @@ class EditorState extends State<Editor> implements EditorGestureHost {
         page.images.add(page.backgroundImage!);
         page.backgroundImage = null;
 
-        autosaveAfterDelay();
+        autosaveUntrackedChange();
       }),
       redrawImage: () => setState(() {}),
       clearPage: () {
@@ -2761,7 +2770,7 @@ class EditorState extends State<Editor> implements EditorGestureHost {
       clearAllPages: clearAllPages,
       redrawAndSave: () => setState(() {
         if (coreInfo.readOnly) return;
-        autosaveAfterDelay();
+        autosaveUntrackedChange();
       }),
       pickPhotos: _pickPhotos,
       importPdf: importPdf,
@@ -2892,7 +2901,7 @@ class EditorState extends State<Editor> implements EditorGestureHost {
       },
       redrawAndSave: () => setState(() {
         if (coreInfo.readOnly) return;
-        autosaveAfterDelay();
+        autosaveUntrackedChange();
       }),
       insertPageAfter: insertPageAfter,
       duplicatePage: duplicatePage,

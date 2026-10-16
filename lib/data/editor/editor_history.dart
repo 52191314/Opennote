@@ -1,4 +1,5 @@
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
 library;
 
 import 'package:flutter/material.dart';
@@ -89,11 +90,22 @@ class EditorHistory {
     _isRedoPossible = false;
   }
 
+  /// Whether something changed that is not represented in [_past],
+  /// such as the canvas mode, so [_lastSaved] alone can't detect it.
+  var _hasUntrackedChange = false;
+
   /// Marks the last change as saved to disk.
   /// This does not modify the history stacks, but allows us to know
   /// whether the current state is saved or not.
   void markLastChangeAsSaved() {
     _lastSaved = _past.lastOrNull;
+    _hasUntrackedChange = false;
+  }
+
+  /// Records that the note changed in a way that has no undo entry,
+  /// so that [isCurrentStateSaved] is false until the next save.
+  void markUnsavedChange() {
+    _hasUntrackedChange = true;
   }
 
   /// Whether the current state is saved to disk.
@@ -102,7 +114,7 @@ class EditorHistory {
   /// not whether _past is empty. This is because _past items can be discarded
   /// if the history exceeds [maxHistoryLength].
   bool get isCurrentStateSaved {
-    return _past.lastOrNull == _lastSaved;
+    return !_hasUntrackedChange && _past.lastOrNull == _lastSaved;
   }
 
   /// Removes the last history item due to a rejected stroke.
