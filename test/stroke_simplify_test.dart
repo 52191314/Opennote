@@ -103,11 +103,11 @@ void main() {
       // a square outline with 3 points per side, so corners fall on
       // indices that skipping every 4th point would drop
       final corners = [
-        const Offset(0, 0),
+        Offset.zero,
         const Offset(300, 0),
         const Offset(300, 300),
         const Offset(0, 300),
-        const Offset(0, 0),
+        Offset.zero,
       ];
       final offsets = <Offset>[
         for (var side = 0; side < 4; side++)
