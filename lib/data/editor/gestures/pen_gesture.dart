@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
 library;
 
 import 'dart:ui';
@@ -122,6 +123,7 @@ class PenGesture implements ToolGesture {
       pen.options.size,
       page: page,
       lineHeight: lineHeight > 0 ? lineHeight : fallbackLineHeight,
+      scale: _host.currentScale,
     );
     if (_scribble.state != ScribbleState.erasing) return false;
 

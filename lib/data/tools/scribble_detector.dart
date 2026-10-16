@@ -1,5 +1,6 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
 library;
 
 import 'dart:math';
@@ -29,11 +30,24 @@ class ScribbleDetector {
   /// Maximum points to retain in the sliding window.
   static const maxBufferedPoints = 60;
 
+  /// The distances below are in screen pixels, so that a scribble looks the
+  /// same however far the canvas is zoomed.
   static const minPointDistance = 5.0;
   static const minReversals = 3;
   static const minDiagonal = 12.0;
   static const maxDiagonal = 450.0;
   static const pathLengthRatio = 1.6;
+
+  /// The most the passes of a scribble may be spaced apart, relative to how
+  /// long they are. Handwriting that goes up and down while moving along the
+  /// line is spaced further apart than the scribble that erases it.
+  static const maxPassSpacingRatio = 0.15;
+
+  /// How many screen pixels one canvas unit is, as of the last [update].
+  var _scale = 1.0;
+
+  /// How far from the pen the eraser reaches, in canvas units.
+  double get _reach => eraserRadius / _scale;
 
   /// Read-only view of images erased during this gesture.
   List<EditorImage> get erasedImages => List.unmodifiable(_erasedImages);
@@ -55,13 +69,17 @@ class ScribbleDetector {
   /// Erases overlapping strokes, images, and text lines when scribble is detected.
   /// Returns the list of strokes that should be erased
   /// (empty list means continue drawing normally).
+  ///
+  /// [scale] is how many screen pixels one canvas unit is, i.e. the zoom level.
   List<Stroke> update(
     Offset point,
     List<Stroke> existingStrokes,
     double penStrokeWidth, {
     EditorPage? page,
     double? lineHeight,
+    double scale = 1,
   }) {
+    _scale = scale;
     _points.add(point);
     if (_points.length > maxBufferedPoints) {
       _points.removeAt(0);
@@ -129,7 +147,7 @@ class ScribbleDetector {
     final newlyErased = <EditorImage>[];
     final eraserCircle = Rect.fromCircle(
       center: position,
-      radius: eraserRadius * 0.8,
+      radius: _reach * 0.8,
     );
     for (final image in List<EditorImage>.of(existingImages)) {
       if (image.dstRect.overlaps(eraserCircle) &&
@@ -148,10 +166,7 @@ class ScribbleDetector {
     final textRect = page.computeTextContentRect(lineHeight);
     if (textRect == Rect.zero) return false;
 
-    final eraserRect = Rect.fromCircle(
-      center: position,
-      radius: eraserRadius * 0.8,
-    );
+    final eraserRect = Rect.fromCircle(center: position, radius: _reach * 0.8);
     if (!textRect.overlaps(eraserRect)) return false;
 
     final plainText = page.quill.controller.document.toPlainText();
@@ -198,10 +213,11 @@ class ScribbleDetector {
   }
 
   /// Analyze the buffered points to determine if the user is scribbling.
-  bool _isScribbling(List<Offset> points) {
-    if (points.length < 8) return false;
+  bool _isScribbling(List<Offset> canvasPoints) {
+    if (canvasPoints.length < 8) return false;
 
     // 1. Simplify points by minimum distance to remove touch jitter
+    final points = [for (final point in canvasPoints) point * _scale];
     final simplified = <Offset>[points.first];
     for (int i = 1; i < points.length; i++) {
       if ((points[i] - simplified.last).distance >= minPointDistance) {
@@ -235,6 +251,7 @@ class ScribbleDetector {
 
     // 3. Check passes between turnarounds
     int overlappingPasses = 0;
+    double totalSpacingRatio = 0;
     for (int p = 0; p < turnaroundIndices.length - 2; p++) {
       final start1 = simplified[turnaroundIndices[p]];
       final end1 = simplified[turnaroundIndices[p + 1]];
@@ -272,10 +289,14 @@ class ScribbleDetector {
 
       if (isHorizontalOscillation || isVerticalOscillation) {
         overlappingPasses++;
+        totalSpacingRatio += _passSpacingRatio(delta1, delta2, start1, end2);
       }
     }
 
     if (overlappingPasses < minReversals) return false;
+    if (totalSpacingRatio / overlappingPasses > maxPassSpacingRatio) {
+      return false;
+    }
 
     // 4. Bounding box & path density check
     double minX = double.infinity, maxX = double.negativeInfinity;
@@ -300,11 +321,32 @@ class ScribbleDetector {
     return true;
   }
 
+  /// How far the second of two consecutive passes lies from the first,
+  /// sideways, relative to the shorter pass.
+  ///
+  /// [start] and [end] are where the first pass began and the second ended.
+  static double _passSpacingRatio(
+    Offset first,
+    Offset second,
+    Offset start,
+    Offset end,
+  ) {
+    final shorter = min(first.distance, second.distance);
+    if (shorter < 1e-3) return 0;
+
+    final direction = first / first.distance;
+    final firstMiddle = start + first / 2;
+    final secondMiddle = end - second / 2;
+    final offset = secondMiddle - firstMiddle;
+    final spacing = (direction.dx * offset.dy - direction.dy * offset.dx).abs();
+    return spacing / shorter;
+  }
+
   /// Erase strokes at the given position using the eraser tool.
   ///
   /// Returns the strokes not already erased earlier in this gesture.
   List<Stroke> _eraseAt(Offset position, List<Stroke> existingStrokes) {
-    _eraser ??= Eraser(size: eraserRadius);
+    _eraser ??= Eraser(size: _reach);
     final erased = _eraser!
         .checkForOverlappingStrokes(position, existingStrokes)
         .where((stroke) => !_erasedStrokes.contains(stroke))

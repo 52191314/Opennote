@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
 library;
 
 import 'dart:ui';
@@ -65,6 +66,9 @@ abstract interface class EditorGestureHost {
 
   /// The height of a ruled line in the note.
   int get lineHeight;
+
+  /// How many screen pixels one canvas unit is, i.e. the zoom level.
+  double get currentScale;
 
   /// Makes sure the note has a page at [pageIndex].
   void createPage(int pageIndex);

@@ -1,5 +1,6 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
 library;
 
 import 'dart:math';
@@ -14,6 +15,49 @@ import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/tools/scribble_detector.dart';
 import 'package:sbn/has_size.dart';
 import 'package:sbn/tool_id.dart';
+
+/// Screen-space points of a pen going back and forth [passes] times.
+///
+/// With [horizontal], every pass runs along its own row [spacing] below the
+/// last, like a scribble. Otherwise the passes go up and down while
+/// advancing [spacing] sideways, like writing a row of narrow letters.
+List<Offset> _zigzag({
+  required double strokeLength,
+  required double spacing,
+  required int passes,
+  required double step,
+  bool horizontal = false,
+}) {
+  final points = <Offset>[];
+  final stepsPerPass = (strokeLength / step).round();
+  for (int pass = 0; pass < passes; pass++) {
+    final forward = pass.isEven;
+    for (int i = 0; i <= stepsPerPass; i++) {
+      final along = (forward ? i : stepsPerPass - i) * step;
+      final progress = i / stepsPerPass;
+      points.add(
+        horizontal
+            ? Offset(100 + along, 100 + pass * spacing)
+            : Offset(100 + (pass + progress) * spacing, 100 + along),
+      );
+    }
+  }
+  return points;
+}
+
+/// Screen-space points of cursive handwriting that loops back on itself,
+/// like a row of the letter l.
+List<Offset> _cursiveLoops({required int loops}) {
+  Offset at(double t) => Offset(3 * t - 9 * sin(t), 14 * cos(t));
+
+  final points = [at(0)];
+  const samples = 4000;
+  for (int i = 1; i <= samples; i++) {
+    final point = at(2 * pi * loops * i / samples);
+    if ((point - points.last).distance >= 2.5) points.add(point);
+  }
+  return points;
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -143,6 +187,63 @@ void main() {
       expect(detector.state, ScribbleState.undetermined);
     });
 
+    test('Tightly spaced up and down handwriting is NOT a scribble', () {
+      final detector = ScribbleDetector();
+      final points = _zigzag(
+        strokeLength: 32,
+        spacing: 7,
+        passes: 9,
+        step: 2.5,
+      );
+      detector.start(points.first);
+
+      for (final pt in points.skip(1)) {
+        detector.update(pt, [], 2.0);
+      }
+
+      expect(detector.state, ScribbleState.undetermined);
+    });
+
+    test('Cursive loops are NOT a scribble at any zoom level', () {
+      for (final scale in [0.5, 1.0, 2.0, 3.0, 5.0]) {
+        final detector = ScribbleDetector();
+        final screenPoints = _cursiveLoops(loops: 4);
+        final points = [for (final p in screenPoints) p / scale];
+        detector.start(points.first);
+
+        for (final pt in points.skip(1)) {
+          detector.update(pt, [], 2.0, scale: scale);
+        }
+
+        expect(
+          detector.state,
+          ScribbleState.undetermined,
+          reason: 'zoom $scale',
+        );
+      }
+    });
+
+    test('A scribble is detected at any zoom level', () {
+      for (final scale in [0.5, 1.0, 3.0, 5.0]) {
+        final detector = ScribbleDetector();
+        final screenPoints = _zigzag(
+          strokeLength: 60,
+          spacing: 3,
+          passes: 6,
+          step: 5,
+          horizontal: true,
+        );
+        final points = [for (final p in screenPoints) p / scale];
+        detector.start(points.first);
+
+        for (final pt in points.skip(1)) {
+          detector.update(pt, [], 2.0, scale: scale);
+        }
+
+        expect(detector.state, ScribbleState.erasing, reason: 'zoom $scale');
+      }
+    });
+
     test('Smooth circle is NOT classified as scribble', () {
       final detector = ScribbleDetector();
       detector.start(const Offset(140, 100));
@@ -198,6 +299,42 @@ void main() {
       final endErased = detector.end();
       expect(endErased, contains(strokeToErase));
       expect(detector.state, ScribbleState.undetermined);
+    });
+
+    test('The eraser reaches as far on screen at any zoom level', () {
+      Stroke strokeAtY(double y) {
+        final stroke = Stroke(
+          color: const Color(0xFF000000),
+          pressureEnabled: false,
+          options: StrokeOptions(size: 2),
+          pageIndex: 0,
+          page: const HasSize(Size(400, 400)),
+          toolId: ToolId.ballpointPen,
+        );
+        for (double x = 90; x <= 170; x += 10) {
+          stroke.addPoint(Offset(x, y));
+        }
+        return stroke;
+      }
+
+      List<Stroke> erasedAt(double scale) {
+        final detector = ScribbleDetector();
+        detector.start(const Offset(100, 100));
+        final nearby = strokeAtY(125);
+        final points = <Offset>[];
+        for (double x = 105; x <= 160; x += 5) points.add(Offset(x, 100));
+        for (double x = 155; x >= 100; x -= 5) points.add(Offset(x, 103));
+        for (double x = 105; x <= 160; x += 5) points.add(Offset(x, 106));
+        for (double x = 155; x >= 100; x -= 5) points.add(Offset(x, 109));
+        final erased = <Stroke>[];
+        for (final pt in points) {
+          erased.addAll(detector.update(pt, [nearby], 2.0, scale: scale));
+        }
+        return erased;
+      }
+
+      expect(erasedAt(1), isNotEmpty, reason: '16 units away is in reach');
+      expect(erasedAt(2), isEmpty, reason: 'twice the zoom halves the reach');
     });
 
     test('Reports a stroke only once however many points cross it', () {

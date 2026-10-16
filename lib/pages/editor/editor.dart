@@ -149,6 +149,9 @@ class EditorState extends State<Editor>
   @override
   int get lineHeight => coreInfo.lineHeight;
 
+  @override
+  double get currentScale => _transformationController.value.approxScale;
+
   late bool needsNaming = widget.needsNaming && stows.editorPromptRename.value;
 
   late Tool _currentTool = () {

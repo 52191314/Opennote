@@ -1,6 +1,8 @@
 /// 🤖 Generated wholely or partially with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
 library;
 
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -126,6 +128,24 @@ void main() {
         expect(item.type, EditorHistoryItemType.erase);
         expect(item.strokes, [stroke]);
         expect(page.eraserCursorPosition, isNull);
+      });
+
+      test('looped handwriting zoomed in draws instead of erasing', () {
+        host.currentScale = 3;
+        final existing = _insertStroke(page);
+        final loops = [
+          for (var i = 0; i <= 600; i++)
+            const Offset(130, 225) +
+                Offset(3 * (i * 0.05) - 9 * sin(i * 0.05), 14 * cos(i * 0.05)) /
+                    3,
+        ];
+
+        final saved = draw(loops);
+
+        expect(saved, isTrue);
+        expect(page.strokes, contains(existing));
+        expect(page.strokes, hasLength(2));
+        expect(host.history.peekUndo().type, EditorHistoryItemType.draw);
       });
 
       test('over nothing leaves nothing to save', () {

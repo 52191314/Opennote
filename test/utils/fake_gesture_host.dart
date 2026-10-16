@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
 library;
 
 import 'package:saber/data/editor/editor_history.dart';
@@ -18,6 +19,9 @@ class FakeGestureHost implements EditorGestureHost {
 
   @override
   var lineHeight = 40;
+
+  @override
+  var currentScale = 1.0;
 
   /// The page indices [createPage] was called with.
   final createdPages = <int>[];
