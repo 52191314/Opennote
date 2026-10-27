@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - Opennote</title>
+  <meta name="description" content="Privacy Policy for Opennote (com.woaiyj1314.opennote) - Local-first, zero-knowledge encrypted engineering diagram and handwriting notebook.">
+  <meta name="theme-color" content="#1e293b">
+  <meta property="og:title" content="Opennote Privacy Policy">
+  <meta property="og:description" content="Privacy Policy for Opennote. Local-first, end-to-end encrypted handwriting notebook. No ads, no trackers.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://52191314.github.io/Opennote/">
+  <link rel="canonical" href="https://52191314.github.io/Opennote/">
+  <style>
+    :root {
+      --bg-color: #f8fafc;
+      --surface-color: #ffffff;
+      --surface-border: #e2e8f0;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-subtle: #64748b;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-soft: #eff6ff;
+      --accent-green: #16a34a;
+      --accent-green-soft: #f0fdf4;
+      --accent-orange: #ea580c;
+      --accent-orange-soft: #fff7ed;
+      --accent-purple: #7c3aed;
+      --accent-purple-soft: #f5f3ff;
+      --card-radius: 12px;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #0b0f19;
+        --surface-color: #111827;
+        --surface-border: #1f2937;
+        --text-main: #f9fafb;
+        --text-muted: #9ca3af;
+        --text-subtle: #6b7280;
+        --primary: #3b82f6;
+        --primary-hover: #60a5fa;
+        --primary-soft: #1e293b;
+        --accent-green: #22c55e;
+        --accent-green-soft: #064e3b33;
+        --accent-orange: #f97316;
+        --accent-orange-soft: #7c2d1233;
+        --accent-purple: #a855f7;
+        --accent-purple-soft: #581c8733;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.65;
+      padding: 0;
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header {
+      background: var(--surface-color);
+      border-bottom: 1px solid var(--surface-border);
+      padding: 2.5rem 1.5rem 2rem;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .brand-container {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.85rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .brand-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #2563eb;
+      color: white;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: var(--text-main);
+    }
+
+    .app-meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-top: 1rem;
+      font-size: 0.875rem;
+    }
+
+    .meta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid var(--surface-border);
+      background-color: var(--surface-color);
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .meta-badge.primary {
+      border-color: var(--primary);
+      background-color: var(--primary-soft);
+      color: var(--primary);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .layout-container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 4rem;
+    }
+
+    /* Highlight Banner */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .summary-card {
+      background: var(--surface-color);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--card-radius);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .summary-card .icon-box {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+    }
+
+    .summary-card.blue .icon-box { background: var(--primary-soft); color: var(--primary); }
+    .summary-card.green .icon-box { background: var(--accent-green-soft); color: var(--accent-green); }
+    .summary-card.orange .icon-box { background: var(--accent-orange-soft); color: var(--accent-orange); }
+    .summary-card.purple .icon-box { background: var(--accent-purple-soft); color: var(--accent-purple); }
+
+    .summary-card h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .summary-card p {
+      font-size: 0.825rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    /* Table of contents */
+    .toc-card {
+      background: var(--surface-color);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--card-radius);
+      padding: 1.5rem;
+      margin-bottom: 2.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .toc-card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .toc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 0.5rem 1.5rem;
+      list-style: none;
+    }
+
+    .toc-grid a {
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0;
+      transition: color 0.15s ease;
+    }
+
+    .toc-grid a:hover {
+      text-decoration: underline;
+      color: var(--primary-hover);
+    }
+
+    /* Content Sections */
+    .policy-content {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .content-section {
+      background: var(--surface-color);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--card-radius);
+      padding: 2rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .content-section h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--text-main);
+      border-bottom: 1px solid var(--surface-border);
+      padding-bottom: 0.65rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .content-section h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 1.5rem 0 0.5rem;
+      color: var(--text-main);
+    }
+
+    .content-section p {
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+
+    .content-section ul, .content-section ol {
+      margin: 0.75rem 0 1.25rem 1.5rem;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .content-section li {
+      margin-bottom: 0.5rem;
+    }
+
+    .content-section strong {
+      color: var(--text-main);
+    }
+
+    /* Data Disclosure Tables */
+    .table-container {
+      overflow-x: auto;
+      margin: 1.25rem 0;
+      border: 1px solid var(--surface-border);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      text-align: left;
+    }
+
+    th {
+      background-color: var(--primary-soft);
+      color: var(--text-main);
+      font-weight: 600;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--surface-border);
+    }
+
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--surface-border);
+      color: var(--text-muted);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.85em;
+      background: var(--surface-border);
+      color: var(--text-main);
+      padding: 0.15rem 0.35rem;
+      border-radius: 4px;
+    }
+
+    /* Callout Note */
+    .callout {
+      border-left: 4px solid var(--primary);
+      background-color: var(--primary-soft);
+      padding: 1rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin: 1.25rem 0;
+      font-size: 0.9rem;
+      color: var(--text-main);
+    }
+
+    .callout.green {
+      border-left-color: var(--accent-green);
+      background-color: var(--accent-green-soft);
+    }
+
+    .callout.orange {
+      border-left-color: var(--accent-orange);
+      background-color: var(--accent-orange-soft);
+    }
+
+    /* Action bar */
+    .action-bar {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s ease, border-color 0.15s ease;
+      border: 1px solid var(--surface-border);
+      background: var(--surface-color);
+      color: var(--text-main);
+    }
+
+    .btn:hover {
+      background: var(--surface-border);
+    }
+
+    .btn.primary {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    .btn.primary:hover {
+      background: var(--primary-hover);
+    }
+
+    footer {
+      border-top: 1px solid var(--surface-border);
+      background: var(--surface-color);
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      color: var(--text-subtle);
+      font-size: 0.875rem;
+    }
+
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    @media print {
+      body {
+        background: white;
+        color: black;
+      }
+      header, .action-bar, .toc-card {
+        display: none;
+      }
+      .content-section {
+        box-shadow: none;
+        border: 1px solid #ccc;
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-container">
+      <div class="brand-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+          <path d="M2 2l7.586 7.586"></path>
+          <circle cx="11" cy="11" r="2"></circle>
+        </svg>
+      </div>
+      <h1>Opennote Privacy Policy</h1>
+    </div>
+    <p style="color: var(--text-muted); font-size: 1rem; max-width: 650px; margin: 0 auto;">
+      Official Privacy Policy for Opennote on the Google Play Store and across all supported platforms.
+    </p>
+
+    <div class="app-meta">
+      <span class="meta-badge primary">Package: com.woaiyj1314.opennote</span>
+      <span class="meta-badge">Target: Google Play Store</span>
+      <span class="meta-badge">Effective Date: October 26, 2026</span>
+      <span class="meta-badge">Version: 1.0</span>
+    </div>
+  </header>
+
+  <div class="layout-container">
+
+    <!-- Summary Highlights -->
+    <div class="summary-grid">
+      <div class="summary-card blue">
+        <div class="icon-box">🛡️</div>
+        <h3>Local-First & Offline</h3>
+        <p>All notes, vector ink, drawings, and imported files reside exclusively in sandboxed local storage on your device by default.</p>
+      </div>
+
+      <div class="summary-card green">
+        <div class="icon-box">🔐</div>
+        <h3>Zero-Knowledge Sync</h3>
+        <p>Cloud synchronization is optional. Notes are end-to-end client encrypted (AES) before transmission to your chosen Nextcloud server.</p>
+      </div>
+
+      <div class="summary-card orange">
+        <div class="icon-box">🚫</div>
+        <h3>Zero Advertising</h3>
+        <p>Opennote contains no ads, ad trackers, data brokers, behavioral telemetry, or commercial monetization scripts.</p>
+      </div>
+
+      <div class="summary-card purple">
+        <div class="icon-box">📖</div>
+        <h3>Open Source (GPLv3)</h3>
+        <p>Our source code is fully open and audited on GitHub. What you see is exactly what runs on your phone or tablet.</p>
+      </div>
+    </div>
+
+    <!-- Table of Contents -->
+    <div class="toc-card">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="8" y1="6" x2="21" y2="6"></line>
+          <line x1="8" y1="12" x2="21" y2="12"></line>
+          <line x1="8" y1="18" x2="21" y2="18"></line>
+          <line x1="3" y1="6" x2="3.01" y2="6"></line>
+          <line x1="3" y1="12" x2="3.01" y2="12"></line>
+          <line x1="3" y1="18" x2="3.01" y2="18"></line>
+        </svg>
+        Table of Contents
+      </h2>
+      <ul class="toc-grid">
+        <li><a href="#overview">1. Overview & Commitment</a></li>
+        <li><a href="#data-collection">2. Data We Process & Collect</a></li>
+        <li><a href="#device-permissions">3. Device Permissions & Scopes</a></li>
+        <li><a href="#cloud-synchronization">4. Optional Cloud Synchronization</a></li>
+        <li><a href="#diagnostics">5. Diagnostics & Crash Reporting</a></li>
+        <li><a href="#third-parties">6. Third-Party Services</a></li>
+        <li><a href="#data-deletion">7. Data Retention & Deletion</a></li>
+        <li><a href="#children">8. Children's Privacy (COPPA)</a></li>
+        <li><a href="#security">9. Security Safeguards</a></li>
+        <li><a href="#user-rights">10. User Rights (GDPR & CCPA)</a></li>
+        <li><a href="#contact">11. Privacy Contact Information</a></li>
+      </ul>
+    </div>
+
+    <div class="policy-content">
+
+      <!-- Section 1 -->
+      <section class="content-section" id="overview">
+        <h2>1. Overview & Commitment</h2>
+        <p>
+          Welcome to <strong>Opennote</strong> (referred to as "the Application", "we", "us", or "our"), an open-source engineering diagram and handwriting notebook application distributed for Android under package name <code>com.woaiyj1314.opennote</code> and other cross-platform targets.
+        </p>
+        <p>
+          Opennote is developed with a strict <strong>privacy-first, local-first</strong> philosophy. We believe that your handwriting, thoughts, diagrams, and personal documents belong exclusively to you. The application operates completely standalone without requiring an account, registration, or internet connection.
+        </p>
+        <div class="callout green">
+          <strong>Key Guarantee:</strong> We do not collect, monetize, sell, or rent your personal data, notes, or usage patterns to any third parties or advertising networks.
+        </div>
+      </section>
+
+      <!-- Section 2 -->
+      <section class="content-section" id="data-collection">
+        <h2>2. Data We Process & Collect</h2>
+        <p>
+          The application accesses and processes only the minimum data required to deliver core digital notebook functionality:
+        </p>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Data Category</th>
+                <th>Storage Location</th>
+                <th>Purpose & Handling</th>
+                <th>Shared Externally?</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Notes, Handwriting & Strokes</strong></td>
+                <td>Internal Device Storage</td>
+                <td>Vector ink strokes, highlighters, mathematical formulas, and diagrams rendered in the editor.</td>
+                <td><strong>No</strong> (Never transmitted unless you opt to sync to your private cloud)</td>
+              </tr>
+              <tr>
+                <td><strong>Imported Images & PDFs</strong></td>
+                <td>Internal App Directory</td>
+                <td>Documents or images you deliberately import into a note canvas for annotation.</td>
+                <td><strong>No</strong></td>
+              </tr>
+              <tr>
+                <td><strong>In-App Preferences</strong></td>
+                <td>Device SharedPreferences</td>
+                <td>Theme choices, pen color presets, tool widths, grid styles, and canvas display settings.</td>
+                <td><strong>No</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Cloud Credentials</strong></td>
+                <td>Android Secure Keystore</td>
+                <td>Server URI, username, and app password for Nextcloud / WebDAV sync. Encrypted with hardware-backed key.</td>
+                <td><strong>No</strong> (Only communicated directly to your chosen server)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Section 3 -->
+      <section class="content-section" id="device-permissions">
+        <h2>3. Device Permissions & Scopes</h2>
+        <p>
+          To perform its duties on Android devices, Opennote requests the following explicit runtime permissions as defined in its <code>AndroidManifest.xml</code>:
+        </p>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Permission</th>
+                <th>Type</th>
+                <th>Necessity & Justification</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>android.permission.INTERNET</code></td>
+                <td>Network Access</td>
+                <td>Required only when the user voluntarily enables remote synchronization to their own Nextcloud server, or for opt-in error diagnostics. The app functions completely offline if internet is disabled.</td>
+              </tr>
+              <tr>
+                <td><code>android.permission.READ_EXTERNAL_STORAGE</code><br><code>android.permission.WRITE_EXTERNAL_STORAGE</code></td>
+                <td>Storage / Files</td>
+                <td>Used strictly for user-initiated file import and export operations (e.g. saving exported PDF notes to your Downloads directory or opening an existing <code>.sbn</code> or PDF file). We never scan unselected folders.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <strong>Scoped Storage Compliance:</strong> On modern Android versions (Android 11+ / API 30+), Opennote utilizes the Android Storage Access Framework (SAF) and scoped storage. We do not hold broad media access permissions (<code>READ_MEDIA_IMAGES</code>, <code>READ_MEDIA_VIDEO</code>, and <code>READ_MEDIA_AUDIO</code> are explicitly removed).
+        </div>
+      </section>
+
+      <!-- Section 4 -->
+      <section class="content-section" id="cloud-synchronization">
+        <h2>4. Optional Cloud Synchronization</h2>
+        <p>
+          Opennote offers optional cloud synchronization for users who desire seamless cross-device syncing across Android, Windows, macOS, Linux, and iOS.
+        </p>
+        <h3>Client-Side End-to-End Encryption</h3>
+        <p>
+          We employ a <strong>zero-knowledge encryption architecture</strong>:
+        </p>
+        <ul>
+          <li>All notes, drawings, and embedded media are encrypted locally on your device before they leave your device using strong cryptographic standards (AES).</li>
+          <li>A unique cryptographic encryption key is generated on your device and stored in the Android Secure Keystore via <code>flutter_secure_storage</code>.</li>
+          <li>Neither the server administrator, cloud hosting provider, nor the Opennote development team has access to your decryption key or unencrypted content.</li>
+        </ul>
+        <h3>Self-Hosted & Third-Party Nextcloud Servers</h3>
+        <p>
+          You are free to sync with your own self-hosted Nextcloud instance or any trusted third-party WebDAV provider. Any data transmitted to your server is governed by your server's hosting terms and security configuration.
+        </p>
+      </section>
+
+      <!-- Section 5 -->
+      <section class="content-section" id="diagnostics">
+        <h2>5. Diagnostics & Crash Reporting</h2>
+        <p>
+          To diagnose fatal unexpected application crashes and maintain high stability on diverse hardware, Opennote includes integration with the open-source <a href="https://sentry.io" target="_blank" rel="noopener">Sentry</a> SDK.
+        </p>
+        <div class="callout orange">
+          <strong>Strict Opt-In Policy:</strong> In Opennote, telemetry is <strong>disabled by default</strong>. No crash logs or diagnostic traces are collected unless you explicitly provide consent in the application settings.
+        </div>
+        <p>When explicitly enabled by the user, diagnostic reports may include:</p>
+        <ul>
+          <li>Operating system version and device architecture (e.g., Android 14, ARM64).</li>
+          <li>Application version and build number.</li>
+          <li>Exception stack trace and error message leading to the crash.</li>
+          <li>A non-persistent, pseudorandom session identifier that resets upon application reinstallation.</li>
+        </ul>
+        <p><strong>We never collect:</strong> Personal identifiers, names, emails, handwriting data, canvas images, note titles, passwords, encryption keys, or persistent hardware identifiers (IMEI, MAC, or Google Advertising ID).</p>
+      </section>
+
+      <!-- Section 6 -->
+      <section class="content-section" id="third-parties">
+        <h2>6. Third-Party Services</h2>
+        <p>
+          Opennote minimizes third-party service dependencies:
+        </p>
+        <ul>
+          <li><strong>Nextcloud / WebDAV (Optional):</strong> Only active when configured by the user. User-selected cloud provider.</li>
+          <li><strong>Sentry (Optional & Opt-In):</strong> Crash analysis service. Complies with GDPR and SOC-2 data security standards. <a href="https://sentry.io/privacy/" target="_blank" rel="noopener">Sentry Privacy Policy</a>.</li>
+          <li><strong>No Ad Networks:</strong> We do not integrate Google AdMob, Unity Ads, AppLovin, or any commercial advertising networks.</li>
+        </ul>
+      </section>
+
+      <!-- Section 7 -->
+      <section class="content-section" id="data-deletion">
+        <h2>7. Data Retention & Deletion (Google Play Mandate)</h2>
+        <p>
+          In accordance with Google Play Developer Policy regarding user data transparency, here is how you can permanently delete your data:
+        </p>
+
+        <h3>1. Deleting Local Application Data</h3>
+        <ul>
+          <li><strong>In-App Deletion:</strong> You can delete individual notes, notebooks, or folders within the app. Deleted notes are permanently purged from your device filesystem.</li>
+          <li><strong>Complete Wipe:</strong> To remove all local data, notes, and preferences at once:
+            <ol>
+              <li>Open your device <strong>Settings</strong> &gt; <strong>Apps</strong> &gt; <strong>Opennote</strong>.</li>
+              <li>Select <strong>Storage & cache</strong> &gt; tap <strong>Clear storage</strong> (or <strong>Clear data</strong>).</li>
+              <li>Alternatively, uninstalling Opennote permanently erases its sandboxed storage directory.</li>
+            </ol>
+          </li>
+        </ul>
+
+        <h3>2. Deleting Cloud Data</h3>
+        <ul>
+          <li>If you have configured Nextcloud synchronization, deleting a note within the app will delete the corresponding encrypted remote file during the next sync cycle.</li>
+          <li>To permanently delete all remote data, log in to your Nextcloud/WebDAV web portal and delete the <code>Opennote</code> / <code>Saber</code> sync directory, or delete your user account directly on your server.</li>
+        </ul>
+
+        <h3>3. Data Deletion Support</h3>
+        <p>
+          If you have questions regarding data deletion or need verification, you may submit a request at any time to <a href="mailto:xianspired@gmail.com">xianspired@gmail.com</a>.
+        </p>
+      </section>
+
+      <!-- Section 8 -->
+      <section class="content-section" id="children">
+        <h2>8. Children's Privacy (COPPA Compliance)</h2>
+        <p>
+          Opennote is a general audience productivity and note-taking tool. It is not specifically directed at children under the age of 13 (or under 16 in jurisdictions governed by GDPR-K).
+        </p>
+        <p>
+          Because Opennote does not require an account and stores data locally, we do not knowingly solicit or collect personally identifiable information from children. If you believe a minor has inadvertently submitted personal information to our email or support channels, please contact us immediately, and we will delete the data without delay.
+        </p>
+      </section>
+
+      <!-- Section 9 -->
+      <section class="content-section" id="security">
+        <h2>9. Security Safeguards</h2>
+        <p>
+          We employ robust technical and organizational security controls to protect your notes:
+        </p>
+        <ul>
+          <li><strong>Operating System Sandboxing:</strong> Notes are confined within Android's sandboxed user storage, preventing other installed apps from reading your files.</li>
+          <li><strong>Hardware-Backed Keystore:</strong> All sensitive cloud credentials and encryption keys are safeguarded in the device's secure enclave / Android Keystore.</li>
+          <li><strong>Transport Layer Security:</strong> All network communications with Nextcloud servers or diagnostic endpoints use modern HTTPS / TLS 1.3 encryption in transit.</li>
+          <li><strong>Open Source Auditability:</strong> Our source code is fully accessible under the GNU General Public License v3.0, allowing continuous security audits by the open-source community.</li>
+        </ul>
+      </section>
+
+      <!-- Section 10 -->
+      <section class="content-section" id="user-rights">
+        <h2>10. User Rights (GDPR & CCPA Disclosures)</h2>
+        <p>
+          Under the General Data Protection Regulation (GDPR), California Consumer Privacy Act (CCPA), and applicable international laws, you possess fundamental rights:
+        </p>
+        <ul>
+          <li><strong>Right of Access & Portability:</strong> You can export your notes to standard, non-proprietary formats (PDF, PNG, SVG, or JSON-based <code>.sbn</code>) at any time with zero vendor lock-in.</li>
+          <li><strong>Right to Rectification & Deletion:</strong> You have absolute power to modify, rewrite, or delete any note or setting directly on your device.</li>
+          <li><strong>Right to Withdraw Consent:</strong> Diagnostic reporting consent can be enabled or revoked instantaneously via the application settings without affecting note-taking functionality.</li>
+          <li><strong>Non-Discrimination:</strong> We provide identical note-taking features regardless of your privacy choices.</li>
+        </ul>
+      </section>
+
+      <!-- Section 11 -->
+      <section class="content-section" id="contact">
+        <h2>11. Privacy Contact Information</h2>
+        <p>
+          If you have any questions, suggestions, or concerns regarding this Privacy Policy, our data practices, or the Opennote open-source project, please reach out to:
+        </p>
+        <div class="callout blue">
+          <strong>Project Maintainer:</strong> 52191314 / Opennote Team<br>
+          <strong>Official Contact Email:</strong> <a href="mailto:xianspired@gmail.com">xianspired@gmail.com</a><br>
+          <strong>GitHub Repository:</strong> <a href="https://github.com/52191314/Opennote" target="_blank" rel="noopener">https://github.com/52191314/Opennote</a><br>
+          <strong>Issue Tracker:</strong> <a href="https://github.com/52191314/Opennote/issues" target="_blank" rel="noopener">Submit an Issue / Request</a>
+        </div>
+        <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-subtle);">
+          This policy may be amended periodically to reflect application enhancements or regulatory revisions. Any modifications will be committed to the public GitHub repository history.
+        </p>
+      </section>
+
+    </div>
+
+    <div class="action-bar">
+      <button class="btn" onclick="window.print()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 6 2 18 2 18 9"></polyline>
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+          <rect x="6" y="14" width="12" height="8"></rect>
+        </svg>
+        Print / Save as PDF
+      </button>
+      <a class="btn primary" href="https://github.com/52191314/Opennote" target="_blank" rel="noopener">
+        View on GitHub
+      </a>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>© 2026 Opennote Project. Licensed under GNU General Public License v3.0.</p>
+    <p style="margin-top: 0.5rem;">
+      <a href="https://github.com/52191314/Opennote">GitHub Repository</a> • 
+      <a href="https://github.com/52191314/Opennote/commits/gh-pages/index.html">Policy Changelog</a> • 
+      <a href="mailto:xianspired@gmail.com">Contact Developer</a>
+    </p>
+  </footer>
+
+</body>
+</html>

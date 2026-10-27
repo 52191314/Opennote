@@ -1,0 +1,1 @@
+Initial release of Opennote for Google Play Store.

@@ -1,5 +1,6 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Grok 4.7
 library;
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
 import 'package:saber/data/tools/highlighter.dart';
 import 'package:saber/data/tools/pen.dart';
+import 'package:saber/data/tools/pen_tray.dart';
 import 'package:saber/i18n/strings.g.dart';
 
 /// Pinned 3-color and 3-thickness quick access palette bar (Goodnotes ergonomics).
@@ -80,7 +82,9 @@ class _QuickPaletteBarState extends State<QuickPaletteBar> {
     });
 
     if (widget.currentTool is Pen) {
-      (widget.currentTool as Pen).options.size = size;
+      final pen = widget.currentTool as Pen;
+      pen.options.size = size;
+      if (Pen.isWritingPen(pen)) PenTray.remember(pen);
       widget.onUpdate();
     }
   }

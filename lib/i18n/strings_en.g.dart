@@ -1,4 +1,4 @@
-///
+/// 🤖 Modified with Grok 4.7
 /// Generated file. Do not edit.
 ///
 // coverage:ignore-file
@@ -97,6 +97,7 @@ class Translations$home$en {
 	/// en: 'Go back to the previous folder'
 	String get backFolder => 'Go back to the previous folder';
 
+	late final Translations$home$shelf$en shelf = Translations$home$shelf$en.internal(_root);
 	late final Translations$home$newFolder$en newFolder = Translations$home$newFolder$en.internal(_root);
 	late final Translations$home$renameNote$en renameNote = Translations$home$renameNote$en.internal(_root);
 	late final Translations$home$moveNote$en moveNote = Translations$home$moveNote$en.internal(_root);
@@ -302,6 +303,8 @@ class Translations$editor$en {
 
 	// Translations
 	late final Translations$editor$toolbar$en toolbar = Translations$editor$toolbar$en.internal(_root);
+	late final Translations$editor$zoomWindow$en zoomWindow = Translations$editor$zoomWindow$en.internal(_root);
+	late final Translations$editor$penMenu$en penMenu = Translations$editor$penMenu$en.internal(_root);
 	late final Translations$editor$pens$en pens = Translations$editor$pens$en.internal(_root);
 	late final Translations$editor$penOptions$en penOptions = Translations$editor$penOptions$en.internal(_root);
 	late final Translations$editor$colors$en colors = Translations$editor$colors$en.internal(_root);
@@ -358,6 +361,9 @@ class Translations$searchResults$en {
 
 	/// en: 'Page $page – tool: $tool'
 	String toolMatch({required Object page, required Object tool}) => 'Page ${page} – tool: ${tool}';
+
+	/// en: 'Page $page: handwritten "$word"'
+	String inkMatch({required Object page, required Object word}) => 'Page ${page}: handwritten "${word}"';
 }
 
 // Path: onboarding
@@ -455,6 +461,21 @@ class Translations$home$create$en {
 
 	/// en: 'Import note'
 	String get importNote => 'Import note';
+}
+
+// Path: home.shelf
+class Translations$home$shelf$en {
+	Translations$home$shelf$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'New notebook'
+	String get newNotebook => 'New notebook';
+
+	/// en: 'Notebook name'
+	String get notebookName => 'Notebook name';
 }
 
 // Path: home.newFolder
@@ -1152,6 +1173,54 @@ class Translations$editor$toolbar$en {
 
 	/// en: 'Toggle fullscreen (F11)'
 	String get fullscreen => 'Toggle fullscreen (F11)';
+
+	/// en: 'Zoom window'
+	String get zoomWindow => 'Zoom window';
+}
+
+// Path: editor.zoomWindow
+class Translations$editor$zoomWindow$en {
+	Translations$editor$zoomWindow$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Zoom window'
+	String get title => 'Zoom window';
+
+	/// en: 'Auto-advance'
+	String get autoAdvance => 'Auto-advance';
+
+	/// en: 'New line'
+	String get newLine => 'New line';
+
+	/// en: 'Return height'
+	String get returnHeight => 'Return height';
+
+	/// en: 'Close zoom window'
+	String get dismiss => 'Close zoom window';
+}
+
+// Path: editor.penMenu
+class Translations$editor$penMenu$en {
+	Translations$editor$penMenu$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Top edge'
+	String get top => 'Top edge';
+
+	/// en: 'Right edge'
+	String get right => 'Right edge';
+
+	/// en: 'Bottom edge'
+	String get bottom => 'Bottom edge';
+
+	/// en: 'Left edge'
+	String get left => 'Left edge';
 }
 
 // Path: editor.pens
@@ -1161,6 +1230,9 @@ class Translations$editor$pens$en {
 	final Translations _root; // ignore: unused_field
 
 	// Translations
+
+	/// en: 'Saved pen'
+	String get savedPen => 'Saved pen';
 
 	/// en: 'Fountain pen'
 	String get fountainPen => 'Fountain pen';

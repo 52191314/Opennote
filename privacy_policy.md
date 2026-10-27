@@ -1,132 +1,121 @@
-# Saber's Privacy Policy
+# Opennote Privacy Policy
 
-Saber is an application developed by Adil Hanney that
-facilitates the user in creating and organising handwritten notes.
+**Effective Date:** October 26, 2026  
+**Application Name:** Opennote  
+**Package Identifier:** `com.woaiyj1314.opennote`  
+**Developer / Maintainer:** 52191314 / Opennote Open-Source Project  
+**Contact:** [xianspired@gmail.com](mailto:xianspired@gmail.com)  
+**Hosted Privacy Policy:** [https://52191314.github.io/Opennote/](https://52191314.github.io/Opennote/)  
+**Source Code Repository:** [https://github.com/52191314/Opennote](https://github.com/52191314/Opennote)
 
-This privacy policy may be updated from time to time.
-You can view the latest privacy policy at
-[saber.adil.hanney.org/privacy-policy](https://saber.adil.hanney.org/privacy-policy),
-and you can view the history of changes to the privacy policy on
-[GitHub](https://github.com/saber-notes/saber/commits/main/privacy_policy.md).
+---
 
-## On-device usage: What data does the application use?
+## 1. Introduction
 
-The application seeks to access the least amount of data possible
-and uses a zero-trust approach to cloud storage.
+Opennote is a free and open-source handwritten note-taking and engineering diagram application. Opennote is built with a **local-first and privacy-first** architecture. We believe your handwriting, drawings, mathematical equations, and notes are strictly private. The application works entirely offline without requiring an account or internet connectivity.
 
-Data the application uses includes the user's:
-- Notes (including images and backgrounds): Used for the main functionality of the application
-- In-app settings: Used to customise the application to the user's preferences
-- Online cloud service (referred to as "the cloud") credentials including the server URI, username, and passwords: Used to enable syncing between devices
-- Data used with/for third-party services, as described below
+This Privacy Policy explains how Opennote handles user data in compliance with Google Play Developer Policies, the General Data Protection Regulation (GDPR), and the California Consumer Privacy Act (CCPA).
 
-## Third-party service: How is the cloud used?
+---
 
-The cloud is used to store and sync the user's notes and settings
-between the user's devices but is not necessary for the application to function.
+## 2. Data We Process & Collect
 
-To use this feature, users need to make an account on a Nextcloud server
-of their choice to use as a cloud service.
-For users who don't want to choose a custom Nextcloud server,
-the official Saber server is hosted at
-[nc.saber.adil.hanney.org](https://nc.saber.adil.hanney.org).
-This server is run by me (Adil Hanney) and hosted in the European Union (The Netherlands).
+Opennote accesses and processes only the minimum data required to deliver core digital notebook functionality:
 
-To maintain privacy, all notes are encrypted before being sent to the cloud.
-A randomly generated key is used to encrypt the notes.
-This key and password are stored on the user's device in secure storage,
-and an encrypted form of the key is uploaded to the cloud.
+| Data Type | Storage Location | Purpose | Shared Externally? |
+| :--- | :--- | :--- | :--- |
+| **Notes & Handwriting Strokes** | Local App Sandbox | Storing your handwriting vectors, drawings, shapes, and notes. | **No** (Never shared or uploaded without user configuration) |
+| **Imported Images & PDFs** | Local App Directory | Rendering imported images or documents inside notes for annotation. | **No** |
+| **Application Preferences** | Local SharedPreferences | Saving tool preferences, theme settings, grid styles, and pen presets. | **No** |
+| **Cloud Credentials (Optional)** | Android Secure Keystore | Server URL, username, and app password for Nextcloud / WebDAV sync. | **No** (Stored in hardware-backed secure storage) |
 
-### My notes are private, right?
+Opennote does **not** collect or sell any personal information, location data, biometric data, contacts, or financial information.
 
-With any cloud storage, the server owners can see and read any files you upload.
-This is why Saber encrypts your notes before uploading them to the cloud,
-so they're unreadable to the server owner.
+---
 
-### So what data can the server owners see?
+## 3. Device Permissions & Scopes
 
-- All information provided during the sign-up process, including but not limited to your username and email address.
-- Information about any device that connects to the server, including but not limited to the device's operating system, browser, and IP address.
-- An encrypted (scrambled) form of your notes. The server owner cannot read the notes, but they can see metadata like:
-  - The size of each note.
-  - The number of notes you have.
-  - The encrypted names of your notes.
-  - The last time you edited a note, when it was created, and when you last synced.
-- An encrypted (scrambled) form of your encryption key. This is required to enable cross-device syncing.
-- Nextcloud is general-purpose software, so the server owner can see any other files you upload
-  to the server and information you provide outside of Saber.
+Opennote requests minimal runtime permissions strictly aligned with user-initiated actions:
 
-## Third-party service: Error tracking
+- `android.permission.INTERNET`: Used only when the user voluntarily connects to a self-hosted or third-party Nextcloud / WebDAV server for cloud synchronization, or for opt-in error diagnostics.
+- `android.permission.READ_EXTERNAL_STORAGE` / `android.permission.WRITE_EXTERNAL_STORAGE`: Used solely for user-directed file importing (e.g. importing PDF documents or background images) and note exporting (saving notes as PDF, PNG, or `.sbn` backup files). Opennote never scans, indexes, or reads files outside what the user explicitly chooses.
+- **Scoped Storage**: On Android 11+ (API 30+), Opennote strictly follows the Android Storage Access Framework (SAF). Broad media permissions (`READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO`) are explicitly excluded.
 
-To help diagnose and fix errors in the application,
-Saber uses [Sentry](https://sentry.io), an open-source SDK, to
-automatically collect error reports.
+---
 
-This data collection is optional and opt-in. No data collection occurs until
-the user grants consent and the app is restarted. You can opt in or out at any
-time in the app settings, and changes take effect after the app is restarted.
+## 4. Optional Cloud Synchronization (Zero-Knowledge Encryption)
 
-The data shared includes:
-- Information about the device like the operating system, model, and specifications.
-- Information about the application like the version number and build environment.
-- Error messages, stack traces, and other debugging information.
-- A randomly-generated identifier used to group errors. This cannot be linked to your specific account or device and is regenerated if you reinstall the app.
+Cloud synchronization is 100% optional. The app functions completely without it.
 
-Data not shared includes:
-- Personal information like your username or email address.
-- The contents of your notes like pen strokes and images.
-- Passwords and encryption keys.
-- The domain name of the Nextcloud server you use.
-- Persistent device identifiers like your advertising ID, IMEI, or serial number.
+If you choose to sync your notes using a Nextcloud or WebDAV server:
+1. **Client-Side Encryption:** All notes, images, and backgrounds are encrypted on your local device before transmission using strong AES encryption.
+2. **Key Storage:** The encryption key is randomly generated on your device and stored in the Android Secure Keystore (`flutter_secure_storage`).
+3. **Zero-Knowledge:** The remote server host or administrator cannot decrypt or read your notes. Only encrypted ciphertext is stored on the server.
 
-Data is sent to Sentry's servers in the European Union (EU).
-Sensitive data is removed locally before being sent to Sentry, and
-additional data scrubbing is applied on the server to further anonymise the data.
-Sentry handles data in accordance with
-[Sentry's privacy policy](https://sentry.io/privacy/).
+---
 
-## Third-party service: Ads
+## 5. Crash Reporting & Diagnostics (Sentry)
 
-Saber has been ad-free since September 2024.
-If you are using a version of the application older than v0.4.7,
-please update to the latest version.
+To ensure application stability across diverse Android hardware:
+- Crash reporting is **disabled by default** in Opennote.
+- Error reporting is **strictly opt-in**. No crash logs or diagnostics are transmitted without explicit consent granted in the application settings.
+- If consented to, telemetry includes only anonymized technical details: Android OS version, device architecture, app version, and exception call stacks.
+- **Never Collected:** Personal identity, email addresses, note contents, handwriting vectors, passwords, encryption keys, or advertising identifiers (Google Advertising ID).
 
-## “Talk is cheap. Show me the code.”
+---
 
-The source code is free and open to the public under the
-[GPLv3 license](https://github.com/saber-notes/saber/blob/main/LICENSE.md)
-and is available on [GitHub](https://github.com/saber-notes/saber).
+## 6. Advertisements & Tracking
 
-## How can I delete my data?
+Opennote is **100% ad-free**. There are no third-party advertisements, advertising tracking SDKs, data brokers, or marketing analytics in the application.
 
-1. To delete the local data on your device, simply uninstall the application.
-  Desktop users will also need to delete the `Saber` folder inside your Documents folder.
+---
 
-2. To delete your account and data on the cloud:
-    - If you use the default cloud provider, you can head to the
-      [account deletion page](https://nc.saber.adil.hanney.org/index.php/settings/user/drop_account)
-      by going to Settings then "Delete account". You'll get an email with a link to confirm
-      the deletion of your account. Once you click the link, your account will be deleted after
-      a 1 week grace period. If you change your mind, contact me at
-      [adilhanney@disroot.org](mailto:adilhanney@disroot.org) and I'll cancel the deletion.
-    - If you use a third-party Nextcloud server, there may be a "Delete account" option in the Settings.
-      If not, you may need to contact the server administrator to delete your account.
-      You should see the server's privacy policy for more information.
+## 7. Data Retention & Deletion (Google Play Compliance)
 
-3. Sentry: Error logs are already anonymised and it is impossible to identify/delete reports from a specific user or device. If you want to stop further reports, you can disable error tracking in the app settings.
+Users maintain total control over their data:
 
-### Unused accounts
+1. **Local Data Deletion:**
+   - You can delete any note, folder, or notebook inside the app at any time.
+   - To delete all app data, go to Android **Settings > Apps > Opennote > Storage > Clear Storage**, or uninstall the application. All sandboxed data will be permanently wiped.
+2. **Cloud Data Deletion:**
+   - Deleting a note inside the app marks it for deletion on your connected Nextcloud server during the next sync.
+   - You can also log into your Nextcloud web portal to directly delete your synchronized files or close your account.
+3. **Assistance & Requests:**
+   - For any questions regarding data deletion, contact us at [xianspired@gmail.com](mailto:xianspired@gmail.com).
 
-To conserve storage space, accounts on the official Saber server that have not been used for over 365 days may be deleted automatically.
+---
 
-You will receive notifications via email 300, 330, and 360 days after your last login,
-giving you the opportunity to log in and prevent deletion if you wish to keep your account.
+## 8. Children's Privacy (COPPA Compliance)
 
-If you are using another Nextcloud server, please refer to that server's privacy policy or terms of service for information on account deletion policies.
+Opennote is a general productivity application not directed towards children under 13 years of age (or under 16 in the European Union). Because Opennote does not collect personal data, we do not knowingly collect or solicit personal information from children. If you believe a minor has contacted us with personal data, please contact [xianspired@gmail.com](mailto:xianspired@gmail.com) for prompt removal.
 
-## Privacy point of contact
+---
 
-This application is developed by Adil Hanney.
-You can contact me at [adilhanney@disroot.org](mailto:adilhanney@disroot.org) for any enquiries,
-or [create an issue](https://github.com/saber-notes/saber/issues/new/choose)
-on this repo (requires a GitHub account).
+## 9. Security Safeguards
+
+We implement industry-standard safeguards to secure your data:
+- Sandboxed operating system directory access on Android.
+- Android Keystore cryptographic key protection.
+- TLS 1.3 / HTTPS encryption in transit for all network requests.
+- Public, peer-reviewed open-source codebase under the GNU General Public License v3.0 (GPLv3).
+
+---
+
+## 10. User Rights (GDPR & CCPA)
+
+Under GDPR and CCPA, you have the right to:
+- Access, view, and export all your data in open, non-proprietary formats (PDF, PNG, JSON/SBN).
+- Rectify or modify your data.
+- Request complete deletion ("right to be forgotten").
+- Revoke diagnostic consent at any time in the app settings.
+
+---
+
+## 11. Point of Contact
+
+If you have questions regarding this Privacy Policy or Opennote data practices, please reach out to:
+
+- **Maintainer:** 52191314 / Opennote Team
+- **Email:** [xianspired@gmail.com](mailto:xianspired@gmail.com)
+- **Repository:** [https://github.com/52191314/Opennote](https://github.com/52191314/Opennote)
+- **Issues:** [https://github.com/52191314/Opennote/issues](https://github.com/52191314/Opennote/issues)

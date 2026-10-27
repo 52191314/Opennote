@@ -19,6 +19,7 @@ class CanvasBackgroundPainter extends CustomPainter {
     this.secondaryColor = Colors.red,
     this.preview = false,
     this.isInfiniteCanvas = false,
+    this.viewportRect,
   });
 
   final bool invert;
@@ -38,28 +39,36 @@ class CanvasBackgroundPainter extends CustomPainter {
   /// Whether to paint an unbounded 2D infinite canvas.
   final bool isInfiniteCanvas;
 
+  /// The visible viewport bounding box in scene coordinates for infinite canvas.
+  final Rect? viewportRect;
+
   @override
   void paint(Canvas canvas, Size size) {
     final Rect visibleRect;
     if (isInfiniteCanvas) {
-      final clip = canvas.getLocalClipBounds();
-      if (_isValidViewport(clip)) {
-        visibleRect = clip;
+      if (viewportRect != null && _isValidViewport(viewportRect!)) {
+        // Generously inflate the visible viewport so panning doesn't reveal edges
+        visibleRect = viewportRect!.inflate(1000.0);
       } else {
-        // Safe bounded canvas region around the page for infinite canvas
-        const margin = 2000.0;
-        final baseWidth = size.width.isFinite && size.width > 0
-            ? size.width
-            : 1000.0;
-        final baseHeight = size.height.isFinite && size.height > 0
-            ? size.height
-            : 1400.0;
-        visibleRect = Rect.fromLTRB(
-          -margin,
-          -margin,
-          baseWidth + margin,
-          baseHeight + margin,
-        );
+        final clip = canvas.getLocalClipBounds();
+        if (_isValidViewport(clip)) {
+          visibleRect = clip.inflate(500.0);
+        } else {
+          // Safe bounded canvas region around the page for infinite canvas fallback
+          const margin = 5000.0;
+          final baseWidth = size.width.isFinite && size.width > 0
+              ? size.width
+              : 1000.0;
+          final baseHeight = size.height.isFinite && size.height > 0
+              ? size.height
+              : 1400.0;
+          visibleRect = Rect.fromLTRB(
+            -margin,
+            -margin,
+            baseWidth + margin,
+            baseHeight + margin,
+          );
+        }
       }
     } else {
       visibleRect = Offset.zero & size;
@@ -114,7 +123,7 @@ class CanvasBackgroundPainter extends CustomPainter {
         rect.bottom >= 1e8) {
       return false;
     }
-    if (rect.width > 15000 || rect.height > 15000) {
+    if (rect.width > 50000 || rect.height > 50000) {
       return false;
     }
     return true;
@@ -122,6 +131,7 @@ class CanvasBackgroundPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(CanvasBackgroundPainter oldDelegate) =>
+      oldDelegate.viewportRect != viewportRect ||
       isInfiniteCanvas ||
       kDebugMode ||
       oldDelegate.invert != invert ||
@@ -142,12 +152,15 @@ class CanvasBackgroundPainter extends CustomPainter {
     if (lineHeight <= 0) return;
     if (bounds != null) {
       if (!bounds.isFinite || bounds.isEmpty) return;
-      // Clamp bounds to prevent runaway memory allocation or freeze
-      final clampedBounds = Rect.fromLTRB(
-        bounds.left.clamp(-20000.0, 20000.0),
-        bounds.top.clamp(-20000.0, 20000.0),
-        bounds.right.clamp(-20000.0, 20000.0),
-        bounds.bottom.clamp(-20000.0, 20000.0),
+      // Clamp span dimensions to prevent runaway memory allocation or freeze,
+      // while allowing rendering anywhere in the 2D infinite plane.
+      final double clampedWidth = bounds.width.clamp(0.0, 20000.0);
+      final double clampedHeight = bounds.height.clamp(0.0, 20000.0);
+      final clampedBounds = Rect.fromLTWH(
+        bounds.left,
+        bounds.top,
+        clampedWidth,
+        clampedHeight,
       );
       if (clampedBounds.isEmpty) return;
 

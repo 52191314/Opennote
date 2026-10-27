@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Grok 4.7
 library;
 
 import 'package:flutter/material.dart';
@@ -45,6 +46,8 @@ class Canvas extends StatelessWidget {
     required this.currentTool,
     required this.currentScale,
     this.placeholder = false,
+    this.foreground,
+    this.viewportRect,
   });
 
   final String path;
@@ -78,6 +81,23 @@ class Canvas extends StatelessWidget {
   final Tool currentTool;
   final double currentScale;
   final bool placeholder;
+
+  /// Drawn in page coordinates above the page, such as the zoom box.
+  final Widget? foreground;
+
+  /// The visible viewport bounding box in scene coordinates for infinite canvas.
+  final Rect? viewportRect;
+
+  Widget _withForeground(Widget pageChild) {
+    final overlay = foreground;
+    if (overlay == null) return pageChild;
+    return Stack(
+      children: [
+        pageChild,
+        Positioned.fill(child: overlay),
+      ],
+    );
+  }
 
   OnyxStrokeStyle _getOnyxTool(Tool currentTool) {
     if (placeholder) return OnyxStrokeStyle.pen;
@@ -131,34 +151,37 @@ class Canvas extends StatelessWidget {
           ? SizedBox(
               width: page.size.width,
               height: page.size.height,
-              child: OnyxSdkPenArea(
-                refreshDelay: const Duration(seconds: 1),
-                strokeStyle: _getOnyxTool(currentTool),
-                strokeColor: _getOnyxColor(),
-                strokeWidth: _getOnyxWidth(),
-                child: InnerCanvas(
-                  key: page.innerCanvasKey,
-                  pageIndex: pageIndex,
-                  redrawPageListenable: page,
-                  width: page.size.width,
-                  height: page.size.height,
-                  textEditing: textEditing,
-                  coreInfo: coreInfo,
-                  currentStroke: currentStroke,
-                  currentStrokeDetectedShape: currentStrokeDetectedShape,
-                  currentSelection: currentSelection,
-                  isDoneSelecting: isDoneSelecting,
-                  onCutSelection: onCutSelection,
-                  onCopySelection: onCopySelection,
-                  onDuplicateSelection: onDuplicateSelection,
-                  onDeleteSelection: onDeleteSelection,
-                  onSetColor: onSetColor,
-                  cropPossible: cropPossible,
-                  cropActive: cropActive,
-                  onToggleCrop: onToggleCrop,
-                  setAsBackground: setAsBackground,
-                  currentToolIsSelect: currentTool.toolId == ToolId.select,
-                  currentScale: currentScale,
+              child: _withForeground(
+                OnyxSdkPenArea(
+                  refreshDelay: const Duration(seconds: 1),
+                  strokeStyle: _getOnyxTool(currentTool),
+                  strokeColor: _getOnyxColor(),
+                  strokeWidth: _getOnyxWidth(),
+                  child: InnerCanvas(
+                    key: page.innerCanvasKey,
+                    pageIndex: pageIndex,
+                    redrawPageListenable: page,
+                    width: page.size.width,
+                    height: page.size.height,
+                    textEditing: textEditing,
+                    coreInfo: coreInfo,
+                    currentStroke: currentStroke,
+                    currentStrokeDetectedShape: currentStrokeDetectedShape,
+                    currentSelection: currentSelection,
+                    isDoneSelecting: isDoneSelecting,
+                    onCutSelection: onCutSelection,
+                    onCopySelection: onCopySelection,
+                    onDuplicateSelection: onDuplicateSelection,
+                    onDeleteSelection: onDeleteSelection,
+                    onSetColor: onSetColor,
+                    cropPossible: cropPossible,
+                    cropActive: cropActive,
+                    onToggleCrop: onToggleCrop,
+                    setAsBackground: setAsBackground,
+                    currentToolIsSelect: currentTool.toolId == ToolId.select,
+                    currentScale: currentScale,
+                    viewportRect: viewportRect,
+                  ),
                 ),
               ),
             )
@@ -187,42 +210,45 @@ class Canvas extends StatelessWidget {
                 ? SizedBox(
                     width: page.size.width,
                     height: page.size.height,
-                    child: OnyxSdkPenArea(
-                      refreshDelay: const Duration(seconds: 1),
-                      strokeStyle: _getOnyxTool(currentTool),
-                      strokeColor: _getOnyxColor(),
-                      strokeWidth: _getOnyxWidth(),
-                      child: InnerCanvas(
-                        key: page.innerCanvasKey,
-                        pageIndex: pageIndex,
-                        redrawPageListenable: page,
-                        width: page.size.width,
-                        height: page.size.height,
-                        textEditing: textEditing,
-                        coreInfo: coreInfo,
-                        currentStroke: currentStroke,
-                        currentStrokeDetectedShape: currentStrokeDetectedShape,
-                        currentSelection: currentSelection,
-                        isDoneSelecting: isDoneSelecting,
-                        onCutSelection: onCutSelection,
-                        onCopySelection: onCopySelection,
-                        onDuplicateSelection: onDuplicateSelection,
-                        onDeleteSelection: onDeleteSelection,
-                        onSetColor: onSetColor,
-                        isResizeActive: isResizeActive,
-                        onToggleResize: onToggleResize,
-                        onTakeScreenshot: onTakeScreenshot,
-                        onAddToElements: onAddToElements,
-                        onBringToFront: onBringToFront,
-                        onSendToBack: onSendToBack,
-                        onSmoothen: onSmoothen,
-                        cropPossible: cropPossible,
-                        cropActive: cropActive,
-                        onToggleCrop: onToggleCrop,
-                        setAsBackground: setAsBackground,
-                        currentToolIsSelect:
-                            currentTool.toolId == ToolId.select,
-                        currentScale: currentScale,
+                    child: _withForeground(
+                      OnyxSdkPenArea(
+                        refreshDelay: const Duration(seconds: 1),
+                        strokeStyle: _getOnyxTool(currentTool),
+                        strokeColor: _getOnyxColor(),
+                        strokeWidth: _getOnyxWidth(),
+                        child: InnerCanvas(
+                          key: page.innerCanvasKey,
+                          pageIndex: pageIndex,
+                          redrawPageListenable: page,
+                          width: page.size.width,
+                          height: page.size.height,
+                          textEditing: textEditing,
+                          coreInfo: coreInfo,
+                          currentStroke: currentStroke,
+                          currentStrokeDetectedShape:
+                              currentStrokeDetectedShape,
+                          currentSelection: currentSelection,
+                          isDoneSelecting: isDoneSelecting,
+                          onCutSelection: onCutSelection,
+                          onCopySelection: onCopySelection,
+                          onDuplicateSelection: onDuplicateSelection,
+                          onDeleteSelection: onDeleteSelection,
+                          onSetColor: onSetColor,
+                          isResizeActive: isResizeActive,
+                          onToggleResize: onToggleResize,
+                          onTakeScreenshot: onTakeScreenshot,
+                          onAddToElements: onAddToElements,
+                          onBringToFront: onBringToFront,
+                          onSendToBack: onSendToBack,
+                          onSmoothen: onSmoothen,
+                          cropPossible: cropPossible,
+                          cropActive: cropActive,
+                          onToggleCrop: onToggleCrop,
+                          setAsBackground: setAsBackground,
+                          currentToolIsSelect:
+                              currentTool.toolId == ToolId.select,
+                          currentScale: currentScale,
+                        ),
                       ),
                     ),
                   )

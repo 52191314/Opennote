@@ -1,6 +1,7 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
 /// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
+/// 🤖 Modified with Grok 4.7
 library;
 
 import 'dart:math' show min;
@@ -90,27 +91,12 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
         currentPageIndex: widget.currentPageIndex,
         invert: widget.invert,
         onTemplateSelected: (PageTemplate template) {
-          widget.setBackgroundPattern(template.backgroundPattern);
-          widget.setLineHeight(template.lineHeight);
-          widget.setLineThickness(template.lineThickness);
-          if (template.backgroundColor != null) {
-            widget.coreInfo.backgroundColor = template.backgroundColor;
-            widget.redrawAndSave();
-          }
-
-          if (template.initialContent != null) {
-            final page = widget.coreInfo.pages.getOrNull(
-              widget.currentPageIndex ?? -1,
-            );
-            if (page != null) {
-              page.quill.controller.replaceText(
-                0,
-                0,
-                template.initialContent!,
-                null,
-              );
-            }
-          }
+          final page = widget.coreInfo.pages.getOrNull(
+            widget.currentPageIndex ?? -1,
+          );
+          if (page == null) return;
+          template.applyTo(page);
+          widget.redrawAndSave();
         },
       ),
     );

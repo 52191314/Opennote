@@ -21,7 +21,7 @@ class AppInfo extends StatelessWidget {
     'https://github.com/sponsors/adil192',
   );
   static final Uri privacyPolicyUrl = Uri.parse(
-    'https://saber.adil.hanney.org/privacy-policy/',
+    'https://52191314.github.io/Opennote/',
   );
   static final Uri licenseUrl = Uri.parse(
     'https://github.com/saber-notes/saber/blob/main/LICENSE.md',

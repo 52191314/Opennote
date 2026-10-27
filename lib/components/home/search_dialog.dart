@@ -1,5 +1,6 @@
 /// 🤖 Generated with DeepSeek v4 Flash
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Grok 4.7
 library;
 
 import 'dart:async';
@@ -11,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as p;
 import 'package:saber/components/theming/saber_theme.dart';
+import 'package:saber/data/editor/ink_search.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
 import 'package:saber/data/routes.dart';
 import 'package:saber/i18n/strings.g.dart';
@@ -216,33 +218,21 @@ class _SearchDialogState extends State<SearchDialog> {
 
     // Extract pages list (key 'z').
     final pagesList = (root['z'] as List?) ?? const [];
+    final notePages = <NotePage>[];
 
     for (int pageIdx = 0; pageIdx < pagesList.length; pageIdx++) {
       final pageJson = pagesList[pageIdx];
-      if (pageJson is! Map<String, dynamic>) continue;
-
-      // --- Quill text search (key 'q') ---
-      final quillDelta = pageJson['q'];
-      if (quillDelta is List && quillDelta.isNotEmpty) {
-        final plainText = _extractPlainTextFromQuillDelta(quillDelta);
-        if (plainText.toLowerCase().contains(queryLower)) {
-          final snippet = _buildSnippet(plainText, queryLower);
-          results.add(
-            SearchMatch(
-              filePath: filePath,
-              fileName: fileName,
-              pageIndex: pageIdx,
-              matchKind: 'text',
-              preview: t.searchResults.textMatch(
-                page: pageIdx + 1,
-                snippet: snippet,
-              ),
-            ),
-          );
-        }
+      if (pageJson is! Map<String, dynamic>) {
+        notePages.add(const NotePage(ink: []));
+        continue;
       }
 
-      // --- Legacy stroke list (key 's') ---
+      final quillDelta = pageJson['q'];
+      final plainText = quillDelta is List && quillDelta.isNotEmpty
+          ? _extractPlainTextFromQuillDelta(quillDelta)
+          : '';
+      final ink = <List<Offset>>[];
+
       final legacyStrokes = pageJson['s'];
       if (legacyStrokes is List) {
         _searchStrokeList(
@@ -253,29 +243,59 @@ class _SearchDialogState extends State<SearchDialog> {
           queryLower: queryLower,
           results: results,
         );
+        ink.addAll(_inkFromStrokes(legacyStrokes));
       }
 
-      // --- New layer format (key 'l') ---
       final layersList = pageJson['l'];
       if (layersList is List) {
         for (final layerJson in layersList) {
           if (layerJson is! Map<String, dynamic>) continue;
           final strokeList = layerJson['s'];
-          if (strokeList is List) {
-            _searchStrokeList(
-              strokeList,
-              filePath: filePath,
-              fileName: fileName,
-              pageIndex: pageIdx,
-              queryLower: queryLower,
-              results: results,
-            );
-          }
+          if (strokeList is! List) continue;
+          _searchStrokeList(
+            strokeList,
+            filePath: filePath,
+            fileName: fileName,
+            pageIndex: pageIdx,
+            queryLower: queryLower,
+            results: results,
+          );
+          ink.addAll(_inkFromStrokes(strokeList));
         }
       }
+
+      notePages.add(NotePage(ink: ink, typedText: plainText));
+    }
+
+    for (final hit in NoteSearch.search(
+      query: queryLower,
+      notes: [
+        NoteDocument(filePath: filePath, fileName: fileName, pages: notePages),
+      ],
+      fileNames: false,
+    )) {
+      results.add(
+        SearchMatch(
+          filePath: hit.filePath,
+          fileName: hit.fileName,
+          pageIndex: hit.pageIndex,
+          matchKind: hit.matchKind,
+          preview: hit.preview,
+        ),
+      );
     }
 
     return results;
+  }
+
+  List<List<Offset>> _inkFromStrokes(List strokes) {
+    final ink = <List<Offset>>[];
+    for (final stroke in strokes) {
+      if (stroke is! Map) continue;
+      final points = InkReader.pointsFrom(stroke['p']);
+      if (points.length >= 2) ink.add(points);
+    }
+    return ink;
   }
 
   /// Searches a list of stroke JSON objects for colour and tool-type matches.
@@ -377,22 +397,6 @@ class _SearchDialogState extends State<SearchDialog> {
       }
     }
     return buffer.toString();
-  }
-
-  /// Builds a compact snippet around the first occurrence of [query] in [text].
-  static String _buildSnippet(String text, String query) {
-    final idx = text.toLowerCase().indexOf(query);
-    if (idx < 0) {
-      return text.length > 60 ? '${text.substring(0, 60)}…' : text;
-    }
-
-    const contextLen = 30;
-    final start = (idx - contextLen).clamp(0, text.length);
-    final end = (idx + query.length + contextLen).clamp(0, text.length);
-
-    final prefix = start > 0 ? '…' : '';
-    final suffix = end < text.length ? '…' : '';
-    return '$prefix${text.substring(start, end)}$suffix';
   }
 
   // ---------------------------------------------------------------------------
@@ -537,6 +541,7 @@ class _SearchResultTile extends StatelessWidget {
       'text' => Icons.text_fields,
       'color' => Icons.palette,
       'tool' => Icons.edit,
+      'ink' => Icons.draw,
       _ => Icons.article,
     };
 
@@ -567,7 +572,9 @@ class _SearchResultTile extends StatelessWidget {
       onTap: () {
         // Pop the dialog, then navigate to the note.
         Navigator.pop(context);
-        context.push(RoutePaths.editFilePath(match.filePath));
+        context.push(
+          RoutePaths.editFilePath(match.filePath, pageIndex: match.pageIndex),
+        );
       },
     );
   }

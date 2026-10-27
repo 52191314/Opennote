@@ -1,5 +1,6 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
+/// 🤖 Modified with Grok 4.7
 library;
 
 import 'dart:async';
@@ -132,6 +133,13 @@ class Stows {
     'editorToolbarAlignment',
     AxisDirection.down,
     codec: const EnumCodec(AxisDirection.values),
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Edge of the floating pen menu: top, right, bottom, or left.
+  final floatingPenMenuEdge = PlainStow<String>(
+    'floatingPenMenuEdge',
+    'right',
     volatile: !_isOnMainIsolate,
   );
   final editorToolbarShowInFullscreen = PlainStow(
@@ -358,6 +366,22 @@ class Stows {
   final twoFingerTapUndo = PlainStow<bool>(
     'twoFingerTapUndo',
     true,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Saved pens, encoded as `colorHex:thickness` pairs.
+  ///
+  /// Kept in step with [PenTray.encodedDefaults].
+  final penTray = PlainStow<String>(
+    'penTray',
+    'ff000000:2,ff1565c0:3,ffc62828:4,ff2e7d32:3,ff6a1b9a:5,ff5d4037:8',
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Which saved pen is selected.
+  final penTrayIndex = PlainStow<int>(
+    'penTrayIndex',
+    0,
     volatile: !_isOnMainIsolate,
   );
 

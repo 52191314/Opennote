@@ -1,4 +1,4 @@
-package com.adilhanney.saber
+package com.woaiyj1314.opennote
 
 import android.os.Bundle
 import androidx.core.view.ViewCompat
@@ -19,5 +19,10 @@ class MainActivity: FlutterActivity() {
 
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.isAppearanceLightNavigationBars = true
+    }
+
+    override fun configureFlutterEngine(flutterEngine: io.flutter.embedding.engine.FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+        io.flutter.plugins.GeneratedPluginRegistrant.registerWith(flutterEngine)
     }
 }

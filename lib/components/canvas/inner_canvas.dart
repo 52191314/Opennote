@@ -1,5 +1,6 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Grok 4.7
 library;
 
 import 'dart:math';
@@ -54,6 +55,7 @@ class InnerCanvas extends StatefulWidget {
     this.onRenderObjectChange,
     required this.currentToolIsSelect,
     required this.currentScale,
+    this.viewportRect,
   });
 
   final int pageIndex;
@@ -88,6 +90,7 @@ class InnerCanvas extends StatefulWidget {
   final bool currentToolIsSelect;
 
   final double currentScale;
+  final Rect? viewportRect;
 
   static const defaultBackgroundColor = Color(0xFFFCFCFC);
 
@@ -166,6 +169,16 @@ class _InnerCanvasState extends State<InnerCanvas> {
     }
 
     final page = widget.coreInfo.pages[widget.pageIndex];
+    final lineHeight = page.paperLineHeightOr(widget.coreInfo.lineHeight);
+    final lineThickness = page.paperLineThicknessOr(
+      widget.coreInfo.lineThickness,
+    );
+    final pageBackground = page.backgroundImage != null
+        ? Colors.white
+        : (page.paperColorOr(backgroundColor) ?? backgroundColor);
+    final pagePattern = page.backgroundImage != null
+        ? CanvasBackgroundPattern.none
+        : page.paperPatternOr(widget.coreInfo.backgroundPattern);
 
     final quillEditor = widget.coreInfo.pages.isNotEmpty
         ? QuillEditor(
@@ -175,7 +188,7 @@ class _InnerCanvasState extends State<InnerCanvas> {
               customStyles: SaberQuillStyles.get(
                 invert: invert,
                 secondary: colorScheme.secondary,
-                lineHeight: widget.coreInfo.lineHeight,
+                lineHeight: lineHeight,
               ),
               scrollable: false,
               autoFocus: false,
@@ -186,10 +199,10 @@ class _InnerCanvasState extends State<InnerCanvas> {
               showCursor: true,
               keyboardAppearance: invert ? .dark : .light,
               padding: .only(
-                top: widget.coreInfo.lineHeight * 1.2,
-                left: widget.coreInfo.lineHeight * 0.5,
-                right: widget.coreInfo.lineHeight * 0.5,
-                bottom: widget.coreInfo.lineHeight * 0.5,
+                top: lineHeight * 1.2,
+                left: lineHeight * 0.5,
+                right: lineHeight * 0.5,
+                bottom: lineHeight * 0.5,
               ),
             ),
             scrollController: _quillScrollController,
@@ -200,22 +213,10 @@ class _InnerCanvasState extends State<InnerCanvas> {
     final customPaint = CustomPaint(
       painter: CanvasBackgroundPainter(
         invert: invert,
-        backgroundColor: () {
-          if (page.backgroundImage != null) {
-            return Colors.white;
-          } else {
-            return backgroundColor;
-          }
-        }(),
-        backgroundPattern: () {
-          if (page.backgroundImage != null) {
-            return CanvasBackgroundPattern.none;
-          } else {
-            return widget.coreInfo.backgroundPattern;
-          }
-        }(),
-        lineHeight: widget.coreInfo.lineHeight,
-        lineThickness: widget.coreInfo.lineThickness,
+        backgroundColor: pageBackground,
+        backgroundPattern: pagePattern,
+        lineHeight: lineHeight,
+        lineThickness: lineThickness,
         primaryColor: colorScheme.primary,
         secondaryColor: colorScheme.secondary,
         isInfiniteCanvas: widget.coreInfo.isInfiniteCanvas,
@@ -296,9 +297,14 @@ class _InnerCanvasState extends State<InnerCanvas> {
                   widget.onDeleteSelection != null)
                 () {
                   final bounds = widget.currentSelection!.path.getBounds();
-                  final left = (bounds.center.dx - 160.0)
-                      .clamp(12.0, max(12.0, widget.width - 330.0))
-                      .toDouble();
+                  final double left;
+                  if (widget.coreInfo.isInfiniteCanvas) {
+                    left = bounds.center.dx - 160.0;
+                  } else {
+                    left = (bounds.center.dx - 160.0)
+                        .clamp(12.0, max(12.0, widget.width - 330.0))
+                        .toDouble();
+                  }
                   final top = bounds.top - 58 > 10
                       ? bounds.top - 58
                       : bounds.bottom + 14;
@@ -334,6 +340,9 @@ class _InnerCanvasState extends State<InnerCanvas> {
       ),
     );
 
+    if (widget.coreInfo.isInfiniteCanvas) {
+      return customPaint;
+    }
     return RepaintBoundary(child: customPaint);
   }
 }

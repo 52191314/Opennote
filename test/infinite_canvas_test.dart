@@ -195,5 +195,72 @@ void main() {
         expect(sentinelElements, isEmpty);
       },
     );
+    test(
+      'CanvasBackgroundPainter uses viewportRect and tiles pattern across distant coordinates (> 20000)',
+      () {
+        const bounds = Rect.fromLTWH(30000, 30000, 1000, 1000);
+        const lineHeight = 50;
+
+        final gridElements = CanvasBackgroundPainter.getPatternElements(
+          pattern: CanvasBackgroundPattern.grid,
+          size: const Size(1000, 1400),
+          lineHeight: lineHeight,
+          bounds: bounds,
+        ).toList();
+
+        expect(gridElements, isNotEmpty);
+        expect(gridElements.any((e) => e.start.dx >= 30000), isTrue);
+        expect(gridElements.any((e) => e.start.dy >= 30000), isTrue);
+      },
+    );
+
+    test(
+      'CanvasBackgroundPainter.shouldRepaint returns true when viewportRect changes',
+      () {
+        const painter1 = CanvasBackgroundPainter(
+          invert: false,
+          backgroundColor: Color(0xFFFFFFFF),
+          lineHeight: 30,
+          lineThickness: 2,
+          isInfiniteCanvas: true,
+          viewportRect: Rect.fromLTWH(0, 0, 1000, 1000),
+        );
+        const painter2 = CanvasBackgroundPainter(
+          invert: false,
+          backgroundColor: Color(0xFFFFFFFF),
+          lineHeight: 30,
+          lineThickness: 2,
+          isInfiniteCanvas: true,
+          viewportRect: Rect.fromLTWH(2000, 3000, 1000, 1000),
+        );
+
+        expect(painter2.shouldRepaint(painter1), isTrue);
+      },
+    );
+
+    test(
+      'CanvasBackgroundPainter paints smoothly across far-away viewport without crashing or sentinel freeze',
+      () {
+        final recorder = PictureRecorder();
+        final canvas = Canvas(recorder);
+
+        const distantViewport = Rect.fromLTWH(50000, 50000, 1200, 800);
+        const painter = CanvasBackgroundPainter(
+          invert: false,
+          backgroundColor: Color(0xFFFFFFFF),
+          backgroundPattern: CanvasBackgroundPattern.grid,
+          lineHeight: 30,
+          lineThickness: 2,
+          isInfiniteCanvas: true,
+          viewportRect: distantViewport,
+        );
+
+        final stopwatch = Stopwatch()..start();
+        painter.paint(canvas, const Size(1000, 1400));
+        stopwatch.stop();
+
+        expect(stopwatch.elapsedMilliseconds, lessThan(50));
+      },
+    );
   });
 }

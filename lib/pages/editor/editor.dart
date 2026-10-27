@@ -2,6 +2,7 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
 /// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
+/// 🤖 Modified with Grok 4.7
 library;
 
 import 'dart:async';
@@ -32,9 +33,11 @@ import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/components/canvas/lasso_screenshot_dialog.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/components/canvas/shape_library_dialog.dart';
+import 'package:saber/components/canvas/zoom_window_view.dart';
 import 'package:saber/components/editor/page_grid_overview.dart';
 import 'package:saber/components/editor/presentation_mode.dart';
 import 'package:saber/components/editor/read_only_banner.dart';
+import 'package:saber/components/editor/template_picker_dialog.dart';
 import 'package:saber/components/theming/adaptive_alert_dialog.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
 import 'package:saber/components/theming/dynamic_material_app.dart';
@@ -44,6 +47,7 @@ import 'package:saber/components/toolbar/editor_bottom_sheet.dart';
 import 'package:saber/components/toolbar/editor_toolbar_actions.dart';
 import 'package:saber/components/toolbar/elements_sheet.dart';
 import 'package:saber/components/toolbar/export_bar.dart';
+import 'package:saber/components/toolbar/floating_pen_menu.dart';
 import 'package:saber/components/toolbar/goodnotes_header_bar.dart';
 import 'package:saber/components/toolbar/goodnotes_toolbar.dart';
 import 'package:saber/components/toolbar/toolbar.dart';
@@ -60,7 +64,9 @@ import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/editor/selection_clipboard.dart';
 import 'package:saber/data/editor/selection_handles.dart';
 import 'package:saber/data/editor/selection_transform.dart';
+import 'package:saber/data/editor/zoom_window.dart';
 import 'package:saber/data/extensions/change_notifier_extensions.dart';
+import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:saber/data/extensions/matrix4_extensions.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
 import 'package:saber/data/file_manager/note_paths.dart';
@@ -73,7 +79,9 @@ import 'package:saber/data/tools/elements.dart';
 import 'package:saber/data/tools/eraser.dart';
 import 'package:saber/data/tools/highlighter.dart';
 import 'package:saber/data/tools/laser_pointer.dart';
+import 'package:saber/data/tools/page_templates.dart';
 import 'package:saber/data/tools/pen.dart';
+import 'package:saber/data/tools/pen_tray.dart';
 import 'package:saber/data/tools/pencil.dart';
 import 'package:saber/data/tools/ruler.dart';
 import 'package:saber/data/tools/select.dart';
@@ -87,17 +95,25 @@ import 'package:super_clipboard/super_clipboard.dart';
 typedef _PhotoInfo = ({Uint8List bytes, String extension});
 
 class Editor extends StatefulWidget {
-  Editor({super.key, String? path, this.customTitle, this.pdfPath})
-    : initialPath = path != null
-          ? Future.value(path)
-          : FileManager.newFilePath('/'),
-      needsNaming = path == null;
+  Editor({
+    super.key,
+    String? path,
+    this.customTitle,
+    this.pdfPath,
+    this.initialPageIndex,
+  }) : initialPath = path != null
+           ? Future.value(path)
+           : FileManager.newFilePath('/'),
+       needsNaming = path == null;
 
   final Future<String> initialPath;
   final bool needsNaming;
 
   final String? customTitle;
   final String? pdfPath;
+
+  /// Page to show after the note opens. Null stays on the saved page.
+  final int? initialPageIndex;
 
   /// The file extension used by the app. See [NotePaths.extension].
   static const extension = NotePaths.extension;
@@ -145,6 +161,52 @@ class EditorState extends State<Editor>
 
   @override
   var history = EditorHistory();
+
+  final _zoomWindow = ZoomWindowController();
+  var _zoomWindowOpen = false;
+  var _zoomPageIndex = 0;
+
+  /// Asks which paper to use, then inserts that page after the current one.
+  void _addPageFromTemplate() {
+    if (coreInfo.readOnly || coreInfo.pages.isEmpty) return;
+    final brightness = Theme.brightnessOf(context);
+    final invert =
+        stows.editorAutoInvert.value && brightness == Brightness.dark;
+    showDialog<void>(
+      context: context,
+      builder: (_) => TemplatePickerDialog(
+        coreInfo: coreInfo,
+        currentPageIndex: currentPageIndex,
+        invert: invert,
+        onTemplateSelected: (template) {
+          final index = currentPageIndex;
+          insertPageAfter(index, template: template);
+          if (!mounted) return;
+          CanvasGestureDetector.scrollToPage(
+            pageIndex: index + 1,
+            pages: coreInfo.pages,
+            screenWidth: MediaQuery.sizeOf(context).width,
+            transformationController: _transformationController,
+          );
+        },
+      ),
+    );
+  }
+
+  /// Opens or dismisses the zoom window on the current page.
+  void _toggleZoomWindow() {
+    if (coreInfo.readOnly || coreInfo.pages.isEmpty) return;
+    setState(() {
+      if (_zoomWindowOpen) {
+        _zoomWindowOpen = false;
+        return;
+      }
+      final pageIndex = currentPageIndex.clamp(0, coreInfo.pages.length - 1);
+      _zoomPageIndex = pageIndex;
+      _zoomWindow.openForPage(Offset.zero & coreInfo.pages[pageIndex].size);
+      _zoomWindowOpen = true;
+    });
+  }
 
   @override
   int get lineHeight => coreInfo.lineHeight;
@@ -329,6 +391,11 @@ class EditorState extends State<Editor>
       await saveToFile();
       Whiteboard.needsToAutoClearWhiteboard = false;
     } else {
+      final page = widget.initialPageIndex;
+      if (page != null) {
+        coreInfo.initialPageIndex = page;
+        _lastCurrentPageIndex = page;
+      }
       setState(() {});
     }
   }
@@ -2089,6 +2156,7 @@ class EditorState extends State<Editor>
           highlighter.color = color.withAlpha(Highlighter.alpha);
         case final Pen pen:
           pen.color = color;
+          if (Pen.isWritingPen(pen)) PenTray.remember(pen);
         case Select():
           _setSelectionColor(color);
         default:
@@ -2185,6 +2253,7 @@ class EditorState extends State<Editor>
       redo: redo,
       pages: coreInfo.pages,
       initialPageIndex: coreInfo.initialPageIndex,
+      explicitPageIndex: widget.initialPageIndex,
       pageBuilder: pageBuilder,
       isTextEditing: () => currentTool == Tool.textEditing,
       bookmarked: currentPageBookmarked,
@@ -2238,6 +2307,8 @@ class EditorState extends State<Editor>
         ? GoodnotesToolbar(
             actions: toolbarActions,
             onClearPage: () => clearPage(currentPageIndex),
+            zoomWindowOpen: _zoomWindowOpen,
+            onToggleZoomWindow: _toggleZoomWindow,
           )
         : Toolbar(
             actions: toolbarActions,
@@ -2265,6 +2336,38 @@ class EditorState extends State<Editor>
       ),
     );
 
+    final int? zoomPageIndex = coreInfo.pages.isEmpty
+        ? null
+        : _zoomPageIndex.clamp(0, coreInfo.pages.length - 1);
+    final Widget editingSurface = Stack(
+      children: [
+        canvas,
+        if (Pen.isWritingPen(currentTool))
+          Positioned.fill(
+            child: WritingPenMenu(
+              tool: currentTool,
+              onChanged: () => setState(() {}),
+            ),
+          ),
+        if (_zoomWindowOpen && zoomPageIndex != null)
+          ZoomWindowPanel(
+            controller: _zoomWindow,
+            page: coreInfo.pages[zoomPageIndex],
+            pageIndex: zoomPageIndex,
+            history: history,
+            pen: () => penForZoomWindow(currentTool),
+            onDismiss: () => setState(() => _zoomWindowOpen = false),
+            onStrokeStarted: () {
+              if (mounted) setState(() {});
+            },
+            onStrokeCommitted: () {
+              autosaveAfterDelay();
+              if (mounted) setState(() {});
+            },
+          ),
+      ],
+    );
+
     final Widget body;
     if (isToolbarVertical) {
       body = Row(
@@ -2276,7 +2379,7 @@ class EditorState extends State<Editor>
           Expanded(
             child: Column(
               children: [
-                Expanded(child: canvas),
+                Expanded(child: editingSurface),
                 readonlyBanner,
               ],
             ),
@@ -2290,7 +2393,7 @@ class EditorState extends State<Editor>
             ? VerticalDirection.up
             : VerticalDirection.down,
         children: [
-          Expanded(child: canvas),
+          Expanded(child: editingSurface),
           toolbar,
           readonlyBanner,
         ],
@@ -2324,7 +2427,13 @@ class EditorState extends State<Editor>
         );
       },
       child: Scaffold(
-        backgroundColor: stows.goodnotesUiMode.value
+        backgroundColor: coreInfo.isInfiniteCanvas
+            ? (coreInfo.backgroundColor ?? const Color(0xFFFCFCFC))
+                  .withInversion(
+                    stows.editorAutoInvert.value &&
+                        Theme.brightnessOf(context) == Brightness.dark,
+                  )
+            : stows.goodnotesUiMode.value
             ? (Theme.brightnessOf(context) == Brightness.dark
                   ? const Color(0xFF161618)
                   : const Color(0xFFF3F2EE))
@@ -2362,16 +2471,7 @@ class EditorState extends State<Editor>
                   page.redrawStrokes();
                   autosaveUntrackedChange();
                 }),
-                onInsertPage: () => setState(() {
-                  final currentPageIndex = this.currentPageIndex;
-                  insertPageAfter(currentPageIndex);
-                  CanvasGestureDetector.scrollToPage(
-                    pageIndex: currentPageIndex + 1,
-                    pages: coreInfo.pages,
-                    screenWidth: MediaQuery.sizeOf(context).width,
-                    transformationController: _transformationController,
-                  );
-                }),
+                onInsertPage: _addPageFromTemplate,
                 undo: undo,
                 canUndo: !coreInfo.readOnly && history.canUndo,
                 redo: redo,
@@ -2585,16 +2685,7 @@ class EditorState extends State<Editor>
                         cupertinoIcon: CupertinoIcons.add,
                       ),
                       tooltip: t.editor.menu.insertPage,
-                      onPressed: () => setState(() {
-                        final currentPageIndex = this.currentPageIndex;
-                        insertPageAfter(currentPageIndex);
-                        CanvasGestureDetector.scrollToPage(
-                          pageIndex: currentPageIndex + 1,
-                          pages: coreInfo.pages,
-                          screenWidth: MediaQuery.sizeOf(context).width,
-                          transformationController: _transformationController,
-                        );
-                      }),
+                      onPressed: _addPageFromTemplate,
                     ),
 
                   // Share / Export
@@ -2840,7 +2931,11 @@ class EditorState extends State<Editor>
     );
   }
 
-  Widget pageBuilder(BuildContext context, int pageIndex) {
+  Widget pageBuilder(
+    BuildContext context,
+    int pageIndex, [
+    Rect? viewportRect,
+  ]) {
     final page = coreInfo.pages[pageIndex];
     final currentStroke = Pen.currentStroke?.pageIndex == pageIndex
         ? Pen.currentStroke
@@ -2899,6 +2994,10 @@ class EditorState extends State<Editor>
       },
       currentTool: currentTool,
       currentScale: _transformationController.value.approxScale,
+      foreground: _zoomWindowOpen && pageIndex == _zoomPageIndex
+          ? ZoomPageBox(controller: _zoomWindow)
+          : null,
+      viewportRect: viewportRect,
     );
   }
 
@@ -3021,9 +3120,10 @@ class EditorState extends State<Editor>
     });
   }
 
-  void insertPageAfter(int pageIndex) => setState(() {
+  void insertPageAfter(int pageIndex, {PageTemplate? template}) => setState(() {
     if (coreInfo.readOnly) return;
     final page = EditorPage();
+    template?.applyTo(page);
     coreInfo.pages.insert(pageIndex + 1, page);
     listenToQuillChanges(page.quill, pageIndex + 1);
     history.recordChange(
@@ -3161,6 +3261,7 @@ class EditorState extends State<Editor>
     _lastSeenPointerCountTimer?.cancel();
 
     _removeKeybindings();
+    _zoomWindow.dispose();
 
     // manually save pen properties since the listeners don't fire if a property is changed
     stows.lastFountainPenOptions.notifyListeners();

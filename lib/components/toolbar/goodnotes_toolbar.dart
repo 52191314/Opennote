@@ -1,5 +1,6 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Grok 4.7
 library;
 
 import 'package:flutter/cupertino.dart';
@@ -15,10 +16,12 @@ import 'package:saber/components/toolbar/editor_toolbar_actions.dart';
 import 'package:saber/components/toolbar/eraser_size_popup.dart';
 import 'package:saber/components/toolbar/lasso_filter_popup.dart';
 import 'package:saber/components/toolbar/pen_modal.dart';
+import 'package:saber/components/toolbar/pen_tray_bar.dart';
 import 'package:saber/components/toolbar/quick_palette_bar.dart';
 import 'package:saber/components/toolbar/tape_options_popup.dart';
 import 'package:saber/components/toolbar/toolbar_button.dart';
 import 'package:saber/components/toolbar/toolbar_dialog.dart';
+import 'package:saber/data/editor/zoom_window.dart';
 import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
@@ -52,13 +55,25 @@ import 'package:saber/i18n/strings.g.dart';
 ///   - Shapes: Shape presets and fill toggle.
 ///   - Text: Rich text formatting controls.
 class GoodnotesToolbar extends StatefulWidget {
-  const GoodnotesToolbar({super.key, required this.actions, this.onClearPage});
+  const GoodnotesToolbar({
+    super.key,
+    required this.actions,
+    this.onClearPage,
+    this.zoomWindowOpen = false,
+    this.onToggleZoomWindow,
+  });
 
   /// The editor state to show and the actions the tools trigger.
   final EditorToolbarActions actions;
 
   /// Clears the current page, if the editor allows it.
   final VoidCallback? onClearPage;
+
+  /// Whether the zoom window is open.
+  final bool zoomWindowOpen;
+
+  /// Opens or dismisses the zoom window.
+  final VoidCallback? onToggleZoomWindow;
 
   @override
   State<GoodnotesToolbar> createState() => _GoodnotesToolbarState();
@@ -394,6 +409,18 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     size: 16,
                   ),
                 ),
+
+                ToolbarIconButton(
+                  key: ZoomWindowKeys.toolbarButton,
+                  tooltip: t.editor.toolbar.zoomWindow,
+                  selected: widget.zoomWindowOpen,
+                  enabled:
+                      !widget.actions.readOnly &&
+                      widget.onToggleZoomWindow != null,
+                  onPressed: widget.onToggleZoomWindow,
+                  padding: _buttonPadding,
+                  child: const Icon(Icons.fit_screen, size: 16),
+                ),
               ],
             ),
           ),
@@ -658,6 +685,13 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                   ]
                   // CASE E: General Pen / Pencil / Highlighter
                   else if (widget.actions.currentTool is Pen) ...[
+                    if (Pen.isWritingPen(widget.actions.currentTool)) ...[
+                      PenTrayBar(
+                        pen: widget.actions.currentTool as Pen,
+                        onSelected: () => setState(() {}),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
                     QuickPaletteBar(
                       axis: Axis.horizontal,
                       currentTool: widget.actions.currentTool,

@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Grok 4.7
 library;
 
 import 'dart:async';
@@ -38,6 +39,7 @@ class CanvasGestureDetector extends StatefulWidget {
     required this.redo,
     required this.pages,
     required this.initialPageIndex,
+    this.explicitPageIndex,
     required this.pageBuilder,
     required this.placeholderPageBuilder,
     required this.isTextEditing,
@@ -74,7 +76,17 @@ class CanvasGestureDetector extends StatefulWidget {
 
   final List<EditorPage> pages;
   final int? initialPageIndex;
-  final Widget Function(BuildContext context, int pageIndex) pageBuilder;
+
+  /// Page requested by the route, such as an ink-search hit.
+  ///
+  /// When set, it is shown even if this note still has a cached scroll position.
+  final int? explicitPageIndex;
+  final Widget Function(
+    BuildContext context,
+    int pageIndex, [
+    Rect? viewportRect,
+  ])
+  pageBuilder;
   final Widget Function(BuildContext context, int pageIndex)
   placeholderPageBuilder;
 
@@ -346,6 +358,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
   @override
   void didUpdateWidget(CanvasGestureDetector oldWidget) {
     if (oldWidget.initialPageIndex != widget.initialPageIndex ||
+        oldWidget.explicitPageIndex != widget.explicitPageIndex ||
         oldWidget.filePath != widget.filePath) {
       setInitialTransform();
     }
@@ -355,31 +368,36 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
   /// Sets the initial transform so that we're scrolled to the correct page.
   /// Has no effect if note hasn't yet loaded or if the user has already scrolled.
   void setInitialTransform() {
-    // wait for note to be loaded
-    if (widget.filePath.isEmpty) return;
+    final cached = widget.filePath.isEmpty
+        ? null
+        : CanvasTransformCache.get(widget.filePath);
+    final choice = chooseCanvasOpenTarget(
+      noteLoaded: widget.filePath.isNotEmpty,
+      userHasScrolled: !widget._transformationController.value.isIdentity(),
+      cachedTransform: cached?.transform,
+      isInfiniteCanvas: widget.isInfiniteCanvas,
+      explicitPageIndex: widget.explicitPageIndex,
+      savedPageIndex: widget.initialPageIndex,
+    );
 
-    // don't override user's scroll
-    if (!widget._transformationController.value.isIdentity()) return;
-
-    final transformCacheItem = CanvasTransformCache.get(widget.filePath);
-
-    if (transformCacheItem != null) {
-      // if we're opening the same note, restore the last transform
-      widget._transformationController.value = transformCacheItem.transform;
-      if (zoomLockedValue != null) {
-        zoomLockedValue = transformCacheItem.transform.approxScale;
-      }
-    } else if (widget.isInfiniteCanvas) {
-      // For infinite canvas, start at identity
-      widget._transformationController.value = Matrix4.identity();
-    } else if (widget.initialPageIndex != null) {
-      // if we're opening a different note, scroll to the last recorded page
-      CanvasGestureDetector.scrollToPage(
-        pageIndex: widget.initialPageIndex!,
-        pages: widget.pages,
-        screenWidth: MediaQuery.sizeOf(context).width,
-        transformationController: widget._transformationController,
-      );
+    switch (choice.scroll) {
+      case CanvasOpenScroll.unchanged:
+        return;
+      case CanvasOpenScroll.restoreCache:
+        final transform = cached!.transform;
+        widget._transformationController.value = transform;
+        if (zoomLockedValue != null) {
+          zoomLockedValue = transform.approxScale;
+        }
+      case CanvasOpenScroll.scrollToPage:
+        CanvasGestureDetector.scrollToPage(
+          pageIndex: choice.pageIndex!,
+          pages: widget.pages,
+          screenWidth: MediaQuery.sizeOf(context).width,
+          transformationController: widget._transformationController,
+        );
+      case CanvasOpenScroll.identity:
+        widget._transformationController.value = Matrix4.identity();
     }
   }
 
@@ -721,7 +739,12 @@ class _PagesBuilder extends StatelessWidget {
   });
 
   final List<EditorPage> pages;
-  final Widget Function(BuildContext context, int pageIndex) pageBuilder;
+  final Widget Function(
+    BuildContext context,
+    int pageIndex, [
+    Rect? viewportRect,
+  ])
+  pageBuilder;
   final Widget Function(BuildContext context, int pageIndex)
   placeholderPageBuilder;
   final Rect boundingBox;
@@ -733,7 +756,7 @@ class _PagesBuilder extends StatelessWidget {
     if (isInfiniteCanvas) {
       if (pages.isEmpty) return const SizedBox.shrink();
       pages.first.isRendered = true;
-      return pageBuilder(context, 0);
+      return pageBuilder(context, 0, boundingBox);
     }
 
     final List<Widget> children = [
@@ -771,6 +794,47 @@ class _PagesBuilder extends StatelessWidget {
     children.add(const SizedBox.square(dimension: Editor.gapBetweenPages));
     return Column(children: children);
   }
+}
+
+/// How to place the canvas when a note opens.
+enum CanvasOpenScroll { unchanged, restoreCache, scrollToPage, identity }
+
+/// The scroll decision for opening a note.
+class CanvasOpenTarget {
+  const CanvasOpenTarget(this.scroll, [this.pageIndex]);
+
+  final CanvasOpenScroll scroll;
+  final int? pageIndex;
+}
+
+/// Chooses the opening scroll.
+///
+/// An explicit route page, such as an ink-search hit, is shown even when
+/// [cachedTransform] is the position from the last time this note was open.
+CanvasOpenTarget chooseCanvasOpenTarget({
+  required bool noteLoaded,
+  required bool userHasScrolled,
+  required Matrix4? cachedTransform,
+  required bool isInfiniteCanvas,
+  required int? explicitPageIndex,
+  required int? savedPageIndex,
+}) {
+  if (!noteLoaded || userHasScrolled) {
+    return const CanvasOpenTarget(CanvasOpenScroll.unchanged);
+  }
+  if (explicitPageIndex != null) {
+    return CanvasOpenTarget(CanvasOpenScroll.scrollToPage, explicitPageIndex);
+  }
+  if (cachedTransform != null) {
+    return const CanvasOpenTarget(CanvasOpenScroll.restoreCache);
+  }
+  if (isInfiniteCanvas) {
+    return const CanvasOpenTarget(CanvasOpenScroll.identity);
+  }
+  if (savedPageIndex != null) {
+    return CanvasOpenTarget(CanvasOpenScroll.scrollToPage, savedPageIndex);
+  }
+  return const CanvasOpenTarget(CanvasOpenScroll.unchanged);
 }
 
 @visibleForTesting

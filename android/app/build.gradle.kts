@@ -18,7 +18,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.adilhanney.saber"
+    namespace = "com.woaiyj1314.opennote"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -28,7 +28,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.adilhanney.saber"
+        applicationId = "com.woaiyj1314.opennote"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -48,6 +48,9 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
         }
         debug {
             signingConfig = signingConfigs.getByName("release")

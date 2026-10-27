@@ -26,6 +26,9 @@ home:
   noPreviewAvailable: No preview available
   createNewNote: Tap the + button to create a new note
   backFolder: Go back to the previous folder
+  shelf:
+    newNotebook: New notebook
+    notebookName: Notebook name
   newFolder:
     newFolder: New folder
     folderName: Folder name
@@ -284,7 +287,20 @@ editor:
     export: Export (Ctrl Shift S)
     exportAs: "Export as:"
     fullscreen: Toggle fullscreen (F11)
+    zoomWindow: Zoom window
+  zoomWindow:
+    title: Zoom window
+    autoAdvance: Auto-advance
+    newLine: New line
+    returnHeight: Return height
+    dismiss: Close zoom window
+  penMenu:
+    top: Top edge
+    right: Right edge
+    bottom: Bottom edge
+    left: Left edge
   pens:
+    savedPen: Saved pen
     fountainPen: Fountain pen
     ballpointPen: Ballpoint pen
     highlighter: Highlighter
@@ -594,6 +610,7 @@ searchResults:
   textMatch: "Page $page: \"$snippet\""
   colorMatch: "Page $page – colour $hex"
   toolMatch: "Page $page – tool: $tool"
+  inkMatch: "Page $page: handwritten \"$word\""
 onboarding:
   paper:
     title: "Silky Smooth Digital Paper"

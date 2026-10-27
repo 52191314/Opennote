@@ -1,3 +1,6 @@
+/// 🤖 Modified with Grok 4.7
+library;
+
 import 'dart:async';
 import 'dart:io';
 
@@ -39,6 +42,7 @@ Future<void> main(List<String> args) async {
   ///   --dart-define=FLAVOR="Google Play" \
   ///   --dart-define=APP_STORE="Google Play" \
   ///   --dart-define=UPDATE_CHECK="false"
+  WidgetsFlutterBinding.ensureInitialized();
   FlavorConfig.setupFromEnvironment();
 
   await initSentry(() => appRunner(args));
@@ -191,7 +195,8 @@ void setupBackgroundSync() {
 @pragma('vm:entry-point')
 void doBackgroundSync() {
   Workmanager().executeTask((_, _) async {
-    FlavorConfig.setupFromEnvironment();
+    WidgetsFlutterBinding.ensureInitialized();
+  FlavorConfig.setupFromEnvironment();
     StrokeOptionsExtension.setDefaults();
     Editor.canRasterPdf = false;
 
@@ -248,6 +253,7 @@ class App extends StatefulWidget {
         builder: (context, state) => Editor(
           path: state.uri.queryParameters['path'],
           pdfPath: state.uri.queryParameters['pdfPath'],
+          initialPageIndex: RoutePaths.pageIndexFromUri(state.uri),
         ),
       ),
       GoRoute(
