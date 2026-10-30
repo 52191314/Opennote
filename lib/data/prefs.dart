@@ -17,6 +17,7 @@ import 'package:saber/data/codecs/quota_codec.dart';
 import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/sentry/sentry_consent.dart';
 import 'package:saber/data/tools/highlighter.dart';
+import 'package:saber/data/tools/palm_rejection.dart';
 import 'package:saber/data/tools/pen.dart';
 import 'package:sbn/canvas_background_pattern.dart';
 import 'package:sbn/tool_id.dart';
@@ -452,6 +453,22 @@ class Stows {
   final autoDisableFingerDrawingWhenStylusDetected = PlainStow(
     'autoDisableFingerDrawingWhenStylusDetected',
     true,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Goodnotes-inspired writing posture for palm rejection.
+  final writingPosture = PlainStow(
+    'writingPosture',
+    WritingPosture.rightBelow,
+    codec: const EnumCodec(WritingPosture.values),
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Palm rejection filtering sensitivity.
+  final palmRejectionSensitivity = PlainStow(
+    'palmRejectionSensitivity',
+    PalmRejectionSensitivity.medium,
+    codec: const EnumCodec(PalmRejectionSensitivity.values),
     volatile: !_isOnMainIsolate,
   );
 

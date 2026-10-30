@@ -1,3 +1,4 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// Adapted for Saber from Flutter's [InteractiveViewer] class
 /// https://github.com/flutter/flutter/blob/stable/packages/flutter/lib/src/widgets/interactive_viewer.dart
 /// Using this commit (Flutter 3.44.0):
@@ -17,6 +18,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
+import 'package:saber/data/tools/palm_rejection.dart';
 import 'package:vector_math/vector_math_64.dart' show Matrix4, Quad, Vector3;
 
 typedef InteractiveCanvasViewerWidgetBuilder =
@@ -35,6 +37,7 @@ class InteractiveCanvasViewer extends StatefulWidget {
     // use cases.
     this.maxScale = 2.5,
     this.minScale = 0.8,
+    this.palmEngine,
     this.isDrawGesture,
     this.interactionEndFrictionCoefficient = kDrag,
     this.onInteractionEnd,
@@ -82,6 +85,7 @@ class InteractiveCanvasViewer extends StatefulWidget {
     // use cases.
     this.maxScale = 2.5,
     this.minScale = 0.8,
+    this.palmEngine,
     this.isDrawGesture,
     this.interactionEndFrictionCoefficient = kDrag,
     this.onInteractionEnd,
@@ -331,6 +335,9 @@ class InteractiveCanvasViewer extends StatefulWidget {
   ///  * [onDrawStart], which handles the start of the same interaction.
   ///  * [onDrawEnd], which handles the end of the same interaction.
   final GestureScaleUpdateCallback? onDrawUpdate;
+
+  /// Palm rejection filter engine for filtering wrist and hand contacts.
+  final PalmRejectionEngine? palmEngine;
 
   /// A function to distinguish a draw gesture and a pan/zoom gesture.
   final bool Function(ScaleStartDetails scaleDetails)? isDrawGesture;
@@ -755,7 +762,9 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
       details.localFocalPoint,
     );
 
-    if (_gestureType == _GestureType.pan) {
+    if (isCurrentGestureADrawGesture) {
+      _gestureType = _GestureType.pan;
+    } else if (_gestureType == _GestureType.pan) {
       // When a gesture first starts, it sometimes has no change in scale and
       // rotation despite being a two-finger gesture. Here the gesture is
       // allowed to be reinterpreted as its correct type after originally
@@ -816,6 +825,11 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
 
       case _GestureType.pan:
         assert(_referenceFocalPoint != null);
+        if (isCurrentGestureADrawGesture) {
+          widget.onDrawUpdate?.call(details);
+          return;
+        }
+
         // details may have a change in scale here when scaleEnabled is false.
         // In an effort to keep the behavior similar whether or not scaleEnabled
         // is true, these gestures are thrown away.
@@ -1112,13 +1126,37 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
     return Listener(
       key: _parentKey,
       onPointerSignal: _receivedPointerSignal,
-      child: GestureDetector(
+      child: RawGestureDetector(
         behavior: HitTestBehavior.opaque, // Necessary when panning off screen.
-        onScaleEnd: _onScaleEnd,
-        onScaleStart: _onScaleStart,
-        onScaleUpdate: _onScaleUpdate,
-        trackpadScrollCausesScale: widget.trackpadScrollCausesScale,
-        trackpadScrollToScaleFactor: Offset(0, -1 / widget.scaleFactor),
+        gestures: <Type, GestureRecognizerFactory>{
+          CanvasScaleGestureRecognizer:
+              GestureRecognizerFactoryWithHandlers<
+                CanvasScaleGestureRecognizer
+              >(
+                () => CanvasScaleGestureRecognizer(
+                  palmEngine: widget.palmEngine,
+                  dragStartBehavior: DragStartBehavior.down,
+                  trackpadScrollCausesScale: widget.trackpadScrollCausesScale,
+                  trackpadScrollToScaleFactor: Offset(
+                    0,
+                    -1 / widget.scaleFactor,
+                  ),
+                ),
+                (CanvasScaleGestureRecognizer instance) {
+                  instance
+                    ..palmEngine = widget.palmEngine
+                    ..trackpadScrollCausesScale =
+                        widget.trackpadScrollCausesScale
+                    ..trackpadScrollToScaleFactor = Offset(
+                      0,
+                      -1 / widget.scaleFactor,
+                    )
+                    ..onStart = _onScaleStart
+                    ..onUpdate = _onScaleUpdate
+                    ..onEnd = _onScaleEnd;
+                },
+              ),
+        },
         child: child,
       ),
     );
@@ -1283,4 +1321,58 @@ Axis? _getPanAxis(Offset point1, Offset point2) {
   final double x = point2.dx - point1.dx;
   final double y = point2.dy - point1.dy;
   return x.abs() > y.abs() ? Axis.horizontal : Axis.vertical;
+}
+
+/// A specialized [ScaleGestureRecognizer] that filters resting palm/wrist touches via
+/// [PalmRejectionEngine] and prioritizes active stylus writing over concurrent touch inputs.
+class CanvasScaleGestureRecognizer extends ScaleGestureRecognizer {
+  CanvasScaleGestureRecognizer({
+    super.debugOwner,
+    super.supportedDevices,
+    super.allowedButtonsFilter,
+    super.dragStartBehavior,
+    super.trackpadScrollCausesScale,
+    super.trackpadScrollToScaleFactor,
+    this.palmEngine,
+  });
+
+  PalmRejectionEngine? palmEngine;
+  final Set<int> _activeTouchPointers = <int>{};
+
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    if (palmEngine?.isPalm(event) ?? false) {
+      return;
+    }
+
+    if (event.kind == PointerDeviceKind.stylus ||
+        event.kind == PointerDeviceKind.invertedStylus) {
+      // Stylus preemption: clear any prior tracked touch pointers (e.g. wrist touching first)
+      for (final touchPointer in _activeTouchPointers) {
+        super.handleEvent(
+          PointerCancelEvent(pointer: touchPointer, position: event.position),
+        );
+      }
+      _activeTouchPointers.clear();
+    } else if (event.kind == PointerDeviceKind.touch) {
+      _activeTouchPointers.add(event.pointer);
+    }
+
+    super.addAllowedPointer(event);
+  }
+
+  @override
+  void handleEvent(PointerEvent event) {
+    if (palmEngine?.isPalm(event) ?? false) {
+      _activeTouchPointers.remove(event.pointer);
+      stopTrackingIfPointerNoLongerDown(event);
+      return;
+    }
+
+    if (event is PointerUpEvent || event is PointerCancelEvent) {
+      _activeTouchPointers.remove(event.pointer);
+    }
+
+    super.handleEvent(event);
+  }
 }

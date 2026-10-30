@@ -1,4 +1,4 @@
-/// 🤖 Modified with Grok 4.7
+///
 /// Generated file. Do not edit.
 ///
 // coverage:ignore-file
@@ -130,6 +130,8 @@ class Translations$settings$en {
 	// Translations
 	late final Translations$settings$prefCategories$en prefCategories = Translations$settings$prefCategories$en.internal(_root);
 	late final Translations$settings$prefLabels$en prefLabels = Translations$settings$prefLabels$en.internal(_root);
+	late final Translations$settings$writingPosture$en writingPosture = Translations$settings$writingPosture$en.internal(_root);
+	late final Translations$settings$palmRejectionSensitivity$en palmRejectionSensitivity = Translations$settings$palmRejectionSensitivity$en.internal(_root);
 	late final Translations$settings$prefDescriptions$en prefDescriptions = Translations$settings$prefDescriptions$en.internal(_root);
 	late final Translations$settings$themeModes$en themeModes = Translations$settings$themeModes$en.internal(_root);
 	late final Translations$settings$layoutSizes$en layoutSizes = Translations$settings$layoutSizes$en.internal(_root);
@@ -759,6 +761,12 @@ class Translations$settings$prefLabels$en {
 	/// en: 'Auto-disable finger drawing'
 	String get autoDisableFingerDrawingWhenStylusDetected => 'Auto-disable finger drawing';
 
+	/// en: 'Writing Posture'
+	String get writingPosture => 'Writing Posture';
+
+	/// en: 'Palm Rejection'
+	String get palmRejectionSensitivity => 'Palm Rejection';
+
 	/// en: 'Prompt you to rename new notes'
 	String get editorPromptRename => 'Prompt you to rename new notes';
 
@@ -802,6 +810,60 @@ class Translations$settings$prefLabels$en {
 	String get welcomeGuide => 'Welcome Guide & Onboarding';
 }
 
+// Path: settings.writingPosture
+class Translations$settings$writingPosture$en {
+	Translations$settings$writingPosture$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Right-handed'
+	String get handRight => 'Right-handed';
+
+	/// en: 'Left-handed'
+	String get handLeft => 'Left-handed';
+
+	/// en: 'Below the line'
+	String get postureBelow => 'Below the line';
+
+	/// en: 'Wrist rests below the writing line'
+	String get postureBelowDesc => 'Wrist rests below the writing line';
+
+	/// en: 'Level with the line'
+	String get postureLevel => 'Level with the line';
+
+	/// en: 'Wrist rests to the side of the writing line'
+	String get postureLevelDesc => 'Wrist rests to the side of the writing line';
+
+	/// en: 'Above the line'
+	String get postureAbove => 'Above the line';
+
+	/// en: 'Hand arches or hooks above the writing line'
+	String get postureAboveDesc => 'Hand arches or hooks above the writing line';
+}
+
+// Path: settings.palmRejectionSensitivity
+class Translations$settings$palmRejectionSensitivity$en {
+	Translations$settings$palmRejectionSensitivity$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Disabled'
+	String get disabled => 'Disabled';
+
+	/// en: 'Low'
+	String get low => 'Low';
+
+	/// en: 'Medium (Recommended)'
+	String get medium => 'Medium (Recommended)';
+
+	/// en: 'High'
+	String get high => 'High';
+}
+
 // Path: settings.prefDescriptions
 class Translations$settings$prefDescriptions$en {
 	Translations$settings$prefDescriptions$en.internal(this._root);
@@ -832,6 +894,12 @@ class Translations$settings$prefDescriptions$en {
 
 	/// en: 'Turn off finger drawing when a stylus is detected'
 	String get autoDisableFingerDrawingWhenStylusDetected => 'Turn off finger drawing when a stylus is detected';
+
+	/// en: 'Adjust palm rejection to match your hand position on the screen'
+	String get writingPosture => 'Adjust palm rejection to match your hand position on the screen';
+
+	/// en: 'Prevents your resting hand or wrist from interfering with writing'
+	String get palmRejectionSensitivity => 'Prevents your resting hand or wrist from interfering with writing';
 
 	/// en: 'You can always rename notes later'
 	String get editorPromptRename => 'You can always rename notes later';
@@ -1722,6 +1790,9 @@ class Translations$editor$tools$en {
 
 	/// en: 'Pen Options'
 	String get penOptions => 'Pen Options';
+
+	/// en: 'Palm Rejection & Hand Posture'
+	String get palmRejection => 'Palm Rejection & Hand Posture';
 
 	/// en: 'Laser Pointer (Spotlight Mode)'
 	String get laserSpotlight => 'Laser Pointer (Spotlight Mode)';

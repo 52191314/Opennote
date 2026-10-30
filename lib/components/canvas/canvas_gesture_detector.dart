@@ -19,6 +19,7 @@ import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/extensions/change_notifier_extensions.dart';
 import 'package:saber/data/extensions/matrix4_extensions.dart';
 import 'package:saber/data/prefs.dart';
+import 'package:saber/data/tools/palm_rejection.dart';
 import 'package:saber/pages/editor/editor.dart';
 import 'package:vector_math/vector_math_64.dart';
 
@@ -178,6 +179,7 @@ class CanvasGestureDetector extends StatefulWidget {
 
 class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
   late var containerBounds = const BoxConstraints();
+  final _palmEngine = PalmRejectionEngine();
 
   /// If zooming is locked, this is the zoom level.
   /// Otherwise, this is null.
@@ -514,11 +516,17 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
   }
 
   void _listenerPointerEvent(PointerEvent event) {
-    _trackPointerForTapGestures(event);
-
     final isStylus =
         event.kind == PointerDeviceKind.stylus ||
         event.kind == PointerDeviceKind.invertedStylus;
+
+    if (isStylus) {
+      _palmEngine.notifyStylusEvent(event);
+    } else if (_palmEngine.isPalm(event)) {
+      return;
+    }
+
+    _trackPointerForTapGestures(event);
     if (isStylus && event is PointerDownEvent) {
       _detectStylusButton(event);
     }
@@ -552,6 +560,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
 
   void _listenerPointerHoverEvent(PointerEvent event) {
     if (event.kind != .stylus && event.kind != .invertedStylus) return;
+    _palmEngine.notifyStylusEvent(event);
 
     // Apparently flutter synthesizes a hover event on pointer down,
     // so these are used to detect when hovering ends
@@ -574,6 +583,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
   }
 
   void _listenerPointerUpEvent(PointerEvent event) {
+    _palmEngine.onPointerUpOrCancel(event);
     _trackPointerForTapGestures(event);
     widget.updatePointerData(event.kind, null);
     if (stylusButtonWasPressed) {
@@ -599,6 +609,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
                 this.containerBounds = containerBounds;
 
                 return InteractiveCanvasViewer.builder(
+                  palmEngine: _palmEngine,
                   minScale: zoomLockedValue ?? CanvasGestureDetector.kMinScale,
                   maxScale: zoomLockedValue ?? CanvasGestureDetector.kMaxScale,
                   panEnabled: !singleFingerPanLock,

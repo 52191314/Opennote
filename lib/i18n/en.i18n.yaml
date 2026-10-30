@@ -116,6 +116,8 @@ settings:
     disableEraserAfterUse: Auto-disable the eraser
     hideFingerDrawingToggle: Hide the finger drawing toggle
     autoDisableFingerDrawingWhenStylusDetected: Auto-disable finger drawing
+    writingPosture: Writing Posture
+    palmRejectionSensitivity: Palm Rejection
     editorPromptRename: Prompt you to rename new notes
     recentColorsDontSavePresets: Don't save preset colors in recent colors
     recentColorsLength: How many recent colors to store
@@ -130,6 +132,20 @@ settings:
     scribbleToErase: Scribble to erase
     defaultInfiniteCanvas: Default to Infinite Canvas (2D)
     welcomeGuide: Welcome Guide & Onboarding
+  writingPosture:
+    handRight: Right-handed
+    handLeft: Left-handed
+    postureBelow: Below the line
+    postureBelowDesc: Wrist rests below the writing line
+    postureLevel: Level with the line
+    postureLevelDesc: Wrist rests to the side of the writing line
+    postureAbove: Above the line
+    postureAboveDesc: Hand arches or hooks above the writing line
+  palmRejectionSensitivity:
+    disabled: Disabled
+    low: Low
+    medium: Medium (Recommended)
+    high: High
   prefDescriptions:
     hyperlegibleFont: Increases legibility for users with low vision
     allowInsecureConnections: (Not recommended) Allow Saber to connect to servers with self-signed/untrusted certificates
@@ -142,6 +158,8 @@ settings:
       fixedOn: Finger drawing is fixed as enabled
       fixedOff: Finger drawing is fixed as disabled
     autoDisableFingerDrawingWhenStylusDetected: Turn off finger drawing when a stylus is detected
+    writingPosture: Adjust palm rejection to match your hand position on the screen
+    palmRejectionSensitivity: Prevents your resting hand or wrist from interfering with writing
     editorPromptRename: You can always rename notes later
     printPageIndicators: Show page indicators in exports
     autosave: Auto-save after a short delay, or never
@@ -450,6 +468,7 @@ editor:
   tools:
     strokeStyle: "Stroke Style: $style"
     penOptions: "Pen Options"
+    palmRejection: "Palm Rejection & Hand Posture"
     laserSpotlight: "Laser Pointer (Spotlight Mode)"
     fine: "Fine"
     medium: "Medium"

@@ -24,6 +24,7 @@ import 'package:saber/components/settings/settings_sentry.dart';
 import 'package:saber/components/settings/settings_subtitle.dart';
 import 'package:saber/components/settings/settings_switch.dart';
 import 'package:saber/components/settings/update_manager.dart';
+import 'package:saber/components/settings/writing_posture_selector.dart';
 import 'package:saber/components/theming/adaptive_alert_dialog.dart';
 import 'package:saber/components/theming/adaptive_toggle_buttons.dart';
 import 'package:saber/components/theming/saber_theme.dart';
@@ -514,6 +515,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
 
                 _PressureCurveSetting(),
+
+                const Divider(),
+                const WritingPostureSelector(),
 
                 SettingsSubtitle(subtitle: t.settings.prefCategories.editor),
                 SettingsSelection(
