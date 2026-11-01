@@ -326,6 +326,8 @@ class _ToolbarState extends State<Toolbar> {
             sendToBack: widget.actions.sendToBack,
             smoothen: widget.actions.smoothen,
             addToElements: widget.actions.addToElements,
+            reduceTextSize: widget.actions.reduceSelectionSize,
+            enlargeTextSize: widget.actions.enlargeSelectionSize,
           ),
         ),
       ),

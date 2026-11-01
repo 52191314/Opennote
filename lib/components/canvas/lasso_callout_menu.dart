@@ -18,6 +18,8 @@ class LassoCalloutMenu extends StatefulWidget {
   final Color? currentColor;
   final bool isResizeActive;
   final VoidCallback? onToggleResize;
+  final VoidCallback? onReduceTextSize;
+  final VoidCallback? onEnlargeTextSize;
   final VoidCallback? onTakeScreenshot;
   final VoidCallback? onAddToElements;
   final VoidCallback? onBringToFront;
@@ -38,6 +40,8 @@ class LassoCalloutMenu extends StatefulWidget {
     this.currentColor,
     this.isResizeActive = false,
     this.onToggleResize,
+    this.onReduceTextSize,
+    this.onEnlargeTextSize,
     this.onTakeScreenshot,
     this.onAddToElements,
     this.onBringToFront,
@@ -237,6 +241,22 @@ class _LassoCalloutMenuState extends State<LassoCalloutMenu> {
                   : t.editor.lasso.resize,
               isActive: widget.isResizeActive,
               onTap: widget.onToggleResize,
+            ),
+          ],
+          if (widget.onReduceTextSize != null) ...[
+            divider,
+            _CalloutButton(
+              icon: Icons.text_decrease_rounded,
+              label: t.editor.lasso.reduceSize,
+              onTap: widget.onReduceTextSize,
+            ),
+          ],
+          if (widget.onEnlargeTextSize != null) ...[
+            divider,
+            _CalloutButton(
+              icon: Icons.text_increase_rounded,
+              label: t.editor.lasso.enlargeSize,
+              onTap: widget.onEnlargeTextSize,
             ),
           ],
           divider,

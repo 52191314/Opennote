@@ -63,6 +63,7 @@ import 'package:saber/data/editor/gestures/tool_gesture.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/editor/selection_clipboard.dart';
 import 'package:saber/data/editor/selection_handles.dart';
+import 'package:saber/data/editor/selection_resize.dart';
 import 'package:saber/data/editor/selection_transform.dart';
 import 'package:saber/data/editor/zoom_window.dart';
 import 'package:saber/data/extensions/change_notifier_extensions.dart';
@@ -1915,6 +1916,55 @@ class EditorState extends State<Editor>
     });
   }
 
+  void _scaleSelectionSize(double factor) {
+    if (currentTool is! Select) return;
+    final select = currentTool as Select;
+    if (!select.doneSelecting || select.selectResult.isEmpty) return;
+
+    final pageIndex = select.selectResult.pageIndex;
+    if (pageIndex < 0 || pageIndex >= coreInfo.pages.length) return;
+    final page = coreInfo.pages[pageIndex];
+
+    final selection = select.selectResult;
+    final bounds = selection.path.getBounds();
+    if (bounds.isEmpty || bounds.width <= 0 || bounds.height <= 0) return;
+    final center = bounds.center;
+
+    setState(() {
+      final transform = SelectionTransform.begin(page, selection);
+
+      for (final stroke in selection.strokes) {
+        stroke.scaleAround(factor, factor, center);
+      }
+
+      for (final image in selection.images) {
+        final rect = image.dstRect;
+        image.dstRect = Rect.fromCenter(
+          center: center + (rect.center - center) * factor,
+          width: rect.width * factor,
+          height: rect.height * factor,
+        );
+      }
+
+      if (selection.textSelected) {
+        page.textContentOffset =
+            center + (page.textContentOffset - center) * factor;
+        page.textContentScale = (page.textContentScale * factor).clamp(
+          0.2,
+          5.0,
+        );
+      }
+
+      selection.path = scalePathAround(selection.path, factor, factor, center);
+      page.placeSelectionHandles(selection);
+      history.recordChange(transform.finish(pageIndex: pageIndex));
+      autosaveAfterDelay();
+    });
+  }
+
+  void _reduceSelectionSize() => _scaleSelectionSize(0.85);
+  void _enlargeSelectionSize() => _scaleSelectionSize(1.18);
+
   Future<void> _takeSelectionScreenshot() async {
     if (currentTool is! Select) return;
     final select = currentTool as Select;
@@ -2221,6 +2271,8 @@ class EditorState extends State<Editor>
     openElementsSheet: _openElementsSheet,
     onRevealAllTape: _revealAllTapeOnCurrentPage,
     onConcealAllTape: _concealAllTapeOnCurrentPage,
+    reduceSelectionSize: _reduceSelectionSize,
+    enlargeSelectionSize: _enlargeSelectionSize,
   );
 
   @override
@@ -2970,6 +3022,8 @@ class EditorState extends State<Editor>
       isResizeActive:
           isCurrentPageSelected && (select?.isResizeActive ?? false),
       onToggleResize: isCurrentPageSelected ? _toggleSelectionResize : null,
+      onReduceTextSize: isCurrentPageSelected ? _reduceSelectionSize : null,
+      onEnlargeTextSize: isCurrentPageSelected ? _enlargeSelectionSize : null,
       onTakeScreenshot: isCurrentPageSelected ? _takeSelectionScreenshot : null,
       onAddToElements: isCurrentPageSelected ? _addToElements : null,
       onBringToFront: isCurrentPageSelected ? _bringSelectionToFront : null,

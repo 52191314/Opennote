@@ -176,9 +176,14 @@ class ScribbleDetector {
     }
     if (lines.isEmpty) return false;
 
-    final top = lineHeight * 1.2 + page.textContentOffset.dy;
+    final effectiveLineHeight = lineHeight * page.textContentScale;
+    final top =
+        (lineHeight * 1.2 * page.textContentScale) + page.textContentOffset.dy;
     final relY = position.dy - top;
-    final lineIndex = (relY / lineHeight).floor().clamp(0, lines.length - 1);
+    final lineIndex = (relY / effectiveLineHeight).floor().clamp(
+      0,
+      lines.length - 1,
+    );
 
     if (_erasedLineIndices.contains(lineIndex)) return false;
     _erasedLineIndices.add(lineIndex);

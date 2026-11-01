@@ -34,6 +34,8 @@ class Canvas extends StatelessWidget {
     this.onSetColor,
     this.isResizeActive = false,
     this.onToggleResize,
+    this.onReduceTextSize,
+    this.onEnlargeTextSize,
     this.onTakeScreenshot,
     this.onAddToElements,
     this.onBringToFront,
@@ -67,6 +69,8 @@ class Canvas extends StatelessWidget {
   final void Function(Color color)? onSetColor;
   final bool isResizeActive;
   final VoidCallback? onToggleResize;
+  final VoidCallback? onReduceTextSize;
+  final VoidCallback? onEnlargeTextSize;
   final VoidCallback? onTakeScreenshot;
   final VoidCallback? onAddToElements;
   final VoidCallback? onBringToFront;
@@ -236,6 +240,8 @@ class Canvas extends StatelessWidget {
                           onSetColor: onSetColor,
                           isResizeActive: isResizeActive,
                           onToggleResize: onToggleResize,
+                          onReduceTextSize: onReduceTextSize,
+                          onEnlargeTextSize: onEnlargeTextSize,
                           onTakeScreenshot: onTakeScreenshot,
                           onAddToElements: onAddToElements,
                           onBringToFront: onBringToFront,

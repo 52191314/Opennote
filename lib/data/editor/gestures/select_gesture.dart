@@ -1,4 +1,4 @@
-/// 🤖 Generated wholely or partially with Claude Code (Claude Opus 5.5)
+/// 🤖 Generated wholely or partially with Claude Code (Claude Opus 5.5); Google Antigravity
 library;
 
 import 'dart:ui';
@@ -270,6 +270,11 @@ class SelectGesture implements ToolGesture {
         scale,
         pivot,
       );
+      final uniformScale = (scale.x + scale.y) / 2.0;
+      page.textContentScale = (page.textContentScale * uniformScale).clamp(
+        0.2,
+        5.0,
+      );
     }
     selection.path = scalePathAround(selection.path, scale.x, scale.y, pivot);
   }
@@ -386,6 +391,7 @@ class SelectGesture implements ToolGesture {
                 previous: (
                   offset: page.textContentOffset - moved,
                   rotation: page.textContentRotation,
+                  scale: page.textContentScale,
                 ),
                 current: page.textPlacement,
               )

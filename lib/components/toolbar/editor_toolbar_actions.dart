@@ -1,4 +1,4 @@
-/// 🤖 Generated wholely or partially with Claude Code (Claude Opus 5.5)
+/// 🤖 Generated wholely or partially with Claude Code (Claude Opus 5.5); Google Antigravity
 library;
 
 import 'package:flutter/material.dart';
@@ -33,6 +33,8 @@ class EditorToolbarActions {
     this.sendToBack,
     this.smoothen,
     this.addToElements,
+    this.reduceSelectionSize,
+    this.enlargeSelectionSize,
     this.openElementsSheet,
     this.onRevealAllTape,
     this.onConcealAllTape,
@@ -109,4 +111,10 @@ class EditorToolbarActions {
 
   /// Conceals every piece of study tape on the current page.
   final VoidCallback? onConcealAllTape;
+
+  /// Reduces the size of the selection.
+  final VoidCallback? reduceSelectionSize;
+
+  /// Enlarges the size of the selection.
+  final VoidCallback? enlargeSelectionSize;
 }

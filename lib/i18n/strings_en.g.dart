@@ -2004,6 +2004,12 @@ class Translations$editor$lasso$en {
 	/// en: 'Resize'
 	String get resize => 'Resize';
 
+	/// en: 'Reduce Size'
+	String get reduceSize => 'Reduce Size';
+
+	/// en: 'Enlarge Size'
+	String get enlargeSize => 'Enlarge Size';
+
 	/// en: 'Color'
 	String get color => 'Color';
 

@@ -196,7 +196,7 @@ void setupBackgroundSync() {
 void doBackgroundSync() {
   Workmanager().executeTask((_, _) async {
     WidgetsFlutterBinding.ensureInitialized();
-  FlavorConfig.setupFromEnvironment();
+    FlavorConfig.setupFromEnvironment();
     StrokeOptionsExtension.setDefaults();
     Editor.canRasterPdf = false;
 

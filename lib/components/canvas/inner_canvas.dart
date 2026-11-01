@@ -43,6 +43,8 @@ class InnerCanvas extends StatefulWidget {
     this.onSetColor,
     this.isResizeActive = false,
     this.onToggleResize,
+    this.onReduceTextSize,
+    this.onEnlargeTextSize,
     this.onTakeScreenshot,
     this.onAddToElements,
     this.onBringToFront,
@@ -76,6 +78,8 @@ class InnerCanvas extends StatefulWidget {
   final void Function(Color color)? onSetColor;
   final bool isResizeActive;
   final VoidCallback? onToggleResize;
+  final VoidCallback? onReduceTextSize;
+  final VoidCallback? onEnlargeTextSize;
   final VoidCallback? onTakeScreenshot;
   final VoidCallback? onAddToElements;
   final VoidCallback? onBringToFront;
@@ -269,7 +273,13 @@ class _InnerCanvasState extends State<InnerCanvas> {
                         0,
                         1,
                       )
-                      ..rotateZ(page.textContentRotation),
+                      ..rotateZ(page.textContentRotation)
+                      ..scaleByDouble(
+                        page.textContentScale,
+                        page.textContentScale,
+                        1,
+                        1,
+                      ),
                     alignment: Alignment.topLeft,
                     child: quillEditor,
                   ),
@@ -321,6 +331,8 @@ class _InnerCanvasState extends State<InnerCanvas> {
                         onSetColor: widget.onSetColor ?? (_) {},
                         isResizeActive: widget.isResizeActive,
                         onToggleResize: widget.onToggleResize,
+                        onReduceTextSize: widget.onReduceTextSize,
+                        onEnlargeTextSize: widget.onEnlargeTextSize,
                         onTakeScreenshot: widget.onTakeScreenshot,
                         onAddToElements: widget.onAddToElements,
                         onBringToFront: widget.onBringToFront,

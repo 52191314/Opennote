@@ -24,6 +24,8 @@ class SelectionBar extends StatelessWidget {
   final VoidCallback? sendToBack;
   final VoidCallback? smoothen;
   final VoidCallback? addToElements;
+  final VoidCallback? reduceTextSize;
+  final VoidCallback? enlargeTextSize;
 
   const SelectionBar({
     super.key,
@@ -41,6 +43,8 @@ class SelectionBar extends StatelessWidget {
     this.sendToBack,
     this.smoothen,
     this.addToElements,
+    this.reduceTextSize,
+    this.enlargeTextSize,
   });
 
   @override
@@ -198,6 +202,28 @@ class SelectionBar extends StatelessWidget {
                   ? t.editor.lasso.doneResizing
                   : t.editor.lasso.resize,
               icon: const Icon(Icons.open_in_full_rounded),
+            ),
+          if (reduceTextSize != null)
+            IconButton(
+              onPressed: reduceTextSize,
+              style: TextButton.styleFrom(
+                foregroundColor: ColorScheme.of(context).secondary,
+                backgroundColor: Colors.transparent,
+                shape: const CircleBorder(),
+              ),
+              tooltip: t.editor.lasso.reduceSize,
+              icon: const Icon(Icons.text_decrease_rounded),
+            ),
+          if (enlargeTextSize != null)
+            IconButton(
+              onPressed: enlargeTextSize,
+              style: TextButton.styleFrom(
+                foregroundColor: ColorScheme.of(context).secondary,
+                backgroundColor: Colors.transparent,
+                shape: const CircleBorder(),
+              ),
+              tooltip: t.editor.lasso.enlargeSize,
+              icon: const Icon(Icons.text_increase_rounded),
             ),
           if (takeScreenshot != null)
             IconButton(

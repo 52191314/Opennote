@@ -1,4 +1,4 @@
-/// 🤖 Generated wholely or partially with Claude Code (Claude Opus 5.5)
+/// 🤖 Generated wholely or partially with Claude Code (Claude Opus 5.5); Google Antigravity
 library;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -9,6 +9,7 @@ import 'package:saber/data/flavor_config.dart';
 
 const _offset = Offset(40, -25.5);
 const _rotation = 0.75;
+const _scale = 0.85;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -20,12 +21,14 @@ void main() {
       final page = EditorPage(
         textContentOffset: _offset,
         textContentRotation: _rotation,
+        textContentScale: _scale,
       );
 
       final reloaded = _reload(page);
 
       expect(reloaded.textContentOffset, _offset);
       expect(reloaded.textContentRotation, _rotation);
+      expect(reloaded.textContentScale, _scale);
     });
 
     test('is not written for pages whose text was never moved', () {
@@ -33,6 +36,7 @@ void main() {
 
       expect(json.containsKey('to'), isFalse);
       expect(json.containsKey('tr'), isFalse);
+      expect(json.containsKey('ts'), isFalse);
     });
 
     test('defaults to unmoved when the file has no text transform', () {
@@ -40,24 +44,28 @@ void main() {
 
       expect(reloaded.textContentOffset, Offset.zero);
       expect(reloaded.textContentRotation, 0);
+      expect(reloaded.textContentScale, 1.0);
     });
 
     test('is kept by copyWith', () {
       final page = EditorPage(
         textContentOffset: _offset,
         textContentRotation: _rotation,
+        textContentScale: _scale,
       );
 
       final copy = page.copyWith(bookmarked: true);
 
       expect(copy.textContentOffset, _offset);
       expect(copy.textContentRotation, _rotation);
+      expect(copy.textContentScale, _scale);
     });
 
     test('is kept when the page is cloned for export', () {
       final page = EditorPage(
         textContentOffset: _offset,
         textContentRotation: _rotation,
+        textContentScale: _scale,
       );
 
       final clone = page.cloneForRasterization();
@@ -65,6 +73,7 @@ void main() {
 
       expect(clone.textContentOffset, _offset);
       expect(clone.textContentRotation, _rotation);
+      expect(clone.textContentScale, _scale);
     });
   });
 }

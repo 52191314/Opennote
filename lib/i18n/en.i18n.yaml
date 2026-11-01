@@ -527,6 +527,8 @@ editor:
     front: "Front"
     back: "Back"
     resize: "Resize"
+    reduceSize: "Reduce Size"
+    enlargeSize: "Enlarge Size"
     color: "Color"
     screenshot: "Screenshot"
     element: "Element"

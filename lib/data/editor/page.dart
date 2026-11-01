@@ -23,7 +23,7 @@ import 'package:sbn/has_size.dart';
 typedef CanvasKey = GlobalKey<State<InnerCanvas>>;
 
 /// Where a page's text sits relative to its default position.
-typedef TextPlacement = ({Offset offset, double rotation});
+typedef TextPlacement = ({Offset offset, double rotation, double scale});
 
 class EditorPage extends ChangeNotifier implements HasSize {
   static const double defaultWidth = 1000;
@@ -145,13 +145,13 @@ class EditorPage extends ChangeNotifier implements HasSize {
     final plainText = quill.controller.document.toPlainText();
     if (plainText.trim().isEmpty) return Rect.zero;
     final lines = plainText.trimRight().split('\n').length;
-    final estimatedHeight = lines * lineHeight;
-    final left = lineHeight * 0.5;
-    final top = lineHeight * 1.2;
+    final estimatedHeight = lines * lineHeight * textContentScale;
+    final left = lineHeight * 0.5 * textContentScale;
+    final top = lineHeight * 1.2 * textContentScale;
     return Rect.fromLTWH(
       left + textContentOffset.dx,
       top + textContentOffset.dy,
-      size.width - lineHeight,
+      (size.width - lineHeight) * textContentScale,
       estimatedHeight,
     );
   }
@@ -159,12 +159,19 @@ class EditorPage extends ChangeNotifier implements HasSize {
   /// Rotation angle (in radians) applied to the text content.
   double textContentRotation = 0;
 
-  /// [textContentOffset] and [textContentRotation] together.
-  TextPlacement get textPlacement =>
-      (offset: textContentOffset, rotation: textContentRotation);
+  /// Scale factor applied to the text content (default 1.0).
+  var textContentScale = 1.0;
+
+  /// [textContentOffset], [textContentRotation], and [textContentScale] together.
+  TextPlacement get textPlacement => (
+    offset: textContentOffset,
+    rotation: textContentRotation,
+    scale: textContentScale,
+  );
   set textPlacement(TextPlacement placement) {
     textContentOffset = placement.offset;
     textContentRotation = placement.rotation;
+    textContentScale = placement.scale;
   }
 
   /// Position for the pen preview circle (shown when hovering/ready to draw).
@@ -244,6 +251,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
     this.paperLineThickness,
     this.textContentOffset = Offset.zero,
     this.textContentRotation = 0,
+    this.textContentScale = 1.0,
   }) : assert(
          (size == null) || (width == null && height == null),
          "size and width/height shouldn't both be specified",
@@ -275,6 +283,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
     final hasisPage = HasSize(size);
     final textContentOffset = _parseOffset(json['to']);
     final textContentRotation = (json['tr'] as num?)?.toDouble() ?? 0;
+    final textContentScale = (json['ts'] as num?)?.toDouble() ?? 1.0;
     final paperPattern = json.containsKey('pp')
         ? CanvasBackgroundPattern.fromName(json['pp'] as String?)
         : null;
@@ -295,6 +304,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
         paperLineThickness: paperLineThickness,
         textContentOffset: textContentOffset,
         textContentRotation: textContentRotation,
+        textContentScale: textContentScale,
         layers: layersList
             .map(
               (layerJson) => Layer.fromJson(
@@ -344,6 +354,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
       paperLineThickness: paperLineThickness,
       textContentOffset: textContentOffset,
       textContentRotation: textContentRotation,
+      textContentScale: textContentScale,
       strokes: parseStrokesJson(
         json['s'] as List?,
         page: hasisPage,
@@ -396,6 +407,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
     if (textContentOffset != Offset.zero)
       'to': [textContentOffset.dx, textContentOffset.dy],
     if (textContentRotation != 0) 'tr': textContentRotation,
+    if (textContentScale != 1.0) 'ts': textContentScale,
     if (layers.isNotEmpty) 'l': layers.map((layer) => layer.toJson()).toList(),
     if (images.isNotEmpty)
       'i': images.map((image) => image.toJson(assets)).toList(),
@@ -582,6 +594,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
     int? paperLineThickness,
     Offset? textContentOffset,
     double? textContentRotation,
+    double? textContentScale,
   }) => EditorPage(
     size: size ?? this.size,
     strokes: strokes,
@@ -597,6 +610,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
     paperLineThickness: paperLineThickness ?? this.paperLineThickness,
     textContentOffset: textContentOffset ?? this.textContentOffset,
     textContentRotation: textContentRotation ?? this.textContentRotation,
+    textContentScale: textContentScale ?? this.textContentScale,
   );
 
   /// Clones this page for use in a screenshot.
