@@ -40,6 +40,7 @@ class GoodnotesHeaderBar extends StatelessWidget
     required this.isBookmarked,
     required this.onToggleBookmark,
     required this.onInsertPage,
+    this.onFitContent,
     required this.undo,
     required this.canUndo,
     required this.redo,
@@ -69,6 +70,7 @@ class GoodnotesHeaderBar extends StatelessWidget
   final bool isBookmarked;
   final VoidCallback onToggleBookmark;
   final VoidCallback onInsertPage;
+  final VoidCallback? onFitContent;
 
   final VoidCallback undo;
   final bool canUndo;
@@ -248,14 +250,23 @@ class GoodnotesHeaderBar extends StatelessWidget
           else
             const Spacer(),
 
-          // 4. Add Page button
+          // 4. Add Page button / Fit Content in Infinite Canvas
           if (!isCompact)
             Tooltip(
-              message: t.editor.menu.insertPage,
+              message: isInfiniteCanvas
+                  ? t.editor.canvasHud.fitContent
+                  : t.editor.menu.insertPage,
               child: IconButton(
                 visualDensity: VisualDensity.compact,
-                icon: const Icon(CupertinoIcons.add, size: 18),
-                onPressed: readOnly ? null : onInsertPage,
+                icon: Icon(
+                  isInfiniteCanvas
+                      ? Icons.fit_screen_rounded
+                      : CupertinoIcons.add,
+                  size: 18,
+                ),
+                onPressed: readOnly
+                    ? null
+                    : (isInfiniteCanvas ? onFitContent : onInsertPage),
               ),
             ),
 

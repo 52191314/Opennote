@@ -52,6 +52,7 @@ class CanvasGestureDetector extends StatefulWidget {
     this.activePage,
     this.onLayersChanged,
     this.isInfiniteCanvas = false,
+    this.onFitContent,
     TransformationController? transformationController,
   }) : _transformationController =
            transformationController ?? TransformationController();
@@ -100,6 +101,7 @@ class CanvasGestureDetector extends StatefulWidget {
   final EditorPage? activePage;
   final VoidCallback? onLayersChanged;
   final bool isInfiniteCanvas;
+  final VoidCallback? onFitContent;
 
   late final TransformationController _transformationController;
 
@@ -681,6 +683,8 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
             hasTape: widget.hasTape,
             onRevealAllTape: widget.onRevealAllTape,
             onConcealAllTape: widget.onConcealAllTape,
+            isInfiniteCanvas: widget.isInfiniteCanvas,
+            onFitContent: widget.onFitContent,
           ),
         ),
         if (widget.activePage != null)
