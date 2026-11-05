@@ -34,6 +34,7 @@ class EditorBottomSheet extends StatefulWidget {
     required this.setLineHeight,
     required this.setLineThickness,
     required this.setInfiniteCanvas,
+    this.onFitContent,
     required this.removeBackgroundImage,
     required this.redrawImage,
     required this.clearPage,
@@ -59,6 +60,7 @@ class EditorBottomSheet extends StatefulWidget {
   final void Function(int) setLineHeight;
   final void Function(int) setLineThickness;
   final void Function(bool infinite) setInfiniteCanvas;
+  final VoidCallback? onFitContent;
   final void Function(Size)? setPageSize;
   final VoidCallback? onOpenPresentation;
   final VoidCallback? onOpenFlashcards;
@@ -436,6 +438,18 @@ class _EditorBottomSheetState extends State<EditorBottomSheet> {
                   : null,
             ),
             const SizedBox(height: 16),
+            if (widget.coreInfo.isInfiniteCanvas &&
+                widget.onFitContent != null) ...[
+              OutlinedButton.icon(
+                icon: const Icon(Icons.fit_screen_rounded, size: 18),
+                label: Text(t.editor.canvasHud.fitContent),
+                onPressed: () {
+                  Navigator.pop(context);
+                  widget.onFitContent!();
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
             if (!widget.coreInfo.isInfiniteCanvas) ...[
               Text(
                 t.editor.sheet.bookmark,

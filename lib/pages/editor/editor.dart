@@ -8,6 +8,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:collapsible/collapsible.dart';
@@ -654,17 +655,13 @@ class EditorState extends State<Editor>
 
   int? onWhichPageIsFocalPoint(Offset focalPoint) {
     if (coreInfo.isInfiniteCanvas && coreInfo.pages.isNotEmpty) {
-      if (coreInfo.pages[0].renderBox != null) {
-        return 0;
-      }
+      return 0;
     }
     for (int i = 0; i < coreInfo.pages.length; ++i) {
-      if (coreInfo.pages[i].renderBox == null) continue;
+      final box = coreInfo.pages[i].renderBox;
+      if (box == null || !box.attached) continue;
       final pageBounds = Offset.zero & coreInfo.pages[i].size;
-      if (pageBounds.contains(
-        coreInfo.pages[i].renderBox!.globalToLocal(focalPoint),
-      ))
-        return i;
+      if (pageBounds.contains(box.globalToLocal(focalPoint))) return i;
     }
     return null;
   }
@@ -725,8 +722,12 @@ class EditorState extends State<Editor>
   }
 
   void onDrawStart(ScaleStartDetails details) {
+    if (dragPageIndex == null || dragPageIndex! >= coreInfo.pages.length)
+      return;
     final page = coreInfo.pages[dragPageIndex!];
-    final position = page.renderBox!.globalToLocal(details.focalPoint);
+    final box = page.renderBox;
+    if (box == null || !box.attached) return;
+    final position = box.globalToLocal(details.focalPoint);
     _lastCanvasTapPosition = position;
     _lastCanvasTapPageIndex = dragPageIndex;
     _lastCanvasTapTime = DateTime.now();
@@ -744,10 +745,14 @@ class EditorState extends State<Editor>
   }
 
   void onDrawUpdate(ScaleUpdateDetails details) {
+    if (dragPageIndex == null || dragPageIndex! >= coreInfo.pages.length)
+      return;
     final page = coreInfo.pages[dragPageIndex!];
     if (_isLockedForDrawing(page)) return;
 
-    final position = page.renderBox!.globalToLocal(details.focalPoint);
+    final box = page.renderBox;
+    if (box == null || !box.attached) return;
+    final position = box.globalToLocal(details.focalPoint);
     final delta = position - previousPosition;
     _gesture?.update(_pointerAt(page, position, delta: delta));
     previousPosition = position;
@@ -755,6 +760,8 @@ class EditorState extends State<Editor>
   }
 
   void onDrawEnd(ScaleEndDetails details) {
+    if (dragPageIndex == null || dragPageIndex! >= coreInfo.pages.length)
+      return;
     final page = coreInfo.pages[dragPageIndex!];
     if (_isLockedForDrawing(page)) return _abandonDraw(page);
 
@@ -2328,6 +2335,7 @@ class EditorState extends State<Editor>
         autosaveAfterDelay();
       }),
       isInfiniteCanvas: coreInfo.isInfiniteCanvas,
+      onFitContent: fitContentToView,
       placeholderPageBuilder: (BuildContext context, int pageIndex) {
         return Canvas(
           path: coreInfo.filePath,
@@ -2505,14 +2513,26 @@ class EditorState extends State<Editor>
                 triggerSave: saveToFile,
                 onBack: () => Navigator.of(context).maybePop(),
                 onOpenThumbnails: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => pageManager(context),
-                  );
+                  if (coreInfo.isInfiniteCanvas) {
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (context) => bottomSheet(context),
+                      isScrollControlled: true,
+                      showDragHandle: true,
+                      backgroundColor: colorScheme.surface,
+                      constraints: const BoxConstraints(maxWidth: 500),
+                    );
+                  } else {
+                    showDialog(
+                      context: context,
+                      builder: (context) => pageManager(context),
+                    );
+                  }
                 },
                 currentPageIndex: currentPageIdx,
                 totalPages: coreInfo.pages.length,
                 isInfiniteCanvas: coreInfo.isInfiniteCanvas,
+                onFitContent: fitContentToView,
                 isBookmarked: currentPageBookmarked,
                 onToggleBookmark: () => setState(() {
                   if (coreInfo.readOnly) return;
@@ -2630,10 +2650,23 @@ class EditorState extends State<Editor>
                                 left: Radius.circular(16),
                               ),
                               onTap: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => pageManager(context),
-                                );
+                                if (coreInfo.isInfiniteCanvas) {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    builder: (context) => bottomSheet(context),
+                                    isScrollControlled: true,
+                                    showDragHandle: true,
+                                    backgroundColor: colorScheme.surface,
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 500,
+                                    ),
+                                  );
+                                } else {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => pageManager(context),
+                                  );
+                                }
                               },
                               child: Padding(
                                 padding: EdgeInsets.symmetric(
@@ -2725,19 +2758,27 @@ class EditorState extends State<Editor>
                     ),
                   ),
 
-                  // Add Page
+                  // Add Page (or Fit Content in Infinite Canvas mode)
                   if (!isVeryCompact)
                     IconButton(
                       visualDensity: isCompact ? VisualDensity.compact : null,
                       padding: isCompact
                           ? const EdgeInsets.symmetric(horizontal: 4)
                           : null,
-                      icon: const AdaptiveIcon(
-                        icon: Icons.add,
-                        cupertinoIcon: CupertinoIcons.add,
+                      icon: AdaptiveIcon(
+                        icon: coreInfo.isInfiniteCanvas
+                            ? Icons.fit_screen_rounded
+                            : Icons.add,
+                        cupertinoIcon: coreInfo.isInfiniteCanvas
+                            ? Icons.fit_screen_rounded
+                            : CupertinoIcons.add,
                       ),
-                      tooltip: t.editor.menu.insertPage,
-                      onPressed: _addPageFromTemplate,
+                      tooltip: coreInfo.isInfiniteCanvas
+                          ? t.editor.canvasHud.fitContent
+                          : t.editor.menu.insertPage,
+                      onPressed: coreInfo.isInfiniteCanvas
+                          ? fitContentToView
+                          : _addPageFromTemplate,
                     ),
 
                   // Share / Export
@@ -2911,6 +2952,7 @@ class EditorState extends State<Editor>
         autosaveUntrackedChange();
       }),
       setInfiniteCanvas: setInfiniteCanvas,
+      onFitContent: fitContentToView,
       removeBackgroundImage: () => setState(() {
         if (coreInfo.readOnly) return;
 
@@ -3083,6 +3125,59 @@ class EditorState extends State<Editor>
   /// An infinite canvas only shows the first page, so later pages are merged
   /// into it. Going back to paged mode grows the first page to hold
   /// everything. Both rewrite page indices, so undo history is cleared.
+  /// Fits visible content within the screen viewport, or resets to origin (0, 0).
+  void fitContentToView() {
+    if (!mounted || coreInfo.pages.isEmpty) return;
+
+    final gestureDetectorState = _canvasGestureDetectorKey.currentState;
+    final containerBounds = gestureDetectorState?.containerBounds;
+    final double viewportWidth;
+    final double viewportHeight;
+
+    if (containerBounds != null &&
+        containerBounds.maxWidth.isFinite &&
+        containerBounds.maxWidth > 0) {
+      viewportWidth = containerBounds.maxWidth;
+      viewportHeight = containerBounds.maxHeight;
+    } else {
+      final size = MediaQuery.sizeOf(context);
+      viewportWidth = size.width;
+      viewportHeight = size.height;
+    }
+
+    final page = coreInfo.pages.first;
+    final bounds = contentBounds(page);
+
+    if (bounds == null || bounds.isEmpty) {
+      _transformationController.value = Matrix4.identity();
+      return;
+    }
+
+    // Comfortable margin on iPad / tablet screens
+    const margin = 64.0;
+    final targetWidth = math.max(100.0, viewportWidth - margin * 2);
+    final targetHeight = math.max(100.0, viewportHeight - margin * 2);
+
+    final scaleX = targetWidth / math.max(1.0, bounds.width);
+    final scaleY = targetHeight / math.max(1.0, bounds.height);
+    final fitScale = math
+        .min(scaleX, scaleY)
+        .clamp(
+          CanvasGestureDetector.kMinScale,
+          CanvasGestureDetector.kMaxScale,
+        );
+
+    final viewportCenterX = viewportWidth / 2;
+    final viewportCenterY = viewportHeight / 2;
+
+    final translationX = viewportCenterX - bounds.center.dx * fitScale;
+    final translationY = viewportCenterY - bounds.center.dy * fitScale;
+
+    _transformationController.value = Matrix4.identity()
+      ..translateByDouble(translationX, translationY, 0, 1)
+      ..scaleByDouble(fitScale, fitScale, 1, 1);
+  }
+
   void setInfiniteCanvas(bool infinite) {
     if (coreInfo.readOnly) return;
     if (coreInfo.isInfiniteCanvas == infinite) return;
@@ -3094,10 +3189,40 @@ class EditorState extends State<Editor>
         fitFirstPageToContent(coreInfo.pages.first);
       }
       coreInfo.isInfiniteCanvas = infinite;
+      for (final page in coreInfo.pages) {
+        page.clearRenderBoxCache();
+      }
       createPage(0);
       history.clear();
       autosaveUntrackedChange();
     });
+
+    if (mounted) {
+      if (infinite) {
+        fitContentToView();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(t.editor.canvasHud.switchedToInfinite),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: t.editor.canvasHud.resetView,
+              onPressed: () =>
+                  _transformationController.value = Matrix4.identity(),
+            ),
+          ),
+        );
+      } else {
+        _transformationController.value = Matrix4.identity();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(t.editor.canvasHud.switchedToPaged),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   void _mergePagesForInfiniteCanvas() {

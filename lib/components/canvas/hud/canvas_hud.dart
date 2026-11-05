@@ -33,6 +33,8 @@ class CanvasHud extends HookWidget {
     this.hasTape = false,
     this.onRevealAllTape,
     this.onConcealAllTape,
+    this.isInfiniteCanvas = false,
+    this.onFitContent,
   });
 
   final TransformationController transformationController;
@@ -51,6 +53,8 @@ class CanvasHud extends HookWidget {
   final bool hasTape;
   final VoidCallback? onRevealAllTape;
   final VoidCallback? onConcealAllTape;
+  final bool isInfiniteCanvas;
+  final VoidCallback? onFitContent;
 
   @override
   Widget build(BuildContext context) {
@@ -228,6 +232,17 @@ class CanvasHud extends HookWidget {
                   tooltip: bookmarked
                       ? t.editor.bookmark.remove
                       : t.editor.bookmark.add,
+                ),
+              ),
+            if (isInfiniteCanvas && onFitContent != null)
+              Positioned(
+                top: 5,
+                right: onToggleBookmarked != null ? 95 : 50,
+                child: CanvasGestureLockBtn(
+                  lock: false,
+                  setLock: (_) => onFitContent!(),
+                  icon: Icons.fit_screen_rounded,
+                  tooltip: t.editor.canvasHud.fitContent,
                 ),
               ),
             Positioned(
