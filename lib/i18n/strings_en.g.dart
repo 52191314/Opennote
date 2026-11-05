@@ -1631,6 +1631,21 @@ class Translations$editor$canvasHud$en {
 
 	/// en: 'Iso'
 	String get iso => 'Iso';
+
+	/// en: 'Fit to content'
+	String get fitContent => 'Fit to content';
+
+	/// en: 'Center canvas'
+	String get centerCanvas => 'Center canvas';
+
+	/// en: 'Switched to Infinite Canvas (2D)'
+	String get switchedToInfinite => 'Switched to Infinite Canvas (2D)';
+
+	/// en: 'Switched to Paged Mode'
+	String get switchedToPaged => 'Switched to Paged Mode';
+
+	/// en: 'Reset view'
+	String get resetView => 'Reset view';
 }
 
 // Path: editor.layers

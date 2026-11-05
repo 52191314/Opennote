@@ -1,4 +1,4 @@
-/// 🤖 Generated wholely or partially with Claude Code (Claude Sonnet 5.5)
+/// 🤖 Generated wholely or partially with Claude Code (Claude Sonnet 5.5); Google Antigravity
 library;
 
 import 'dart:math';
@@ -138,7 +138,7 @@ Delta _withoutTrailingNewline(Delta delta) {
 /// from an infinite canvas, where content can sit at any coordinate.
 /// The page never shrinks, and relative positions are kept.
 void fitFirstPageToContent(EditorPage page) {
-  final bounds = _contentBounds(page);
+  final bounds = contentBounds(page);
   if (bounds == null) return;
 
   final shift = Offset(max(0, -bounds.left), max(0, -bounds.top));
@@ -150,7 +150,8 @@ void fitFirstPageToContent(EditorPage page) {
   );
 }
 
-Rect? _contentBounds(EditorPage page) {
+/// Computes the bounding rectangle encompassing all strokes and images on [page].
+Rect? contentBounds(EditorPage page) {
   Rect? bounds;
   for (final stroke in page.strokes) {
     final strokeBounds = stroke.highQualityPath.getBounds();

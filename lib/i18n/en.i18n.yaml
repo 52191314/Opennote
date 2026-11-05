@@ -425,6 +425,11 @@ editor:
     disableSnapToAngle: "Disable snap to angle"
     enableSnapToAngle: "Enable snap to angle"
     iso: "Iso"
+    fitContent: "Fit to content"
+    centerCanvas: "Center canvas"
+    switchedToInfinite: "Switched to Infinite Canvas (2D)"
+    switchedToPaged: "Switched to Paged Mode"
+    resetView: "Reset view"
   layers:
     titleWithCount: "Layers ($n)"
     strokeCount: "$n strokes"

@@ -36,8 +36,21 @@ class EditorPage extends ChangeNotifier implements HasSize {
   late final CanvasKey innerCanvasKey = CanvasKey();
   RenderBox? _renderBox;
   RenderBox? get renderBox {
-    return _renderBox ??=
-        innerCanvasKey.currentState?.context.findRenderObject() as RenderBox?;
+    if (_renderBox != null && _renderBox!.attached) {
+      return _renderBox;
+    }
+    final renderObject =
+        innerCanvasKey.currentState?.context.findRenderObject();
+    if (renderObject is RenderBox && renderObject.attached) {
+      return _renderBox = renderObject;
+    }
+    _renderBox = null;
+    return null;
+  }
+
+  /// Clears the cached [renderBox] so subsequent lookups re-query the render tree.
+  void clearRenderBoxCache() {
+    _renderBox = null;
   }
 
   var _isRendered = false;
