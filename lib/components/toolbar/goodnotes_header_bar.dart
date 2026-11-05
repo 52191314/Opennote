@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'package:flutter/cupertino.dart';
@@ -112,7 +113,7 @@ class GoodnotesHeaderBar extends StatelessWidget
         children: [
           // 1. Back button to document browser
           Tooltip(
-            message: 'Documents',
+            message: t.editor.header.documents,
             child: IconButton(
               visualDensity: VisualDensity.compact,
               icon: const Icon(CupertinoIcons.chevron_back, size: 20),
@@ -156,7 +157,7 @@ class GoodnotesHeaderBar extends StatelessWidget
                         const SizedBox(width: 5),
                         Text(
                           isInfiniteCanvas
-                              ? 'Infinite'
+                              ? t.editor.header.infinite
                               : '${currentPageIndex + 1} / ${totalPages == 0 ? 1 : totalPages}',
                           style: TextStyle(
                             fontSize: 12,
@@ -281,7 +282,9 @@ class GoodnotesHeaderBar extends StatelessWidget
           // 6. Bookmark Star
           if (screenWidth >= 380)
             Tooltip(
-              message: isBookmarked ? 'Remove bookmark' : 'Bookmark page',
+              message: isBookmarked
+                  ? t.editor.bookmark.remove
+                  : t.editor.bookmark.add,
               child: IconButton(
                 visualDensity: VisualDensity.compact,
                 icon: AnimatedSwitcher(
@@ -316,8 +319,8 @@ class GoodnotesHeaderBar extends StatelessWidget
           if (screenWidth >= 350)
             Tooltip(
               message: isHandScrollMode
-                  ? 'Hand Reading Mode (Drawing disabled)'
-                  : 'Editing Mode (Draw with Pen/Finger)',
+                  ? t.editor.header.readingMode
+                  : t.editor.header.editingMode,
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 2),
                 decoration: BoxDecoration(
@@ -344,7 +347,7 @@ class GoodnotesHeaderBar extends StatelessWidget
 
           // 9. More (...) menu
           Tooltip(
-            message: 'More Options',
+            message: t.editor.header.moreOptions,
             child: IconButton(
               visualDensity: VisualDensity.compact,
               icon: const Icon(CupertinoIcons.ellipsis, size: 19),

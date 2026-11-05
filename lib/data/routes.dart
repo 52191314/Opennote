@@ -14,8 +14,15 @@ abstract class RoutePaths {
 
   static const prefixOfHome = '/home';
 
-  static String editFilePath(String filePath) {
-    return '$edit?path=${Uri.encodeQueryComponent(filePath)}';
+  static String editFilePath(String filePath, {int? pageIndex}) {
+    final path = '$edit?path=${Uri.encodeQueryComponent(filePath)}';
+    if (pageIndex == null) return path;
+    return '$path&page=$pageIndex';
+  }
+
+  /// Page query on an editor route, if one was given.
+  static int? pageIndexFromUri(Uri uri) {
+    return int.tryParse(uri.queryParameters['page'] ?? '');
   }
 
   static String editImportPdf(String filePath, String pdfPath) {

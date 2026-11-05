@@ -1,5 +1,9 @@
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
+library;
+
 import 'package:flutter/material.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
+import 'package:saber/data/file_manager/note_paths.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/i18n/strings.g.dart';
 import 'package:saber/pages/editor/editor.dart';
@@ -7,7 +11,7 @@ import 'package:saber/pages/editor/editor.dart';
 class Whiteboard extends StatelessWidget {
   const Whiteboard({super.key});
 
-  static const filePath = '/_whiteboard';
+  static const filePath = NotePaths.whiteboard;
 
   static bool needsToAutoClearWhiteboard =
       stows.autoClearWhiteboardOnExit.value;

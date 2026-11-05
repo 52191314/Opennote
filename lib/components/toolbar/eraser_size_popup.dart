@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with DeepSeek v4 Flash; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'package:flutter/material.dart';
@@ -53,7 +54,7 @@ class _EraserSizePopupState extends State<EraserSizePopup> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Eraser Settings',
+                      t.editor.eraser.settings,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
@@ -61,7 +62,7 @@ class _EraserSizePopupState extends State<EraserSizePopup> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Eraser Style',
+                t.editor.eraser.style,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -70,16 +71,16 @@ class _EraserSizePopupState extends State<EraserSizePopup> {
               ),
               const SizedBox(height: 6),
               SegmentedButton<String>(
-                segments: const [
+                segments: [
                   ButtonSegment<String>(
                     value: 'object',
-                    label: Text('Object'),
-                    icon: Icon(Icons.blur_linear_rounded, size: 16),
+                    label: Text(t.editor.eraser.object),
+                    icon: const Icon(Icons.blur_linear_rounded, size: 16),
                   ),
                   ButtonSegment<String>(
                     value: 'precision',
-                    label: Text('Precision'),
-                    icon: Icon(Icons.adjust_rounded, size: 16),
+                    label: Text(t.editor.eraser.precision),
+                    icon: const Icon(Icons.adjust_rounded, size: 16),
                   ),
                 ],
                 selected: {stows.eraserMode.value},
@@ -154,8 +155,8 @@ class _EraserSizePopupState extends State<EraserSizePopup> {
               SwitchListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Auto-Deselect'),
-                subtitle: const Text('Return to pen after erasing stroke'),
+                title: Text(t.editor.eraser.autoDeselect),
+                subtitle: Text(t.editor.eraser.autoDeselectDescription),
                 value: stows.disableEraserAfterUse.value,
                 onChanged: (val) {
                   setState(() {
@@ -166,8 +167,8 @@ class _EraserSizePopupState extends State<EraserSizePopup> {
               SwitchListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Erase Highlighter Only'),
-                subtitle: const Text('Preserve pen ink, arrows, and text'),
+                title: Text(t.editor.eraser.highlighterOnly),
+                subtitle: Text(t.editor.eraser.highlighterOnlyDescription),
                 value: stows.eraserEraseHighlighterOnly.value,
                 onChanged: (val) {
                   setState(() {
@@ -178,8 +179,8 @@ class _EraserSizePopupState extends State<EraserSizePopup> {
               SwitchListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Erase Tape Only'),
-                subtitle: const Text('Only erase study tape strips'),
+                title: Text(t.editor.eraser.tapeOnly),
+                subtitle: Text(t.editor.eraser.tapeOnlyDescription),
                 value: stows.eraserEraseTapeOnly.value,
                 onChanged: (val) {
                   setState(() {
@@ -195,7 +196,7 @@ class _EraserSizePopupState extends State<EraserSizePopup> {
                     widget.onClearPage!();
                   },
                   icon: const Icon(Icons.delete_sweep_outlined, size: 18),
-                  label: const Text('Clear Page'),
+                  label: Text(t.editor.eraser.clearPage),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: colorScheme.error,
                     side: BorderSide(

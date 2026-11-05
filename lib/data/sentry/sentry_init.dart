@@ -41,6 +41,8 @@ bool get isSentryEnabled => _isSentryEnabled;
 late bool _isSentryEnabled;
 
 FutureOr<void> initSentry(FutureOr<void> Function() appRunner) async {
+  _isSentryEnabled = false;
+  if (!isSentryAvailable) return appRunner();
   SentryWidgetsFlutterBinding.ensureInitialized();
   Stows.markAsOnMainIsolate();
   await stows.sentryConsent.waitUntilRead();

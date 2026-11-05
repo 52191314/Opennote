@@ -19,6 +19,7 @@ class CanvasBackgroundPainter extends CustomPainter {
     this.secondaryColor = Colors.red,
     this.preview = false,
     this.isInfiniteCanvas = false,
+    this.viewportRect,
   });
 
   final bool invert;
@@ -38,28 +39,36 @@ class CanvasBackgroundPainter extends CustomPainter {
   /// Whether to paint an unbounded 2D infinite canvas.
   final bool isInfiniteCanvas;
 
+  /// The visible viewport bounding box in scene coordinates for infinite canvas.
+  final Rect? viewportRect;
+
   @override
   void paint(Canvas canvas, Size size) {
     final Rect visibleRect;
     if (isInfiniteCanvas) {
-      final clip = canvas.getLocalClipBounds();
-      if (_isValidViewport(clip)) {
-        visibleRect = clip;
+      if (viewportRect != null && _isValidViewport(viewportRect!)) {
+        // Generously inflate the visible viewport so panning doesn't reveal edges
+        visibleRect = viewportRect!.inflate(1000.0);
       } else {
-        // Safe bounded canvas region around the page for infinite canvas
-        const margin = 2000.0;
-        final baseWidth = size.width.isFinite && size.width > 0
-            ? size.width
-            : 1000.0;
-        final baseHeight = size.height.isFinite && size.height > 0
-            ? size.height
-            : 1400.0;
-        visibleRect = Rect.fromLTRB(
-          -margin,
-          -margin,
-          baseWidth + margin,
-          baseHeight + margin,
-        );
+        final clip = canvas.getLocalClipBounds();
+        if (_isValidViewport(clip)) {
+          visibleRect = clip.inflate(500.0);
+        } else {
+          // Safe bounded canvas region around the page for infinite canvas fallback
+          const margin = 5000.0;
+          final baseWidth = size.width.isFinite && size.width > 0
+              ? size.width
+              : 1000.0;
+          final baseHeight = size.height.isFinite && size.height > 0
+              ? size.height
+              : 1400.0;
+          visibleRect = Rect.fromLTRB(
+            -margin,
+            -margin,
+            baseWidth + margin,
+            baseHeight + margin,
+          );
+        }
       }
     } else {
       visibleRect = Offset.zero & size;
@@ -114,7 +123,7 @@ class CanvasBackgroundPainter extends CustomPainter {
         rect.bottom >= 1e8) {
       return false;
     }
-    if (rect.width > 15000 || rect.height > 15000) {
+    if (rect.width > 50000 || rect.height > 50000) {
       return false;
     }
     return true;
@@ -122,6 +131,7 @@ class CanvasBackgroundPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(CanvasBackgroundPainter oldDelegate) =>
+      oldDelegate.viewportRect != viewportRect ||
       isInfiniteCanvas ||
       kDebugMode ||
       oldDelegate.invert != invert ||
@@ -142,12 +152,23 @@ class CanvasBackgroundPainter extends CustomPainter {
     if (lineHeight <= 0) return;
     if (bounds != null) {
       if (!bounds.isFinite || bounds.isEmpty) return;
-      // Clamp bounds to prevent runaway memory allocation or freeze
-      final clampedBounds = Rect.fromLTRB(
-        bounds.left.clamp(-20000.0, 20000.0),
-        bounds.top.clamp(-20000.0, 20000.0),
-        bounds.right.clamp(-20000.0, 20000.0),
-        bounds.bottom.clamp(-20000.0, 20000.0),
+      if (bounds.left <= -1e8 ||
+          bounds.top <= -1e8 ||
+          bounds.right >= 1e8 ||
+          bounds.bottom >= 1e8 ||
+          bounds.width > 100000 ||
+          bounds.height > 100000) {
+        return;
+      }
+      // Clamp span dimensions to prevent runaway memory allocation or freeze,
+      // while allowing rendering anywhere in the 2D infinite plane.
+      final double clampedWidth = bounds.width.clamp(0.0, 50000.0);
+      final double clampedHeight = bounds.height.clamp(0.0, 50000.0);
+      final clampedBounds = Rect.fromLTWH(
+        bounds.left,
+        bounds.top,
+        clampedWidth,
+        clampedHeight,
       );
       if (clampedBounds.isEmpty) return;
 
@@ -163,7 +184,7 @@ class CanvasBackgroundPainter extends CustomPainter {
               (clampedBounds.bottom / lineHeight).ceil() *
               lineHeight.toDouble();
           final count = ((endY - startY) / lineHeight).ceil();
-          if (count > 2000) return;
+          if (count > 5000) return;
           for (double y = startY; y <= endY; y += lineHeight) {
             yield PatternElement(
               Offset(clampedBounds.left, y),
@@ -198,7 +219,7 @@ class CanvasBackgroundPainter extends CustomPainter {
               lineHeight.toDouble();
           final countX = ((endX - startX) / lineHeight).ceil();
           final countY = ((endY - startY) / lineHeight).ceil();
-          if (countX > 2000 || countY > 2000) return;
+          if (countX > 5000 || countY > 5000) return;
           for (double y = startY; y <= endY; y += lineHeight) {
             yield PatternElement(
               Offset(clampedBounds.left, y),
@@ -225,7 +246,7 @@ class CanvasBackgroundPainter extends CustomPainter {
               lineHeight.toDouble();
           final countX = ((endX - startX) / lineHeight).ceil();
           final countY = ((endY - startY) / lineHeight).ceil();
-          if (countX * countY > 30000) return;
+          if (countX * countY > 50000) return;
           for (double y = startY; y <= endY; y += lineHeight) {
             for (double x = startX; x <= endX; x += lineHeight) {
               yield PatternElement(Offset(x, y), Offset(x, y), isLine: false);
@@ -243,7 +264,7 @@ class CanvasBackgroundPainter extends CustomPainter {
               lineHeight.toDouble();
           final countX = ((endX - startX) / lineHeight).ceil();
           final countY = ((endY - startY) / lineHeight).ceil();
-          if (countX > 2000 || countY > 2000) return;
+          if (countX > 5000 || countY > 5000) return;
           for (double y = startY; y <= endY; y += lineHeight) {
             final isHeavy = (y / lineHeight).round() % 10 == 0;
             yield PatternElement(
@@ -268,7 +289,7 @@ class CanvasBackgroundPainter extends CustomPainter {
 
           final colMin = (clampedBounds.left / dx).floor();
           final colMax = (clampedBounds.right / dx).ceil();
-          if (colMax - colMin > 2000) return;
+          if (colMax - colMin > 5000) return;
           for (int col = colMin; col <= colMax; col++) {
             final x = col * dx;
             yield PatternElement(
@@ -281,7 +302,7 @@ class CanvasBackgroundPainter extends CustomPainter {
               .floor();
           final mMax = ((clampedBounds.bottom - tan30 * clampedBounds.left) / l)
               .ceil();
-          if (mMax - mMin > 2000) return;
+          if (mMax - mMin > 5000) return;
           for (int m = mMin; m <= mMax; m++) {
             final b = m * l;
             final x1 = (clampedBounds.top - b) / tan30;
@@ -296,7 +317,7 @@ class CanvasBackgroundPainter extends CustomPainter {
               .floor();
           final kMax =
               ((clampedBounds.bottom + tan30 * clampedBounds.right) / l).ceil();
-          if (kMax - kMin > 2000) return;
+          if (kMax - kMin > 5000) return;
           for (int k = kMin; k <= kMax; k++) {
             final c = k * l;
             final x1 = (c - clampedBounds.top) / tan30;
@@ -315,7 +336,7 @@ class CanvasBackgroundPainter extends CustomPainter {
               (clampedBounds.bottom / lineHeight).ceil() *
               lineHeight.toDouble();
           final count = ((endY - startY) / lineHeight).ceil();
-          if (count > 2000) return;
+          if (count > 5000) return;
           for (double y = startY; y <= endY; y += lineHeight) {
             yield PatternElement(
               Offset(clampedBounds.left, y),

@@ -1,5 +1,6 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Grok 4.7
 library;
 
 import 'dart:async';
@@ -16,12 +17,13 @@ import 'package:saber/components/canvas/inner_canvas.dart';
 import 'package:saber/components/canvas/pencil_shader.dart';
 import 'package:saber/data/editor/editor_exporter.dart';
 import 'package:saber/data/tools/laser_pointer.dart';
+import 'package:sbn/canvas_background_pattern.dart';
 import 'package:sbn/has_size.dart';
 
 typedef CanvasKey = GlobalKey<State<InnerCanvas>>;
 
 /// Where a page's text sits relative to its default position.
-typedef TextPlacement = ({Offset offset, double rotation});
+typedef TextPlacement = ({Offset offset, double rotation, double scale});
 
 class EditorPage extends ChangeNotifier implements HasSize {
   static const double defaultWidth = 1000;
@@ -34,8 +36,21 @@ class EditorPage extends ChangeNotifier implements HasSize {
   late final CanvasKey innerCanvasKey = CanvasKey();
   RenderBox? _renderBox;
   RenderBox? get renderBox {
-    return _renderBox ??=
-        innerCanvasKey.currentState?.context.findRenderObject() as RenderBox?;
+    if (_renderBox != null && _renderBox!.attached) {
+      return _renderBox;
+    }
+    final renderObject =
+        innerCanvasKey.currentState?.context.findRenderObject();
+    if (renderObject is RenderBox && renderObject.attached) {
+      return _renderBox = renderObject;
+    }
+    _renderBox = null;
+    return null;
+  }
+
+  /// Clears the cached [renderBox] so subsequent lookups re-query the render tree.
+  void clearRenderBoxCache() {
+    _renderBox = null;
   }
 
   var _isRendered = false;
@@ -102,6 +117,36 @@ class EditorPage extends ChangeNotifier implements HasSize {
   /// Whether this page is bookmarked/favorited by the user.
   var bookmarked = false;
 
+  /// Paper drawn on this page. Null uses the notebook's paper.
+  CanvasBackgroundPattern? paperPattern;
+
+  /// Paper color for this page. Null uses the notebook's color.
+  Color? paperColor;
+
+  /// Line spacing for this page. Null uses the notebook's line height.
+  int? paperLineHeight;
+
+  /// Line thickness for this page. Null uses the notebook's line thickness.
+  int? paperLineThickness;
+
+  /// The pattern [build] should paint: this page's paper, or [notebookPattern].
+  CanvasBackgroundPattern paperPatternOr(
+    CanvasBackgroundPattern notebookPattern,
+  ) {
+    return paperPattern ?? notebookPattern;
+  }
+
+  /// The color [build] should paint: this page's paper, or [notebookColor].
+  Color? paperColorOr(Color? notebookColor) => paperColor ?? notebookColor;
+
+  /// Line spacing [build] should use: this page's paper, or [notebookLineHeight].
+  int paperLineHeightOr(int notebookLineHeight) =>
+      paperLineHeight ?? notebookLineHeight;
+
+  /// Line thickness [build] should use: this page's paper, or [notebookLineThickness].
+  int paperLineThicknessOr(int notebookLineThickness) =>
+      paperLineThickness ?? notebookLineThickness;
+
   /// Offset applied to the text content from its default position.
   Offset textContentOffset = Offset.zero;
 
@@ -113,13 +158,13 @@ class EditorPage extends ChangeNotifier implements HasSize {
     final plainText = quill.controller.document.toPlainText();
     if (plainText.trim().isEmpty) return Rect.zero;
     final lines = plainText.trimRight().split('\n').length;
-    final estimatedHeight = lines * lineHeight;
-    final left = lineHeight * 0.5;
-    final top = lineHeight * 1.2;
+    final estimatedHeight = lines * lineHeight * textContentScale;
+    final left = lineHeight * 0.5 * textContentScale;
+    final top = lineHeight * 1.2 * textContentScale;
     return Rect.fromLTWH(
       left + textContentOffset.dx,
       top + textContentOffset.dy,
-      size.width - lineHeight,
+      (size.width - lineHeight) * textContentScale,
       estimatedHeight,
     );
   }
@@ -127,12 +172,19 @@ class EditorPage extends ChangeNotifier implements HasSize {
   /// Rotation angle (in radians) applied to the text content.
   double textContentRotation = 0;
 
-  /// [textContentOffset] and [textContentRotation] together.
-  TextPlacement get textPlacement =>
-      (offset: textContentOffset, rotation: textContentRotation);
+  /// Scale factor applied to the text content (default 1.0).
+  var textContentScale = 1.0;
+
+  /// [textContentOffset], [textContentRotation], and [textContentScale] together.
+  TextPlacement get textPlacement => (
+    offset: textContentOffset,
+    rotation: textContentRotation,
+    scale: textContentScale,
+  );
   set textPlacement(TextPlacement placement) {
     textContentOffset = placement.offset;
     textContentRotation = placement.rotation;
+    textContentScale = placement.scale;
   }
 
   /// Position for the pen preview circle (shown when hovering/ready to draw).
@@ -206,8 +258,13 @@ class EditorPage extends ChangeNotifier implements HasSize {
     this.backgroundImage,
     this.activeLayerIndex = 0,
     this.bookmarked = false,
+    this.paperPattern,
+    this.paperColor,
+    this.paperLineHeight,
+    this.paperLineThickness,
     this.textContentOffset = Offset.zero,
     this.textContentRotation = 0,
+    this.textContentScale = 1.0,
   }) : assert(
          (size == null) || (width == null && height == null),
          "size and width/height shouldn't both be specified",
@@ -239,6 +296,14 @@ class EditorPage extends ChangeNotifier implements HasSize {
     final hasisPage = HasSize(size);
     final textContentOffset = _parseOffset(json['to']);
     final textContentRotation = (json['tr'] as num?)?.toDouble() ?? 0;
+    final textContentScale = (json['ts'] as num?)?.toDouble() ?? 1.0;
+    final paperPattern = json.containsKey('pp')
+        ? CanvasBackgroundPattern.fromName(json['pp'] as String?)
+        : null;
+    final rawPaperColor = json['pc'];
+    final paperColor = rawPaperColor is int ? Color(rawPaperColor) : null;
+    final paperLineHeight = (json['plh'] as num?)?.toInt();
+    final paperLineThickness = (json['plt'] as num?)?.toInt();
 
     // New format: layers stored in 'l' key
     if (json['l'] != null) {
@@ -246,8 +311,13 @@ class EditorPage extends ChangeNotifier implements HasSize {
       return EditorPage(
         size: size,
         bookmarked: json['bm'] as bool? ?? false,
+        paperPattern: paperPattern,
+        paperColor: paperColor,
+        paperLineHeight: paperLineHeight,
+        paperLineThickness: paperLineThickness,
         textContentOffset: textContentOffset,
         textContentRotation: textContentRotation,
+        textContentScale: textContentScale,
         layers: layersList
             .map(
               (layerJson) => Layer.fromJson(
@@ -291,8 +361,13 @@ class EditorPage extends ChangeNotifier implements HasSize {
     return EditorPage(
       size: size,
       bookmarked: json['bm'] as bool? ?? false,
+      paperPattern: paperPattern,
+      paperColor: paperColor,
+      paperLineHeight: paperLineHeight,
+      paperLineThickness: paperLineThickness,
       textContentOffset: textContentOffset,
       textContentRotation: textContentRotation,
+      textContentScale: textContentScale,
       strokes: parseStrokesJson(
         json['s'] as List?,
         page: hasisPage,
@@ -338,9 +413,14 @@ class EditorPage extends ChangeNotifier implements HasSize {
     'w': size.width,
     'h': size.height,
     if (bookmarked) 'bm': bookmarked,
+    if (paperPattern != null) 'pp': paperPattern!.name,
+    if (paperColor != null) 'pc': paperColor!.toARGB32(),
+    if (paperLineHeight != null) 'plh': paperLineHeight,
+    if (paperLineThickness != null) 'plt': paperLineThickness,
     if (textContentOffset != Offset.zero)
       'to': [textContentOffset.dx, textContentOffset.dy],
     if (textContentRotation != 0) 'tr': textContentRotation,
+    if (textContentScale != 1.0) 'ts': textContentScale,
     if (layers.isNotEmpty) 'l': layers.map((layer) => layer.toJson()).toList(),
     if (images.isNotEmpty)
       'i': images.map((image) => image.toJson(assets)).toList(),
@@ -521,8 +601,13 @@ class EditorPage extends ChangeNotifier implements HasSize {
     EditorImage? backgroundImage,
     int? activeLayerIndex,
     bool? bookmarked,
+    CanvasBackgroundPattern? paperPattern,
+    Color? paperColor,
+    int? paperLineHeight,
+    int? paperLineThickness,
     Offset? textContentOffset,
     double? textContentRotation,
+    double? textContentScale,
   }) => EditorPage(
     size: size ?? this.size,
     strokes: strokes,
@@ -532,8 +617,13 @@ class EditorPage extends ChangeNotifier implements HasSize {
     backgroundImage: backgroundImage ?? this.backgroundImage,
     activeLayerIndex: activeLayerIndex ?? this.activeLayerIndex,
     bookmarked: bookmarked ?? this.bookmarked,
+    paperPattern: paperPattern ?? this.paperPattern,
+    paperColor: paperColor ?? this.paperColor,
+    paperLineHeight: paperLineHeight ?? this.paperLineHeight,
+    paperLineThickness: paperLineThickness ?? this.paperLineThickness,
     textContentOffset: textContentOffset ?? this.textContentOffset,
     textContentRotation: textContentRotation ?? this.textContentRotation,
+    textContentScale: textContentScale ?? this.textContentScale,
   );
 
   /// Clones this page for use in a screenshot.

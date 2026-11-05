@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
 library;
 
 import 'dart:math';
@@ -413,7 +414,14 @@ class Stroke {
         quality == .high && options.simulatePressure && options.isComplete;
 
     final polygon = getStroke(
-      skipPoints(points, quality.N),
+      switch (quality) {
+        .low => simplifyPoints(
+          points,
+          lowQualityTolerance,
+          pressureScale: pressureEnabled ? options.size / 2 : 0,
+        ),
+        .high => points,
+      },
       options: switch (quality) {
         .low => options.copyWith(
           simulatePressure: false,
@@ -451,23 +459,98 @@ class Stroke {
     return Path()..addPolygon(polygon, true);
   }
 
-  /// Returns a list with every Nth point in [points].
-  static List<PointVector> skipPoints(List<PointVector> points, int N) {
-    // Nothing is being skipped, just return [points].
-    if (N <= 1) return points;
+  /// How far from the stroke's points the low quality polygon may stray,
+  /// as a fraction of the pen size.
+  static const _lowQualityToleranceRatio = 0.1;
 
-    // If we have too few points, skip less points
-    final divided = points.length / N;
-    const minDivided = 8;
-    if (divided < minDivided) {
-      N = (N * divided / minDivided).floor();
-      if (N <= 1) return points;
+  /// The smallest [lowQualityTolerance], so that thin pens still drop
+  /// points that are invisible when zoomed out.
+  static const _lowQualityMinTolerance = 1.0;
+
+  /// The maximum distance that [simplifyPoints] may move this stroke
+  /// when building the low quality polygon.
+  double get lowQualityTolerance =>
+      max(options.size * _lowQualityToleranceRatio, _lowQualityMinTolerance);
+
+  /// Returns a subset of [points] that stays within [tolerance] of every
+  /// dropped point (the Ramer–Douglas–Peucker algorithm).
+  ///
+  /// Unlike keeping every Nth point, this never drops the points that give
+  /// a stroke its shape, such as corners and the peaks of curves.
+  ///
+  /// If [pressureScale] is not 0, a point's pressure differing from the
+  /// pressure interpolated between its neighbours by 1 counts as a
+  /// deviation of [pressureScale], so changes in stroke width survive too.
+  static List<PointVector> simplifyPoints(
+    List<PointVector> points,
+    double tolerance, {
+    double pressureScale = 0,
+  }) {
+    if (points.length <= 2) return points;
+
+    final keep = List.filled(points.length, false);
+    keep[0] = true;
+    keep[points.length - 1] = true;
+
+    final ranges = <(int start, int end)>[(0, points.length - 1)];
+    while (ranges.isNotEmpty) {
+      final (start, end) = ranges.removeLast();
+      var farthest = -1;
+      var farthestDistance = tolerance;
+      for (int i = start + 1; i < end; i++) {
+        final distance = _deviation(
+          points[i],
+          points[start],
+          points[end],
+          pressureScale,
+        );
+        if (distance <= farthestDistance) continue;
+        farthest = i;
+        farthestDistance = distance;
+      }
+      if (farthest == -1) continue;
+
+      keep[farthest] = true;
+      ranges.add((start, farthest));
+      ranges.add((farthest, end));
     }
 
     return [
-      for (int i = 0; i < points.length - 1; i += N) points[i],
-      points.last,
+      for (int i = 0; i < points.length; i++)
+        if (keep[i]) points[i],
     ];
+  }
+
+  static double _deviation(
+    PointVector point,
+    PointVector start,
+    PointVector end,
+    double pressureScale,
+  ) {
+    final dx = end.x - start.x;
+    final dy = end.y - start.y;
+    final lengthSquared = dx * dx + dy * dy;
+    final t = lengthSquared == 0
+        ? 0.0
+        : (((point.x - start.x) * dx + (point.y - start.y) * dy) /
+                  lengthSquared)
+              .clamp(0.0, 1.0);
+    final distance = sqrt(
+      pow(point.x - (start.x + t * dx), 2) +
+          pow(point.y - (start.y + t * dy), 2),
+    );
+
+    final pressure = point.pressure;
+    final startPressure = start.pressure;
+    final endPressure = end.pressure;
+    if (pressureScale == 0 ||
+        pressure == null ||
+        startPressure == null ||
+        endPressure == null) {
+      return distance;
+    }
+    final expected = startPressure + t * (endPressure - startPressure);
+    return max(distance, (pressure - expected).abs() * pressureScale);
   }
 
   static Path smoothPathFromPolygon(List<Offset> polygon) {

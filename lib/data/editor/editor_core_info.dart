@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:async';
@@ -17,10 +18,10 @@ import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
+import 'package:saber/data/file_manager/note_paths.dart';
 import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/stroke_properties.dart';
-import 'package:saber/pages/editor/editor.dart';
 import 'package:sbn/canvas_background_pattern.dart';
 import 'package:sbn/has_size.dart';
 import 'package:sbn/read_only_reason.dart';
@@ -366,14 +367,14 @@ class EditorCoreInfo {
     String path, {
     bool onlyFirstPage = false,
   }) async {
-    final bsonBytes = await FileManager.readFile(path + Editor.extension);
+    final bsonBytes = await FileManager.readFile(path + NotePaths.extension);
 
     final String? jsonString;
     if (bsonBytes != null) {
       jsonString = null;
     } else {
       final jsonBytes = await FileManager.readFile(
-        path + Editor.extensionOldJson,
+        path + NotePaths.extensionOldJson,
       );
       jsonString = jsonBytes != null ? utf8.decode(jsonBytes) : null;
     }
@@ -509,7 +510,7 @@ class EditorCoreInfo {
   /// [initialPageIndex] will be updated to it before saving.
   Future<List<int>> saveToSba({required int? currentPageIndex}) async {
     final (bson, assets) = saveToBinary(currentPageIndex: currentPageIndex);
-    const filePath = 'main${Editor.extension}';
+    const filePath = 'main${NotePaths.extension}';
 
     final archive = Archive();
     archive.addFile(ArchiveFile(filePath, bson.length, bson));

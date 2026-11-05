@@ -1,4 +1,4 @@
-/// 🤖 Generated wholely or partially with Claude Code (Claude Opus 5.5)
+/// 🤖 Generated wholely or partially with Claude Code (Claude Opus 5.5); Google Antigravity
 library;
 
 import 'dart:math';
@@ -113,25 +113,31 @@ void main() {
       expect(image.dstRect, movedRect);
     });
 
-    test('revert puts moved and rotated page text back, and redo moves it', () {
-      final page = EditorPage();
-      final selection = _selection([], [])..textSelected = true;
+    test(
+      'revert puts moved, rotated, and scaled page text back, and redo moves it',
+      () {
+        final page = EditorPage();
+        final selection = _selection([], [])..textSelected = true;
 
-      final transform = SelectionTransform.begin(page, selection);
-      page.textContentOffset = const Offset(30, 40);
-      page.textContentRotation = 0.5;
-      final item = transform.finish(pageIndex: 0);
+        final transform = SelectionTransform.begin(page, selection);
+        page.textContentOffset = const Offset(30, 40);
+        page.textContentRotation = 0.5;
+        page.textContentScale = 0.85;
+        final item = transform.finish(pageIndex: 0);
 
-      SelectionTransform.revert(item, page);
+        SelectionTransform.revert(item, page);
 
-      expect(page.textContentOffset, Offset.zero);
-      expect(page.textContentRotation, 0);
+        expect(page.textContentOffset, Offset.zero);
+        expect(page.textContentRotation, 0);
+        expect(page.textContentScale, 1.0);
 
-      SelectionTransform.revert(SelectionTransform.reversed(item), page);
+        SelectionTransform.revert(SelectionTransform.reversed(item), page);
 
-      expect(page.textContentOffset, const Offset(30, 40));
-      expect(page.textContentRotation, 0.5);
-    });
+        expect(page.textContentOffset, const Offset(30, 40));
+        expect(page.textContentRotation, 0.5);
+        expect(page.textContentScale, 0.85);
+      },
+    );
 
     test('revert leaves page text alone when it was not selected', () {
       final original = _stroke(const Offset(10, 20));

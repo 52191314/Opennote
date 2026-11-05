@@ -55,7 +55,6 @@ android {
         implementation("com.onyx.android.sdk:onyxsdk-pen:1.5.4") {
             exclude(group = "com.tencent", module = "mmkv")
         }
-        implementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
     }
 
     buildTypes {

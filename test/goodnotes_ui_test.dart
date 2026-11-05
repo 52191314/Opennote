@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:io';
@@ -10,6 +11,7 @@ import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/components/home/preview_card.dart';
+import 'package:saber/components/toolbar/editor_toolbar_actions.dart';
 import 'package:saber/components/toolbar/goodnotes_header_bar.dart';
 import 'package:saber/components/toolbar/goodnotes_toolbar.dart';
 import 'package:saber/components/toolbar/toolbar.dart';
@@ -241,26 +243,11 @@ void main() {
 
   group('GoodnotesToolbar Dual-Tier Widget Tests', () {
     testWidgets('Tier 1 renders all 11 core note-taking tools', (tester) async {
-      final quillFocus = ValueNotifier(null);
-
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: GoodnotesToolbar(
-              readOnly: false,
-              setTool: (_) {},
-              currentTool: Pen.currentPen,
-              setColor: (_) {},
-              quillFocus: quillFocus,
-              textEditing: false,
-              toggleTextEditing: () {},
-              pickPhoto: () {},
-              pickShape: () {},
-              paste: () {},
-              copySelection: () {},
-              pasteSelection: () {},
-              duplicateSelection: () {},
-              deleteSelection: () {},
+              actions: _actions(currentTool: Pen.currentPen),
             ),
           ),
         ),
@@ -290,26 +277,11 @@ void main() {
     testWidgets(
       'Tier 2 dynamically shows quick colors & sizes when Pen is active',
       (tester) async {
-        final quillFocus = ValueNotifier(null);
-
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
               body: GoodnotesToolbar(
-                readOnly: false,
-                setTool: (_) {},
-                currentTool: Pen.currentPen,
-                setColor: (_) {},
-                quillFocus: quillFocus,
-                textEditing: false,
-                toggleTextEditing: () {},
-                pickPhoto: () {},
-                pickShape: () {},
-                paste: () {},
-                copySelection: () {},
-                pasteSelection: () {},
-                duplicateSelection: () {},
-                deleteSelection: () {},
+                actions: _actions(currentTool: Pen.currentPen),
               ),
             ),
           ),
@@ -333,27 +305,13 @@ void main() {
     testWidgets(
       'Tier 2 dynamically shows eraser quick sizes, clear page, and toggles when Eraser is active',
       (tester) async {
-        final quillFocus = ValueNotifier(null);
         bool clearPageCalled = false;
 
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
               body: GoodnotesToolbar(
-                readOnly: false,
-                setTool: (_) {},
-                currentTool: Eraser(size: 30),
-                setColor: (_) {},
-                quillFocus: quillFocus,
-                textEditing: false,
-                toggleTextEditing: () {},
-                pickPhoto: () {},
-                pickShape: () {},
-                paste: () {},
-                copySelection: () {},
-                pasteSelection: () {},
-                duplicateSelection: () {},
-                deleteSelection: () {},
+                actions: _actions(currentTool: Eraser(size: 30)),
                 onClearPage: () => clearPageCalled = true,
               ),
             ),
@@ -385,26 +343,11 @@ void main() {
     testWidgets(
       'Tier 2 dynamically shows lasso filter chips when Lasso is active',
       (tester) async {
-        final quillFocus = ValueNotifier(null);
-
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
               body: GoodnotesToolbar(
-                readOnly: false,
-                setTool: (_) {},
-                currentTool: Select.currentSelect,
-                setColor: (_) {},
-                quillFocus: quillFocus,
-                textEditing: false,
-                toggleTextEditing: () {},
-                pickPhoto: () {},
-                pickShape: () {},
-                paste: () {},
-                copySelection: () {},
-                pasteSelection: () {},
-                duplicateSelection: () {},
-                deleteSelection: () {},
+                actions: _actions(currentTool: Select.currentSelect),
               ),
             ),
           ),
@@ -420,7 +363,6 @@ void main() {
     testWidgets(
       'Tier 2 dynamically shows Study Tape recall actions when Tape is active',
       (tester) async {
-        final quillFocus = ValueNotifier(null);
         bool concealCalled = false;
         bool revealCalled = false;
 
@@ -428,22 +370,11 @@ void main() {
           MaterialApp(
             home: Scaffold(
               body: GoodnotesToolbar(
-                readOnly: false,
-                setTool: (_) {},
-                currentTool: StudyTapeTool(),
-                setColor: (_) {},
-                quillFocus: quillFocus,
-                textEditing: false,
-                toggleTextEditing: () {},
-                pickPhoto: () {},
-                pickShape: () {},
-                paste: () {},
-                copySelection: () {},
-                pasteSelection: () {},
-                duplicateSelection: () {},
-                deleteSelection: () {},
-                onConcealAllTape: () => concealCalled = true,
-                onRevealAllTape: () => revealCalled = true,
+                actions: _actions(
+                  currentTool: StudyTapeTool(),
+                  onConcealAllTape: () => concealCalled = true,
+                  onRevealAllTape: () => revealCalled = true,
+                ),
               ),
             ),
           ),
@@ -464,27 +395,16 @@ void main() {
     testWidgets(
       'Tier 2 dynamically shows shapes & drafting shortcuts when Drafting is active',
       (tester) async {
-        final quillFocus = ValueNotifier(null);
         bool pickShapeCalled = false;
 
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
               body: GoodnotesToolbar(
-                readOnly: false,
-                setTool: (_) {},
-                currentTool: ArrowTool(),
-                setColor: (_) {},
-                quillFocus: quillFocus,
-                textEditing: false,
-                toggleTextEditing: () {},
-                pickPhoto: () {},
-                pickShape: () => pickShapeCalled = true,
-                paste: () {},
-                copySelection: () {},
-                pasteSelection: () {},
-                duplicateSelection: () {},
-                deleteSelection: () {},
+                actions: _actions(
+                  currentTool: ArrowTool(),
+                  pickShape: () => pickShapeCalled = true,
+                ),
               ),
             ),
           ),
@@ -567,27 +487,16 @@ void main() {
       'GoodnotesToolbar: Tapping Pen button while on Ruler returns to Pen.currentPen',
       (tester) async {
         Pen.currentPen = Pen.fountainPen();
-        final quillFocus = ValueNotifier(null);
         Tool? selectedTool;
 
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
               body: GoodnotesToolbar(
-                readOnly: false,
-                setTool: (tool) => selectedTool = tool,
-                currentTool: Ruler(),
-                setColor: (_) {},
-                quillFocus: quillFocus,
-                textEditing: false,
-                toggleTextEditing: () {},
-                pickPhoto: () {},
-                pickShape: () {},
-                paste: () {},
-                copySelection: () {},
-                pasteSelection: () {},
-                duplicateSelection: () {},
-                deleteSelection: () {},
+                actions: _actions(
+                  currentTool: Ruler(),
+                  setTool: (tool) => selectedTool = tool,
+                ),
               ),
             ),
           ),
@@ -614,26 +523,12 @@ void main() {
       'GoodnotesToolbar: Tapping Pen button while already on Pen opens pen options dialog',
       (tester) async {
         Pen.currentPen = Pen.fountainPen();
-        final quillFocus = ValueNotifier(null);
 
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
               body: GoodnotesToolbar(
-                readOnly: false,
-                setTool: (_) {},
-                currentTool: Pen.currentPen,
-                setColor: (_) {},
-                quillFocus: quillFocus,
-                textEditing: false,
-                toggleTextEditing: () {},
-                pickPhoto: () {},
-                pickShape: () {},
-                paste: () {},
-                copySelection: () {},
-                pasteSelection: () {},
-                duplicateSelection: () {},
-                deleteSelection: () {},
+                actions: _actions(currentTool: Pen.currentPen),
               ),
             ),
           ),
@@ -658,31 +553,19 @@ void main() {
         Pen.currentPen = Pen.fountainPen();
         Tool? selectedTool;
 
-        final quillFocus = ValueNotifier(null);
-
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
               body: Toolbar(
-                readOnly: false,
-                setTool: (tool) => selectedTool = tool,
-                currentTool: DimensionTool(),
-                setColor: (_) {},
-                quillFocus: quillFocus,
-                textEditing: false,
-                toggleTextEditing: () {},
+                actions: _actions(
+                  currentTool: DimensionTool(),
+                  setTool: (tool) => selectedTool = tool,
+                ),
                 undo: () {},
                 isUndoPossible: false,
                 redo: () {},
                 isRedoPossible: false,
                 toggleFingerDrawing: () {},
-                pickPhoto: () {},
-                pickShape: () {},
-                paste: () {},
-                copySelection: () {},
-                pasteSelection: () {},
-                duplicateSelection: () {},
-                deleteSelection: () {},
                 exportAsSba: (_) async {},
                 exportAsPdf: (_) async {},
                 exportAsPng: (_) async {},
@@ -764,3 +647,30 @@ void main() {
     );
   });
 }
+
+/// Toolbar actions for an editor using [currentTool],
+/// where every action not given does nothing.
+EditorToolbarActions _actions({
+  required Tool currentTool,
+  ValueChanged<Tool>? setTool,
+  VoidCallback? pickShape,
+  VoidCallback? onRevealAllTape,
+  VoidCallback? onConcealAllTape,
+}) => EditorToolbarActions(
+  readOnly: false,
+  setTool: setTool ?? (_) {},
+  currentTool: currentTool,
+  setColor: (_) {},
+  quillFocus: ValueNotifier(null),
+  textEditing: false,
+  toggleTextEditing: () {},
+  pickPhoto: () {},
+  pickShape: pickShape ?? () {},
+  paste: () {},
+  copySelection: () {},
+  pasteSelection: () {},
+  duplicateSelection: () {},
+  deleteSelection: () {},
+  onRevealAllTape: onRevealAllTape,
+  onConcealAllTape: onConcealAllTape,
+);

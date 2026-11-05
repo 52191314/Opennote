@@ -1,4 +1,5 @@
 /// 🤖 Modified with DeepSeek v4 Flash
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:math' as math;
@@ -8,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:saber/components/canvas/inner_canvas.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/page.dart';
+import 'package:saber/i18n/strings.g.dart';
 
 enum DisplayMode {
   /// Classic presentation mode: pages fill the screen, controls on middle tap.
@@ -185,8 +187,8 @@ class _PresentationModeState extends State<PresentationMode>
                 child: IconButton(
                   icon: const Icon(Icons.close, color: Colors.white70),
                   tooltip: _isFlashcardMode
-                      ? 'Exit flashcards (Esc)'
-                      : 'Exit presentation (Esc)',
+                      ? t.editor.presentation.exitFlashcards
+                      : t.editor.presentation.exitPresentation,
                   onPressed: _exitFullscreen,
                 ),
               ),
@@ -198,7 +200,7 @@ class _PresentationModeState extends State<PresentationMode>
                   left: 8,
                   child: IconButton(
                     icon: const Icon(Icons.refresh, color: Colors.white70),
-                    tooltip: 'Reset study progress',
+                    tooltip: t.editor.presentation.resetProgress,
                     onPressed: _resetStudyProgress,
                   ),
                 ),
@@ -220,7 +222,11 @@ class _PresentationModeState extends State<PresentationMode>
                     ),
                     child: Text(
                       _isFlashcardMode
-                          ? 'Flashcard ${_currentPageIndex + 1} / $_totalPages  ·  $_studiedCount studied'
+                          ? t.editor.presentation.flashcardProgress(
+                              current: _currentPageIndex + 1,
+                              total: _totalPages,
+                              studied: _studiedCount,
+                            )
                           : '${_currentPageIndex + 1} / $_totalPages',
                       style: const TextStyle(
                         color: Colors.white,
@@ -243,14 +249,14 @@ class _PresentationModeState extends State<PresentationMode>
                     children: [
                       _FlashcardButton(
                         icon: Icons.close,
-                        label: "Don't Know",
+                        label: t.editor.presentation.dontKnow,
                         color: Colors.redAccent,
                         onPressed: () => _markStudied(false),
                       ),
                       const SizedBox(width: 24),
                       _FlashcardButton(
                         icon: Icons.check,
-                        label: 'Know',
+                        label: t.editor.presentation.know,
                         color: Colors.greenAccent,
                         onPressed: () => _markStudied(true),
                       ),
@@ -315,7 +321,7 @@ class _PresentationModeState extends State<PresentationMode>
             ),
             const SizedBox(height: 24),
             Text(
-              'Flashcard ${_currentPageIndex + 1}',
+              t.editor.presentation.flashcard(n: _currentPageIndex + 1),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 24,
@@ -324,7 +330,7 @@ class _PresentationModeState extends State<PresentationMode>
             ),
             const SizedBox(height: 12),
             Text(
-              'Tap to reveal',
+              t.editor.presentation.tapToReveal,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.5),
                 fontSize: 16,

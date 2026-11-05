@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'dart:io';
@@ -23,6 +24,7 @@ import 'package:saber/components/settings/settings_sentry.dart';
 import 'package:saber/components/settings/settings_subtitle.dart';
 import 'package:saber/components/settings/settings_switch.dart';
 import 'package:saber/components/settings/update_manager.dart';
+import 'package:saber/components/settings/writing_posture_selector.dart';
 import 'package:saber/components/theming/adaptive_alert_dialog.dart';
 import 'package:saber/components/theming/adaptive_toggle_buttons.dart';
 import 'package:saber/components/theming/saber_theme.dart';
@@ -132,7 +134,7 @@ class _PressureCurveSettingState extends State<_PressureCurveSetting> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Pen Pressure Curve',
+                  t.settings.prefLabels.penPressureCurve,
                   style: TextStyle(
                     fontSize: 18,
                     fontStyle:
@@ -143,9 +145,9 @@ class _PressureCurveSettingState extends State<_PressureCurveSetting> {
                   ),
                 ),
                 const SizedBox(height: 2),
-                const Text(
-                  'Adjust how stylus pressure maps to stroke width',
-                  style: TextStyle(fontSize: 13),
+                Text(
+                  t.settings.prefDescriptions.penPressureCurve,
+                  style: const TextStyle(fontSize: 13),
                 ),
               ],
             ),
@@ -454,9 +456,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   pref: stows.disableEraserAfterUse,
                 ),
                 SettingsSwitch(
-                  title: 'Scribble to erase',
-                  subtitle:
-                      'Scribble back and forth over strokes with the pen to erase them',
+                  title: t.settings.prefLabels.scribbleToErase,
+                  subtitle: t.settings.prefDescriptions.scribbleToErase,
                   icon: FontAwesomeIcons.eraser,
                   pref: stows.scribbleToErase,
                 ),
@@ -515,6 +516,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
                 _PressureCurveSetting(),
 
+                const Divider(),
+                const WritingPostureSelector(),
+
                 SettingsSubtitle(subtitle: t.settings.prefCategories.editor),
                 SettingsSelection(
                   title: t.settings.prefLabels.editorToolbarAlignment,
@@ -561,9 +565,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   pref: stows.editorAutoInvert,
                 ),
                 SettingsSwitch(
-                  title: 'Default to Infinite Canvas (2D)',
-                  subtitle:
-                      'New notes open with an infinite 2D canvas instead of discrete pages',
+                  title: t.settings.prefLabels.defaultInfiniteCanvas,
+                  subtitle: t.settings.prefDescriptions.defaultInfiniteCanvas,
                   icon: Icons.all_inclusive_rounded,
                   pref: stows.defaultInfiniteCanvas,
                 ),
@@ -712,8 +715,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   pref: stows.allowInsecureConnections,
                 ),
                 SettingsButton(
-                  title: 'Welcome Guide & Onboarding',
-                  subtitle: 'Gestures, study tape, smooth inking, and elements',
+                  title: t.settings.prefLabels.welcomeGuide,
+                  subtitle: t.settings.prefDescriptions.welcomeGuide,
                   icon: Icons.school_outlined,
                   onPressed: () => WelcomeOnboardingDialog.show(context),
                 ),

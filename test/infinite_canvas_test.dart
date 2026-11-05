@@ -2,9 +2,12 @@
 library;
 
 import 'dart:ui';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saber/components/canvas/_canvas_background_painter.dart';
+import 'package:saber/components/canvas/inner_canvas.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
+import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:sbn/canvas_background_pattern.dart';
@@ -193,6 +196,120 @@ void main() {
           bounds: sentinelBounds,
         ).toList();
         expect(sentinelElements, isEmpty);
+      },
+    );
+    test(
+      'CanvasBackgroundPainter uses viewportRect and tiles pattern across distant coordinates (> 20000)',
+      () {
+        const bounds = Rect.fromLTWH(30000, 30000, 1000, 1000);
+        const lineHeight = 50;
+
+        final gridElements = CanvasBackgroundPainter.getPatternElements(
+          pattern: CanvasBackgroundPattern.grid,
+          size: const Size(1000, 1400),
+          lineHeight: lineHeight,
+          bounds: bounds,
+        ).toList();
+
+        expect(gridElements, isNotEmpty);
+        expect(gridElements.any((e) => e.start.dx >= 30000), isTrue);
+        expect(gridElements.any((e) => e.start.dy >= 30000), isTrue);
+      },
+    );
+
+    test(
+      'CanvasBackgroundPainter.shouldRepaint returns true when viewportRect changes',
+      () {
+        const painter1 = CanvasBackgroundPainter(
+          invert: false,
+          backgroundColor: Color(0xFFFFFFFF),
+          lineHeight: 30,
+          lineThickness: 2,
+          isInfiniteCanvas: true,
+          viewportRect: Rect.fromLTWH(0, 0, 1000, 1000),
+        );
+        const painter2 = CanvasBackgroundPainter(
+          invert: false,
+          backgroundColor: Color(0xFFFFFFFF),
+          lineHeight: 30,
+          lineThickness: 2,
+          isInfiniteCanvas: true,
+          viewportRect: Rect.fromLTWH(2000, 3000, 1000, 1000),
+        );
+
+        expect(painter2.shouldRepaint(painter1), isTrue);
+      },
+    );
+
+    test(
+      'CanvasBackgroundPainter paints smoothly across far-away viewport without crashing or sentinel freeze',
+      () {
+        final recorder = PictureRecorder();
+        final canvas = Canvas(recorder);
+
+        const distantViewport = Rect.fromLTWH(50000, 50000, 1200, 800);
+        const painter = CanvasBackgroundPainter(
+          invert: false,
+          backgroundColor: Color(0xFFFFFFFF),
+          backgroundPattern: CanvasBackgroundPattern.grid,
+          lineHeight: 30,
+          lineThickness: 2,
+          isInfiniteCanvas: true,
+          viewportRect: distantViewport,
+        );
+
+        final stopwatch = Stopwatch()..start();
+        painter.paint(canvas, const Size(1000, 1400));
+        stopwatch.stop();
+
+        expect(stopwatch.elapsedMilliseconds, lessThan(50));
+      },
+    );
+
+    testWidgets(
+      'InnerCanvas forwards viewportRect to CanvasBackgroundPainter in infinite canvas mode',
+      (tester) async {
+        final page = EditorPage();
+        final coreInfo = EditorCoreInfo(filePath: '/test_note')
+          ..isInfiniteCanvas = true;
+        coreInfo.pages.add(page);
+        const testViewport = Rect.fromLTWH(15000, 25000, 1200, 800);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: InnerCanvas(
+                pageIndex: 0,
+                redrawPageListenable: page,
+                width: 1000,
+                height: 1400,
+                textEditing: false,
+                coreInfo: coreInfo,
+                currentStroke: null,
+                currentStrokeDetectedShape: null,
+                currentSelection: null,
+                isDoneSelecting: false,
+                cropPossible: false,
+                setAsBackground: (_) {},
+                currentToolIsSelect: false,
+                currentScale: 1.0,
+                viewportRect: testViewport,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final customPaintFinder = find.byWidgetPredicate(
+          (widget) =>
+              widget is CustomPaint &&
+              widget.painter is CanvasBackgroundPainter,
+        );
+        expect(customPaintFinder, findsOneWidget);
+        final customPaint = tester.widget<CustomPaint>(customPaintFinder);
+        final backgroundPainter =
+            customPaint.painter as CanvasBackgroundPainter;
+        expect(backgroundPainter.viewportRect, equals(testViewport));
       },
     );
   });

@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'package:flutter/material.dart';
@@ -58,7 +59,7 @@ class DraftingToolsPopup extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(left: 4, bottom: 12),
                   child: Text(
-                    'Shapes & Drafting',
+                    t.editor.drafting.title,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -68,8 +69,8 @@ class DraftingToolsPopup extends StatelessWidget {
                 ),
                 _DraftingOptionTile(
                   icon: const FaIcon(FontAwesomeIcons.shapes, size: 16),
-                  title: 'Shape Library',
-                  subtitle: 'Insert geometric primitives & symbols',
+                  title: t.editor.drafting.shapeLibrary,
+                  subtitle: t.editor.drafting.shapeLibraryDescription,
                   selected: false,
                   onTap: () {
                     Navigator.of(context).pop();
@@ -80,7 +81,7 @@ class DraftingToolsPopup extends StatelessWidget {
                 _DraftingOptionTile(
                   icon: const FaIcon(Ruler.rulerIcon, size: 16),
                   title: t.editor.pens.ruler,
-                  subtitle: 'On-screen straightedge guide',
+                  subtitle: t.editor.drafting.rulerDescription,
                   selected: currentTool is Ruler,
                   onTap: () {
                     Navigator.of(context).pop();
@@ -90,8 +91,8 @@ class DraftingToolsPopup extends StatelessWidget {
                 const SizedBox(height: 6),
                 _DraftingOptionTile(
                   icon: const Icon(Icons.arrow_right_alt, size: 20),
-                  title: 'Straight Arrow',
-                  subtitle: 'Direct pointer arrow',
+                  title: t.editor.drafting.straightArrow,
+                  subtitle: t.editor.drafting.straightArrowDescription,
                   selected:
                       currentTool is ArrowTool &&
                       (currentTool as ArrowTool).connectorStyle ==
@@ -106,8 +107,8 @@ class DraftingToolsPopup extends StatelessWidget {
                 const SizedBox(height: 6),
                 _DraftingOptionTile(
                   icon: const Icon(Icons.turn_right_rounded, size: 20),
-                  title: 'Elbow Connector',
-                  subtitle: 'Orthogonal stepped connector line',
+                  title: t.editor.drafting.elbowConnector,
+                  subtitle: t.editor.drafting.elbowConnectorDescription,
                   selected:
                       currentTool is ArrowTool &&
                       (currentTool as ArrowTool).connectorStyle ==
@@ -122,8 +123,8 @@ class DraftingToolsPopup extends StatelessWidget {
                 const SizedBox(height: 6),
                 _DraftingOptionTile(
                   icon: const Icon(Icons.gesture, size: 20),
-                  title: 'Curved Connector',
-                  subtitle: 'Smooth bezier spline connector',
+                  title: t.editor.drafting.curvedConnector,
+                  subtitle: t.editor.drafting.curvedConnectorDescription,
                   selected:
                       currentTool is ArrowTool &&
                       (currentTool as ArrowTool).connectorStyle ==
@@ -138,8 +139,8 @@ class DraftingToolsPopup extends StatelessWidget {
                 const SizedBox(height: 6),
                 _DraftingOptionTile(
                   icon: const Icon(Icons.straighten, size: 18),
-                  title: 'Dimension Line',
-                  subtitle: 'Measured line with real-world dimensions',
+                  title: t.editor.drafting.dimensionLine,
+                  subtitle: t.editor.drafting.dimensionLineDescription,
                   selected: currentTool is DimensionTool,
                   onTap: () {
                     Navigator.of(context).pop();

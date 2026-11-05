@@ -18,7 +18,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.adilhanney.saber"
+    namespace = "com.woaiyj1314.opennote"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -28,7 +28,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.adilhanney.saber"
+        applicationId = "com.woaiyj1314.opennote"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -48,6 +48,9 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
         }
         debug {
             signingConfig = signingConfigs.getByName("release")
@@ -74,13 +77,21 @@ dependencies {
     implementation("com.google.android.material:material:1.14.0")
 }
 
+base {
+    archivesName.set("Opennote")
+}
+
 val abiCodes = mapOf("armeabi-v7a" to 1, "arm64-v8a" to 2, "x86_64" to 3)
 android.applicationVariants.configureEach {
     val variant = this
     variant.outputs.forEach { output ->
-        val abiVersionCode = abiCodes[output.filters.find { it.filterType == "ABI" }?.identifier]
+        val impl = output as ApkVariantOutputImpl
+        val abi = impl.filters.find { it.filterType == "ABI" }?.identifier
+        val abiVersionCode = abiCodes[abi]
         if (abiVersionCode != null) {
-            (output as ApkVariantOutputImpl).versionCodeOverride = variant.versionCode * 10 + abiVersionCode
+            impl.versionCodeOverride = variant.versionCode * 10 + abiVersionCode
         }
+        val abiSuffix = if (abi != null) "_$abi" else ""
+        impl.outputFileName = "Opennote_v${variant.versionName}${abiSuffix}.apk"
     }
 }

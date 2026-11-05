@@ -1,10 +1,14 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:saber/components/settings/writing_posture_selector.dart';
 import 'package:saber/components/toolbar/size_picker.dart';
+import 'package:saber/components/toolbar/toolbar_dialog.dart';
 import 'package:saber/data/extensions/axis_extensions.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
@@ -145,8 +149,8 @@ class _PenModalState extends State<PenModal> {
               shape: const CircleBorder(),
             ),
             tooltip: stows.highlighterDrawInStraightLine.value
-                ? 'Draw in Straight Line: ON'
-                : 'Draw in Straight Line: OFF',
+                ? t.editor.tools.straightLineOn
+                : t.editor.tools.straightLineOff,
             icon: const Icon(Icons.straighten_rounded),
           ),
         ],
@@ -170,8 +174,8 @@ class _PenModalState extends State<PenModal> {
               shape: const CircleBorder(),
             ),
             tooltip: stows.scribbleToErase.value
-                ? 'Scribble to Erase: ON'
-                : 'Scribble to Erase: OFF',
+                ? t.editor.tools.scribbleOn
+                : t.editor.tools.scribbleOff,
             icon: const FaIcon(FontAwesomeIcons.eraser),
           ),
         ],
@@ -201,7 +205,9 @@ class _PenModalState extends State<PenModal> {
                   : Colors.transparent,
               shape: const CircleBorder(),
             ),
-            tooltip: 'Stroke Style: ${stows.penLineStyle.value.toUpperCase()}',
+            tooltip: t.editor.tools.strokeStyle(
+              style: stows.penLineStyle.value.toUpperCase(),
+            ),
             icon: Icon(
               stows.penLineStyle.value == 'dashed'
                   ? Icons.border_style
@@ -211,6 +217,27 @@ class _PenModalState extends State<PenModal> {
             ),
           ),
         ],
+        const SizedBox.square(dimension: 8),
+        IconButton(
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (context) => ToolbarDialog(
+                title: t.editor.tools.palmRejection,
+                icon: CupertinoIcons.hand_draw_fill,
+                child: const SingleChildScrollView(
+                  child: WritingPostureSelector(compact: true),
+                ),
+              ),
+            );
+          },
+          style: TextButton.styleFrom(
+            foregroundColor: ColorScheme.of(context).onSurface,
+            shape: const CircleBorder(),
+          ),
+          tooltip: t.editor.tools.palmRejection,
+          icon: const Icon(CupertinoIcons.hand_draw),
+        ),
       ],
     );
 
@@ -251,7 +278,7 @@ class _PressureCurveSliderState extends State<_PressureCurveSlider> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          'Curve',
+          t.editor.tools.curve,
           style: TextStyle(
             color: colorScheme.onSurface.withValues(alpha: 0.8),
             fontSize: 10,

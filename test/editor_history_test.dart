@@ -1,3 +1,6 @@
+/// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
+library;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saber/data/editor/editor_history.dart';
 
@@ -55,5 +58,16 @@ void main() {
     expect(history.canRedo, false);
 
     expect(history.undo(), item2, reason: 'Undo should return the last item');
+  });
+
+  test('A change outside the history makes the state unsaved', () {
+    final history = EditorHistory();
+    expect(history.isCurrentStateSaved, isTrue);
+
+    history.markUnsavedChange();
+    expect(history.isCurrentStateSaved, isFalse);
+
+    history.markLastChangeAsSaved();
+    expect(history.isCurrentStateSaved, isTrue);
   });
 }

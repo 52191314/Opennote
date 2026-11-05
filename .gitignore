@@ -64,7 +64,22 @@ coverage/
 test/failures/
 
 # Agent artifacts and local databases
-.agents/
+.agents/artifacts/
+!.agents/rules/
+!.agents/skills/
 *.db
 *.ipa
+
+# Secrets and private keys
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.jks
+*.keystore
+service-account*.json
+google-services.json
+GoogleService-Info.plist
+
 

@@ -1,3 +1,6 @@
+/// 🤖 Modified with Grok 4.7
+library;
+
 import 'dart:async';
 
 import 'package:collapsible/collapsible.dart';
@@ -11,12 +14,14 @@ import 'package:saber/components/home/masonry_files.dart';
 import 'package:saber/components/home/move_note_button.dart';
 import 'package:saber/components/home/new_note_button.dart';
 import 'package:saber/components/home/no_files.dart';
+import 'package:saber/components/home/notebook_shelf.dart';
 import 'package:saber/components/home/path_components.dart';
 import 'package:saber/components/home/rename_note_button.dart';
 import 'package:saber/components/home/search_dialog.dart';
 import 'package:saber/components/home/syncing_button.dart';
 import 'package:saber/components/theming/saber_theme.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
+import 'package:saber/data/prefs.dart';
 import 'package:saber/data/routes.dart';
 import 'package:saber/i18n/strings.g.dart';
 
@@ -38,6 +43,9 @@ class _BrowsePageState extends State<BrowsePage> {
   String? path;
 
   final ValueNotifier<List<String>> selectedFiles = ValueNotifier([]);
+
+  /// Notebooks created on the shelf before the directory listing refreshes.
+  final _pendingNotes = <String>[];
 
   @override
   void initState() {
@@ -189,6 +197,33 @@ class _BrowsePageState extends State<BrowsePage> {
             ),
             if (children == null) ...[
               // loading
+            ] else if (stows.goodnotesUiMode.value) ...[
+              SliverToBoxAdapter(
+                child: NotebookShelf(
+                  directory: path,
+                  notes: {
+                    for (final filePath in children?.files ?? const [])
+                      "${path ?? ""}/$filePath",
+                    ..._pendingNotes.where(
+                      (note) => path == null
+                          ? !note.substring(1).contains('/')
+                          : note.startsWith('$path/'),
+                    ),
+                  }.toList(),
+                  folders: [
+                    for (final directoryPath
+                        in children?.directories ?? const [])
+                      directoryPath,
+                  ],
+                  onOpenNote: (note) =>
+                      context.push(RoutePaths.editFilePath(note)),
+                  onOpenFolder: onDirectoryTap,
+                  onCreateNote: (note) {
+                    setState(() => _pendingNotes.add(note));
+                    context.push(RoutePaths.editFilePath(note));
+                  },
+                ),
+              ),
             ] else if (children!.isEmpty) ...[
               const SliverSafeArea(
                 sliver: SliverToBoxAdapter(child: NoFiles()),

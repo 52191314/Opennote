@@ -1,12 +1,13 @@
 /// 🤖 Modified with DeepSeek v4 Flash
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
+/// 🤖 Modified with Grok 4.7
 library;
 
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:collapsible/collapsible.dart';
@@ -21,10 +22,8 @@ import 'package:keybinder/keybinder.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
 import 'package:pdfrx/pdfrx.dart';
-import 'package:saber/components/canvas/_arrow_stroke.dart';
 import 'package:saber/components/canvas/_asset_cache.dart';
 import 'package:saber/components/canvas/_canvas_painter.dart';
-import 'package:saber/components/canvas/_dimension_stroke.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/_tape_stroke.dart';
 import 'package:saber/components/canvas/canvas.dart';
@@ -34,44 +33,58 @@ import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/components/canvas/lasso_screenshot_dialog.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/components/canvas/shape_library_dialog.dart';
+import 'package:saber/components/canvas/zoom_window_view.dart';
 import 'package:saber/components/editor/page_grid_overview.dart';
 import 'package:saber/components/editor/presentation_mode.dart';
 import 'package:saber/components/editor/read_only_banner.dart';
+import 'package:saber/components/editor/template_picker_dialog.dart';
 import 'package:saber/components/theming/adaptive_alert_dialog.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
 import 'package:saber/components/theming/dynamic_material_app.dart';
 import 'package:saber/components/theming/saber_theme.dart';
 import 'package:saber/components/toolbar/color_bar.dart';
 import 'package:saber/components/toolbar/editor_bottom_sheet.dart';
+import 'package:saber/components/toolbar/editor_toolbar_actions.dart';
 import 'package:saber/components/toolbar/elements_sheet.dart';
 import 'package:saber/components/toolbar/export_bar.dart';
+import 'package:saber/components/toolbar/floating_pen_menu.dart';
 import 'package:saber/components/toolbar/goodnotes_header_bar.dart';
 import 'package:saber/components/toolbar/goodnotes_toolbar.dart';
 import 'package:saber/components/toolbar/toolbar.dart';
+import 'package:saber/data/editor/canvas_mode_conversion.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/editor_exporter.dart';
 import 'package:saber/data/editor/editor_history.dart';
+import 'package:saber/data/editor/gestures/eraser_gesture.dart';
+import 'package:saber/data/editor/gestures/laser_gesture.dart';
+import 'package:saber/data/editor/gestures/pen_gesture.dart';
+import 'package:saber/data/editor/gestures/select_gesture.dart';
+import 'package:saber/data/editor/gestures/tool_gesture.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/editor/selection_clipboard.dart';
+import 'package:saber/data/editor/selection_handles.dart';
 import 'package:saber/data/editor/selection_resize.dart';
 import 'package:saber/data/editor/selection_transform.dart';
+import 'package:saber/data/editor/zoom_window.dart';
 import 'package:saber/data/extensions/change_notifier_extensions.dart';
+import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:saber/data/extensions/matrix4_extensions.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
+import 'package:saber/data/file_manager/note_paths.dart';
 import 'package:saber/data/nextcloud/saber_syncer.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
 import 'package:saber/data/tools/arrow.dart';
-import 'package:saber/data/tools/circle_to_select_detector.dart';
 import 'package:saber/data/tools/dimension.dart';
 import 'package:saber/data/tools/elements.dart';
 import 'package:saber/data/tools/eraser.dart';
 import 'package:saber/data/tools/highlighter.dart';
 import 'package:saber/data/tools/laser_pointer.dart';
+import 'package:saber/data/tools/page_templates.dart';
 import 'package:saber/data/tools/pen.dart';
+import 'package:saber/data/tools/pen_tray.dart';
 import 'package:saber/data/tools/pencil.dart';
 import 'package:saber/data/tools/ruler.dart';
-import 'package:saber/data/tools/scribble_detector.dart';
 import 'package:saber/data/tools/select.dart';
 import 'package:saber/data/tools/shape_pen.dart';
 import 'package:saber/data/tools/study_tape.dart';
@@ -83,11 +96,16 @@ import 'package:super_clipboard/super_clipboard.dart';
 typedef _PhotoInfo = ({Uint8List bytes, String extension});
 
 class Editor extends StatefulWidget {
-  Editor({super.key, String? path, this.customTitle, this.pdfPath})
-    : initialPath = path != null
-          ? Future.value(path)
-          : FileManager.newFilePath('/'),
-      needsNaming = path == null;
+  Editor({
+    super.key,
+    String? path,
+    this.customTitle,
+    this.pdfPath,
+    this.initialPageIndex,
+  }) : initialPath = path != null
+           ? Future.value(path)
+           : FileManager.newFilePath('/'),
+       needsNaming = path == null;
 
   final Future<String> initialPath;
   final bool needsNaming;
@@ -95,27 +113,21 @@ class Editor extends StatefulWidget {
   final String? customTitle;
   final String? pdfPath;
 
-  /// The file extension used by the app.
-  /// Files with this extension are
-  /// encoded in BSON format.
-  static const extension = '.sbn2';
+  /// Page to show after the note opens. Null stays on the saved page.
+  final int? initialPageIndex;
+
+  /// The file extension used by the app. See [NotePaths.extension].
+  static const extension = NotePaths.extension;
 
   /// The old file extension used by the app.
-  /// Files with this extension are
-  /// encoded in JSON format.
-  static const extensionOldJson = '.sbn';
+  /// See [NotePaths.extensionOldJson].
+  static const extensionOldJson = NotePaths.extensionOldJson;
 
   static const double gapBetweenPages = 16;
 
   /// Returns true if [path] belongs to a hidden file
   /// used by other functions of the app
-  static bool isReservedPath(String path) {
-    return _reservedFilePaths.any((regex) => regex.hasMatch(path));
-  }
-
-  static final _reservedFilePaths = <RegExp>[
-    RegExp(RegExp.escape(Whiteboard.filePath)),
-  ];
+  static bool isReservedPath(String path) => NotePaths.isReserved(path);
 
   /// Whether the platform can rasterize a pdf
   static var canRasterPdf = true;
@@ -124,7 +136,9 @@ class Editor extends StatefulWidget {
   State<Editor> createState() => EditorState();
 }
 
-class EditorState extends State<Editor> {
+class EditorState extends State<Editor>
+    with WidgetsBindingObserver
+    implements EditorGestureHost {
   final log = Logger('EditorState');
 
   late var coreInfo = EditorCoreInfo.placeholder;
@@ -146,7 +160,60 @@ class EditorState extends State<Editor> {
     }
   }
 
+  @override
   var history = EditorHistory();
+
+  final _zoomWindow = ZoomWindowController();
+  var _zoomWindowOpen = false;
+  var _zoomPageIndex = 0;
+
+  /// Asks which paper to use, then inserts that page after the current one.
+  void _addPageFromTemplate() {
+    if (coreInfo.readOnly || coreInfo.pages.isEmpty) return;
+    final brightness = Theme.brightnessOf(context);
+    final invert =
+        stows.editorAutoInvert.value && brightness == Brightness.dark;
+    showDialog<void>(
+      context: context,
+      builder: (_) => TemplatePickerDialog(
+        coreInfo: coreInfo,
+        currentPageIndex: currentPageIndex,
+        invert: invert,
+        onTemplateSelected: (template) {
+          final index = currentPageIndex;
+          insertPageAfter(index, template: template);
+          if (!mounted) return;
+          CanvasGestureDetector.scrollToPage(
+            pageIndex: index + 1,
+            pages: coreInfo.pages,
+            screenWidth: MediaQuery.sizeOf(context).width,
+            transformationController: _transformationController,
+          );
+        },
+      ),
+    );
+  }
+
+  /// Opens or dismisses the zoom window on the current page.
+  void _toggleZoomWindow() {
+    if (coreInfo.readOnly || coreInfo.pages.isEmpty) return;
+    setState(() {
+      if (_zoomWindowOpen) {
+        _zoomWindowOpen = false;
+        return;
+      }
+      final pageIndex = currentPageIndex.clamp(0, coreInfo.pages.length - 1);
+      _zoomPageIndex = pageIndex;
+      _zoomWindow.openForPage(Offset.zero & coreInfo.pages[pageIndex].size);
+      _zoomWindowOpen = true;
+    });
+  }
+
+  @override
+  int get lineHeight => coreInfo.lineHeight;
+
+  @override
+  double get currentScale => _transformationController.value.approxScale;
 
   late bool needsNaming = widget.needsNaming && stows.editorPromptRename.value;
 
@@ -189,6 +256,7 @@ class EditorState extends State<Editor> {
         return StudyTapeTool.currentStudyTape;
     }
   }();
+  @override
   Tool get currentTool => _currentTool;
   set currentTool(Tool tool) {
     // If switching away from Select, exit crop mode on selected images
@@ -222,23 +290,24 @@ class EditorState extends State<Editor> {
   /// If we add customized button bindings, we may have to separate this again.
   var stylusButtonWasPressed = false;
 
-  /// Detects scribble-to-erase gestures when the pen tool is active.
-  final scribbleDetector = ScribbleDetector();
-
-  /// Detects circle-to-select loop gestures when the pen tool is active.
-  late final circleToSelectDetector = CircleToSelectDetector(
+  /// Handles draw gestures made with a pen, including scribble-to-erase
+  /// and circle-to-select.
+  late final _penGesture = PenGesture(
+    this,
     onCircleDetected: _onCircleToSelectDetected,
   );
 
   /// The selection copied to the internal clipboard (for paste).
   SelectionClipboard? _clipboard;
 
-  /// Whether the user is currently rotating a selection.
-  var _isRotating = false;
+  /// Handles draw gestures made with the Select tool.
+  late final _selectGesture = SelectGesture(this);
 
-  /// The timestamp and position of the last tap (for double-tap detection).
-  DateTime? _lastTapTime;
-  Offset? _lastTapPosition;
+  /// Handles draw gestures made with the eraser.
+  late final _eraserGesture = EraserGesture(this);
+
+  /// Handles draw gestures made with the laser pointer.
+  static const _laserGesture = LaserGesture();
 
   /// The position and page index of the most recent user canvas tap/click,
   /// used to place newly added elements, photos, stickers, and shapes.
@@ -246,27 +315,10 @@ class EditorState extends State<Editor> {
   int? _lastCanvasTapPageIndex;
   DateTime? _lastCanvasTapTime;
 
-  /// Whether the user is currently resizing a selection.
-  var _isResizing = false;
-
-  /// The resize handle drag in progress, if any.
-  SelectionResize? _selectionResize;
-
-  /// The resize, rotation, or vertex edit in progress, once it has changed
-  /// something. Recorded in [history] when the gesture ends.
-  SelectionTransform? _selectionTransform;
-
-  /// The initial angle (in radians) when the rotation gesture started.
-  double _initialRotationAngle = 0;
-
-  /// Whether the user is currently dragging a vertex of a drafting stroke.
-  var _isDraggingVertex = false;
-  var _draggedVertexIndex = -1;
-  Stroke? _draggedVertexStroke;
-
   @override
   void initState() {
     DynamicMaterialApp.addFullscreenListener(_setState);
+    WidgetsBinding.instance.addObserver(this);
 
     _initAsync();
     _assignKeybindings();
@@ -340,6 +392,11 @@ class EditorState extends State<Editor> {
       await saveToFile();
       Whiteboard.needsToAutoClearWhiteboard = false;
     } else {
+      final page = widget.initialPageIndex;
+      if (page != null) {
+        coreInfo.initialPageIndex = page;
+        _lastCurrentPageIndex = page;
+      }
       setState(() {});
     }
   }
@@ -374,6 +431,7 @@ class EditorState extends State<Editor> {
 
   /// Creates pages until the given page index exists,
   /// plus an extra blank page
+  @override
   void createPage(int pageIndex) {
     if (coreInfo.isInfiniteCanvas) {
       if (coreInfo.pages.isEmpty) {
@@ -390,6 +448,7 @@ class EditorState extends State<Editor> {
     }
   }
 
+  @override
   void removeExcessPages() {
     if (coreInfo.isInfiniteCanvas) return;
     bool removedAPage = false;
@@ -672,647 +731,95 @@ class EditorState extends State<Editor> {
     _lastCanvasTapPageIndex = dragPageIndex;
     _lastCanvasTapTime = DateTime.now();
     history.canRedo = false;
-    _selectionTransform = null;
+    _selectGesture.forgetTransform();
+    if (_isLockedForDrawing(page)) return;
 
-    if (page.activeLayer.locked &&
-        (currentTool is Pen || currentTool is Eraser)) {
-      return;
-    }
-
-    if (currentTool is Pen) {
-      // Set pen preview
-      final pen = currentTool as Pen;
-      page.penPreviewPosition = position;
-      page.penPreviewRadius = pen.options.size / 2;
-      page.penPreviewColor = pen.color;
-
-      if (stows.scribbleToErase.value) {
-        scribbleDetector.start(position);
-      }
-      if (stows.circleToSelect.value) {
-        circleToSelectDetector.start(position);
-      }
-      pen.onDragStart(position, page, dragPageIndex!, currentPressure);
-    } else if (currentTool is Eraser) {
-      final eraser = currentTool as Eraser;
-      page.eraserCursorPosition = position;
-      page.eraserCursorRadius = eraser.size / 2;
-      for (final stroke in eraser.checkForOverlappingStrokes(
-        position,
-        page.activeLayerStrokes,
-      )) {
-        page.removeStroke(stroke);
-      }
-      removeExcessPages();
-    } else if (currentTool is Select) {
-      final select = currentTool as Select;
-
-      // Double-tap detection: two taps close in time and space
-      // trigger a re-selection even if a stroke is already selected.
-      if (select.doneSelecting &&
-          select.selectResult.pageIndex == dragPageIndex! &&
-          _lastTapTime != null &&
-          _lastTapPosition != null) {
-        final now = DateTime.now();
-        final timeDelta = now.difference(_lastTapTime!).inMilliseconds;
-        final posDelta = (position - _lastTapPosition!).distance;
-        if (timeDelta < 300 && posDelta < 20) {
-          select.unselect();
-          page.selectionDeleteButtonRect = null;
-          page.selectionRotationHandleCenter = null;
-          page.selectionResizeHandles = null;
-          page.selectionVertexHandles = null;
-          _isDraggingVertex = false;
-          select.onDragStart(position, dragPageIndex!);
-          history.canRedo = true;
-          return;
-        }
-      }
-
-      if (select.doneSelecting &&
-          select.selectResult.pageIndex == dragPageIndex!) {
-        // Check if tap is on the delete button
-        final deleteRect = page.selectionDeleteButtonRect;
-        if (deleteRect != null && deleteRect.contains(position)) {
-          _deleteSelection(select, page);
-          return;
-        }
-
-        // Check if tap is on a vertex handle (ArrowStroke / DimensionStroke)
-        final vertexHandles = page.selectionVertexHandles;
-        if (vertexHandles != null && select.selectResult.strokes.length == 1) {
-          final stroke = select.selectResult.strokes.first;
-          if (stroke is ArrowStroke || stroke is DimensionStroke) {
-            for (int i = 0; i < vertexHandles.length; i++) {
-              if ((position - vertexHandles[i]).distance < 20) {
-                _isDraggingVertex = true;
-                _draggedVertexIndex = i;
-                _draggedVertexStroke = stroke;
-                return;
-              }
-            }
-          }
-        }
-
-        // Check if tap is on a resize handle
-        final resizeHandles = page.selectionResizeHandles;
-        if (resizeHandles != null) {
-          for (int i = 0; i < resizeHandles.length; i++) {
-            if ((position - resizeHandles[i]).distance < 16) {
-              _isResizing = true;
-              _selectionResize = SelectionResize(
-                startBounds: select.selectResult.path.getBounds(),
-                handleIndex: i,
-              );
-              return;
-            }
-          }
-        }
-
-        // Check if tap is on the rotation handle
-        final rotationHandle = page.selectionRotationHandleCenter;
-        if (rotationHandle != null &&
-            (position - rotationHandle).distance < 20) {
-          _isRotating = true;
-          _initialRotationAngle = 0;
-          return;
-        }
-
-        if (select.selectResult.path.contains(position)) {
-          // drag selection in onDrawUpdate
-        } else {
-          select.unselect();
-          page.selectionDeleteButtonRect = null;
-          page.selectionRotationHandleCenter = null;
-          page.selectionResizeHandles = null;
-          page.selectionVertexHandles = null;
-          _isDraggingVertex = false;
-          select.onDragStart(position, dragPageIndex!);
-          history.canRedo = true;
-        }
-      } else {
-        select.onDragStart(position, dragPageIndex!);
-        history.canRedo = true; // selection doesn't affect history
-      }
-    } else if (currentTool is LaserPointer) {
-      (currentTool as LaserPointer).onDragStart(position, page, dragPageIndex!);
-    } else if (currentTool is Ruler) {
-      (currentTool as Ruler).onDragStart(
-        position,
-        page,
-        dragPageIndex!,
-        currentPressure,
-      );
-    }
+    final isTracked = _gesture?.start(_pointerAt(page, position)) ?? true;
+    if (!isTracked) return;
 
     previousPosition = position;
     moveOffset = .zero;
-
-    if (currentTool is! Select) {
-      Select.currentSelect.unselect();
-    }
-
-    // setState to let canvas know about currentStroke
+    if (currentTool is! Select) Select.currentSelect.unselect();
     setState(() {});
   }
 
   void onDrawUpdate(ScaleUpdateDetails details) {
     final page = coreInfo.pages[dragPageIndex!];
-    if (page.activeLayer.locked &&
-        (currentTool is Pen || currentTool is Eraser)) {
-      return;
-    }
+    if (_isLockedForDrawing(page)) return;
+
     final position = page.renderBox!.globalToLocal(details.focalPoint);
-    final offset = position - previousPosition;
-
-    if (currentTool is Pen) {
-      final pen = currentTool as Pen;
-      // Update pen preview
-      page.penPreviewPosition = position;
-      page.penPreviewRadius = pen.options.size / 2;
-      page.penPreviewColor = pen.color;
-
-      if (stows.scribbleToErase.value) {
-        final penStrokeWidth = pen.options.size;
-        final lh = (page.lineHeight ?? stows.gridSize.value).toDouble();
-        final erased = scribbleDetector.update(
-          position,
-          page.activeLayerStrokes,
-          penStrokeWidth,
-          page: page,
-          lineHeight: lh > 0 ? lh : 30.0,
-        );
-
-        if (scribbleDetector.state == ScribbleState.erasing) {
-          if (Pen.currentStroke != null) {
-            Pen.currentStroke = null;
-          }
-          // In scribble-erase mode: erase overlapping strokes
-          for (final stroke in erased) {
-            page.removeStroke(stroke);
-          }
-          // Show eraser cursor with eraser radius
-          page.eraserCursorPosition = position;
-          page.eraserCursorRadius = ScribbleDetector.eraserRadius;
-          page.redrawStrokes();
-        } else {
-          // Still drawing or undetermined — draw normally
-          pen.onDragUpdate(position, currentPressure);
-          page.redrawStrokes();
-        }
-      } else {
-        // Scribble-to-erase disabled — normal drawing
-        (currentTool as Pen).onDragUpdate(position, currentPressure);
-        page.redrawStrokes();
-      }
-
-      if (stows.circleToSelect.value) {
-        circleToSelectDetector.update(position);
-      }
-    } else if (currentTool is Eraser) {
-      final eraser = currentTool as Eraser;
-      page.eraserCursorPosition = position;
-      page.eraserCursorRadius = eraser.size / 2;
-      for (final stroke in eraser.checkForOverlappingStrokes(
-        position,
-        page.activeLayerStrokes,
-      )) {
-        page.removeStroke(stroke);
-      }
-      page.redrawStrokes();
-      removeExcessPages();
-    } else if (currentTool is Select) {
-      final select = currentTool as Select;
-      if (_isDraggingVertex && _draggedVertexStroke != null) {
-        _selectionTransform ??= SelectionTransform.begin(
-          page,
-          select.selectResult,
-        );
-        final stroke = select.selectResult.strokes.first;
-        if (stroke is ArrowStroke) {
-          if (_draggedVertexIndex == 0) {
-            stroke.start = position;
-          } else if (_draggedVertexIndex == 1) {
-            stroke.end = position;
-          }
-          stroke.markPolygonNeedsUpdating();
-          select.selectResult.path = Select.createTightSelectionPath(
-            stroke.lowQualityPolygon,
-          );
-        } else if (stroke is DimensionStroke) {
-          if (_draggedVertexIndex == 0) {
-            stroke.start = position;
-            final dist = (stroke.end - stroke.start).distance;
-            stroke.text = '${dist.toStringAsFixed(1)} px';
-          } else if (_draggedVertexIndex == 1) {
-            stroke.end = position;
-            final dist = (stroke.end - stroke.start).distance;
-            stroke.text = '${dist.toStringAsFixed(1)} px';
-          } else if (_draggedVertexIndex == 2) {
-            final dir = stroke.end - stroke.start;
-            final length = dir.distance;
-            if (length > 0.001) {
-              final perp = Offset(-dir.dy / length, dir.dx / length);
-              stroke.offset =
-                  (position.dx - stroke.start.dx) * perp.dx +
-                  (position.dy - stroke.start.dy) * perp.dy;
-            }
-          }
-          stroke.markPolygonNeedsUpdating();
-          select.selectResult.path = Select.createTightSelectionPath(
-            stroke.lowQualityPolygon,
-          );
-        }
-        page.redrawStrokes();
-        return;
-      }
-      final resize = _selectionResize;
-      if (_isResizing && resize != null && select.doneSelecting) {
-        _selectionTransform ??= SelectionTransform.begin(
-          page,
-          select.selectResult,
-        );
-        final pivot = resize.pivot;
-        final (x: scaleX, y: scaleY) = resize.stepTo(position);
-
-        for (final stroke in select.selectResult.strokes) {
-          stroke.scaleAround(scaleX, scaleY, pivot);
-        }
-        for (final image in select.selectResult.images) {
-          final rect = image.dstRect;
-          final newCenter = Offset(
-            pivot.dx + (rect.center.dx - pivot.dx) * scaleX,
-            pivot.dy + (rect.center.dy - pivot.dy) * scaleY,
-          );
-          image.dstRect = Rect.fromCenter(
-            center: newCenter,
-            width: rect.width * scaleX,
-            height: rect.height * scaleY,
-          );
-        }
-        // Handle text resize: scale text offset relative to pivot
-        if (select.selectResult.textSelected) {
-          page.textContentOffset = Offset(
-            pivot.dx + (page.textContentOffset.dx - pivot.dx) * scaleX,
-            pivot.dy + (page.textContentOffset.dy - pivot.dy) * scaleY,
-          );
-        }
-        // Update selection path bounds
-        select.selectResult.path = scalePathAround(
-          select.selectResult.path,
-          scaleX,
-          scaleY,
-          pivot,
-        );
-        page.redrawStrokes();
-      } else if (_isRotating && select.doneSelecting) {
-        _selectionTransform ??= SelectionTransform.begin(
-          page,
-          select.selectResult,
-        );
-        // Compute rotation angle
-        final bounds = select.selectResult.path.getBounds();
-        final center = bounds.center;
-        final currentAngle = (position - center).direction;
-        if (_initialRotationAngle == 0) {
-          _initialRotationAngle = currentAngle;
-        }
-        final deltaAngle = currentAngle - _initialRotationAngle;
-        _initialRotationAngle = currentAngle;
-
-        for (final stroke in select.selectResult.strokes) {
-          stroke.rotateAround(deltaAngle, center);
-        }
-        for (final image in select.selectResult.images) {
-          // Rotate image around selection center
-          final rect = image.dstRect;
-          final cosA = cos(deltaAngle);
-          final sinA = sin(deltaAngle);
-          final dx = rect.center.dx - center.dx;
-          final dy = rect.center.dy - center.dy;
-          final newCenter = Offset(
-            center.dx + dx * cosA - dy * sinA,
-            center.dy + dx * sinA + dy * cosA,
-          );
-          image.dstRect = Rect.fromCenter(
-            center: newCenter,
-            width: rect.width,
-            height: rect.height,
-          );
-        }
-        // Handle text rotation
-        if (select.selectResult.textSelected) {
-          page.textContentRotation += deltaAngle;
-        }
-
-        // Update the selection path bounds
-        select.selectResult.path = _rotatePath(
-          select.selectResult.path,
-          deltaAngle,
-          center,
-        );
-        page.redrawStrokes();
-      } else if (select.doneSelecting) {
-        for (final stroke in select.selectResult.strokes) {
-          stroke.shift(offset);
-        }
-        for (final image in select.selectResult.images) {
-          image.dstRect = image.dstRect.shift(offset);
-        }
-        if (select.selectResult.textSelected) {
-          page.textContentOffset += offset;
-        }
-        select.selectResult.path = select.selectResult.path.shift(offset);
-      } else {
-        select.onDragUpdate(position);
-      }
-      page.redrawStrokes();
-    } else if (currentTool is LaserPointer) {
-      (currentTool as LaserPointer).onDragUpdate(position);
-      page.redrawStrokes();
-    } else if (currentTool is Ruler) {
-      (currentTool as Ruler).onDragUpdate(position, currentPressure);
-      page.redrawStrokes();
-    }
+    final delta = position - previousPosition;
+    _gesture?.update(_pointerAt(page, position, delta: delta));
     previousPosition = position;
-    moveOffset += offset;
+    moveOffset += delta;
   }
 
   void onDrawEnd(ScaleEndDetails details) {
     final page = coreInfo.pages[dragPageIndex!];
-    if (page.activeLayer.locked &&
-        (currentTool is Pen || currentTool is Eraser)) {
-      if (currentTool is Pen) (currentTool as Pen).onDragEnd();
-      if (currentTool is Eraser) (currentTool as Eraser).onDragEnd();
-      page.eraserCursorPosition = null;
-      page.eraserCursorRadius = null;
-      page.penPreviewPosition = null;
-      page.penPreviewRadius = null;
-      page.penPreviewColor = null;
-      _isRotating = false;
-      _initialRotationAngle = 0;
-      _isResizing = false;
-      _selectionResize = null;
-      return;
-    }
-    bool shouldSave = true;
+    if (_isLockedForDrawing(page)) return _abandonDraw(page);
+
+    var shouldSave = true;
     setState(() {
-      if (currentTool is Pen) {
-        circleToSelectDetector.cancel();
-        if (scribbleDetector.state == ScribbleState.erasing) {
-          final erased = scribbleDetector.end();
-          final erasedImages = scribbleDetector.getAndClearErasedImages();
-          // Discard the partial stroke that was started before scribble detection
-          (currentTool as Pen).onDragEnd();
-          page.eraserCursorPosition = null;
-          page.eraserCursorRadius = null;
-          if (erased.isNotEmpty || erasedImages.isNotEmpty) {
-            history.recordChange(
-              EditorHistoryItem(
-                type: .erase,
-                pageIndex: dragPageIndex!,
-                strokes: erased,
-                images: erasedImages,
-              ),
-            );
-          } else if (!scribbleDetector.erasedText) {
-            shouldSave = false;
-          }
-          return;
-        }
-
-        final newStroke = (currentTool as Pen).onDragEnd();
-        if (newStroke == null) return;
-        if (newStroke.isEmpty) return;
-
-        // Check if a quick tap was on an existing TapeStroke to toggle conceal/reveal
-        if (newStroke.length <= 4) {
-          final p0 = newStroke.firstPoint;
-          final pEnd = newStroke.lastPoint;
-          if (p0 != null && pEnd != null && (pEnd - p0).distance < 15.0) {
-            for (final stroke in page.strokes.reversed) {
-              if (stroke is TapeStroke && stroke.rect.inflate(8).contains(p0)) {
-                stroke.toggleConceal();
-                page.redrawStrokes();
-                autosaveAfterDelay();
-                return;
-              }
-            }
-          }
-        }
-
-        if ((stows.autoStraightenLines.value || currentTool is Highlighter) &&
-            currentTool is! ShapePen &&
-            newStroke.isStraightLine()) {
-          newStroke.convertToLine();
-        }
-
-        createPage(newStroke.pageIndex);
-        page.insertStroke(newStroke);
-        history.recordChange(
-          EditorHistoryItem(
-            type: .draw,
-            pageIndex: dragPageIndex!,
-            strokes: [newStroke],
-            images: [],
-          ),
-        );
-      } else if (currentTool is Eraser) {
-        final erased = (currentTool as Eraser).onDragEnd();
-        if (stylusButtonWasPressed || stows.disableEraserAfterUse.value) {
-          // restore previous tool
-          stylusButtonWasPressed = false;
-          currentTool = _lastNonEraserTool;
-        }
-        if (erased.isEmpty) return;
-        history.recordChange(
-          EditorHistoryItem(
-            type: .erase,
-            pageIndex: dragPageIndex!,
-            strokes: erased,
-            images: [],
-          ),
-        );
-      } else if (currentTool is Select) {
-        final select = currentTool as Select;
-        if (_isDraggingVertex) {
-          _isDraggingVertex = false;
-          _draggedVertexIndex = -1;
-          _draggedVertexStroke = null;
-          final bounds = select.selectResult.path.getBounds();
-          page.selectionDeleteButtonRect = null;
-          page.selectionRotationHandleCenter = Offset(
-            bounds.center.dx,
-            bounds.top - 20,
-          );
-          final center = bounds.center;
-          page.selectionResizeHandles = [
-            Offset(bounds.left, bounds.top),
-            Offset(center.dx, bounds.top),
-            Offset(bounds.right, bounds.top),
-            Offset(bounds.right, center.dy),
-            Offset(bounds.right, bounds.bottom),
-            Offset(center.dx, bounds.bottom),
-            Offset(bounds.left, bounds.bottom),
-            Offset(bounds.left, center.dy),
-          ];
-          _recordSelectionTransform(dragPageIndex!);
-          return;
-        }
-
-        final textRect = page.computeTextContentRect(
-          coreInfo.lineHeight.toDouble(),
-        );
-
-        // Detect tap (no drag, no resize, no rotate)
-        if (moveOffset == .zero && !_isRotating && !_isResizing) {
-          if (!select.doneSelecting) {
-            // A new selection that ended without dragging → try tap-to-select
-            final bounds = select.selectResult.path.getBounds();
-            if (bounds.isEmpty || (bounds.width < 20 && bounds.height < 20)) {
-              select.tapSelect(
-                previousPosition,
-                page.strokes,
-                page.images,
-                dragPageIndex!,
-                textRect: textRect,
-              );
-              shouldSave = false;
-
-              if (select.selectResult.isEmpty) {
-                Select.currentSelect.unselect();
-                page.selectionDeleteButtonRect = null;
-                page.selectionRotationHandleCenter = null;
-                page.selectionResizeHandles = null;
-                page.selectionVertexHandles = null;
-              } else {
-                final selectionBounds = select.selectResult.path.getBounds();
-                page.selectionDeleteButtonRect = null;
-                page.selectionRotationHandleCenter = Offset(
-                  selectionBounds.center.dx,
-                  selectionBounds.top - 20,
-                );
-                final center = selectionBounds.center;
-                page.selectionResizeHandles = [
-                  Offset(selectionBounds.left, selectionBounds.top),
-                  Offset(center.dx, selectionBounds.top),
-                  Offset(selectionBounds.right, selectionBounds.top),
-                  Offset(selectionBounds.right, center.dy),
-                  Offset(selectionBounds.right, selectionBounds.bottom),
-                  Offset(center.dx, selectionBounds.bottom),
-                  Offset(selectionBounds.left, selectionBounds.bottom),
-                  Offset(selectionBounds.left, center.dy),
-                ];
-                if (select.selectResult.strokes.length == 1) {
-                  final s = select.selectResult.strokes.first;
-                  if (s is ArrowStroke) {
-                    page.selectionVertexHandles = [s.start, s.end];
-                  } else if (s is DimensionStroke) {
-                    page.selectionVertexHandles = [
-                      s.start,
-                      s.end,
-                      s.textPosition,
-                    ];
-                  } else {
-                    page.selectionVertexHandles = null;
-                  }
-                } else {
-                  page.selectionVertexHandles = null;
-                }
-              }
-
-              // Track for double-tap detection
-              _lastTapTime = DateTime.now();
-              _lastTapPosition = previousPosition;
-              return;
-            }
-          }
-          if (select.doneSelecting) return; // tap on existing selection
-          // Otherwise fall through to finalize the lasso selection
-        }
-
-        if (_isRotating || _isResizing) {
-          _recordSelectionTransform(dragPageIndex!);
-        } else if (select.doneSelecting) {
-          history.recordChange(
-            EditorHistoryItem(
-              type: .move,
-              pageIndex: dragPageIndex!,
-              strokes: select.selectResult.strokes,
-              images: select.selectResult.images,
-              offset: .fromLTRB(
-                moveOffset.dx,
-                moveOffset.dy,
-                moveOffset.dx,
-                moveOffset.dy,
-              ),
-              textPlacementChange: select.selectResult.textSelected
-                  ? Change(
-                      previous: (
-                        offset: page.textContentOffset - moveOffset,
-                        rotation: page.textContentRotation,
-                      ),
-                      current: page.textPlacement,
-                    )
-                  : null,
-            ),
-          );
-        } else {
-          shouldSave = false;
-          select.onDragEnd(page.strokes, page.images, textRect: textRect);
-
-          _updateSelectionHandles(page, select);
-        }
-      } else if (currentTool is LaserPointer) {
-        shouldSave = false;
-        final newStroke = (currentTool as LaserPointer).onDragEnd(
-          page.redrawStrokes,
-          (Stroke stroke) {
-            page.laserStrokes.remove(stroke);
-          },
-        );
-        if (newStroke != null) page.laserStrokes.add(newStroke);
-      } else if (currentTool is Ruler) {
-        final newStroke = (currentTool as Ruler).onDragEnd();
-        if (newStroke == null) return;
-        if (newStroke.isEmpty) return;
-
-        createPage(newStroke.pageIndex);
-        page.insertStroke(newStroke);
-        history.recordChange(
-          EditorHistoryItem(
-            type: .draw,
-            pageIndex: dragPageIndex!,
-            strokes: [newStroke],
-            images: [],
-          ),
-        );
-      }
+      shouldSave = _gesture?.end(_pointerAt(page, previousPosition)) ?? true;
     });
-
-    // Clear eraser cursor and pen preview after gesture ends
-    page.eraserCursorPosition = null;
-    page.eraserCursorRadius = null;
-    page.penPreviewPosition = null;
-    page.penPreviewRadius = null;
-    page.penPreviewColor = null;
-
-    // Reset rotation and resize state
-    _isRotating = false;
-    _initialRotationAngle = 0;
-    _isResizing = false;
-    _selectionResize = null;
-
+    _hideDrawCursors(page);
+    _selectGesture.releaseHandle();
     if (shouldSave) autosaveAfterDelay();
   }
 
-  /// Records the resize, rotation, or vertex edit that just ended,
-  /// unless the gesture ended before changing anything.
-  void _recordSelectionTransform(int pageIndex) {
-    final transform = _selectionTransform;
-    _selectionTransform = null;
-    if (transform == null) return;
-    history.recordChange(transform.finish(pageIndex: pageIndex));
+  /// The gesture that draws with [currentTool], if it is a drawing tool.
+  ToolGesture? get _gesture => switch (currentTool) {
+    Pen() => _penGesture,
+    Eraser() => _eraserGesture,
+    Select() => _selectGesture,
+    LaserPointer() => _laserGesture,
+    _ => null,
+  };
+
+  /// Whether [page]'s active layer is locked against [currentTool].
+  bool _isLockedForDrawing(EditorPage page) =>
+      page.activeLayer.locked && (currentTool is Pen || currentTool is Eraser);
+
+  GesturePointer _pointerAt(
+    EditorPage page,
+    Offset position, {
+    Offset delta = .zero,
+  }) => GesturePointer(
+    page: page,
+    pageIndex: dragPageIndex!,
+    position: position,
+    delta: delta,
+    moved: moveOffset,
+    pressure: currentPressure,
+  );
+
+  /// Ends a draw gesture that a locked layer refused, keeping nothing.
+  void _abandonDraw(EditorPage page) {
+    switch (currentTool) {
+      case final Pen pen:
+        pen.onDragEnd();
+      case final Eraser eraser:
+        eraser.onDragEnd();
+      default:
+    }
+    _hideDrawCursors(page);
+    _selectGesture.releaseHandle();
+  }
+
+  void _hideDrawCursors(EditorPage page) {
+    page
+      ..eraserCursorPosition = null
+      ..eraserCursorRadius = null
+      ..penPreviewPosition = null
+      ..penPreviewRadius = null
+      ..penPreviewColor = null;
+  }
+
+  @override
+  void restoreToolAfterErasing() {
+    if (!stylusButtonWasPressed && !stows.disableEraserAfterUse.value) return;
+    stylusButtonWasPressed = false;
+    currentTool = _lastNonEraserTool;
   }
 
   void onInteractionEnd(ScaleEndDetails details) {
@@ -1473,31 +980,47 @@ class EditorState extends State<Editor> {
     syncer.downloader.bringToFront(syncFile);
   }
 
+  /// Schedules a save at most `stows.autosaveDelay` after the first unsaved
+  /// change. Further changes don't push the save back, so writing
+  /// continuously still saves every interval.
+  @override
   void autosaveAfterDelay() {
     if (history.isCurrentStateSaved) return cancelAutosaveAndMarkSaved();
 
-    late final void Function() callback;
-
-    void startTimer() {
-      _delayedSaveTimer?.cancel();
-      if (stows.autosaveDelay.value < 0) return;
-      _delayedSaveTimer = Timer(
-        Duration(milliseconds: stows.autosaveDelay.value),
-        callback,
-      );
-    }
-
-    callback = () {
-      if (Pen.currentStroke != null) {
-        // don't save yet if the pen is currently drawing
-        startTimer();
-        return;
-      }
-      saveToFile();
-    };
-
     savingState.value = .waitingToSave;
-    startTimer();
+    if (_delayedSaveTimer?.isActive ?? false) return;
+    _startAutosaveTimer();
+  }
+
+  void _startAutosaveTimer() {
+    _delayedSaveTimer?.cancel();
+    if (stows.autosaveDelay.value < 0) return;
+    _delayedSaveTimer = Timer(
+      Duration(milliseconds: stows.autosaveDelay.value),
+      _autosaveNow,
+    );
+  }
+
+  void _autosaveNow() {
+    if (Pen.currentStroke != null) return _startAutosaveTimer();
+    saveToFile();
+  }
+
+  /// Saves as soon as the app leaves the foreground, since the system may
+  /// kill it before the autosave timer fires.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == .resumed) return;
+    if (savingState.value != .waitingToSave) return;
+    unawaited(saveToFile());
+  }
+
+  /// Like [autosaveAfterDelay], for changes that have no undo history entry
+  /// (canvas mode, line height, page size...) and so would otherwise count as
+  /// already saved.
+  void autosaveUntrackedChange() {
+    history.markUnsavedChange();
+    autosaveAfterDelay();
   }
 
   void cancelAutosaveAndMarkSaved() {
@@ -1813,7 +1336,7 @@ class EditorState extends State<Editor> {
       id: coreInfo.nextImageId++,
       assetCache: coreInfo.assetCache,
       color: const Color(0xFFFFF59D), // yellow default
-      text: 'New Note',
+      text: t.editor.stickyNote.defaultText,
       pageIndex: currentPageIndex,
       pageSize: coreInfo.pages[currentPageIndex].size,
       onMoveImage: onMoveImage,
@@ -2045,45 +1568,8 @@ class EditorState extends State<Editor> {
 
   /// Updates selection handles (rotation, resize, and vertex handles) on [page]
   /// to match [select.selectResult].
-  void _updateSelectionHandles(EditorPage page, Select select) {
-    if (select.selectResult.isEmpty) {
-      select.unselect();
-      page.selectionDeleteButtonRect = null;
-      page.selectionRotationHandleCenter = null;
-      page.selectionResizeHandles = null;
-      page.selectionVertexHandles = null;
-      return;
-    }
-    final bounds = select.selectResult.path.getBounds();
-    page.selectionDeleteButtonRect = null;
-    page.selectionRotationHandleCenter = Offset(
-      bounds.center.dx,
-      bounds.top - 20,
-    );
-    final center = bounds.center;
-    page.selectionResizeHandles = [
-      Offset(bounds.left, bounds.top),
-      Offset(center.dx, bounds.top),
-      Offset(bounds.right, bounds.top),
-      Offset(bounds.right, center.dy),
-      Offset(bounds.right, bounds.bottom),
-      Offset(center.dx, bounds.bottom),
-      Offset(bounds.left, bounds.bottom),
-      Offset(bounds.left, center.dy),
-    ];
-    if (select.selectResult.strokes.length == 1) {
-      final s = select.selectResult.strokes.first;
-      if (s is ArrowStroke) {
-        page.selectionVertexHandles = [s.start, s.end];
-      } else if (s is DimensionStroke) {
-        page.selectionVertexHandles = [s.start, s.end, s.textPosition];
-      } else {
-        page.selectionVertexHandles = null;
-      }
-    } else {
-      page.selectionVertexHandles = null;
-    }
-  }
+  void _updateSelectionHandles(EditorPage page, Select select) =>
+      page.showSelectionHandles(select);
 
   /// Calculates the target center for placing new elements, photos, or shapes.
   /// Prioritizes the user's most recent canvas tap if it occurred recently
@@ -2135,6 +1621,10 @@ class EditorState extends State<Editor> {
     return Offset(page.size.width / 2, page.size.height / 2);
   }
 
+  @override
+  void deleteSelection(EditorPage page) =>
+      _deleteSelection(Select.currentSelect, page);
+
   void _deleteSelection(Select select, EditorPage page) {
     final strokes = List<Stroke>.from(select.selectResult.strokes);
     final images = List<EditorImage>.from(select.selectResult.images);
@@ -2150,10 +1640,7 @@ class EditorState extends State<Editor> {
       page.quill.controller.clear();
     }
 
-    page.selectionDeleteButtonRect = null;
-    page.selectionResizeHandles = null;
-    page.selectionRotationHandleCenter = null;
-    page.selectionVertexHandles = null;
+    page.clearSelectionHandles();
     select.unselect();
     page.redrawStrokes();
 
@@ -2227,38 +1714,6 @@ class EditorState extends State<Editor> {
     page.redrawStrokes();
     autosaveAfterDelay();
     setState(() {});
-  }
-
-  /// Rotates a [Path] by [angleRadians] around [center].
-  static Path _rotatePath(Path path, double angleRadians, Offset center) {
-    if (angleRadians == 0) return path;
-    final metrics = path.computeMetrics().toList();
-    if (metrics.isEmpty) return path;
-
-    final cosA = cos(angleRadians);
-    final sinA = sin(angleRadians);
-
-    // Extract the path vertices and rebuild
-    final newPath = Path();
-    for (final metric in metrics) {
-      for (double dist = 0; dist < metric.length; dist += 5) {
-        final tangent = metric.getTangentForOffset(dist);
-        if (tangent == null) continue;
-        final pos = tangent.position;
-        final dx = pos.dx - center.dx;
-        final dy = pos.dy - center.dy;
-        final rotated = Offset(
-          center.dx + dx * cosA - dy * sinA,
-          center.dy + dx * sinA + dy * cosA,
-        );
-        if (dist == 0) {
-          newPath.moveTo(rotated.dx, rotated.dy);
-        } else {
-          newPath.lineTo(rotated.dx, rotated.dy);
-        }
-      }
-    }
-    return newPath;
   }
 
   void _copySelection() {
@@ -2408,24 +1863,26 @@ class EditorState extends State<Editor> {
     if (strokes.isEmpty) return;
 
     final controller = TextEditingController(
-      text: 'Element ${ElementsManager.instance.items.length + 1}',
+      text: t.editor.elements.defaultName(
+        n: ElementsManager.instance.items.length + 1,
+      ),
     );
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add to Elements'),
+        title: Text(t.editor.elements.add),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Element Name',
-            hintText: 'Enter name for sticker',
+          decoration: InputDecoration(
+            labelText: t.editor.elements.nameLabel,
+            hintText: t.editor.elements.nameHint,
           ),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(t.common.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -2440,12 +1897,12 @@ class EditorState extends State<Editor> {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Added "$name" to Elements'),
+                  content: Text(t.editor.elements.added(name: name)),
                   duration: const Duration(seconds: 2),
                 ),
               );
             },
-            child: const Text('Save'),
+            child: Text(t.editor.actions.save),
           ),
         ],
       ),
@@ -2458,6 +1915,55 @@ class EditorState extends State<Editor> {
           !Select.currentSelect.isResizeActive;
     });
   }
+
+  void _scaleSelectionSize(double factor) {
+    if (currentTool is! Select) return;
+    final select = currentTool as Select;
+    if (!select.doneSelecting || select.selectResult.isEmpty) return;
+
+    final pageIndex = select.selectResult.pageIndex;
+    if (pageIndex < 0 || pageIndex >= coreInfo.pages.length) return;
+    final page = coreInfo.pages[pageIndex];
+
+    final selection = select.selectResult;
+    final bounds = selection.path.getBounds();
+    if (bounds.isEmpty || bounds.width <= 0 || bounds.height <= 0) return;
+    final center = bounds.center;
+
+    setState(() {
+      final transform = SelectionTransform.begin(page, selection);
+
+      for (final stroke in selection.strokes) {
+        stroke.scaleAround(factor, factor, center);
+      }
+
+      for (final image in selection.images) {
+        final rect = image.dstRect;
+        image.dstRect = Rect.fromCenter(
+          center: center + (rect.center - center) * factor,
+          width: rect.width * factor,
+          height: rect.height * factor,
+        );
+      }
+
+      if (selection.textSelected) {
+        page.textContentOffset =
+            center + (page.textContentOffset - center) * factor;
+        page.textContentScale = (page.textContentScale * factor).clamp(
+          0.2,
+          5.0,
+        );
+      }
+
+      selection.path = scalePathAround(selection.path, factor, factor, center);
+      page.placeSelectionHandles(selection);
+      history.recordChange(transform.finish(pageIndex: pageIndex));
+      autosaveAfterDelay();
+    });
+  }
+
+  void _reduceSelectionSize() => _scaleSelectionSize(0.85);
+  void _enlargeSelectionSize() => _scaleSelectionSize(1.18);
 
   Future<void> _takeSelectionScreenshot() async {
     if (currentTool is! Select) return;
@@ -2518,9 +2024,9 @@ class EditorState extends State<Editor> {
         imageBytes: bytes,
         onCopied: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Screenshot copied to clipboard'),
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: Text(t.editor.lasso.screenshotCopied),
+              duration: const Duration(seconds: 2),
             ),
           );
         },
@@ -2542,9 +2048,9 @@ class EditorState extends State<Editor> {
     final pageIndex = currentPageIndex.clamp(0, coreInfo.pages.length - 1);
     final page = coreInfo.pages[pageIndex];
     if (page.activeLayer.locked) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cannot stamp element on a locked layer')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(t.editor.elements.lockedLayer)));
       return;
     }
 
@@ -2676,6 +2182,99 @@ class EditorState extends State<Editor> {
     }
   }
 
+  /// Switches to [tool]. Choosing the eraser while it is already in use
+  /// switches back to the tool used before it.
+  void _setTool(Tool tool) {
+    if (tool is Eraser && currentTool is Eraser) tool = _lastNonEraserTool;
+    currentTool = tool;
+    if (tool is Highlighter) {
+      Highlighter.currentHighlighter = tool;
+    } else if (tool is Pencil) {
+      Pencil.currentPencil = tool;
+    } else if (Pen.isWritingPen(tool)) {
+      Pen.currentPen = tool as Pen;
+    }
+    if (mounted) setState(() {});
+  }
+
+  /// Gives [color] to the current pen, or to the strokes in the selection.
+  void _setToolColor(Color color) {
+    setState(() {
+      updateColorBar(color);
+      switch (currentTool) {
+        case final Highlighter highlighter:
+          highlighter.color = color.withAlpha(Highlighter.alpha);
+        case final Pen pen:
+          pen.color = color;
+          if (Pen.isWritingPen(pen)) PenTray.remember(pen);
+        case Select():
+          _setSelectionColor(color);
+        default:
+      }
+    });
+  }
+
+  void _deleteCurrentSelection() {
+    final select = currentTool as Select;
+    if (!select.doneSelecting) return;
+    final page = coreInfo.pages[select.selectResult.pageIndex];
+    setState(() => _deleteSelection(select, page));
+  }
+
+  /// Starts typing on the current page, or goes back to the pen.
+  void _toggleTextEditing() {
+    setState(() {
+      if (currentTool != Tool.textEditing) {
+        currentTool = Tool.textEditing;
+        quillFocus.value = coreInfo.pages[currentPageIndex].quill
+          ..focusNode.requestFocus();
+        return;
+      }
+      currentTool = Pen.currentPen;
+      for (final page in coreInfo.pages) {
+        page.quill.controller.moveCursorToPosition(
+          page.quill.controller.selection.extentOffset,
+        );
+        page.quill.focusNode.unfocus();
+      }
+    });
+  }
+
+  void _toggleFingerDrawing() {
+    stows.editorFingerDrawing.value = !stows.editorFingerDrawing.value;
+    lastSeenPointerCount = 0;
+  }
+
+  /// Describes the editor to whichever toolbar is showing.
+  EditorToolbarActions _toolbarActions() => EditorToolbarActions(
+    readOnly: coreInfo.readOnly,
+    setTool: _setTool,
+    currentTool: currentTool,
+    setColor: _setToolColor,
+    quillFocus: quillFocus,
+    textEditing: currentTool == Tool.textEditing,
+    toggleTextEditing: _toggleTextEditing,
+    pickPhoto: _pickPhotos,
+    pickShape: _insertShapeFromLibrary,
+    paste: paste,
+    copySelection: _copySelection,
+    pasteSelection: _pasteSelection,
+    duplicateSelection: _duplicateSelection,
+    deleteSelection: _deleteCurrentSelection,
+    cropPossible: _cropPossible,
+    cropActive: _cropActive,
+    toggleCrop: _toggleCrop,
+    bringToFront: _bringSelectionToFront,
+    sendToBack: _sendSelectionToBack,
+    smoothen: _smoothenSelection,
+    addToElements: _addToElements,
+    openElementsSheet: _openElementsSheet,
+    onRevealAllTape: _revealAllTapeOnCurrentPage,
+    onConcealAllTape: _concealAllTapeOnCurrentPage,
+    reduceSelectionSize: _reduceSelectionSize,
+    enlargeSelectionSize: _enlargeSelectionSize,
+  );
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.of(context);
@@ -2706,6 +2305,7 @@ class EditorState extends State<Editor> {
       redo: redo,
       pages: coreInfo.pages,
       initialPageIndex: coreInfo.initialPageIndex,
+      explicitPageIndex: widget.initialPageIndex,
       pageBuilder: pageBuilder,
       isTextEditing: () => currentTool == Tool.textEditing,
       bookmarked: currentPageBookmarked,
@@ -2754,161 +2354,24 @@ class EditorState extends State<Editor> {
           : null,
     );
 
+    final toolbarActions = _toolbarActions();
     final Widget toolbarContent = stows.goodnotesUiMode.value
         ? GoodnotesToolbar(
-            readOnly: coreInfo.readOnly,
-            setTool: (tool) {
-              if (tool is Eraser && currentTool is Eraser) {
-                tool = _lastNonEraserTool;
-              }
-              currentTool = tool;
-              if (tool is Highlighter) {
-                Highlighter.currentHighlighter = tool;
-              } else if (tool is Pencil) {
-                Pencil.currentPencil = tool;
-              } else if (Pen.isWritingPen(tool)) {
-                Pen.currentPen = tool as Pen;
-              }
-              if (mounted) setState(() {});
-            },
-            currentTool: currentTool,
-            duplicateSelection: _duplicateSelection,
-            deleteSelection: () {
-              final select = currentTool as Select;
-              if (!select.doneSelecting) return;
-              final page = coreInfo.pages[select.selectResult.pageIndex];
-              setState(() => _deleteSelection(select, page));
-            },
-            setColor: (color) {
-              setState(() {
-                updateColorBar(color);
-                if (currentTool is Highlighter) {
-                  (currentTool as Highlighter).color = color.withAlpha(
-                    Highlighter.alpha,
-                  );
-                } else if (currentTool is Pen) {
-                  (currentTool as Pen).color = color;
-                } else if (currentTool is Select) {
-                  _setSelectionColor(color);
-                }
-              });
-            },
-            quillFocus: quillFocus,
-            textEditing: currentTool == Tool.textEditing,
-            toggleTextEditing: () => setState(() {
-              if (currentTool == Tool.textEditing) {
-                currentTool = Pen.currentPen;
-                for (final page in coreInfo.pages) {
-                  page.quill.controller.moveCursorToPosition(
-                    page.quill.controller.selection.extentOffset,
-                  );
-                  page.quill.focusNode.unfocus();
-                }
-              } else {
-                currentTool = Tool.textEditing;
-                quillFocus.value = coreInfo.pages[currentPageIndex].quill
-                  ..focusNode.requestFocus();
-              }
-            }),
-            pickPhoto: _pickPhotos,
-            pickShape: _insertShapeFromLibrary,
-            paste: paste,
-            copySelection: _copySelection,
-            pasteSelection: _pasteSelection,
-            cropPossible: _cropPossible,
-            cropActive: _cropActive,
-            toggleCrop: _toggleCrop,
-            bringToFront: _bringSelectionToFront,
-            sendToBack: _sendSelectionToBack,
-            smoothen: _smoothenSelection,
-            addToElements: _addToElements,
-            openElementsSheet: _openElementsSheet,
-            onRevealAllTape: _revealAllTapeOnCurrentPage,
-            onConcealAllTape: _concealAllTapeOnCurrentPage,
+            actions: toolbarActions,
             onClearPage: () => clearPage(currentPageIndex),
+            zoomWindowOpen: _zoomWindowOpen,
+            onToggleZoomWindow: _toggleZoomWindow,
           )
         : Toolbar(
-            readOnly: coreInfo.readOnly,
-            setTool: (tool) {
-              if (tool is Eraser && currentTool is Eraser) {
-                tool = _lastNonEraserTool;
-              }
-              currentTool = tool;
-              if (tool is Highlighter) {
-                Highlighter.currentHighlighter = tool;
-              } else if (tool is Pencil) {
-                Pencil.currentPencil = tool;
-              } else if (Pen.isWritingPen(tool)) {
-                Pen.currentPen = tool as Pen;
-              }
-              if (mounted) setState(() {});
-            },
-            currentTool: currentTool,
-            duplicateSelection: _duplicateSelection,
-            deleteSelection: () {
-              final select = currentTool as Select;
-              if (!select.doneSelecting) return;
-              final page = coreInfo.pages[select.selectResult.pageIndex];
-              setState(() => _deleteSelection(select, page));
-            },
-            setColor: (color) {
-              setState(() {
-                updateColorBar(color);
-                if (currentTool is Highlighter) {
-                  (currentTool as Highlighter).color = color.withAlpha(
-                    Highlighter.alpha,
-                  );
-                } else if (currentTool is Pen) {
-                  (currentTool as Pen).color = color;
-                } else if (currentTool is Select) {
-                  _setSelectionColor(color);
-                }
-              });
-            },
-            quillFocus: quillFocus,
-            textEditing: currentTool == Tool.textEditing,
-            toggleTextEditing: () => setState(() {
-              if (currentTool == Tool.textEditing) {
-                currentTool = Pen.currentPen;
-                for (final page in coreInfo.pages) {
-                  page.quill.controller.moveCursorToPosition(
-                    page.quill.controller.selection.extentOffset,
-                  );
-                  page.quill.focusNode.unfocus();
-                }
-              } else {
-                currentTool = Tool.textEditing;
-                quillFocus.value = coreInfo.pages[currentPageIndex].quill
-                  ..focusNode.requestFocus();
-              }
-            }),
+            actions: toolbarActions,
             undo: undo,
             isUndoPossible: history.canUndo,
             redo: redo,
             isRedoPossible: history.canRedo,
-            toggleFingerDrawing: () {
-              stows.editorFingerDrawing.value =
-                  !stows.editorFingerDrawing.value;
-              lastSeenPointerCount = 0;
-            },
-            pickPhoto: _pickPhotos,
-            pickShape: _insertShapeFromLibrary,
-            paste: paste,
-            copySelection: _copySelection,
-            pasteSelection: _pasteSelection,
-            cropPossible: _cropPossible,
-            cropActive: _cropActive,
-            toggleCrop: _toggleCrop,
-            bringToFront: _bringSelectionToFront,
-            sendToBack: _sendSelectionToBack,
-            smoothen: _smoothenSelection,
-            addToElements: _addToElements,
-            openElementsSheet: _openElementsSheet,
+            toggleFingerDrawing: _toggleFingerDrawing,
             exportAsSba: exportAsSba,
             exportAsPdf: exportAsPdf,
             exportAsPng: exportAsPng,
-            onRevealAllTape: _revealAllTapeOnCurrentPage,
-            onConcealAllTape: _concealAllTapeOnCurrentPage,
           );
 
     final Widget toolbar = Collapsible(
@@ -2925,6 +2388,38 @@ class EditorState extends State<Editor> {
       ),
     );
 
+    final int? zoomPageIndex = coreInfo.pages.isEmpty
+        ? null
+        : _zoomPageIndex.clamp(0, coreInfo.pages.length - 1);
+    final Widget editingSurface = Stack(
+      children: [
+        canvas,
+        if (Pen.isWritingPen(currentTool))
+          Positioned.fill(
+            child: WritingPenMenu(
+              tool: currentTool,
+              onChanged: () => setState(() {}),
+            ),
+          ),
+        if (_zoomWindowOpen && zoomPageIndex != null)
+          ZoomWindowPanel(
+            controller: _zoomWindow,
+            page: coreInfo.pages[zoomPageIndex],
+            pageIndex: zoomPageIndex,
+            history: history,
+            pen: () => penForZoomWindow(currentTool),
+            onDismiss: () => setState(() => _zoomWindowOpen = false),
+            onStrokeStarted: () {
+              if (mounted) setState(() {});
+            },
+            onStrokeCommitted: () {
+              autosaveAfterDelay();
+              if (mounted) setState(() {});
+            },
+          ),
+      ],
+    );
+
     final Widget body;
     if (isToolbarVertical) {
       body = Row(
@@ -2936,7 +2431,7 @@ class EditorState extends State<Editor> {
           Expanded(
             child: Column(
               children: [
-                Expanded(child: canvas),
+                Expanded(child: editingSurface),
                 readonlyBanner,
               ],
             ),
@@ -2950,7 +2445,7 @@ class EditorState extends State<Editor> {
             ? VerticalDirection.up
             : VerticalDirection.down,
         children: [
-          Expanded(child: canvas),
+          Expanded(child: editingSurface),
           toolbar,
           readonlyBanner,
         ],
@@ -2984,7 +2479,13 @@ class EditorState extends State<Editor> {
         );
       },
       child: Scaffold(
-        backgroundColor: stows.goodnotesUiMode.value
+        backgroundColor: coreInfo.isInfiniteCanvas
+            ? (coreInfo.backgroundColor ?? const Color(0xFFFCFCFC))
+                  .withInversion(
+                    stows.editorAutoInvert.value &&
+                        Theme.brightnessOf(context) == Brightness.dark,
+                  )
+            : stows.goodnotesUiMode.value
             ? (Theme.brightnessOf(context) == Brightness.dark
                   ? const Color(0xFF161618)
                   : const Color(0xFFF3F2EE))
@@ -3020,18 +2521,9 @@ class EditorState extends State<Editor> {
                   final page = coreInfo.pages[pageIdx];
                   page.bookmarked = !page.bookmarked;
                   page.redrawStrokes();
-                  autosaveAfterDelay();
+                  autosaveUntrackedChange();
                 }),
-                onInsertPage: () => setState(() {
-                  final currentPageIndex = this.currentPageIndex;
-                  insertPageAfter(currentPageIndex);
-                  CanvasGestureDetector.scrollToPage(
-                    pageIndex: currentPageIndex + 1,
-                    pages: coreInfo.pages,
-                    screenWidth: MediaQuery.sizeOf(context).width,
-                    transformationController: _transformationController,
-                  );
-                }),
+                onInsertPage: _addPageFromTemplate,
                 undo: undo,
                 canUndo: !coreInfo.readOnly && history.canUndo,
                 redo: redo,
@@ -3196,8 +2688,8 @@ class EditorState extends State<Editor> {
                           ),
                           Tooltip(
                             message: currentPageBookmarked
-                                ? 'Remove bookmark'
-                                : 'Bookmark page',
+                                ? t.editor.bookmark.remove
+                                : t.editor.bookmark.add,
                             child: InkResponse(
                               radius: 16,
                               onTap: () => setState(() {
@@ -3207,7 +2699,7 @@ class EditorState extends State<Editor> {
                                 final page = coreInfo.pages[pageIdx];
                                 page.bookmarked = !page.bookmarked;
                                 page.redrawStrokes();
-                                autosaveAfterDelay();
+                                autosaveUntrackedChange();
                               }),
                               child: Padding(
                                 padding: EdgeInsets.symmetric(
@@ -3245,16 +2737,7 @@ class EditorState extends State<Editor> {
                         cupertinoIcon: CupertinoIcons.add,
                       ),
                       tooltip: t.editor.menu.insertPage,
-                      onPressed: () => setState(() {
-                        final currentPageIndex = this.currentPageIndex;
-                        insertPageAfter(currentPageIndex);
-                        CanvasGestureDetector.scrollToPage(
-                          pageIndex: currentPageIndex + 1,
-                          pages: coreInfo.pages,
-                          screenWidth: MediaQuery.sizeOf(context).width,
-                          transformationController: _transformationController,
-                        );
-                      }),
+                      onPressed: _addPageFromTemplate,
                     ),
 
                   // Share / Export
@@ -3411,13 +2894,13 @@ class EditorState extends State<Editor> {
         if (coreInfo.readOnly) return;
         coreInfo.lineHeight = lineHeight;
         stows.lastLineHeight.value = lineHeight;
-        autosaveAfterDelay();
+        autosaveUntrackedChange();
       }),
       setLineThickness: (lineThickness) => setState(() {
         if (coreInfo.readOnly) return;
         coreInfo.lineThickness = lineThickness;
         stows.lastLineThickness.value = lineThickness;
-        autosaveAfterDelay();
+        autosaveUntrackedChange();
       }),
       setPageSize: (Size newSize) => setState(() {
         if (coreInfo.readOnly) return;
@@ -3425,8 +2908,9 @@ class EditorState extends State<Editor> {
         final page = coreInfo.pages[currentPageIndex];
         page.size = newSize;
         page.redrawStrokes();
-        autosaveAfterDelay();
+        autosaveUntrackedChange();
       }),
+      setInfiniteCanvas: setInfiniteCanvas,
       removeBackgroundImage: () => setState(() {
         if (coreInfo.readOnly) return;
 
@@ -3435,7 +2919,7 @@ class EditorState extends State<Editor> {
         page.images.add(page.backgroundImage!);
         page.backgroundImage = null;
 
-        autosaveAfterDelay();
+        autosaveUntrackedChange();
       }),
       redrawImage: () => setState(() {}),
       clearPage: () {
@@ -3444,7 +2928,7 @@ class EditorState extends State<Editor> {
       clearAllPages: clearAllPages,
       redrawAndSave: () => setState(() {
         if (coreInfo.readOnly) return;
-        autosaveAfterDelay();
+        autosaveUntrackedChange();
       }),
       pickPhotos: _pickPhotos,
       importPdf: importPdf,
@@ -3499,7 +2983,11 @@ class EditorState extends State<Editor> {
     );
   }
 
-  Widget pageBuilder(BuildContext context, int pageIndex) {
+  Widget pageBuilder(
+    BuildContext context,
+    int pageIndex, [
+    Rect? viewportRect,
+  ]) {
     final page = coreInfo.pages[pageIndex];
     final currentStroke = Pen.currentStroke?.pageIndex == pageIndex
         ? Pen.currentStroke
@@ -3534,6 +3022,8 @@ class EditorState extends State<Editor> {
       isResizeActive:
           isCurrentPageSelected && (select?.isResizeActive ?? false),
       onToggleResize: isCurrentPageSelected ? _toggleSelectionResize : null,
+      onReduceTextSize: isCurrentPageSelected ? _reduceSelectionSize : null,
+      onEnlargeTextSize: isCurrentPageSelected ? _enlargeSelectionSize : null,
       onTakeScreenshot: isCurrentPageSelected ? _takeSelectionScreenshot : null,
       onAddToElements: isCurrentPageSelected ? _addToElements : null,
       onBringToFront: isCurrentPageSelected ? _bringSelectionToFront : null,
@@ -3558,6 +3048,10 @@ class EditorState extends State<Editor> {
       },
       currentTool: currentTool,
       currentScale: _transformationController.value.approxScale,
+      foreground: _zoomWindowOpen && pageIndex == _zoomPageIndex
+          ? ZoomPageBox(controller: _zoomWindow)
+          : null,
+      viewportRect: viewportRect,
     );
   }
 
@@ -3575,13 +3069,42 @@ class EditorState extends State<Editor> {
       },
       redrawAndSave: () => setState(() {
         if (coreInfo.readOnly) return;
-        autosaveAfterDelay();
+        autosaveUntrackedChange();
       }),
       insertPageAfter: insertPageAfter,
       duplicatePage: duplicatePage,
       clearPage: clearPage,
       deletePage: deletePage,
     );
+  }
+
+  /// Switches between paged and infinite canvas without hiding any content.
+  ///
+  /// An infinite canvas only shows the first page, so later pages are merged
+  /// into it. Going back to paged mode grows the first page to hold
+  /// everything. Both rewrite page indices, so undo history is cleared.
+  void setInfiniteCanvas(bool infinite) {
+    if (coreInfo.readOnly) return;
+    if (coreInfo.isInfiniteCanvas == infinite) return;
+
+    setState(() {
+      if (infinite) {
+        _mergePagesForInfiniteCanvas();
+      } else if (coreInfo.pages.isNotEmpty) {
+        fitFirstPageToContent(coreInfo.pages.first);
+      }
+      coreInfo.isInfiniteCanvas = infinite;
+      createPage(0);
+      history.clear();
+      autosaveUntrackedChange();
+    });
+  }
+
+  void _mergePagesForInfiniteCanvas() {
+    final first = coreInfo.pages.firstOrNull;
+    first?.quill.changeSubscription?.cancel();
+    mergePagesIntoFirst(coreInfo.pages);
+    listenToQuillChanges(coreInfo.pages.first.quill, 0);
   }
 
   void duplicatePage(int pageIndex) {
@@ -3651,9 +3174,10 @@ class EditorState extends State<Editor> {
     });
   }
 
-  void insertPageAfter(int pageIndex) => setState(() {
+  void insertPageAfter(int pageIndex, {PageTemplate? template}) => setState(() {
     if (coreInfo.readOnly) return;
     final page = EditorPage();
+    template?.applyTo(page);
     coreInfo.pages.insert(pageIndex + 1, page);
     listenToQuillChanges(page.quill, pageIndex + 1);
     history.recordChange(
@@ -3784,12 +3308,14 @@ class EditorState extends State<Editor> {
     unawaited(_cleanUpAsync());
 
     DynamicMaterialApp.removeFullscreenListener(_setState);
+    WidgetsBinding.instance.removeObserver(this);
 
     _delayedSaveTimer?.cancel();
     _watchServerTimer?.cancel();
     _lastSeenPointerCountTimer?.cancel();
 
     _removeKeybindings();
+    _zoomWindow.dispose();
 
     // manually save pen properties since the listeners don't fire if a property is changed
     stows.lastFountainPenOptions.notifyListeners();

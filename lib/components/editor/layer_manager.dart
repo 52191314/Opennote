@@ -1,8 +1,10 @@
 /// 🤖 Generated wholely or partially with DeepSeek v4 Flash; Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'package:flutter/material.dart';
 import 'package:saber/data/editor/page.dart';
+import 'package:saber/i18n/strings.g.dart';
 
 /// A dialog for managing layers (add, remove, reorder, toggle visibility).
 class LayerManager extends StatefulWidget {
@@ -66,11 +68,11 @@ class _LayerManagerState extends State<LayerManager> {
         children: [
           const Icon(Icons.layers, size: 24),
           const SizedBox(width: 8),
-          const Text('Layers'),
+          Text(t.editor.layers.title),
           const Spacer(),
           IconButton(
             icon: const Icon(Icons.add),
-            tooltip: 'Add Layer',
+            tooltip: t.editor.layers.add,
             onPressed: _addLayer,
           ),
         ],
@@ -78,7 +80,7 @@ class _LayerManagerState extends State<LayerManager> {
       content: SizedBox(
         width: 300,
         child: _layers.isEmpty
-            ? const Center(child: Text('No layers'))
+            ? Center(child: Text(t.editor.layers.none))
             : ReorderableListView.builder(
                 shrinkWrap: true,
                 itemCount: _layers.length,
@@ -128,8 +130,8 @@ class _LayerManagerState extends State<LayerManager> {
                               size: 20,
                             ),
                             tooltip: layer.visible
-                                ? 'Hide Layer'
-                                : 'Show Layer',
+                                ? t.editor.layers.hide
+                                : t.editor.layers.show,
                             onPressed: () {
                               layer.visible = !layer.visible;
                               _setState();
@@ -142,8 +144,8 @@ class _LayerManagerState extends State<LayerManager> {
                               color: layer.locked ? colorScheme.error : null,
                             ),
                             tooltip: layer.locked
-                                ? 'Unlock Layer'
-                                : 'Lock Layer',
+                                ? t.editor.layers.unlock
+                                : t.editor.layers.lock,
                             onPressed: () {
                               layer.locked = !layer.locked;
                               _setState();
@@ -159,19 +161,21 @@ class _LayerManagerState extends State<LayerManager> {
                               : FontWeight.normal,
                         ),
                       ),
-                      subtitle: Text('${layer.strokes.length} strokes'),
+                      subtitle: Text(
+                        t.editor.layers.strokeCount(n: layer.strokes.length),
+                      ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (index > 0)
                             IconButton(
                               icon: const Icon(Icons.merge_type, size: 18),
-                              tooltip: 'Merge Down',
+                              tooltip: t.editor.layers.mergeDown,
                               onPressed: () => _mergeDown(index),
                             ),
                           IconButton(
                             icon: const Icon(Icons.delete_outline, size: 18),
-                            tooltip: 'Delete Layer',
+                            tooltip: t.editor.layers.delete,
                             onPressed: _layers.length > 1
                                 ? () => _removeLayer(index)
                                 : null,

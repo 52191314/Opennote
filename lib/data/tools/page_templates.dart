@@ -1,7 +1,9 @@
 /// 🤖 Generated with DeepSeek v4 Flash
+/// 🤖 Modified with Grok 4.7
 library;
 
 import 'package:flutter/material.dart';
+import 'package:saber/data/editor/page.dart';
 import 'package:sbn/canvas_background_pattern.dart';
 
 /// A pre-made page layout that sets the background pattern, line height,
@@ -51,6 +53,17 @@ class PageTemplate {
   /// When non-null, this plain text is prepended to the current document.
   /// Use `\n` for line breaks.
   final String? initialContent;
+
+  /// Puts this paper on [page] without changing the rest of the notebook.
+  void applyTo(EditorPage page) {
+    page.paperPattern = backgroundPattern;
+    page.paperColor = backgroundColor;
+    page.paperLineHeight = lineHeight;
+    page.paperLineThickness = lineThickness;
+    final content = initialContent;
+    if (content == null || content.isEmpty) return;
+    page.quill.controller.replaceText(0, 0, content, null);
+  }
 
   /// All built-in templates available to the user.
   static const all = <PageTemplate>[

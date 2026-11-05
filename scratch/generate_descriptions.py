@@ -1,0 +1,50 @@
+# Script to generate and validate Play Store descriptions for Opennote
+
+title = "Opennote: Engineering Notebook"
+
+short_desc = "Handwritten notes & engineering diagrams with zero-knowledge encrypted sync"
+
+long_desc = """Opennote is the open-source engineering notebook built for digital handwriting, technical diagrams, and mathematical problem-solving. Designed from the ground up for tablets, foldables, and stylus devices, Opennote combines the natural feel of real paper with the boundless flexibility of a modern digital canvas.
+
+Whether you are sketching isometric 3D models, annotating complex PDF textbooks, deriving mathematical proofs, or capturing lecture notes, Opennote delivers precision, speed, and uncompromising privacy.
+
+📐 ENGINEERING & TECHNICAL DIAGRAMMING
+• Isometric Grids: Create accurate 3D projections, piping schematics, and mechanical sketches effortlessly.
+• Technical Paper Templates: Choose between engineering millimeter graph, isometric dots, hex grids, music staves, and Cornell ruling.
+• Geometric Shapes: Draw precise lines, vectors, rectangles, circles, and polygons with automatic shape recognition and snapping.
+• Zoom Window: Write fine details and tiny equations with high accuracy using the dedicated magnified writing window.
+• Precision Pen Tray: Quickly switch between custom pen nibs, colors, and line widths without breaking your creative flow.
+
+✍️ NATURAL VECTOR HANDWRITING
+• Low-Latency Vector Ink: Smooth, responsive strokes that scale infinitely without pixelation or blurring.
+• True Highlighter Compositing: Unlike typical note apps that wash out or darken when overlapped, our compositing engine maintains vibrant, consistent color transparency over ink and printed text.
+• Dual-Password Dark Mode Inversion: Invert your notes, imported PDFs, and lecture slides in dark mode. Write with crisp white ink on deep black backgrounds—perfect for late-night study sessions without blinding eye strain.
+• Dual Mode Canvas: Toggle effortlessly between structured paginated documents (for export and printing) and infinite canvas mode (for expansive brainstorming).
+
+📄 PDF ANNOTATION & DOCUMENT IMPORT
+• Seamless PDF Import: Import textbooks, lab manuals, assignments, and lecture slides.
+• Image & Graphic Stamping: Embed circuit diagrams, formulas, photos, and stickers with freeform rotation, scaling, and handle manipulation.
+• Crisp Vector Export: Export your work as searchable PDFs, high-resolution PNGs, or open-standard SBN files.
+
+🔐 ZERO-KNOWLEDGE ENCRYPTION & PRIVACY FIRST
+• Local-First Architecture: Your notes belong entirely to you. Opennote works completely offline without an internet connection or mandatory account creation.
+• Client-Side Encryption: Optional synchronization with your own Nextcloud or WebDAV server. All notes and attachments are strongly encrypted on-device before transmission. Decryption keys never leave your device's secure enclave.
+• Completely Ad-Free: Zero banner ads, zero popups, zero tracking SDKs, and zero behavioral telemetry.
+• 100% Open Source: Free software released under the GNU General Public License v3.0 (GPLv3). Transparent and peer-reviewed code.
+
+Built for students, engineers, architects, researchers, and creative thinkers who demand precision from their stylus."""
+
+print(f"Title length: {len(title)} (Max 30)")
+print(f"Short desc length: {len(short_desc)} (Max 80)")
+print(f"Long desc length: {len(long_desc)} (Max 4000)")
+
+with open("metadata/en-US/title.txt", "w", encoding="utf-8") as f:
+    f.write(title.strip())
+
+with open("metadata/en-US/short_description.txt", "w", encoding="utf-8") as f:
+    f.write(short_desc.strip())
+
+with open("metadata/en-US/full_description.txt", "w", encoding="utf-8") as f:
+    f.write(long_desc.strip())
+
+print("Successfully written to metadata/en-US/")

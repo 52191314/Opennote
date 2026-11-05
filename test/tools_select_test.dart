@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
 library;
 
 import 'package:flutter/material.dart';
@@ -22,6 +23,10 @@ void main() {
     stows.lassoSelectImages.value = true;
     stows.lassoSelectText.value = true;
     stows.selectionRectMode.value = false;
+    // These tests cover selecting what the lasso fully encloses; partial and
+    // connected selection are covered by lasso_smart_selection_test.dart.
+    stows.lassoSelectPartial.value = false;
+    stows.lassoSelectConnected.value = false;
     Select.currentSelect.unselect();
   });
 

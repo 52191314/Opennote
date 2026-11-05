@@ -46,7 +46,7 @@ jobs:
             packages/**/pubspec.lock
             submodules/flutter/bin/cache/
             submodules/flutter/packages/flutter_tools/gradle/build/
-          key: ${{ runner.OS }}-saber_android
+          key: ${{ runner.OS }}-opennote_android
 
       - name: Restore platform-agnostic cache
         uses: actions/cache@v5
@@ -64,9 +64,9 @@ jobs:
             windows/flutter/ephemeral/
             ~/.dartServer/
             ~/.dart-tool/
-          key: ${{ runner.OS }}-saber-${{ hashFiles('**/pubspec.yaml') }}
+          key: ${{ runner.OS }}-opennote-${{ hashFiles('**/pubspec.yaml') }}
           restore-keys: |
-            ${{ runner.OS }}-saber-
+            ${{ runner.OS }}-opennote-
 
       - uses: "./.github/shared_workflows/install_apt_dependencies"
         if: ${{ steps.cache.outputs.cache-hit == '' }}
@@ -168,9 +168,9 @@ jobs:
             windows/flutter/ephemeral/
             ~/.dartServer/
             ~/.dart-tool/
-          key: ${{ runner.OS }}-saber-${{ hashFiles('**/pubspec.yaml') }}
+          key: ${{ runner.OS }}-opennote-${{ hashFiles('**/pubspec.yaml') }}
           restore-keys: |
-            ${{ runner.OS }}-saber-
+            ${{ runner.OS }}-opennote-
 
       - name: Restore Android cache
         uses: actions/cache/restore@v5
@@ -189,7 +189,7 @@ jobs:
             packages/**/pubspec.lock
             submodules/flutter/bin/cache/
             submodules/flutter/packages/flutter_tools/gradle/build/
-          key: ${{ runner.OS }}-saber_android
+          key: ${{ runner.OS }}-opennote_android
 
       - name: Setup keystore
         env:
@@ -229,27 +229,49 @@ jobs:
       - run: ./patches/post/patch_rust_versions.sh
 
       - name: Build apk
-        run: flutter build apk
+        run: |
+          flutter build apk --split-per-abi
+          flutter build apk
 
       - name: Rename apk
         id: rename_apk
         run: |
           buildName=$(grep -oP "(?<=buildName = ').*(?=')" lib/data/version.dart)
-          if [ "${{ matrix.foss }}" = "true" ]; then
-            apkName="Saber_FOSS_v${buildName}.apk"
-          else
-            apkName="Saber_v${buildName}.apk"
-          fi
-          echo "apkName=$apkName" >> $GITHUB_OUTPUT
-
           mkdir -p output
-          mv build/app/outputs/flutter-apk/app-release.apk output/$apkName
+          if [ "${{ matrix.foss }}" = "true" ]; then
+            prefix="Opennote_FOSS"
+          else
+            prefix="Opennote"
+          fi
+
+          # Universal APK
+          if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+            cp "build/app/outputs/flutter-apk/app-release.apk" "output/${prefix}_v${buildName}.apk"
+          fi
+
+          # Split-per-ABI APKs (arm64-v8a, armeabi-v7a, x86_64)
+          for f in build/app/outputs/flutter-apk/*-release.apk; do
+            filename=$(basename "$f")
+            if [ "$filename" != "app-release.apk" ]; then
+              abi=$(echo "$filename" | sed -e 's/app-//' -e 's/-release.apk//')
+              cp "$f" "output/${prefix}_v${buildName}_${abi}.apk"
+            fi
+          done
+
+          # Also include any directly named Gradle release APKs
+          for f in build/app/outputs/apk/release/*.apk; do
+            [ -f "$f" ] && cp "$f" output/
+          done
+
+          echo "apkName=${prefix}_v${buildName}.apk" >> $GITHUB_OUTPUT
+          echo "Generated APKs:"
+          ls -la output/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ matrix.foss && 'Saber-Android-FOSS' || 'Saber-Android' }}
-          path: output/${{ steps.rename_apk.outputs.apkName }}
+          name: ${{ matrix.foss && 'Opennote-Android-FOSS' || 'Opennote-Android' }}
+          path: output/*.apk
 
       - name: Upload to GitHub release
         uses: svenstaro/upload-release-action@v2
@@ -270,14 +292,14 @@ jobs:
         if: ${{ matrix.foss == false }}
         run: |
           mkdir -p output
-          mv build/app/outputs/bundle/release/app-release.aab output/Saber.aab
+          mv build/app/outputs/bundle/release/app-release.aab output/Opennote.aab
 
       - name: Upload artifact
         if: ${{ matrix.foss == false }}
         uses: actions/upload-artifact@v7
         with:
-          name: Saber-Android-PlayStore
-          path: output/Saber.aab
+          name: Opennote-Android-PlayStore
+          path: output/Opennote.aab
 
   upload-to-play-store:
     name: Upload to Play Store
@@ -294,7 +316,7 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v8
         with:
-          name: Saber-Android-PlayStore
+          name: Opennote-Android-PlayStore
           path: output
 
       - name: Prepare whatsnew directory from metadata/*/changelogs
@@ -329,7 +351,7 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_JSON }}
           packageName: com.adilhanney.saber
-          releaseFiles: output/Saber.aab
+          releaseFiles: output/Opennote.aab
           track: production
           status: completed
           whatsNewDirectory: whatsnew

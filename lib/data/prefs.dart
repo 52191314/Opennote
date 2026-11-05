@@ -1,4 +1,6 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
+/// 🤖 Modified with Grok 4.7
 library;
 
 import 'dart:async';
@@ -15,6 +17,7 @@ import 'package:saber/data/codecs/quota_codec.dart';
 import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/sentry/sentry_consent.dart';
 import 'package:saber/data/tools/highlighter.dart';
+import 'package:saber/data/tools/palm_rejection.dart';
 import 'package:saber/data/tools/pen.dart';
 import 'package:sbn/canvas_background_pattern.dart';
 import 'package:sbn/tool_id.dart';
@@ -131,6 +134,13 @@ class Stows {
     'editorToolbarAlignment',
     AxisDirection.down,
     codec: const EnumCodec(AxisDirection.values),
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Edge of the floating pen menu: top, right, bottom, or left.
+  final floatingPenMenuEdge = PlainStow<String>(
+    'floatingPenMenuEdge',
+    'right',
     volatile: !_isOnMainIsolate,
   );
   final editorToolbarShowInFullscreen = PlainStow(
@@ -267,6 +277,22 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
+  /// Whether the lasso selects a stroke when it only covers part of it,
+  /// instead of requiring most of the stroke to be inside.
+  final lassoSelectPartial = PlainStow<bool>(
+    'lassoSelectPartial',
+    true,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Whether the lasso also selects the strokes that touch the ones it
+  /// selected, like the rest of a cursive word.
+  final lassoSelectConnected = PlainStow<bool>(
+    'lassoSelectConnected',
+    true,
+    volatile: !_isOnMainIsolate,
+  );
+
   /// Default pattern for Study Tape ('solid', 'stripes', 'dots', 'grid').
   final studyTapePattern = PlainStow<String>(
     'studyTapePattern',
@@ -344,6 +370,22 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
+  /// Saved pens, encoded as `colorHex:thickness` pairs.
+  ///
+  /// Kept in step with [PenTray.encodedDefaults].
+  final penTray = PlainStow<String>(
+    'penTray',
+    'ff000000:2,ff1565c0:3,ffc62828:4,ff2e7d32:3,ff6a1b9a:5,ff5d4037:8',
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Which saved pen is selected.
+  final penTrayIndex = PlainStow<int>(
+    'penTrayIndex',
+    0,
+    volatile: !_isOnMainIsolate,
+  );
+
   /// 3 Quick Color slots for Pen (Black, Blue, Red by default).
   final quickColorsPen = PlainStow<List<int>>(
     'quickColorsPen',
@@ -411,6 +453,22 @@ class Stows {
   final autoDisableFingerDrawingWhenStylusDetected = PlainStow(
     'autoDisableFingerDrawingWhenStylusDetected',
     true,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Goodnotes-inspired writing posture for palm rejection.
+  final writingPosture = PlainStow(
+    'writingPosture',
+    WritingPosture.rightBelow,
+    codec: const EnumCodec(WritingPosture.values),
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Palm rejection filtering sensitivity.
+  final palmRejectionSensitivity = PlainStow(
+    'palmRejectionSensitivity',
+    PalmRejectionSensitivity.medium,
+    codec: const EnumCodec(PalmRejectionSensitivity.values),
     volatile: !_isOnMainIsolate,
   );
 

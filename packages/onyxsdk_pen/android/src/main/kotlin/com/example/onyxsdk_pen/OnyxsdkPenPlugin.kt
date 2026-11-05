@@ -8,7 +8,6 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import org.lsposed.hiddenapibypass.HiddenApiBypass
 
 /** OnyxsdkPenPlugin */
 class OnyxsdkPenPlugin: FlutterPlugin, MethodCallHandler {
@@ -24,7 +23,6 @@ class OnyxsdkPenPlugin: FlutterPlugin, MethodCallHandler {
 
     // Needed for new Onyx devices
     RxManager.Builder.initAppContext(binding.applicationContext)
-    checkHiddenApiBypass()
 
     binding
       .platformViewRegistry
@@ -44,11 +42,5 @@ class OnyxsdkPenPlugin: FlutterPlugin, MethodCallHandler {
 
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
     channel.setMethodCallHandler(null)
-  }
-
-  private fun checkHiddenApiBypass() {
-    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-      HiddenApiBypass.addHiddenApiExemptions("")
-    }
   }
 }

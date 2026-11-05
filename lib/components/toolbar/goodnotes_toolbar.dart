@@ -1,4 +1,6 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Grok 4.7
 library;
 
 import 'package:flutter/cupertino.dart';
@@ -10,13 +12,16 @@ import 'package:saber/components/theming/adaptive_icon.dart';
 import 'package:saber/components/theming/uni_icon.dart';
 import 'package:saber/components/toolbar/color_bar.dart';
 import 'package:saber/components/toolbar/drafting_tools_popup.dart';
+import 'package:saber/components/toolbar/editor_toolbar_actions.dart';
 import 'package:saber/components/toolbar/eraser_size_popup.dart';
 import 'package:saber/components/toolbar/lasso_filter_popup.dart';
 import 'package:saber/components/toolbar/pen_modal.dart';
+import 'package:saber/components/toolbar/pen_tray_bar.dart';
 import 'package:saber/components/toolbar/quick_palette_bar.dart';
 import 'package:saber/components/toolbar/tape_options_popup.dart';
 import 'package:saber/components/toolbar/toolbar_button.dart';
-import 'package:saber/data/editor/page.dart';
+import 'package:saber/components/toolbar/toolbar_dialog.dart';
+import 'package:saber/data/editor/zoom_window.dart';
 import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
@@ -52,61 +57,23 @@ import 'package:saber/i18n/strings.g.dart';
 class GoodnotesToolbar extends StatefulWidget {
   const GoodnotesToolbar({
     super.key,
-    required this.readOnly,
-    required this.setTool,
-    required this.currentTool,
-    required this.setColor,
-    required this.quillFocus,
-    required this.textEditing,
-    required this.toggleTextEditing,
-    required this.pickPhoto,
-    required this.pickShape,
-    required this.paste,
-    required this.copySelection,
-    required this.pasteSelection,
-    required this.duplicateSelection,
-    required this.deleteSelection,
-    this.cropPossible = false,
-    this.cropActive = false,
-    this.toggleCrop,
-    this.bringToFront,
-    this.sendToBack,
-    this.smoothen,
-    this.addToElements,
-    this.openElementsSheet,
-    this.onRevealAllTape,
-    this.onConcealAllTape,
+    required this.actions,
     this.onClearPage,
+    this.zoomWindowOpen = false,
+    this.onToggleZoomWindow,
   });
 
-  final bool readOnly;
-  final ValueChanged<Tool> setTool;
-  final Tool currentTool;
-  final ValueChanged<Color> setColor;
+  /// The editor state to show and the actions the tools trigger.
+  final EditorToolbarActions actions;
 
-  final ValueNotifier<QuillStruct?> quillFocus;
-  final bool textEditing;
-  final VoidCallback toggleTextEditing;
-
-  final VoidCallback pickPhoto;
-  final VoidCallback pickShape;
-  final VoidCallback paste;
-
-  final VoidCallback copySelection;
-  final VoidCallback pasteSelection;
-  final VoidCallback duplicateSelection;
-  final VoidCallback deleteSelection;
-  final bool cropPossible;
-  final bool cropActive;
-  final VoidCallback? toggleCrop;
-  final VoidCallback? bringToFront;
-  final VoidCallback? sendToBack;
-  final VoidCallback? smoothen;
-  final VoidCallback? addToElements;
-  final VoidCallback? openElementsSheet;
-  final VoidCallback? onRevealAllTape;
-  final VoidCallback? onConcealAllTape;
+  /// Clears the current page, if the editor allows it.
   final VoidCallback? onClearPage;
+
+  /// Whether the zoom window is open.
+  final bool zoomWindowOpen;
+
+  /// Opens or dismisses the zoom window.
+  final VoidCallback? onToggleZoomWindow;
 
   @override
   State<GoodnotesToolbar> createState() => _GoodnotesToolbarState();
@@ -121,64 +88,16 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
   void _showPenSettings(Tool Function() getTool) {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 380),
-          decoration: BoxDecoration(
-            color: ColorScheme.of(context).surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: ColorScheme.of(
-                context,
-              ).outlineVariant.withValues(alpha: 0.5),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.edit_note_rounded,
-                    size: 22,
-                    color: ColorScheme.of(context).primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Pen Options',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: ColorScheme.of(context).onSurface,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 20),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              PenModal(
-                getTool: getTool,
-                setTool: (pen) {
-                  widget.setTool(pen);
-                  setState(() {});
-                },
-              ),
-            ],
-          ),
+      builder: (_) => ToolbarDialog(
+        icon: Icons.edit_note_rounded,
+        iconSize: 22,
+        title: t.editor.tools.penOptions,
+        child: PenModal(
+          getTool: getTool,
+          setTool: (pen) {
+            widget.actions.setTool(pen);
+            setState(() {});
+          },
         ),
       ),
     );
@@ -195,12 +114,12 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
     showDialog(
       context: context,
       builder: (context) => DraftingToolsPopup(
-        currentTool: widget.currentTool,
+        currentTool: widget.actions.currentTool,
         onSelectTool: (tool) {
-          widget.setTool(tool);
+          widget.actions.setTool(tool);
           setState(() {});
         },
-        onPickShape: widget.pickShape,
+        onPickShape: widget.actions.pickShape,
       ),
     );
   }
@@ -210,30 +129,29 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
   }
 
   void _showTapeOptions() {
-    final tool = widget.currentTool is StudyTapeTool
-        ? widget.currentTool as StudyTapeTool
+    final tool = widget.actions.currentTool is StudyTapeTool
+        ? widget.actions.currentTool as StudyTapeTool
         : StudyTapeTool();
-    if (widget.currentTool is! StudyTapeTool) {
-      widget.setTool(tool);
+    if (widget.actions.currentTool is! StudyTapeTool) {
+      widget.actions.setTool(tool);
     }
     showDialog(
       context: context,
       builder: (_) => TapeOptionsPopup(
         currentTapeTool: tool,
-        onRevealAll: widget.onRevealAllTape,
-        onConcealAll: widget.onConcealAllTape,
+        onRevealAll: widget.actions.onRevealAllTape,
+        onConcealAll: widget.actions.onConcealAllTape,
         onTapeChanged: () => setState(() {}),
       ),
     );
   }
 
   void _toggleColorOptions() {
-    final colorScheme = ColorScheme.of(context);
     final brightness = Theme.brightnessOf(context);
     final invert =
         stows.editorAutoInvert.value && brightness == Brightness.dark;
 
-    final currentColor = switch (widget.currentTool) {
+    final currentColor = switch (widget.actions.currentTool) {
       final Pen pen => pen.color,
       final Select select => select.getDominantStrokeColor(),
       _ => null,
@@ -241,64 +159,18 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 420),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.palette_outlined,
-                    size: 20,
-                    color: colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    t.editor.toolbar.toggleColors,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 20),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              ColorBar(
-                axis: Axis.horizontal,
-                currentColor: currentColor,
-                setColor: (color) {
-                  widget.setColor(color);
-                  setState(() {});
-                },
-                invert: invert,
-              ),
-            ],
-          ),
+      builder: (_) => ToolbarDialog(
+        icon: Icons.palette_outlined,
+        title: t.editor.toolbar.toggleColors,
+        maxWidth: 420,
+        child: ColorBar(
+          axis: Axis.horizontal,
+          currentColor: currentColor,
+          setColor: (color) {
+            widget.actions.setColor(color);
+            setState(() {});
+          },
+          invert: invert,
         ),
       ),
     );
@@ -311,21 +183,21 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
     final invert =
         stows.editorAutoInvert.value && brightness == Brightness.dark;
 
-    final currentColor = switch (widget.currentTool) {
+    final currentColor = switch (widget.actions.currentTool) {
       final Pen pen => pen.color,
       final Select select => select.getDominantStrokeColor(),
       _ => null,
     };
 
-    final isDrawingPen = Pen.isWritingPen(widget.currentTool);
-    final isHighlighter = widget.currentTool is Highlighter;
-    final isEraser = widget.currentTool is Eraser;
-    final isLasso = widget.currentTool is Select;
-    final isTape = widget.currentTool is StudyTapeTool;
+    final isDrawingPen = Pen.isWritingPen(widget.actions.currentTool);
+    final isHighlighter = widget.actions.currentTool is Highlighter;
+    final isEraser = widget.actions.currentTool is Eraser;
+    final isLasso = widget.actions.currentTool is Select;
+    final isTape = widget.actions.currentTool is StudyTapeTool;
     final isDrafting =
-        widget.currentTool is Ruler ||
-        widget.currentTool is ArrowTool ||
-        widget.currentTool is DimensionTool;
+        widget.actions.currentTool is Ruler ||
+        widget.actions.currentTool is ArrowTool ||
+        widget.actions.currentTool is DimensionTool;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -353,12 +225,12 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                 ToolbarIconButton(
                   tooltip: Pen.currentPen.name,
                   selected: isDrawingPen,
-                  enabled: !widget.readOnly,
+                  enabled: !widget.actions.readOnly,
                   onPressed: () {
                     if (isDrawingPen) {
                       _showPenSettings(() => Pen.currentPen);
                     } else {
-                      widget.setTool(Pen.currentPen);
+                      widget.actions.setTool(Pen.currentPen);
                     }
                   },
                   onLongPress: () => _showPenSettings(() => Pen.currentPen),
@@ -369,13 +241,13 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                 // 2. Pencil
                 ToolbarIconButton(
                   tooltip: t.editor.pens.pencil,
-                  selected: widget.currentTool == Pencil.currentPencil,
-                  enabled: !widget.readOnly,
+                  selected: widget.actions.currentTool == Pencil.currentPencil,
+                  enabled: !widget.actions.readOnly,
                   onPressed: () {
-                    if (widget.currentTool == Pencil.currentPencil) {
+                    if (widget.actions.currentTool == Pencil.currentPencil) {
                       _showPenSettings(() => Pencil.currentPencil);
                     } else {
-                      widget.setTool(Pencil.currentPencil);
+                      widget.actions.setTool(Pencil.currentPencil);
                     }
                   },
                   onLongPress: () =>
@@ -388,12 +260,14 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                 ToolbarIconButton(
                   tooltip: t.editor.toolbar.toggleEraser,
                   selected: isEraser,
-                  enabled: !widget.readOnly,
+                  enabled: !widget.actions.readOnly,
                   onPressed: () {
                     if (isEraser) {
                       _showEraserSettings();
                     } else {
-                      widget.setTool(Eraser(size: stows.eraserSize.value));
+                      widget.actions.setTool(
+                        Eraser(size: stows.eraserSize.value),
+                      );
                     }
                   },
                   onLongPress: _showEraserSettings,
@@ -405,12 +279,12 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                 ToolbarIconButton(
                   tooltip: t.editor.pens.highlighter,
                   selected: isHighlighter,
-                  enabled: !widget.readOnly,
+                  enabled: !widget.actions.readOnly,
                   onPressed: () {
                     if (isHighlighter) {
                       _showPenSettings(() => Highlighter.currentHighlighter);
                     } else {
-                      widget.setTool(Highlighter.currentHighlighter);
+                      widget.actions.setTool(Highlighter.currentHighlighter);
                     }
                   },
                   onLongPress: () =>
@@ -421,9 +295,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
 
                 // 5. Shapes & Drafting (Ruler, Arrow, Dimension, Shapes)
                 ToolbarIconButton(
-                  tooltip: 'Shapes & Drafting',
+                  tooltip: t.editor.drafting.title,
                   selected: isDrafting,
-                  enabled: !widget.readOnly,
+                  enabled: !widget.actions.readOnly,
                   onPressed: _showDraftingTools,
                   onLongPress: _showDraftingTools,
                   padding: _buttonPadding,
@@ -434,12 +308,12 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                 ToolbarIconButton(
                   tooltip: t.editor.toolbar.select,
                   selected: isLasso,
-                  enabled: !widget.readOnly,
+                  enabled: !widget.actions.readOnly,
                   onPressed: () {
                     if (isLasso) {
                       _showLassoOptions();
                     } else {
-                      widget.setTool(Select.currentSelect);
+                      widget.actions.setTool(Select.currentSelect);
                     }
                   },
                   onLongPress: _showLassoOptions,
@@ -449,10 +323,10 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
 
                 // 7. Elements (Stickers)
                 ToolbarIconButton(
-                  tooltip: 'Elements (Stickers)',
+                  tooltip: t.editor.elements.tooltip,
                   selected: false,
-                  enabled: !widget.readOnly,
-                  onPressed: () => widget.openElementsSheet?.call(),
+                  enabled: !widget.actions.readOnly,
+                  onPressed: () => widget.actions.openElementsSheet?.call(),
                   padding: _buttonPadding,
                   child: const Icon(Icons.auto_awesome, size: 16),
                 ),
@@ -460,8 +334,8 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                 // 8. Media / Photo
                 ToolbarIconButton(
                   tooltip: t.editor.toolbar.photo,
-                  enabled: !widget.readOnly,
-                  onPressed: widget.pickPhoto,
+                  enabled: !widget.actions.readOnly,
+                  onPressed: widget.actions.pickPhoto,
                   padding: _buttonPadding,
                   child: const AdaptiveIcon(
                     icon: Icons.photo,
@@ -472,9 +346,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                 // 9. Text Box
                 ToolbarIconButton(
                   tooltip: t.editor.toolbar.text,
-                  selected: widget.textEditing,
-                  enabled: !widget.readOnly,
-                  onPressed: widget.toggleTextEditing,
+                  selected: widget.actions.textEditing,
+                  enabled: !widget.actions.readOnly,
+                  onPressed: widget.actions.toggleTextEditing,
                   padding: _buttonPadding,
                   child: const AdaptiveIcon(
                     icon: Icons.text_fields,
@@ -484,14 +358,14 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
 
                 // 10. Study Tape (Active recall)
                 ToolbarIconButton(
-                  tooltip: 'Study Tape (Active Recall)',
+                  tooltip: t.editor.tape.tooltip,
                   selected: isTape,
-                  enabled: !widget.readOnly,
+                  enabled: !widget.actions.readOnly,
                   onPressed: () {
                     if (isTape) {
                       _showTapeOptions();
                     } else {
-                      widget.setTool(StudyTapeTool());
+                      widget.actions.setTool(StudyTapeTool());
                     }
                   },
                   onLongPress: _showTapeOptions,
@@ -502,13 +376,14 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                 // 11. Laser Pointer
                 ToolbarIconButton(
                   tooltip: stows.laserPointerMode.value == 'spotlight'
-                      ? 'Laser Pointer (Spotlight Mode)'
+                      ? t.editor.tools.laserSpotlight
                       : t.editor.pens.laserPointer,
                   selected:
-                      widget.currentTool == LaserPointer.currentLaserPointer,
+                      widget.actions.currentTool ==
+                      LaserPointer.currentLaserPointer,
                   enabled: true,
                   onPressed: () {
-                    if (widget.currentTool ==
+                    if (widget.actions.currentTool ==
                         LaserPointer.currentLaserPointer) {
                       stows.laserPointerMode.value =
                           stows.laserPointerMode.value == 'spotlight'
@@ -516,7 +391,7 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                           : 'spotlight';
                       setState(() {});
                     } else {
-                      widget.setTool(LaserPointer.currentLaserPointer);
+                      widget.actions.setTool(LaserPointer.currentLaserPointer);
                     }
                   },
                   onLongPress: () {
@@ -533,6 +408,18 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                         : Symbols.stylus_laser_pointer,
                     size: 16,
                   ),
+                ),
+
+                ToolbarIconButton(
+                  key: ZoomWindowKeys.toolbarButton,
+                  tooltip: t.editor.toolbar.zoomWindow,
+                  selected: widget.zoomWindowOpen,
+                  enabled:
+                      !widget.actions.readOnly &&
+                      widget.onToggleZoomWindow != null,
+                  onPressed: widget.onToggleZoomWindow,
+                  padding: _buttonPadding,
+                  child: const Icon(Icons.fit_screen, size: 16),
                 ),
               ],
             ),
@@ -568,29 +455,29 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                         Icons.visibility_off_rounded,
                         size: 14,
                       ),
-                      label: const Text(
-                        'Conceal All',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.tape.concealAll,
+                        style: const TextStyle(fontSize: 11),
                       ),
-                      onPressed: widget.onConcealAllTape,
+                      onPressed: widget.actions.onConcealAllTape,
                     ),
                     const SizedBox(width: 6),
                     ActionChip(
                       visualDensity: VisualDensity.compact,
                       avatar: const Icon(Icons.visibility_rounded, size: 14),
-                      label: const Text(
-                        'Reveal All',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.tape.revealAll,
+                        style: const TextStyle(fontSize: 11),
                       ),
-                      onPressed: widget.onRevealAllTape,
+                      onPressed: widget.actions.onRevealAllTape,
                     ),
                     const SizedBox(width: 6),
                     ActionChip(
                       visualDensity: VisualDensity.compact,
                       avatar: const Icon(Icons.palette_outlined, size: 14),
-                      label: const Text(
-                        'Patterns',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.tape.patterns,
+                        style: const TextStyle(fontSize: 11),
                       ),
                       onPressed: _showTapeOptions,
                     ),
@@ -600,21 +487,21 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     ActionChip(
                       visualDensity: VisualDensity.compact,
                       avatar: const Icon(Icons.category_rounded, size: 14),
-                      label: const Text(
-                        'Shape Library',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.drafting.shapeLibrary,
+                        style: const TextStyle(fontSize: 11),
                       ),
-                      onPressed: widget.pickShape,
+                      onPressed: widget.actions.pickShape,
                     ),
                     const SizedBox(width: 6),
                     ActionChip(
                       visualDensity: VisualDensity.compact,
                       avatar: const Icon(Icons.straighten_rounded, size: 14),
-                      label: const Text(
-                        'Ruler',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.pens.ruler,
+                        style: const TextStyle(fontSize: 11),
                       ),
-                      onPressed: () => widget.setTool(Ruler()),
+                      onPressed: () => widget.actions.setTool(Ruler()),
                     ),
                     const SizedBox(width: 6),
                     ActionChip(
@@ -623,28 +510,28 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                         Icons.arrow_right_alt_rounded,
                         size: 14,
                       ),
-                      label: const Text(
-                        'Arrow',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.drafting.arrow,
+                        style: const TextStyle(fontSize: 11),
                       ),
-                      onPressed: () => widget.setTool(ArrowTool()),
+                      onPressed: () => widget.actions.setTool(ArrowTool()),
                     ),
                     const SizedBox(width: 6),
                     ActionChip(
                       visualDensity: VisualDensity.compact,
                       avatar: const Icon(Icons.architecture_rounded, size: 14),
-                      label: const Text(
-                        'Dimension',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.drafting.dimension,
+                        style: const TextStyle(fontSize: 11),
                       ),
-                      onPressed: () => widget.setTool(DimensionTool()),
+                      onPressed: () => widget.actions.setTool(DimensionTool()),
                     ),
                   ]
                   // CASE C: Eraser
                   else if (isEraser) ...[
                     // 3 Quick Sizes
                     _EraserQuickSizeButton(
-                      label: 'Fine',
+                      label: t.editor.tools.fine,
                       size: 15.0,
                       selected: (stows.eraserSize.value - 15.0).abs() < 5,
                       onTap: () =>
@@ -652,7 +539,7 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     ),
                     const SizedBox(width: 4),
                     _EraserQuickSizeButton(
-                      label: 'Medium',
+                      label: t.editor.tools.medium,
                       size: 30.0,
                       selected: (stows.eraserSize.value - 30.0).abs() < 5,
                       onTap: () =>
@@ -660,7 +547,7 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     ),
                     const SizedBox(width: 4),
                     _EraserQuickSizeButton(
-                      label: 'Broad',
+                      label: t.editor.tools.broad,
                       size: 60.0,
                       selected: (stows.eraserSize.value - 60.0).abs() < 5,
                       onTap: () =>
@@ -676,9 +563,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     // Highlighter-only toggle
                     FilterChip(
                       visualDensity: VisualDensity.compact,
-                      label: const Text(
-                        'Highlighter Only',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.eraser.highlighterOnlyShort,
+                        style: const TextStyle(fontSize: 11),
                       ),
                       selected: stows.eraserEraseHighlighterOnly.value,
                       onSelected: (val) => setState(
@@ -689,9 +576,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     // Erase stroke toggle
                     FilterChip(
                       visualDensity: VisualDensity.compact,
-                      label: const Text(
-                        'Entire Stroke',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.eraser.entireStroke,
+                        style: const TextStyle(fontSize: 11),
                       ),
                       selected: stows.eraserMode.value == 'object',
                       onSelected: (val) => setState(
@@ -709,22 +596,22 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                           Icons.delete_sweep_rounded,
                           size: 14,
                         ),
-                        label: const Text(
-                          'Clear Page',
-                          style: TextStyle(fontSize: 11),
+                        label: Text(
+                          t.editor.eraser.clearPage,
+                          style: const TextStyle(fontSize: 11),
                         ),
                         onPressed: () {
                           showDialog(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              title: const Text('Clear Page?'),
-                              content: const Text(
-                                'This will delete all ink, shapes, and media on this page.',
+                              title: Text(t.editor.eraser.clearPageTitle),
+                              content: Text(
+                                t.editor.eraser.clearPageDescription,
                               ),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.of(ctx).pop(),
-                                  child: const Text('Cancel'),
+                                  child: Text(t.common.cancel),
                                 ),
                                 FilledButton(
                                   style: FilledButton.styleFrom(
@@ -734,7 +621,7 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                                     Navigator.of(ctx).pop();
                                     widget.onClearPage?.call();
                                   },
-                                  child: const Text('Clear'),
+                                  child: Text(t.editor.actions.clear),
                                 ),
                               ],
                             ),
@@ -746,9 +633,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                   else if (isLasso) ...[
                     FilterChip(
                       visualDensity: VisualDensity.compact,
-                      label: const Text(
-                        'Handwriting',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.lasso.handwriting,
+                        style: const TextStyle(fontSize: 11),
                       ),
                       selected: stows.lassoSelectHandwriting.value,
                       onSelected: (val) => setState(
@@ -758,9 +645,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     const SizedBox(width: 4),
                     FilterChip(
                       visualDensity: VisualDensity.compact,
-                      label: const Text(
-                        'Images',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.lasso.images,
+                        style: const TextStyle(fontSize: 11),
                       ),
                       selected: stows.lassoSelectImages.value,
                       onSelected: (val) =>
@@ -769,9 +656,9 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     const SizedBox(width: 4),
                     FilterChip(
                       visualDensity: VisualDensity.compact,
-                      label: const Text(
-                        'Text Boxes',
-                        style: TextStyle(fontSize: 11),
+                      label: Text(
+                        t.editor.lasso.textBoxes,
+                        style: const TextStyle(fontSize: 11),
                       ),
                       selected: stows.lassoSelectText.value,
                       onSelected: (val) =>
@@ -780,7 +667,10 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     const SizedBox(width: 4),
                     FilterChip(
                       visualDensity: VisualDensity.compact,
-                      label: const Text('Tape', style: TextStyle(fontSize: 11)),
+                      label: Text(
+                        t.editor.tape.short,
+                        style: const TextStyle(fontSize: 11),
+                      ),
                       selected: stows.lassoSelectTape.value,
                       onSelected: (val) =>
                           setState(() => stows.lassoSelectTape.value = val),
@@ -789,16 +679,23 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       icon: const Icon(Icons.tune_rounded, size: 16),
-                      tooltip: 'Lasso Settings',
+                      tooltip: t.editor.lasso.settings,
                       onPressed: _showLassoOptions,
                     ),
                   ]
                   // CASE E: General Pen / Pencil / Highlighter
-                  else if (widget.currentTool is Pen) ...[
+                  else if (widget.actions.currentTool is Pen) ...[
+                    if (Pen.isWritingPen(widget.actions.currentTool)) ...[
+                      PenTrayBar(
+                        pen: widget.actions.currentTool as Pen,
+                        onSelected: () => setState(() {}),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
                     QuickPaletteBar(
                       axis: Axis.horizontal,
-                      currentTool: widget.currentTool,
-                      setColor: widget.setColor,
+                      currentTool: widget.actions.currentTool,
+                      setColor: widget.actions.setColor,
                       onUpdate: () => setState(() {}),
                       invert: invert,
                     ),
@@ -837,14 +734,14 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                     ),
                   ]
                   // CASE F: Text Editing
-                  else if (widget.textEditing) ...[
+                  else if (widget.actions.textEditing) ...[
                     ValueListenableBuilder(
-                      valueListenable: widget.quillFocus,
+                      valueListenable: widget.actions.quillFocus,
                       builder: (context, quill, _) {
                         if (quill == null) {
-                          return const Text(
-                            'Tap canvas to add or edit text',
-                            style: TextStyle(
+                          return Text(
+                            t.editor.tools.tapToAddText,
+                            style: const TextStyle(
                               fontSize: 12,
                               fontStyle: FontStyle.italic,
                             ),
@@ -869,7 +766,7 @@ class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
                   // Default: General writing info
                   else ...[
                     Text(
-                      'Goodnotes Studio Toolbar',
+                      t.editor.tools.toolbarLabel,
                       style: TextStyle(
                         fontSize: 11.5,
                         color: colorScheme.onSurfaceVariant.withValues(

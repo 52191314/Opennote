@@ -1,4 +1,6 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Grok 4.7
 library;
 
 import 'dart:math';
@@ -41,6 +43,8 @@ class InnerCanvas extends StatefulWidget {
     this.onSetColor,
     this.isResizeActive = false,
     this.onToggleResize,
+    this.onReduceTextSize,
+    this.onEnlargeTextSize,
     this.onTakeScreenshot,
     this.onAddToElements,
     this.onBringToFront,
@@ -53,6 +57,7 @@ class InnerCanvas extends StatefulWidget {
     this.onRenderObjectChange,
     required this.currentToolIsSelect,
     required this.currentScale,
+    this.viewportRect,
   });
 
   final int pageIndex;
@@ -73,6 +78,8 @@ class InnerCanvas extends StatefulWidget {
   final void Function(Color color)? onSetColor;
   final bool isResizeActive;
   final VoidCallback? onToggleResize;
+  final VoidCallback? onReduceTextSize;
+  final VoidCallback? onEnlargeTextSize;
   final VoidCallback? onTakeScreenshot;
   final VoidCallback? onAddToElements;
   final VoidCallback? onBringToFront;
@@ -87,6 +94,7 @@ class InnerCanvas extends StatefulWidget {
   final bool currentToolIsSelect;
 
   final double currentScale;
+  final Rect? viewportRect;
 
   static const defaultBackgroundColor = Color(0xFFFCFCFC);
 
@@ -95,6 +103,11 @@ class InnerCanvas extends StatefulWidget {
 }
 
 class _InnerCanvasState extends State<InnerCanvas> {
+  final _quillScrollController = ScrollController();
+
+  /// What [_buildInputs] returned when this was last built.
+  Object? _lastBuildInputs;
+
   @override
   void initState() {
     super.initState();
@@ -102,18 +115,52 @@ class _InnerCanvasState extends State<InnerCanvas> {
   }
 
   @override
+  void didUpdateWidget(InnerCanvas oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.redrawPageListenable == widget.redrawPageListenable) return;
+    oldWidget.redrawPageListenable?.removeListener(_onPageChanged);
+    widget.redrawPageListenable?.addListener(_onPageChanged);
+  }
+
+  @override
   void dispose() {
     widget.redrawPageListenable?.removeListener(_onPageChanged);
+    _quillScrollController.dispose();
     super.dispose();
   }
 
+  /// Rebuilds only if the page changed something that [build] reads.
+  /// The page notifies on every pointer move while drawing, and repainting
+  /// the strokes is the painter's job, not a reason to rebuild.
   void _onPageChanged() {
-    // Rebuild to reflect text offset/rotation changes
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    if (_buildInputs() == _lastBuildInputs) return;
+    setState(() {});
+  }
+
+  /// Everything [build] reads that can change without the editor rebuilding
+  /// this widget: where the text is, which images there are, and where the
+  /// selection (and so its callout menu) is.
+  ///
+  /// Strokes are left out because [CanvasPainter] reads them as it paints.
+  Object? _buildInputs() {
+    final pages = widget.coreInfo.pages;
+    if (widget.pageIndex >= pages.length) return null;
+    final page = pages[widget.pageIndex];
+    final selection = widget.currentSelection;
+    return (
+      page.textPlacement,
+      page.backgroundImage,
+      Object.hashAll(page.images),
+      selection?.isNotEmpty,
+      selection?.path.getBounds(),
+      selection == null ? null : Object.hashAll(selection.images),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    _lastBuildInputs = _buildInputs();
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final brightness = theme.brightness;
@@ -126,6 +173,16 @@ class _InnerCanvasState extends State<InnerCanvas> {
     }
 
     final page = widget.coreInfo.pages[widget.pageIndex];
+    final lineHeight = page.paperLineHeightOr(widget.coreInfo.lineHeight);
+    final lineThickness = page.paperLineThicknessOr(
+      widget.coreInfo.lineThickness,
+    );
+    final pageBackground = page.backgroundImage != null
+        ? Colors.white
+        : (page.paperColorOr(backgroundColor) ?? backgroundColor);
+    final pagePattern = page.backgroundImage != null
+        ? CanvasBackgroundPattern.none
+        : page.paperPatternOr(widget.coreInfo.backgroundPattern);
 
     final quillEditor = widget.coreInfo.pages.isNotEmpty
         ? QuillEditor(
@@ -135,7 +192,7 @@ class _InnerCanvasState extends State<InnerCanvas> {
               customStyles: SaberQuillStyles.get(
                 invert: invert,
                 secondary: colorScheme.secondary,
-                lineHeight: widget.coreInfo.lineHeight,
+                lineHeight: lineHeight,
               ),
               scrollable: false,
               autoFocus: false,
@@ -146,13 +203,13 @@ class _InnerCanvasState extends State<InnerCanvas> {
               showCursor: true,
               keyboardAppearance: invert ? .dark : .light,
               padding: .only(
-                top: widget.coreInfo.lineHeight * 1.2,
-                left: widget.coreInfo.lineHeight * 0.5,
-                right: widget.coreInfo.lineHeight * 0.5,
-                bottom: widget.coreInfo.lineHeight * 0.5,
+                top: lineHeight * 1.2,
+                left: lineHeight * 0.5,
+                right: lineHeight * 0.5,
+                bottom: lineHeight * 0.5,
               ),
             ),
-            scrollController: ScrollController(),
+            scrollController: _quillScrollController,
             focusNode: widget.coreInfo.pages[widget.pageIndex].quill.focusNode,
           )
         : null;
@@ -160,30 +217,18 @@ class _InnerCanvasState extends State<InnerCanvas> {
     final customPaint = CustomPaint(
       painter: CanvasBackgroundPainter(
         invert: invert,
-        backgroundColor: () {
-          if (page.backgroundImage != null) {
-            return Colors.white;
-          } else {
-            return backgroundColor;
-          }
-        }(),
-        backgroundPattern: () {
-          if (page.backgroundImage != null) {
-            return CanvasBackgroundPattern.none;
-          } else {
-            return widget.coreInfo.backgroundPattern;
-          }
-        }(),
-        lineHeight: widget.coreInfo.lineHeight,
-        lineThickness: widget.coreInfo.lineThickness,
+        backgroundColor: pageBackground,
+        backgroundPattern: pagePattern,
+        lineHeight: lineHeight,
+        lineThickness: lineThickness,
         primaryColor: colorScheme.primary,
         secondaryColor: colorScheme.secondary,
         isInfiniteCanvas: widget.coreInfo.isInfiniteCanvas,
+        viewportRect: widget.viewportRect,
       ),
       foregroundPainter: CanvasPainter(
         repaint: widget.redrawPageListenable,
         invert: invert,
-        strokes: page.strokes,
         laserStrokes: page.laserStrokes,
         currentStroke: widget.currentStroke,
         currentSelection: widget.currentSelection,
@@ -229,7 +274,13 @@ class _InnerCanvasState extends State<InnerCanvas> {
                         0,
                         1,
                       )
-                      ..rotateZ(page.textContentRotation),
+                      ..rotateZ(page.textContentRotation)
+                      ..scaleByDouble(
+                        page.textContentScale,
+                        page.textContentScale,
+                        1,
+                        1,
+                      ),
                     alignment: Alignment.topLeft,
                     child: quillEditor,
                   ),
@@ -257,9 +308,14 @@ class _InnerCanvasState extends State<InnerCanvas> {
                   widget.onDeleteSelection != null)
                 () {
                   final bounds = widget.currentSelection!.path.getBounds();
-                  final left = (bounds.center.dx - 160.0)
-                      .clamp(12.0, max(12.0, widget.width - 330.0))
-                      .toDouble();
+                  final double left;
+                  if (widget.coreInfo.isInfiniteCanvas) {
+                    left = bounds.center.dx - 160.0;
+                  } else {
+                    left = (bounds.center.dx - 160.0)
+                        .clamp(12.0, max(12.0, widget.width - 330.0))
+                        .toDouble();
+                  }
                   final top = bounds.top - 58 > 10
                       ? bounds.top - 58
                       : bounds.bottom + 14;
@@ -276,6 +332,8 @@ class _InnerCanvasState extends State<InnerCanvas> {
                         onSetColor: widget.onSetColor ?? (_) {},
                         isResizeActive: widget.isResizeActive,
                         onToggleResize: widget.onToggleResize,
+                        onReduceTextSize: widget.onReduceTextSize,
+                        onEnlargeTextSize: widget.onEnlargeTextSize,
                         onTakeScreenshot: widget.onTakeScreenshot,
                         onAddToElements: widget.onAddToElements,
                         onBringToFront: widget.onBringToFront,
@@ -295,6 +353,9 @@ class _InnerCanvasState extends State<InnerCanvas> {
       ),
     );
 
+    if (widget.coreInfo.isInfiniteCanvas) {
+      return customPaint;
+    }
     return RepaintBoundary(child: customPaint);
   }
 }

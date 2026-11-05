@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
 library;
 
 import 'package:flutter/material.dart';
@@ -20,6 +21,8 @@ void main() {
     stows.lassoSelectText.value = true;
     stows.lassoSelectTape.value = true;
     stows.selectionRectMode.value = false;
+    stows.lassoSelectPartial.value = true;
+    stows.lassoSelectConnected.value = true;
     Select.currentSelect.unselect();
   });
 
@@ -34,7 +37,37 @@ void main() {
       expect(find.text('Images'), findsOneWidget);
       expect(find.text('Text Boxes'), findsOneWidget);
       expect(find.text('Study Tape'), findsOneWidget);
-      expect(find.byType(AdaptiveSwitchListTile), findsNWidgets(4));
+      expect(find.byType(AdaptiveSwitchListTile), findsNWidgets(6));
+    });
+
+    testWidgets('toggling the smart selection switches updates the stows', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: LassoFilterPopup())),
+      );
+      expect(find.text('SMART SELECTION'), findsOneWidget);
+      expect(stows.lassoSelectPartial.value, isTrue);
+      expect(stows.lassoSelectConnected.value, isTrue);
+
+      final partial = find.widgetWithText(
+        AdaptiveSwitchListTile,
+        'Select touched strokes',
+      );
+      await tester.ensureVisible(partial);
+      await tester.tap(partial);
+      await tester.pumpAndSettle();
+      expect(stows.lassoSelectPartial.value, isFalse);
+      expect(stows.lassoSelectConnected.value, isTrue);
+
+      final connected = find.widgetWithText(
+        AdaptiveSwitchListTile,
+        'Select connected strokes',
+      );
+      await tester.ensureVisible(connected);
+      await tester.tap(connected);
+      await tester.pumpAndSettle();
+      expect(stows.lassoSelectConnected.value, isFalse);
     });
 
     testWidgets('toggling Images switch updates stow', (tester) async {

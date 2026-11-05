@@ -1,10 +1,12 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Claude Code (Claude Opus 5.5)
 library;
 
 import 'package:flutter/material.dart';
 import 'package:saber/components/canvas/_tape_stroke.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/study_tape.dart';
+import 'package:saber/i18n/strings.g.dart';
 
 /// A sleek Goodnotes-style options dialog for the [StudyTapeTool].
 ///
@@ -86,14 +88,14 @@ class _TapeOptionsPopupState extends State<TapeOptionsPopup> {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  'Study Tape Options',
+                  t.editor.tape.options,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ],
             ),
             const SizedBox(height: 16),
             Text(
-              'Tape Pattern',
+              t.editor.tape.pattern,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -102,26 +104,26 @@ class _TapeOptionsPopupState extends State<TapeOptionsPopup> {
             ),
             const SizedBox(height: 8),
             SegmentedButton<TapePattern>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: TapePattern.solid,
-                  label: Text('Solid'),
-                  icon: Icon(Icons.rectangle, size: 16),
+                  label: Text(t.editor.tape.solid),
+                  icon: const Icon(Icons.rectangle, size: 16),
                 ),
                 ButtonSegment(
                   value: TapePattern.stripes,
-                  label: Text('Stripes'),
-                  icon: Icon(Icons.texture, size: 16),
+                  label: Text(t.editor.tape.stripes),
+                  icon: const Icon(Icons.texture, size: 16),
                 ),
                 ButtonSegment(
                   value: TapePattern.dots,
-                  label: Text('Dots'),
-                  icon: Icon(Icons.blur_on, size: 16),
+                  label: Text(t.editor.tape.dots),
+                  icon: const Icon(Icons.blur_on, size: 16),
                 ),
                 ButtonSegment(
                   value: TapePattern.grid,
-                  label: Text('Grid'),
-                  icon: Icon(Icons.grid_4x4, size: 16),
+                  label: Text(t.editor.tape.grid),
+                  icon: const Icon(Icons.grid_4x4, size: 16),
                 ),
               ],
               selected: {_selectedPattern},
@@ -131,7 +133,7 @@ class _TapeOptionsPopupState extends State<TapeOptionsPopup> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Tape Color',
+              t.editor.tape.color,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -182,7 +184,7 @@ class _TapeOptionsPopupState extends State<TapeOptionsPopup> {
               const Divider(),
               const SizedBox(height: 8),
               Text(
-                'Active Recall Study Controls',
+                t.editor.tape.studyControls,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -196,7 +198,7 @@ class _TapeOptionsPopupState extends State<TapeOptionsPopup> {
                     Expanded(
                       child: OutlinedButton.icon(
                         icon: const Icon(Icons.visibility, size: 16),
-                        label: const Text('Reveal All'),
+                        label: Text(t.editor.tape.revealAll),
                         onPressed: () {
                           widget.onRevealAll?.call();
                           Navigator.of(context).pop();
@@ -209,7 +211,7 @@ class _TapeOptionsPopupState extends State<TapeOptionsPopup> {
                     Expanded(
                       child: OutlinedButton.icon(
                         icon: const Icon(Icons.visibility_off, size: 16),
-                        label: const Text('Conceal All'),
+                        label: Text(t.editor.tape.concealAll),
                         onPressed: () {
                           widget.onConcealAll?.call();
                           Navigator.of(context).pop();
