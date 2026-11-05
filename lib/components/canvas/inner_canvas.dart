@@ -224,6 +224,7 @@ class _InnerCanvasState extends State<InnerCanvas> {
         primaryColor: colorScheme.primary,
         secondaryColor: colorScheme.secondary,
         isInfiniteCanvas: widget.coreInfo.isInfiniteCanvas,
+        viewportRect: widget.viewportRect,
       ),
       foregroundPainter: CanvasPainter(
         repaint: widget.redrawPageListenable,

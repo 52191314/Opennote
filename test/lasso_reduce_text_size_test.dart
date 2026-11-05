@@ -110,7 +110,7 @@ void main() {
           textContentScale: 1.0,
         );
 
-        final rect = const Rect.fromLTWH(50, 50, 200, 200);
+        const rect = Rect.fromLTWH(50, 50, 200, 200);
         final selection = SelectResult(
           pageIndex: 0,
           strokes: [],
@@ -119,7 +119,7 @@ void main() {
           path: Path()..addRect(rect),
         );
 
-        final factor = 0.85;
+        const factor = 0.85;
         final center = rect.center; // (150, 150)
 
         final transform = SelectionTransform.begin(page, selection);
