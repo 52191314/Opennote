@@ -7,18 +7,20 @@ import 'package:flutter/material.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/i18n/strings.g.dart';
 
-/// A Goodnotes 6/7-inspired document header bar.
+/// Alias for the Opennote Studio header bar.
+typedef OpennoteHeaderBar = GoodnotesHeaderBar;
+
+/// An Opennote Studio document header bar designed as Three Floating Glass
+/// Islands (Apple Freeform / Concepts / Figma style) separated by transparent
+/// canvas breathing room.
 ///
 /// Features:
-/// - Navigation `<` button returning to document library
-/// - Document Hub / Thumbnails button with page counter (`1 / 5`)
-/// - Notebook Document Tab with inline renaming and close `×` button
-/// - `+` button to insert pages
-/// - Undo & Redo icon controls
-/// - Bookmark / Favorite star toggle
-/// - Share & Export button
-/// - Read-Only / Stylus Hand Scroll mode toggle (disables pencil marks for reading/panning)
-/// - More `...` overflow menu
+/// - **Left Floating Island**: Back navigation button, vertical hairline divider,
+///   Document Hub / Thumbnails badge (`1 / 5` or `Infinite`), and Bookmark star.
+/// - **Center Floating Document Capsule**: Elevated centered pill with book icon,
+///   inline `TextFormField` document title, [SaveIndicator], and close `×` button.
+/// - **Right Floating Action Island**: Grouped action capsule for Undo & Redo,
+///   Hand-Scroll / Read-Only toggle, Add Page / Fit Content, Export, and More Inspector menu.
 class GoodnotesHeaderBar extends StatelessWidget
     implements PreferredSizeWidget {
   const GoodnotesHeaderBar({
@@ -83,123 +85,177 @@ class GoodnotesHeaderBar extends StatelessWidget
   final bool readOnly;
 
   @override
-  Size get preferredSize => const Size.fromHeight(50.0);
+  Size get preferredSize => const Size.fromHeight(54.0);
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.of(context);
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final isCompact = screenWidth < 700;
-    final isUltraCompact = screenWidth < 540;
-
+    final isUltraCompact = screenWidth < 500;
     final topPadding = MediaQuery.paddingOf(context).top;
+
+    final pillDecoration = BoxDecoration(
+      color: colorScheme.surface.withValues(alpha: 0.92),
+      borderRadius: BorderRadius.circular(999),
+      border: Border.all(
+        color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+        width: 1.0,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.08),
+          blurRadius: 10,
+          offset: const Offset(0, 3),
+        ),
+      ],
+    );
 
     return Container(
       height: preferredSize.height + topPadding,
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.35),
-            width: 0.75,
-          ),
-        ),
-      ),
+      color: Colors.transparent,
       padding: EdgeInsets.fromLTRB(
-        isCompact ? 4.0 : 8.0,
-        topPadding,
-        isCompact ? 4.0 : 8.0,
-        0,
+        isUltraCompact ? 4.0 : 8.0,
+        topPadding + 4.0,
+        isUltraCompact ? 4.0 : 8.0,
+        4.0,
       ),
       child: Row(
         children: [
-          // 1. Back button to document browser
-          Tooltip(
-            message: t.editor.header.documents,
-            child: IconButton(
-              visualDensity: VisualDensity.compact,
-              icon: const Icon(CupertinoIcons.chevron_back, size: 20),
-              onPressed: onBack,
+          // ----------------------------------------------------
+          // 1. Left Floating Island (Back + Hub + Bookmark Star)
+          // ----------------------------------------------------
+          Container(
+            height: 40,
+            padding: EdgeInsets.symmetric(horizontal: isUltraCompact ? 2 : 4),
+            decoration: pillDecoration,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Tooltip(
+                  message: t.editor.header.documents,
+                  child: IconButton(
+                    visualDensity: VisualDensity.compact,
+                    constraints: BoxConstraints.tightFor(
+                      width: isUltraCompact ? 28 : 34,
+                      height: 34,
+                    ),
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(CupertinoIcons.chevron_back, size: 18),
+                    onPressed: onBack,
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 16,
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+                ),
+                Tooltip(
+                  message: t.editor.pages,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(999),
+                    onTap: onOpenThumbnails,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isUltraCompact ? 4 : 8,
+                        vertical: 4,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isInfiniteCanvas
+                                ? Icons.all_inclusive_rounded
+                                : Icons.grid_view_rounded,
+                            size: 15,
+                            color: colorScheme.primary,
+                          ),
+                          if (screenWidth >= 450) ...[
+                            const SizedBox(width: 4),
+                            Text(
+                              isInfiniteCanvas
+                                  ? t.editor.header.infinite
+                                  : '${currentPageIndex + 1} / ${totalPages == 0 ? 1 : totalPages}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                if (screenWidth >= 480) ...[
+                  Container(
+                    width: 1,
+                    height: 16,
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+                  ),
+                  Tooltip(
+                    message: isBookmarked
+                        ? t.editor.bookmark.remove
+                        : t.editor.bookmark.add,
+                    child: IconButton(
+                      visualDensity: VisualDensity.compact,
+                      constraints: BoxConstraints.tightFor(
+                        width: isUltraCompact ? 28 : 34,
+                        height: 34,
+                      ),
+                      padding: EdgeInsets.zero,
+                      icon: Icon(
+                        isBookmarked
+                            ? Icons.star_rounded
+                            : Icons.star_border_rounded,
+                        size: 18,
+                        color: isBookmarked
+                            ? Colors.amber.shade700
+                            : colorScheme.onSurfaceVariant,
+                      ),
+                      onPressed: readOnly ? null : onToggleBookmark,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
 
-          // 2. Document Hub & Page Thumbnail Overview
-          if (screenWidth >= 330) ...[
-            Tooltip(
-              message: t.editor.pages,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: onOpenThumbnails,
+          SizedBox(width: isUltraCompact ? 4 : 8),
+
+          // ----------------------------------------------------
+          // 2. Center Floating Document Capsule (Book + Title + Save + Close)
+          // ----------------------------------------------------
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
                 child: Container(
+                  height: 40,
                   padding: EdgeInsets.symmetric(
-                    horizontal: isCompact ? 6 : 8,
-                    vertical: 4,
+                    horizontal: isUltraCompact ? 8 : 12,
                   ),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withValues(
-                      alpha: 0.5,
+                    color: colorScheme.surfaceContainerLow.withValues(
+                      alpha: 0.92,
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(999),
                     border: Border.all(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.35),
-                      width: 0.75,
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+                      width: 1.0,
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isInfiniteCanvas
-                            ? Icons.all_inclusive_rounded
-                            : Icons.grid_view_rounded,
-                        size: 15,
-                        color: colorScheme.onSurfaceVariant,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                      if (!isUltraCompact) ...[
-                        const SizedBox(width: 5),
-                        Text(
-                          isInfiniteCanvas
-                              ? t.editor.header.infinite
-                              : '${currentPageIndex + 1} / ${totalPages == 0 ? 1 : totalPages}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
                     ],
                   ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-          ],
-
-          // 3. Document Tab (Notebook styling with title + close)
-          if (!isUltraCompact)
-            Expanded(
-              child: Container(
-                height: 34,
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withValues(
-                    alpha: 0.65,
-                  ),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(8),
-                  ),
-                  border: Border.all(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.35),
-                    width: 0.75,
-                  ),
-                ),
-                child: ClipRect(
                   child: Row(
                     children: [
                       Icon(
-                        CupertinoIcons.doc_text_fill,
+                        CupertinoIcons.book_fill,
                         size: 14,
                         color: colorScheme.primary,
                       ),
@@ -209,6 +265,7 @@ class GoodnotesHeaderBar extends StatelessWidget
                             ? Text(
                                 customTitle!,
                                 overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
@@ -238,131 +295,165 @@ class GoodnotesHeaderBar extends StatelessWidget
                               ),
                       ),
                       const SizedBox(width: 4),
-                      SaveIndicator(
-                        savingState: savingState,
-                        triggerSave: triggerSave,
+                      SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: SaveIndicator(
+                          savingState: savingState,
+                          triggerSave: triggerSave,
+                        ),
                       ),
+                      if (screenWidth >= 600) ...[
+                        const SizedBox(width: 4),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(999),
+                          onTap: onBack,
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Icon(
+                              CupertinoIcons.xmark,
+                              size: 12,
+                              color: colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.75,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
               ),
-            )
-          else
-            const Spacer(),
-
-          // 4. Add Page button / Fit Content in Infinite Canvas
-          if (!isCompact)
-            Tooltip(
-              message: isInfiniteCanvas
-                  ? t.editor.canvasHud.fitContent
-                  : t.editor.menu.insertPage,
-              child: IconButton(
-                visualDensity: VisualDensity.compact,
-                icon: Icon(
-                  isInfiniteCanvas
-                      ? Icons.fit_screen_rounded
-                      : CupertinoIcons.add,
-                  size: 18,
-                ),
-                onPressed: readOnly
-                    ? null
-                    : (isInfiniteCanvas ? onFitContent : onInsertPage),
-              ),
-            ),
-
-          SizedBox(width: isCompact ? 2 : 6),
-
-          // 5. Undo & Redo (Goodnotes 6 action cluster)
-          Tooltip(
-            message: t.editor.toolbar.undo,
-            child: IconButton(
-              visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.undo, size: 20),
-              onPressed: (!readOnly && canUndo) ? undo : null,
-            ),
-          ),
-          Tooltip(
-            message: t.editor.toolbar.redo,
-            child: IconButton(
-              visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.redo, size: 20),
-              onPressed: (!readOnly && canRedo) ? redo : null,
             ),
           ),
 
-          // 6. Bookmark Star
-          if (screenWidth >= 380)
-            Tooltip(
-              message: isBookmarked
-                  ? t.editor.bookmark.remove
-                  : t.editor.bookmark.add,
-              child: IconButton(
-                visualDensity: VisualDensity.compact,
-                icon: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: Icon(
-                    isBookmarked
-                        ? Icons.star_rounded
-                        : Icons.star_border_rounded,
-                    key: ValueKey(isBookmarked),
-                    size: 20,
-                    color: isBookmarked
-                        ? Colors.amber.shade700
-                        : colorScheme.onSurfaceVariant,
+          SizedBox(width: isUltraCompact ? 4 : 8),
+
+          // ----------------------------------------------------
+          // 3. Right Floating Action Island (Undo, Redo, Hand, Add/Fit, Share, More)
+          // ----------------------------------------------------
+          Container(
+            height: 40,
+            padding: EdgeInsets.symmetric(horizontal: isUltraCompact ? 2 : 4),
+            decoration: pillDecoration,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Undo
+                Tooltip(
+                  message: t.editor.toolbar.undo,
+                  child: IconButton(
+                    visualDensity: VisualDensity.compact,
+                    constraints: BoxConstraints.tightFor(
+                      width: isUltraCompact ? 28 : 34,
+                      height: 34,
+                    ),
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.undo, size: 18),
+                    onPressed: (!readOnly && canUndo) ? undo : null,
                   ),
                 ),
-                onPressed: readOnly ? null : onToggleBookmark,
-              ),
-            ),
-
-          // 7. Share / Export
-          if (screenWidth >= 440)
-            Tooltip(
-              message: t.editor.toolbar.export,
-              child: IconButton(
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(CupertinoIcons.share, size: 18),
-                onPressed: onExport,
-              ),
-            ),
-
-          // 8. Hand Scroll / Read-Only Mode toggle (Goodnotes navigation toggle)
-          if (screenWidth >= 350)
-            Tooltip(
-              message: isHandScrollMode
-                  ? t.editor.header.readingMode
-                  : t.editor.header.editingMode,
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                decoration: BoxDecoration(
-                  color: isHandScrollMode
-                      ? colorScheme.primaryContainer
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: Icon(
-                    isHandScrollMode
-                        ? CupertinoIcons.hand_raised_fill
-                        : CupertinoIcons.hand_raised,
-                    size: 18,
-                    color: isHandScrollMode
-                        ? colorScheme.primary
-                        : colorScheme.onSurfaceVariant,
+                // Redo
+                Tooltip(
+                  message: t.editor.toolbar.redo,
+                  child: IconButton(
+                    visualDensity: VisualDensity.compact,
+                    constraints: BoxConstraints.tightFor(
+                      width: isUltraCompact ? 28 : 34,
+                      height: 34,
+                    ),
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.redo, size: 18),
+                    onPressed: (!readOnly && canRedo) ? redo : null,
                   ),
-                  onPressed: onToggleHandScrollMode,
                 ),
-              ),
-            ),
-
-          // 9. More (...) menu
-          Tooltip(
-            message: t.editor.header.moreOptions,
-            child: IconButton(
-              visualDensity: VisualDensity.compact,
-              icon: const Icon(CupertinoIcons.ellipsis, size: 19),
-              onPressed: onOpenMenu,
+                Container(
+                  width: 1,
+                  height: 16,
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+                ),
+                // Hand scroll mode
+                if (screenWidth >= 420) ...[
+                  Tooltip(
+                    message: isHandScrollMode
+                        ? t.editor.header.readingMode
+                        : t.editor.header.editingMode,
+                    child: IconButton(
+                      visualDensity: VisualDensity.compact,
+                      constraints: BoxConstraints.tightFor(
+                        width: isUltraCompact ? 28 : 34,
+                        height: 34,
+                      ),
+                      padding: EdgeInsets.zero,
+                      icon: Icon(
+                        isHandScrollMode
+                            ? CupertinoIcons.hand_raised_fill
+                            : CupertinoIcons.hand_raised,
+                        size: 18,
+                        color: isHandScrollMode
+                            ? colorScheme.primary
+                            : colorScheme.onSurfaceVariant,
+                      ),
+                      onPressed: onToggleHandScrollMode,
+                    ),
+                  ),
+                ],
+                // Add Page / Fit Content in Infinite Canvas
+                if (screenWidth >= 500) ...[
+                  Tooltip(
+                    message: isInfiniteCanvas
+                        ? t.editor.canvasHud.fitContent
+                        : t.editor.menu.insertPage,
+                    child: IconButton(
+                      visualDensity: VisualDensity.compact,
+                      constraints: BoxConstraints.tightFor(
+                        width: isUltraCompact ? 28 : 34,
+                        height: 34,
+                      ),
+                      padding: EdgeInsets.zero,
+                      icon: Icon(
+                        isInfiniteCanvas
+                            ? Icons.fit_screen_rounded
+                            : CupertinoIcons.add,
+                        size: 18,
+                      ),
+                      onPressed: readOnly
+                          ? null
+                          : (isInfiniteCanvas ? onFitContent : onInsertPage),
+                    ),
+                  ),
+                ],
+                // Share / Export
+                if (screenWidth >= 540) ...[
+                  Tooltip(
+                    message: t.editor.toolbar.export,
+                    child: IconButton(
+                      visualDensity: VisualDensity.compact,
+                      constraints: BoxConstraints.tightFor(
+                        width: isUltraCompact ? 28 : 34,
+                        height: 34,
+                      ),
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(CupertinoIcons.share, size: 18),
+                      onPressed: onExport,
+                    ),
+                  ),
+                ],
+                // More (...) menu
+                Tooltip(
+                  message: t.editor.header.moreOptions,
+                  child: IconButton(
+                    visualDensity: VisualDensity.compact,
+                    constraints: BoxConstraints.tightFor(
+                      width: isUltraCompact ? 28 : 34,
+                      height: 34,
+                    ),
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(CupertinoIcons.ellipsis, size: 18),
+                    onPressed: onOpenMenu,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

@@ -2382,18 +2382,32 @@ class EditorState extends State<Editor>
             exportAsPng: exportAsPng,
           );
 
-    final Widget toolbar = Collapsible(
-      axis: isToolbarVertical
-          ? CollapsibleAxis.horizontal
-          : CollapsibleAxis.vertical,
-      collapsed:
-          DynamicMaterialApp.isFullscreen &&
-          !stows.editorToolbarShowInFullscreen.value,
-      maintainState: true,
-      child: SafeArea(
-        bottom: stows.editorToolbarAlignment.value != AxisDirection.up,
-        child: toolbarContent,
-      ),
+    final Widget toolbar = ValueListenableBuilder<AxisDirection>(
+      valueListenable: stows.editorToolbarAlignment,
+      builder: (context, alignment, _) {
+        final isTop = alignment == AxisDirection.up;
+        final isGnTop =
+            isTop &&
+            stows.goodnotesUiMode.value &&
+            !DynamicMaterialApp.isFullscreen;
+        return Collapsible(
+          axis: isToolbarVertical
+              ? CollapsibleAxis.horizontal
+              : CollapsibleAxis.vertical,
+          collapsed:
+              DynamicMaterialApp.isFullscreen &&
+              !stows.editorToolbarShowInFullscreen.value,
+          maintainState: true,
+          child: SafeArea(
+            top: isGnTop,
+            bottom: !isTop,
+            child: Padding(
+              padding: EdgeInsets.only(top: isGnTop ? 54.0 : 0.0),
+              child: toolbarContent,
+            ),
+          ),
+        );
+      },
     );
 
     final int? zoomPageIndex = coreInfo.pages.isEmpty
@@ -2402,7 +2416,7 @@ class EditorState extends State<Editor>
     final Widget editingSurface = Stack(
       children: [
         canvas,
-        if (Pen.isWritingPen(currentTool))
+        if (!stows.goodnotesUiMode.value && Pen.isWritingPen(currentTool))
           Positioned.fill(
             child: WritingPenMenu(
               tool: currentTool,
@@ -2428,37 +2442,40 @@ class EditorState extends State<Editor>
       ],
     );
 
-    final Widget body;
-    if (isToolbarVertical) {
-      body = Row(
-        textDirection: stows.editorToolbarAlignment.value == AxisDirection.left
-            ? .ltr
-            : .rtl,
-        children: [
-          toolbar,
-          Expanded(
-            child: Column(
-              children: [
-                Expanded(child: editingSurface),
-                readonlyBanner,
-              ],
-            ),
-          ),
-        ],
-      );
-    } else {
-      body = Column(
-        verticalDirection:
-            stows.editorToolbarAlignment.value == AxisDirection.up
-            ? VerticalDirection.up
-            : VerticalDirection.down,
-        children: [
-          Expanded(child: editingSurface),
-          toolbar,
-          readonlyBanner,
-        ],
-      );
-    }
+    final Widget body = ValueListenableBuilder<AxisDirection>(
+      valueListenable: stows.editorToolbarAlignment,
+      builder: (context, alignment, _) {
+        if (isToolbarVertical) {
+          return Row(
+            textDirection: alignment == AxisDirection.left
+                ? TextDirection.ltr
+                : TextDirection.rtl,
+            children: [
+              toolbar,
+              Expanded(
+                child: Column(
+                  children: [
+                    Expanded(child: editingSurface),
+                    readonlyBanner,
+                  ],
+                ),
+              ),
+            ],
+          );
+        } else {
+          return Column(
+            verticalDirection: alignment == AxisDirection.up
+                ? VerticalDirection.up
+                : VerticalDirection.down,
+            children: [
+              Expanded(child: editingSurface),
+              toolbar,
+              readonlyBanner,
+            ],
+          );
+        }
+      },
+    );
 
     final double screenWidth = MediaQuery.sizeOf(context).width;
     final bool isCompact = screenWidth < 500;
@@ -2487,6 +2504,8 @@ class EditorState extends State<Editor>
         );
       },
       child: Scaffold(
+        extendBodyBehindAppBar:
+            stows.goodnotesUiMode.value && !DynamicMaterialApp.isFullscreen,
         backgroundColor: coreInfo.isInfiniteCanvas
             ? (coreInfo.backgroundColor ?? const Color(0xFFFCFCFC))
                   .withInversion(

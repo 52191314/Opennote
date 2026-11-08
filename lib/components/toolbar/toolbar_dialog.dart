@@ -1,9 +1,11 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// 🤖 Generated wholely or partially with Claude Code (Claude Opus 5.5)
 library;
 
 import 'package:flutter/material.dart';
 
-/// A rounded dialog with an icon, a title, and a close button above [child].
+/// An Opennote Studio floating popover card dialog with an icon badge,
+/// a title, a subtle header divider, and a close button above [child].
 ///
 /// The editor's toolbars show their settings in these.
 class ToolbarDialog extends StatelessWidget {
@@ -44,52 +46,90 @@ class ToolbarDialog extends StatelessWidget {
     final colorScheme = ColorScheme.of(context);
     return Dialog(
       backgroundColor: Colors.transparent,
-      child: Container(
-        constraints: BoxConstraints(maxWidth: maxWidth),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-            width: 1,
+      elevation: 0,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0.96, end: 1.0),
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOutCubic,
+        builder: (context, scale, dialogCard) =>
+            Transform.scale(scale: scale, child: dialogCard),
+        child: Container(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.65),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.16),
+                blurRadius: 28,
+                offset: const Offset(0, 10),
+              ),
+              BoxShadow(
+                color: colorScheme.primary.withValues(alpha: 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        padding: EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: verticalPadding,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: iconSize, color: colorScheme.primary),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: titleSize,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
+          padding: EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: verticalPadding,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer.withValues(
+                        alpha: 0.65,
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: Icon(
+                        icon,
+                        size: iconSize,
+                        color: colorScheme.primary,
+                      ),
+                    ),
                   ),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close, size: 20),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            child,
-          ],
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      title,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: titleSize,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.close, size: 20),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Divider(
+                height: 1,
+                thickness: 0.75,
+                color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+              ),
+              const SizedBox(height: 12),
+              child,
+            ],
+          ),
         ),
       ),
     );

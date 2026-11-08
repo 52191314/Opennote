@@ -1,5 +1,10 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'package:flutter/material.dart' hide TransformationController;
 
+/// A sleek Opennote Studio HUD capsule displaying the current canvas zoom
+/// magnification with a 1-tap reset action.
 class CanvasZoomIndicator extends StatelessWidget {
   const CanvasZoomIndicator({
     super.key,
@@ -14,16 +19,34 @@ class CanvasZoomIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.of(context);
     return InkWell(
+      borderRadius: const .all(.circular(12)),
       onTap: resetZoom,
       child: Container(
+        height: 34,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: colorScheme.surface.withValues(alpha: 0.5),
-          borderRadius: const .all(.circular(16)),
+          color: colorScheme.surface.withValues(alpha: 0.85),
+          borderRadius: const .all(.circular(12)),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.55),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        padding: const .all(5),
+        padding: const .symmetric(horizontal: 10, vertical: 5),
         child: Text(
           '${scale.toStringAsFixed(1)}x',
-          style: TextStyle(color: colorScheme.onSurface),
+          style: TextStyle(
+            color: colorScheme.onSurface,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );

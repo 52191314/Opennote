@@ -160,7 +160,13 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
     final visibleIndices = _visibleIndices;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.55),
+          width: 1,
+        ),
+      ),
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       clipBehavior: Clip.antiAlias,
       child: Container(
@@ -171,7 +177,11 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildHeader(context, theme),
-            const Divider(height: 1),
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+            ),
             Expanded(
               child: _filter == PageGridFilter.outline
                   ? _buildOutlineView(context, theme)
@@ -308,9 +318,14 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 620;
+        final isCompact = constraints.maxWidth < 680;
 
         final filterControl = SegmentedButton<PageGridFilter>(
+          style: SegmentedButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            selectedBackgroundColor: theme.colorScheme.primaryContainer,
+            selectedForegroundColor: theme.colorScheme.onPrimaryContainer,
+          ),
           segments: [
             ButtonSegment<PageGridFilter>(
               value: PageGridFilter.all,
@@ -336,20 +351,35 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
           },
         );
 
+        final headerBadge = DecoratedBox(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.65),
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: Icon(
+              Icons.grid_view_rounded,
+              size: 18,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+        );
+
         if (isCompact) {
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.grid_view, size: 20),
-                    const SizedBox(width: 8),
+                    headerBadge,
+                    const SizedBox(width: 10),
                     Text(
                       t.editor.pages,
                       style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const Spacer(),
@@ -372,23 +402,25 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Center(child: filterControl),
+                const SizedBox(height: 6),
+                Center(
+                  child: FittedBox(fit: BoxFit.scaleDown, child: filterControl),
+                ),
               ],
             ),
           );
         }
 
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           child: Row(
             children: [
-              const Icon(Icons.grid_view, size: 20),
-              const SizedBox(width: 8),
+              headerBadge,
+              const SizedBox(width: 10),
               Text(
                 t.editor.pages,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const Spacer(),
@@ -587,21 +619,29 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
         ? theme.colorScheme.tertiary
         : isActive
         ? theme.colorScheme.primary
-        : theme.colorScheme.outlineVariant.withValues(alpha: 0.5);
+        : theme.colorScheme.outlineVariant.withValues(alpha: 0.55);
 
-    final borderWidth = (isDragTargetHovered || isActive) ? 2.5 : 1.0;
+    final borderWidth = (isDragTargetHovered || isActive) ? 2.0 : 1.0;
 
     return DecoratedBox(
       key: Key('page_thumbnail_card_$pageIndex'),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        color: isActive
+            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.22)
+            : theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: borderColor, width: borderWidth),
         boxShadow: [
           if (isActive)
             BoxShadow(
-              color: theme.colorScheme.primary.withValues(alpha: 0.2),
-              blurRadius: 8,
+              color: theme.colorScheme.primary.withValues(alpha: 0.18),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            )
+          else
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 6,
               offset: const Offset(0, 2),
             ),
         ],
@@ -628,19 +668,26 @@ class _PageGridOverviewDialogState extends State<PageGridOverviewDialog> {
       child: Row(
         children: [
           if (isActive)
-            Container(
-              key: Key('active_page_badge_$pageIndex'),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                t.editor.pageGrid.current,
-                style: TextStyle(
-                  color: theme.colorScheme.onPrimary,
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
+            Flexible(
+              child: Container(
+                key: Key('active_page_badge_$pageIndex'),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2.5,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  t.editor.pageGrid.current,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: theme.colorScheme.onPrimary,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),

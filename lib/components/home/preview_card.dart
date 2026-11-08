@@ -36,6 +36,8 @@ class PreviewCard extends StatefulWidget {
 }
 
 class _PreviewCardState extends State<PreviewCard> {
+  static const _cardRadius = 14.0;
+
   final expanded = ValueNotifier(false);
   final thumbnail = _ThumbnailState();
 
@@ -47,6 +49,14 @@ class _PreviewCardState extends State<PreviewCard> {
 
     expanded.value = widget.selected;
     super.initState();
+  }
+
+  @override
+  void didUpdateWidget(covariant PreviewCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selected != widget.selected) {
+      expanded.value = widget.selected;
+    }
   }
 
   @override
@@ -111,13 +121,14 @@ class _PreviewCardState extends State<PreviewCard> {
         onLongPress: _toggleCardSelection,
         child: Column(
           mainAxisSize: stows.simplifiedHomeLayout.value ? .max : .min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Flexible(
               fit: stows.simplifiedHomeLayout.value ? .tight : .loose,
               child: Stack(
                 children: [
                   Positioned.fill(
-                    top: kYaruContainerRadius,
+                    top: _cardRadius,
                     left: kYaruFocusBorderWidth,
                     right: kYaruFocusBorderWidth,
                     child: ColoredBox(
@@ -134,7 +145,7 @@ class _PreviewCardState extends State<PreviewCard> {
                         key: ValueKey(thumbnail.updateCount),
                         constraints: const BoxConstraints(
                           minWidth: double.infinity,
-                          minHeight: 100,
+                          minHeight: 112,
                         ),
                         child: Padding(
                           padding: const EdgeInsets.only(
@@ -145,10 +156,10 @@ class _PreviewCardState extends State<PreviewCard> {
                           child: ClipRRect(
                             borderRadius: const .only(
                               topLeft: .circular(
-                                kYaruContainerRadius - kYaruFocusBorderWidth,
+                                _cardRadius - kYaruFocusBorderWidth,
                               ),
                               topRight: .circular(
-                                kYaruContainerRadius - kYaruFocusBorderWidth,
+                                _cardRadius - kYaruFocusBorderWidth,
                               ),
                             ),
                             child: InvertWidget(
@@ -191,14 +202,30 @@ class _PreviewCardState extends State<PreviewCard> {
                               begin: .topCenter,
                               end: .bottomCenter,
                               colors: [
-                                colorScheme.surface.withValues(alpha: 0.2),
-                                colorScheme.surface.withValues(alpha: 0.8),
-                                colorScheme.surface.withValues(alpha: 1),
+                                colorScheme.primary.withValues(alpha: 0.14),
+                                colorScheme.surface.withValues(alpha: 0.75),
+                                colorScheme.surface.withValues(alpha: 0.95),
                               ],
                             ),
                           ),
-                          child: ColoredBox(
-                            color: colorScheme.primary.withValues(alpha: 0.05),
+                          child: Align(
+                            alignment: Alignment.topRight,
+                            child: Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Container(
+                                width: 26,
+                                height: 26,
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.check_rounded,
+                                  size: 16,
+                                  color: colorScheme.onPrimary,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -208,12 +235,26 @@ class _PreviewCardState extends State<PreviewCard> {
                 ],
               ),
             ),
-            Padding(
-              padding: const .all(8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.25),
+                    width: 0.8,
+                  ),
+                ),
+              ),
               child: Text(
                 widget.filePath.substring(widget.filePath.lastIndexOf('/') + 1),
                 maxLines: 2,
                 overflow: .ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
+                ),
               ),
             ),
           ],
@@ -231,10 +272,10 @@ class _PreviewCardState extends State<PreviewCard> {
             side: BorderSide(
               color: expanded
                   ? colorScheme.primary
-                  : colorScheme.onSurface.withValues(alpha: 0.12),
-              width: kYaruFocusBorderWidth,
+                  : colorScheme.outlineVariant.withValues(alpha: 0.45),
+              width: expanded ? kYaruFocusBorderWidth : 1.0,
             ),
-            borderRadius: const .all(.circular(kYaruContainerRadius)),
+            borderRadius: const .all(.circular(_cardRadius)),
           ),
           closedElevation: 0,
           closedBuilder: (context, action) => card,
@@ -284,17 +325,13 @@ class _FallbackThumbnail extends StatelessWidget {
         decoration: BoxDecoration(
           color: coverColor,
           borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(
-              kYaruContainerRadius - kYaruFocusBorderWidth,
-            ),
-            topRight: Radius.circular(
-              kYaruContainerRadius - kYaruFocusBorderWidth,
-            ),
+            topLeft: Radius.circular(14.0 - kYaruFocusBorderWidth),
+            topRight: Radius.circular(14.0 - kYaruFocusBorderWidth),
           ),
         ),
         child: Stack(
           children: [
-            // Left Spine Band
+            // Left Spine Band with crease gradient
             Positioned(
               top: 0,
               bottom: 0,
@@ -302,10 +339,15 @@ class _FallbackThumbnail extends StatelessWidget {
               width: 14,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.18),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.black.withValues(alpha: 0.28),
+                      Colors.black.withValues(alpha: 0.14),
+                    ],
+                  ),
                   border: Border(
                     right: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.15),
+                      color: Colors.white.withValues(alpha: 0.16),
                       width: 1,
                     ),
                   ),

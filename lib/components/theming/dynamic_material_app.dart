@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'dart:io';
 
 import 'package:dynamic_color/dynamic_color.dart';
@@ -8,6 +11,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:go_router/go_router.dart';
+import 'package:saber/components/design_system/opennote_tokens.dart';
 import 'package:saber/components/theming/saber_theme.dart';
 import 'package:saber/components/theming/yaru_builder.dart';
 import 'package:saber/data/prefs.dart';
@@ -20,7 +24,7 @@ class DynamicMaterialApp extends StatefulHookWidget {
     super.key,
     required this.title,
     required this.router,
-    this.defaultSwatch = Colors.yellow,
+    this.defaultSwatch = OpennoteTokens.brandSeed,
   });
 
   final String title;

@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -48,6 +51,7 @@ class GridFolders extends StatelessWidget {
         itemCount: folders.length + extraCards.length,
         crossAxisCount: crossAxisCount,
         mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
         itemBuilder: (context, index) {
           final cardType = extraCards.getOrNull(index) ?? .realFolder;
           final folderName = cardType == .realFolder
@@ -106,7 +110,7 @@ class _GridFolderState extends State<_GridFolder> {
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.of(context);
     final cardElevatedColor = Color.alphaBlend(
-      colorScheme.primary.withValues(alpha: 0.05),
+      colorScheme.primary.withValues(alpha: 0.06),
       colorScheme.surface,
     );
     return MouseRegion(
@@ -136,8 +140,16 @@ class _GridFolderState extends State<_GridFolder> {
             ? () => expanded.value = !expanded.value
             : null,
         child: Card(
+          elevation: 0,
+          color: colorScheme.surfaceContainerLow,
+          shape: RoundedRectangleBorder(
+            borderRadius: const .all(.circular(14)),
+            side: BorderSide(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+            ),
+          ),
           child: Padding(
-            padding: const .all(8),
+            padding: const .symmetric(horizontal: 10, vertical: 12),
             child: Column(
               mainAxisSize: .min,
               children: [
@@ -164,7 +176,7 @@ class _GridFolderState extends State<_GridFolder> {
                                 CupertinoIcons.folder_fill_badge_plus,
                               .realFolder => CupertinoIcons.folder_fill,
                             },
-                            size: 50,
+                            size: 46,
                           ),
                         ),
                       ),
@@ -185,6 +197,7 @@ class _GridFolderState extends State<_GridFolder> {
                               onTap: () => expanded.value = !expanded.value,
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
+                                  borderRadius: const .all(.circular(10)),
                                   gradient: LinearGradient(
                                     begin: .topCenter,
                                     end: .bottomCenter,
@@ -229,9 +242,25 @@ class _GridFolderState extends State<_GridFolder> {
                 ),
                 const SizedBox(height: 8),
                 switch (widget.cardType) {
-                  .backFolder => const Icon(Icons.arrow_back),
-                  .newFolder => Text(t.home.newFolder.newFolder),
-                  .realFolder => Text(widget.folderName!),
+                  .backFolder => const Icon(Icons.arrow_back, size: 20),
+                  .newFolder => Text(
+                    t.home.newFolder.newFolder,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  .realFolder => Text(
+                    widget.folderName!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 },
               ],
             ),

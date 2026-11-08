@@ -195,12 +195,15 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
-  /// When true, enables the Goodnotes-inspired dual-tier toolbar and document tabs header.
-  final goodnotesUiMode = PlainStow(
-    'goodnotesUiMode',
+  /// When true, enables the Opennote Studio dual-tier toolbar, shelf, and document header.
+  late final opennoteUiMode = PlainStow(
+    'opennoteUiMode',
     true,
     volatile: !_isOnMainIsolate,
   );
+
+  /// Alias for [opennoteUiMode] kept for backwards compatibility with existing references.
+  PlainStow<bool> get goodnotesUiMode => opennoteUiMode;
 
   final maxImageSize = PlainStow<double>(
     'maxImageSize',
