@@ -1,4 +1,4 @@
-/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Generated wholely or partially with Claude Code; Gemini; Google Antigravity
 /// 🤖 Modified with Grok 4.7
 library;
 
@@ -625,7 +625,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
                   boundaryMargin: widget.isInfiniteCanvas
                       ? const EdgeInsets.all(double.infinity)
                       : EdgeInsets.symmetric(
-                          vertical: 0,
+                          vertical: screenSize.height * 2,
                           horizontal: screenSize.width * 2,
                         ),
 

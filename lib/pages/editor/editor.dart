@@ -1,5 +1,5 @@
 /// 🤖 Modified with DeepSeek v4 Flash
-/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Generated wholely or partially with Claude Code; Gemini; Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
 /// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
 /// 🤖 Modified with Grok 4.7
@@ -657,11 +657,30 @@ class EditorState extends State<Editor>
     if (coreInfo.isInfiniteCanvas && coreInfo.pages.isNotEmpty) {
       return 0;
     }
+    int? closestIndex;
+    double minDistance = double.infinity;
     for (int i = 0; i < coreInfo.pages.length; ++i) {
       final box = coreInfo.pages[i].renderBox;
       if (box == null || !box.attached) continue;
+      final local = box.globalToLocal(focalPoint);
       final pageBounds = Offset.zero & coreInfo.pages[i].size;
-      if (pageBounds.contains(box.globalToLocal(focalPoint))) return i;
+      if (pageBounds.contains(local)) return i;
+
+      final dx = local.dx < 0
+          ? -local.dx
+          : (local.dx > pageBounds.width ? local.dx - pageBounds.width : 0.0);
+      final dy = local.dy < 0
+          ? -local.dy
+          : (local.dy > pageBounds.height ? local.dy - pageBounds.height : 0.0);
+      final dist = math.sqrt(dx * dx + dy * dy);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestIndex = i;
+      }
+    }
+    // Snap to closest page if within 120px (gap between pages or margin)
+    if (closestIndex != null && minDistance <= 120.0) {
+      return closestIndex;
     }
     return null;
   }
@@ -685,24 +704,35 @@ class EditorState extends State<Editor>
     CanvasImage.activeListener
         .notifyListenersPlease(); // un-select active image
 
+    final isStylus =
+        currentPointerKind == PointerDeviceKind.stylus ||
+        currentPointerKind == PointerDeviceKind.invertedStylus ||
+        currentPressure != null;
+
     _lastSeenPointerCountTimer?.cancel();
-    if (lastSeenPointerCount >= 2) {
-      // was a zoom gesture, ignore
-      lastSeenPointerCount = lastSeenPointerCount;
-      return false;
-    } else if (details.pointerCount >= 2) {
-      // is a zoom gesture, remove accidental stroke
-      if (lastSeenPointerCount == 1 &&
-          stows.editorFingerDrawing.value &&
-          (currentTool is Pen || currentTool is Eraser)) {
-        final item = history.removeAccidentalStroke();
-        if (item != null) undo(item);
+
+    if (!isStylus) {
+      if (lastSeenPointerCount >= 2) {
+        // Was a zoom gesture; consume this trailing touch and reset so future strokes succeed
+        lastSeenPointerCount = 0;
+        return false;
+      } else if (details.pointerCount >= 2) {
+        // is a zoom gesture, remove accidental stroke
+        if (lastSeenPointerCount == 1 &&
+            stows.editorFingerDrawing.value &&
+            (currentTool is Pen || currentTool is Eraser)) {
+          final item = history.removeAccidentalStroke();
+          if (item != null) undo(item);
+        }
+        lastSeenPointerCount = details.pointerCount;
+        return false;
+      } else {
+        // is a stroke
+        lastSeenPointerCount = details.pointerCount;
       }
-      lastSeenPointerCount = details.pointerCount;
-      return false;
     } else {
-      // is a stroke
-      lastSeenPointerCount = details.pointerCount;
+      // Stylus is a precision hardware tool; never blocked by prior multi-finger zoom residue
+      lastSeenPointerCount = 1;
     }
 
     dragPageIndex = onWhichPageIsFocalPoint(details.focalPoint);
@@ -710,10 +740,7 @@ class EditorState extends State<Editor>
 
     if (currentTool == Tool.textEditing) {
       return false;
-    } else if (stows.editorFingerDrawing.value ||
-        currentPointerKind == PointerDeviceKind.stylus ||
-        currentPointerKind == PointerDeviceKind.invertedStylus ||
-        currentPressure != null) {
+    } else if (stows.editorFingerDrawing.value || isStylus) {
       return true;
     } else {
       log.fine('Non-stylus found, rejected stroke');

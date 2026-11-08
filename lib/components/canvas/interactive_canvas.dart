@@ -1,4 +1,4 @@
-/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Generated wholely or partially with Claude Code; Gemini; Google Antigravity
 /// Adapted for Saber from Flutter's [InteractiveViewer] class
 /// https://github.com/flutter/flutter/blob/stable/packages/flutter/lib/src/widgets/interactive_viewer.dart
 /// Using this commit (Flutter 3.44.0):
@@ -699,11 +699,11 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
   }
 
   // Returns true iff the given _GestureType is enabled.
-  bool _gestureIsSupported(_GestureType? gestureType) {
+  bool _gestureIsSupported(_GestureType? gestureType, [int pointerCount = 1]) {
     return switch (gestureType) {
       _GestureType.rotate => _rotateEnabled,
       _GestureType.scale => widget.scaleEnabled,
-      _GestureType.pan || null => widget.panEnabled,
+      _GestureType.pan || null => widget.panEnabled || pointerCount >= 2,
     };
   }
 
@@ -762,7 +762,16 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
       details.localFocalPoint,
     );
 
-    if (isCurrentGestureADrawGesture) {
+    if (isCurrentGestureADrawGesture && details.pointerCount >= 2) {
+      // 2nd finger landed during accidental single-finger draw: abort stroke and switch to scale/pan
+      isCurrentGestureADrawGesture = false;
+      widget.onDrawEnd?.call(
+        ScaleEndDetails(pointerCount: details.pointerCount),
+      );
+      _gestureType = _getGestureType(details);
+      _scaleStart = scale;
+      _referenceFocalPoint = focalPointScene;
+    } else if (isCurrentGestureADrawGesture) {
       _gestureType = _GestureType.pan;
     } else if (_gestureType == _GestureType.pan) {
       // When a gesture first starts, it sometimes has no change in scale and
@@ -773,7 +782,8 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
     } else {
       _gestureType ??= _getGestureType(details);
     }
-    if (!_gestureIsSupported(_gestureType) && !isCurrentGestureADrawGesture) {
+    if (!_gestureIsSupported(_gestureType, details.pointerCount) &&
+        !isCurrentGestureADrawGesture) {
       return;
     }
 
@@ -833,7 +843,7 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
         // details may have a change in scale here when scaleEnabled is false.
         // In an effort to keep the behavior similar whether or not scaleEnabled
         // is true, these gestures are thrown away.
-        if (details.scale != 1.0) {
+        if (!widget.scaleEnabled && details.scale != 1.0) {
           return;
         }
 
@@ -873,7 +883,7 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
     _controller.reset();
     _scaleController.reset();
 
-    if (!_gestureIsSupported(_gestureType)) {
+    if (!_gestureIsSupported(_gestureType, details.pointerCount)) {
       _currentAxis = null;
       return;
     }
