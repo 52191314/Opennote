@@ -13,14 +13,14 @@ Status: **COMPLETE & VERIFIED** (183 / 183 tests passing)
 flutter test test/e2e/
 ```
 
-### Student Parity Features F1–F17 Suite Run (Current Milestone):
+### Advanced Student Features F1–F17 Suite Run (Current Milestone):
 ```bash
 flutter test test/e2e/e2e_feature_coverage_test.dart test/e2e/e2e_boundary_cases_test.dart test/e2e/e2e_cross_feature_test.dart test/e2e/e2e_student_workflow_test.dart
 ```
 
 ### Individual Suite Files:
 ```bash
-# Student Parity Features F1–F17 (68 tests)
+# Advanced Student Features F1–F17 (68 tests)
 flutter test test/e2e/e2e_feature_coverage_test.dart   # Tier 1: F1–F17 Feature Coverage (35 tests)
 flutter test test/e2e/e2e_boundary_cases_test.dart      # Tier 2: Boundary & Corner Cases (18 tests)
 flutter test test/e2e/e2e_cross_feature_test.dart       # Tier 3: Pairwise Combinations (10 tests)
@@ -53,7 +53,7 @@ flutter test test/e2e/e2e_scenarios_test.dart
 
 ---
 
-## 3. Student Parity Features Coverage Matrix (F1–F17)
+## 3. Advanced Student Features Coverage Matrix (F1–F17)
 
 | # | Feature | Requirement Source | Coverage Focus | Test Assertion Verification |
 |---|---------|-------------------|----------------|-----------------------------|
