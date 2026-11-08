@@ -24,7 +24,7 @@ void main() {
     Select.currentSelect.unselect();
   });
 
-  group('Goodnotes Lasso Mechanics & State Invariants', () {
+  group('Opennote Lasso Mechanics & State Invariants', () {
     test('Default selection has isResizeActive = false (clean contour)', () {
       final select = Select.currentSelect;
       expect(select.isResizeActive, isFalse);
@@ -77,8 +77,8 @@ void main() {
     );
   });
 
-  group('LassoCalloutMenu Goodnotes Parity Widget Tests', () {
-    testWidgets('renders all Goodnotes action buttons', (tester) async {
+  group('LassoCalloutMenu Widget Tests', () {
+    testWidgets('renders all action buttons', (tester) async {
       tester.view.physicalSize = const Size(1400, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -311,7 +311,7 @@ void main() {
     });
   });
 
-  group('SelectionBar Goodnotes Parity Tests', () {
+  group('SelectionBar Widget Tests', () {
     testWidgets('renders resize and screenshot toolbar icons', (tester) async {
       var resizeCalled = false;
       var screenshotCalled = false;
@@ -343,7 +343,7 @@ void main() {
     });
   });
 
-  group('LassoFilterPopup Goodnotes UI Wording Tests', () {
+  group('LassoFilterPopup UI Wording Tests', () {
     testWidgets('displays LASSO TYPE and INCLUDED IN SELECTION headers', (
       tester,
     ) async {

@@ -552,7 +552,7 @@ class CanvasPainter extends CustomPainter {
 
     final isTransformActive = Select.currentSelect.isResizeActive;
     if (!isTransformActive) {
-      // Goodnotes clean selection state: delicate dashed contour without handle clutter.
+      // Opennote clean selection state: delicate dashed contour without handle clutter.
       // Dragging inside moves the selection immediately; handles appear when Resize is active.
       page.selectionRotationHandleCenter = null;
       page.selectionResizeHandles = null;
@@ -807,7 +807,7 @@ class CanvasPainter extends CustomPainter {
     final position = page.laserSpotlightPosition;
     if (position == null) return;
 
-    // Outer translucent halo (Goodnotes spotlight)
+    // Outer translucent halo (spotlight pointer)
     canvas.drawCircle(
       position,
       28,

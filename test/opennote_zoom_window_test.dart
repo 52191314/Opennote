@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saber/components/canvas/zoom_window_view.dart';
 import 'package:saber/components/toolbar/editor_toolbar_actions.dart';
-import 'package:saber/components/toolbar/goodnotes_toolbar.dart';
+import 'package:saber/components/toolbar/opennote_toolbar.dart';
 import 'package:saber/data/editor/editor_history.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/editor/zoom_window.dart';
@@ -301,7 +301,7 @@ class _ZoomHarnessState extends State<_ZoomHarness> {
       home: Scaffold(
         body: Column(
           children: [
-            GoodnotesToolbar(
+            OpennoteToolbar(
               actions: _toolbarActions(Pen.currentPen),
               zoomWindowOpen: _open,
               onToggleZoomWindow: () {

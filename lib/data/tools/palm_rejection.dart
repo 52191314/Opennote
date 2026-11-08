@@ -6,7 +6,7 @@ import 'dart:math';
 import 'package:flutter/gestures.dart';
 import 'package:saber/data/prefs.dart';
 
-/// Goodnotes-inspired writing postures for palm rejection and wrist protection.
+/// Writing postures for palm rejection and wrist protection.
 enum WritingPosture {
   /// Right-handed with wrist resting below the writing line.
   rightBelow,
@@ -51,7 +51,7 @@ enum PalmRejectionSensitivity {
   /// Low sensitivity: only rejects very large contacts.
   low,
 
-  /// Medium sensitivity: standard Goodnotes-style palm rejection.
+  /// Medium sensitivity: standard balanced palm rejection.
   medium,
 
   /// High sensitivity: aggressive rejection of any contact near the writing posture zone.

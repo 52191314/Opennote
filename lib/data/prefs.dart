@@ -202,9 +202,6 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
-  /// Alias for [opennoteUiMode] kept for backwards compatibility with existing references.
-  PlainStow<bool> get goodnotesUiMode => opennoteUiMode;
-
   final maxImageSize = PlainStow<double>(
     'maxImageSize',
     1000,
@@ -459,7 +456,7 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
-  /// Goodnotes-inspired writing posture for palm rejection.
+  /// Writing posture configuration for palm rejection and wrist comfort.
   final writingPosture = PlainStow(
     'writingPosture',
     WritingPosture.rightBelow,

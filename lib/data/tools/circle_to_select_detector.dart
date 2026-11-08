@@ -5,7 +5,7 @@ import 'dart:async';
 import 'dart:ui';
 
 /// Detects when a user draws a closed loop around content and holds the stylus,
-/// converting the stroke into a lasso selection (Goodnotes 6 circle-to-select).
+/// converting the stroke into a lasso selection (circle-to-select gesture).
 class CircleToSelectDetector {
   CircleToSelectDetector({
     this.holdDuration = const Duration(milliseconds: 450),

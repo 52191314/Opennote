@@ -18,7 +18,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   FlavorConfig.setup();
 
-  group('Goodnotes Circle-to-Select Detector Tests', () {
+  group('Circle-to-Select Detector Tests', () {
     test('Triggers circle-to-select when a closed loop is held', () async {
       bool detected = false;
       Path? detectedPath;
@@ -76,7 +76,7 @@ void main() {
     });
   });
 
-  group('Goodnotes Eraser Highlighter-Only Tests', () {
+  group('Eraser Highlighter-Only Tests', () {
     test(
       'Erases only highlighters when eraserEraseHighlighterOnly is true',
       () {
@@ -125,7 +125,7 @@ void main() {
     );
   });
 
-  group('Goodnotes Prefs Default Values', () {
+  group('Opennote Prefs Default Values', () {
     test('Default quick colors for pen are Black, Blue, and Red', () {
       final penColors = stows.quickColorsPen.value;
       expect(penColors.length, equals(3));

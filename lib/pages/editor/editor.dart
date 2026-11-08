@@ -49,8 +49,8 @@ import 'package:saber/components/toolbar/editor_toolbar_actions.dart';
 import 'package:saber/components/toolbar/elements_sheet.dart';
 import 'package:saber/components/toolbar/export_bar.dart';
 import 'package:saber/components/toolbar/floating_pen_menu.dart';
-import 'package:saber/components/toolbar/goodnotes_header_bar.dart';
-import 'package:saber/components/toolbar/goodnotes_toolbar.dart';
+import 'package:saber/components/toolbar/opennote_header_bar.dart';
+import 'package:saber/components/toolbar/opennote_toolbar.dart';
 import 'package:saber/components/toolbar/toolbar.dart';
 import 'package:saber/data/editor/canvas_mode_conversion.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
@@ -2363,8 +2363,8 @@ class EditorState extends State<Editor>
     );
 
     final toolbarActions = _toolbarActions();
-    final Widget toolbarContent = stows.goodnotesUiMode.value
-        ? GoodnotesToolbar(
+    final Widget toolbarContent = stows.opennoteUiMode.value
+        ? OpennoteToolbar(
             actions: toolbarActions,
             onClearPage: () => clearPage(currentPageIndex),
             zoomWindowOpen: _zoomWindowOpen,
@@ -2386,9 +2386,9 @@ class EditorState extends State<Editor>
       valueListenable: stows.editorToolbarAlignment,
       builder: (context, alignment, _) {
         final isTop = alignment == AxisDirection.up;
-        final isGnTop =
+        final isOpennoteTop =
             isTop &&
-            stows.goodnotesUiMode.value &&
+            stows.opennoteUiMode.value &&
             !DynamicMaterialApp.isFullscreen;
         return Collapsible(
           axis: isToolbarVertical
@@ -2399,10 +2399,10 @@ class EditorState extends State<Editor>
               !stows.editorToolbarShowInFullscreen.value,
           maintainState: true,
           child: SafeArea(
-            top: isGnTop,
+            top: isOpennoteTop,
             bottom: !isTop,
             child: Padding(
-              padding: EdgeInsets.only(top: isGnTop ? 54.0 : 0.0),
+              padding: EdgeInsets.only(top: isOpennoteTop ? 54.0 : 0.0),
               child: toolbarContent,
             ),
           ),
@@ -2416,7 +2416,7 @@ class EditorState extends State<Editor>
     final Widget editingSurface = Stack(
       children: [
         canvas,
-        if (!stows.goodnotesUiMode.value && Pen.isWritingPen(currentTool))
+        if (!stows.opennoteUiMode.value && Pen.isWritingPen(currentTool))
           Positioned.fill(
             child: WritingPenMenu(
               tool: currentTool,
@@ -2505,22 +2505,22 @@ class EditorState extends State<Editor>
       },
       child: Scaffold(
         extendBodyBehindAppBar:
-            stows.goodnotesUiMode.value && !DynamicMaterialApp.isFullscreen,
+            stows.opennoteUiMode.value && !DynamicMaterialApp.isFullscreen,
         backgroundColor: coreInfo.isInfiniteCanvas
             ? (coreInfo.backgroundColor ?? const Color(0xFFFCFCFC))
                   .withInversion(
                     stows.editorAutoInvert.value &&
                         Theme.brightnessOf(context) == Brightness.dark,
                   )
-            : stows.goodnotesUiMode.value
+            : stows.opennoteUiMode.value
             ? (Theme.brightnessOf(context) == Brightness.dark
                   ? const Color(0xFF161618)
                   : const Color(0xFFF3F2EE))
             : null,
         appBar: DynamicMaterialApp.isFullscreen
             ? null
-            : stows.goodnotesUiMode.value
-            ? GoodnotesHeaderBar(
+            : stows.opennoteUiMode.value
+            ? OpennoteHeaderBar(
                 filePath: coreInfo.filePath,
                 customTitle: widget.customTitle,
                 filenameTextEditingController: filenameTextEditingController,
@@ -2610,7 +2610,7 @@ class EditorState extends State<Editor>
                   triggerSave: saveToFile,
                 ),
                 actions: [
-                  // Undo & Redo (Goodnotes 6 Navigation Bar controls)
+                  // Undo & Redo Navigation Bar controls
                   IconButton(
                     visualDensity: isCompact ? VisualDensity.compact : null,
                     padding: isCompact
@@ -2641,7 +2641,7 @@ class EditorState extends State<Editor>
                   ),
                   SizedBox(width: isCompact ? 2 : 4),
 
-                  // Goodnotes Document Hub & Page Pill: Page X / Y ⭐
+                  // Opennote Document Hub & Page Pill: Page X / Y ⭐
                   Center(
                     child: Container(
                       margin: EdgeInsets.symmetric(

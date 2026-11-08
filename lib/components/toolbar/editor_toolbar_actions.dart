@@ -8,7 +8,7 @@ import 'package:saber/data/tools/_tool.dart';
 /// What the editor's toolbars need to know about the editor,
 /// and what they can ask it to do.
 ///
-/// `Toolbar` and `GoodnotesToolbar` lay the same tools out differently,
+/// `Toolbar` and `OpennoteToolbar` lay the same tools out differently,
 /// so the editor describes itself to both with one of these.
 class EditorToolbarActions {
   const EditorToolbarActions({

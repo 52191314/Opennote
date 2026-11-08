@@ -8,7 +8,7 @@ import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/palm_rejection.dart';
 import 'package:saber/i18n/strings.g.dart';
 
-/// Goodnotes-inspired writing posture and palm rejection selector widget.
+/// Writing posture and palm rejection selector widget.
 class WritingPostureSelector extends StatefulWidget {
   const WritingPostureSelector({super.key, this.compact = false});
 

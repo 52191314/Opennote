@@ -7,12 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/i18n/strings.g.dart';
 
-/// Alias for the Opennote Studio header bar.
-typedef OpennoteHeaderBar = GoodnotesHeaderBar;
-
 /// An Opennote Studio document header bar designed as Three Floating Glass
-/// Islands (Apple Freeform / Concepts / Figma style) separated by transparent
-/// canvas breathing room.
+/// Islands separated by transparent canvas breathing room.
 ///
 /// Features:
 /// - **Left Floating Island**: Back navigation button, vertical hairline divider,
@@ -21,9 +17,8 @@ typedef OpennoteHeaderBar = GoodnotesHeaderBar;
 ///   inline `TextFormField` document title, [SaveIndicator], and close `×` button.
 /// - **Right Floating Action Island**: Grouped action capsule for Undo & Redo,
 ///   Hand-Scroll / Read-Only toggle, Add Page / Fit Content, Export, and More Inspector menu.
-class GoodnotesHeaderBar extends StatelessWidget
-    implements PreferredSizeWidget {
-  const GoodnotesHeaderBar({
+class OpennoteHeaderBar extends StatelessWidget implements PreferredSizeWidget {
+  const OpennoteHeaderBar({
     super.key,
     required this.filePath,
     this.customTitle,

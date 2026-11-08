@@ -316,7 +316,7 @@ class _FallbackThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (stows.goodnotesUiMode.value && filePath != null) {
+    if (stows.opennoteUiMode.value && filePath != null) {
       final name = filePath!.substring(filePath!.lastIndexOf('/') + 1);
       final colorIdx = filePath.hashCode.abs() % _notebookCoverColors.length;
       final coverColor = _notebookCoverColors[colorIdx];

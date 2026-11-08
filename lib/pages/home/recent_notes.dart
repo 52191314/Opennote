@@ -69,7 +69,7 @@ class _RecentPageState extends State<RecentPage> {
       fileWriteListener,
     );
     selectedFiles.addListener(_setState);
-    stows.goodnotesUiMode.addListener(_setState);
+    stows.opennoteUiMode.addListener(_setState);
 
     super.initState();
     moveIncorrectlyImportedFiles();
@@ -78,7 +78,7 @@ class _RecentPageState extends State<RecentPage> {
   @override
   void dispose() {
     selectedFiles.removeListener(_setState);
-    stows.goodnotesUiMode.removeListener(_setState);
+    stows.opennoteUiMode.removeListener(_setState);
     fileWriteSubscription?.cancel();
     super.dispose();
   }
@@ -115,7 +115,7 @@ class _RecentPageState extends State<RecentPage> {
     final colorScheme = ColorScheme.of(context);
     final platform = Theme.of(context).platform;
     final crossAxisCount = MediaQuery.sizeOf(context).width ~/ 300 + 1;
-    final isStudioMode = stows.goodnotesUiMode.value;
+    final isStudioMode = stows.opennoteUiMode.value;
 
     return Scaffold(
       body: RefreshIndicator(
@@ -166,7 +166,7 @@ class _RecentPageState extends State<RecentPage> {
                   ),
                   tooltip: isStudioMode ? 'Notebook Shelf View' : 'Grid View',
                   onPressed: () {
-                    stows.goodnotesUiMode.value = !stows.goodnotesUiMode.value;
+                    stows.opennoteUiMode.value = !stows.opennoteUiMode.value;
                   },
                 ),
                 const SyncingButton(),
@@ -276,7 +276,7 @@ class _WorkspaceHeroStrip extends StatelessWidget {
         subtitle: isStudioMode ? 'Notebook Covers' : 'Card Grid',
         color: const Color(0xFF1B6B76),
         onTap: () {
-          stows.goodnotesUiMode.value = !stows.goodnotesUiMode.value;
+          stows.opennoteUiMode.value = !stows.opennoteUiMode.value;
         },
       ),
       _HeroCardData(

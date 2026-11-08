@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:saber/i18n/strings.g.dart';
 
 /// Floating callout action pill appearing directly above/below a lasso selection
-/// providing quick in-context actions matching Goodnotes 6/7:
+/// providing quick in-context actions:
 /// (Cut, Copy, Delete, Resize, Color, Screenshot, Element, Arrange, Smoothen, Crop).
 class LassoCalloutMenu extends StatefulWidget {
   final VoidCallback onCut;

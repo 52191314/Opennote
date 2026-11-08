@@ -87,9 +87,9 @@ class CanvasHud extends HookWidget {
     final effectiveOpacity = isDraftingVisible ? 1.0 : opacity.value;
 
     final colorScheme = ColorScheme.of(context);
-    final isGoodnotesUi = useValueListenable(stows.goodnotesUiMode);
+    final isOpennoteUi = useValueListenable(stows.opennoteUiMode);
     final topPadding = MediaQuery.paddingOf(context).top;
-    final baseTop = isGoodnotesUi ? (topPadding + 54.0 + 8.0) : 4.0;
+    final baseTop = isOpennoteUi ? (topPadding + 54.0 + 8.0) : 4.0;
     final topOffset = setShowProtractor != null ? 168.0 : 128.0;
     final railHeight = topOffset + 114.0;
 

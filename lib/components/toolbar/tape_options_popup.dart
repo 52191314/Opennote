@@ -8,7 +8,7 @@ import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/study_tape.dart';
 import 'package:saber/i18n/strings.g.dart';
 
-/// A sleek Goodnotes-style options dialog for the [StudyTapeTool].
+/// A sleek options dialog for the [StudyTapeTool].
 ///
 /// Allows choosing between tape patterns (solid, stripes, dots, grid),
 /// selecting tape colors, and triggering "Reveal All" or "Conceal All" study actions.

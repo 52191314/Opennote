@@ -467,7 +467,7 @@ class _SettingsPageState extends State<SettingsPage> {
           subtitle:
               'Dual-tier contextual toolbar, document header bar, and 3D notebook covers',
           icon: Icons.auto_stories_rounded,
-          pref: stows.goodnotesUiMode,
+          pref: stows.opennoteUiMode,
         ),
         SettingsSelection(
           title: t.settings.prefLabels.editorToolbarAlignment,

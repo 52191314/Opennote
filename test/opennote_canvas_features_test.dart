@@ -473,7 +473,7 @@ void main() {
     });
   });
 
-  group('Feature 5: Goodnotes Eraser Mechanics & Filtering', () {
+  group('Feature 5: Eraser Mechanics & Filtering', () {
     const page = HasSize(Size(800, 1000));
 
     test(
@@ -640,7 +640,7 @@ void main() {
     });
   });
 
-  group('Feature 6: Goodnotes Straight Line Highlighter & Selection Actions', () {
+  group('Feature 6: Straight Line Highlighter & Selection Actions', () {
     const page = HasSize(Size(800, 1000));
 
     test('Highlighter Draw in Straight Line snaps horizontal drag', () {

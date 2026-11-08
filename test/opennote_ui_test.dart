@@ -12,8 +12,8 @@ import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/components/home/preview_card.dart';
 import 'package:saber/components/toolbar/editor_toolbar_actions.dart';
-import 'package:saber/components/toolbar/goodnotes_header_bar.dart';
-import 'package:saber/components/toolbar/goodnotes_toolbar.dart';
+import 'package:saber/components/toolbar/opennote_header_bar.dart';
+import 'package:saber/components/toolbar/opennote_toolbar.dart';
 import 'package:saber/components/toolbar/toolbar.dart';
 import 'package:saber/components/toolbar/toolbar_button.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
@@ -42,20 +42,20 @@ void main() {
     FileManager.documentsDirectory = Directory.systemTemp.path;
   });
 
-  group('Goodnotes UI Mode Preference Tests', () {
-    test('goodnotesUiMode is true by default on feat/goodnotes-ui branch', () {
-      expect(stows.goodnotesUiMode.value, isTrue);
+  group('Opennote UI Mode Preference Tests', () {
+    test('opennoteUiMode is true by default', () {
+      expect(stows.opennoteUiMode.value, isTrue);
     });
 
-    test('goodnotesUiMode can be toggled', () {
-      stows.goodnotesUiMode.value = false;
-      expect(stows.goodnotesUiMode.value, isFalse);
-      stows.goodnotesUiMode.value = true;
-      expect(stows.goodnotesUiMode.value, isTrue);
+    test('opennoteUiMode can be toggled', () {
+      stows.opennoteUiMode.value = false;
+      expect(stows.opennoteUiMode.value, isFalse);
+      stows.opennoteUiMode.value = true;
+      expect(stows.opennoteUiMode.value, isTrue);
     });
   });
 
-  group('GoodnotesHeaderBar Widget Tests', () {
+  group('OpennoteHeaderBar Widget Tests', () {
     testWidgets(
       'Renders all document navigation controls, tabs, and action icons',
       (tester) async {
@@ -76,7 +76,7 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
-              appBar: GoodnotesHeaderBar(
+              appBar: OpennoteHeaderBar(
                 filePath: '/notes/Physics Notes.sba',
                 filenameTextEditingController: filenameController,
                 filenameFormKey: filenameFormKey,
@@ -162,7 +162,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            appBar: GoodnotesHeaderBar(
+            appBar: OpennoteHeaderBar(
               filePath: '/notes/Bookmarked.sba',
               filenameTextEditingController: filenameController,
               filenameFormKey: filenameFormKey,
@@ -207,7 +207,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            appBar: GoodnotesHeaderBar(
+            appBar: OpennoteHeaderBar(
               filePath: '/notes/Reading.sba',
               filenameTextEditingController: filenameController,
               filenameFormKey: filenameFormKey,
@@ -241,12 +241,12 @@ void main() {
     });
   });
 
-  group('GoodnotesToolbar Dual-Tier Widget Tests', () {
+  group('OpennoteToolbar Dual-Tier Widget Tests', () {
     testWidgets('Tier 1 renders all 11 core note-taking tools', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: GoodnotesToolbar(
+            body: OpennoteToolbar(
               actions: _actions(currentTool: Pen.currentPen),
             ),
           ),
@@ -280,7 +280,7 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
-              body: GoodnotesToolbar(
+              body: OpennoteToolbar(
                 actions: _actions(currentTool: Pen.currentPen),
               ),
             ),
@@ -310,7 +310,7 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
-              body: GoodnotesToolbar(
+              body: OpennoteToolbar(
                 actions: _actions(currentTool: Eraser(size: 30)),
                 onClearPage: () => clearPageCalled = true,
               ),
@@ -346,7 +346,7 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
-              body: GoodnotesToolbar(
+              body: OpennoteToolbar(
                 actions: _actions(currentTool: Select.currentSelect),
               ),
             ),
@@ -369,7 +369,7 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
-              body: GoodnotesToolbar(
+              body: OpennoteToolbar(
                 actions: _actions(
                   currentTool: StudyTapeTool(),
                   onConcealAllTape: () => concealCalled = true,
@@ -400,7 +400,7 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
-              body: GoodnotesToolbar(
+              body: OpennoteToolbar(
                 actions: _actions(
                   currentTool: ArrowTool(),
                   pickShape: () => pickShapeCalled = true,
@@ -421,11 +421,11 @@ void main() {
     );
   });
 
-  group('Goodnotes Notebook Cover Preview Tests', () {
+  group('Notebook Cover Preview Tests', () {
     testWidgets(
-      'PreviewCard renders Goodnotes-style notebook cover when no thumbnail image exists',
+      'PreviewCard renders notebook cover when no thumbnail image exists',
       (tester) async {
-        stows.goodnotesUiMode.value = true;
+        stows.opennoteUiMode.value = true;
 
         await tester.pumpWidget(
           MaterialApp(
@@ -484,7 +484,7 @@ void main() {
     });
 
     testWidgets(
-      'GoodnotesToolbar: Tapping Pen button while on Ruler returns to Pen.currentPen',
+      'OpennoteToolbar: Tapping Pen button while on Ruler returns to Pen.currentPen',
       (tester) async {
         Pen.currentPen = Pen.fountainPen();
         Tool? selectedTool;
@@ -492,7 +492,7 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
-              body: GoodnotesToolbar(
+              body: OpennoteToolbar(
                 actions: _actions(
                   currentTool: Ruler(),
                   setTool: (tool) => selectedTool = tool,
@@ -520,14 +520,14 @@ void main() {
     );
 
     testWidgets(
-      'GoodnotesToolbar: Tapping Pen button while already on Pen opens pen options dialog',
+      'OpennoteToolbar: Tapping Pen button while already on Pen opens pen options dialog',
       (tester) async {
         Pen.currentPen = Pen.fountainPen();
 
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
-              body: GoodnotesToolbar(
+              body: OpennoteToolbar(
                 actions: _actions(currentTool: Pen.currentPen),
               ),
             ),

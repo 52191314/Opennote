@@ -37,7 +37,7 @@ class Select extends Tool {
   var doneSelecting = false;
 
   /// Whether the transform/resize bounding box handles are actively shown.
-  /// Follows Goodnotes mechanics where the selection contour is clean by default,
+  /// The selection contour is clean by default,
   /// and transform handles appear upon tapping 'Resize' in the callout menu.
   var isResizeActive = false;
 

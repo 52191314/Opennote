@@ -6,7 +6,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saber/components/toolbar/editor_toolbar_actions.dart';
-import 'package:saber/components/toolbar/goodnotes_toolbar.dart';
+import 'package:saber/components/toolbar/opennote_toolbar.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
 import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/prefs.dart';
@@ -81,7 +81,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: GoodnotesToolbar(
+          body: OpennoteToolbar(
             actions: _actions(pen),
             onToggleZoomWindow: () {},
           ),
@@ -108,7 +108,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: GoodnotesToolbar(
+          body: OpennoteToolbar(
             actions: _actions(Highlighter.currentHighlighter),
             onToggleZoomWindow: () {},
           ),

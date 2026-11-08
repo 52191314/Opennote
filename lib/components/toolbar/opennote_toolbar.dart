@@ -37,9 +37,6 @@ import 'package:saber/data/tools/select.dart';
 import 'package:saber/data/tools/study_tape.dart';
 import 'package:saber/i18n/strings.g.dart';
 
-/// Alias for the Opennote Studio Dual-Tier Toolbar.
-typedef OpennoteToolbar = GoodnotesToolbar;
-
 /// A comprehensive Opennote Studio Dual-Tier Writing Toolbar.
 ///
 /// **Tier 1 (Primary Studio Tool Dock)**:
@@ -58,8 +55,8 @@ typedef OpennoteToolbar = GoodnotesToolbar;
 ///   - Study Tape: Conceal All, Reveal All, and pattern styles.
 ///   - Shapes: Shape presets and drafting shortcuts.
 ///   - Text: Rich text formatting controls.
-class GoodnotesToolbar extends StatefulWidget {
-  const GoodnotesToolbar({
+class OpennoteToolbar extends StatefulWidget {
+  const OpennoteToolbar({
     super.key,
     required this.actions,
     this.onClearPage,
@@ -80,10 +77,10 @@ class GoodnotesToolbar extends StatefulWidget {
   final VoidCallback? onToggleZoomWindow;
 
   @override
-  State<GoodnotesToolbar> createState() => _GoodnotesToolbarState();
+  State<OpennoteToolbar> createState() => _OpennoteToolbarState();
 }
 
-class _GoodnotesToolbarState extends State<GoodnotesToolbar> {
+class _OpennoteToolbarState extends State<OpennoteToolbar> {
   static const _buttonPadding = EdgeInsets.symmetric(
     horizontal: 5,
     vertical: 4,
