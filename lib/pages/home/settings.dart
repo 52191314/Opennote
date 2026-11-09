@@ -28,7 +28,6 @@ import 'package:saber/components/theming/adaptive_alert_dialog.dart';
 import 'package:saber/components/theming/adaptive_toggle_buttons.dart';
 import 'package:saber/components/theming/saber_theme.dart';
 import 'package:saber/components/theming/uni_icon.dart';
-import 'package:saber/data/file_manager/file_manager.dart';
 import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/is_this_a_test.dart';
 import 'package:saber/data/locales.dart';
@@ -296,20 +295,6 @@ class _SettingsPageState extends State<SettingsPage> {
           SettingsDirectorySelector(
             title: t.settings.prefLabels.customDataDir,
             icon: Icons.folder,
-          ),
-        if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
-          SettingsButton(
-            title: t.settings.openDataDir,
-            icon: Icons.folder_open,
-            onPressed: () {
-              if (Platform.isWindows) {
-                Process.run('explorer', [FileManager.documentsDirectory]);
-              } else if (Platform.isLinux) {
-                Process.run('xdg-open', [FileManager.documentsDirectory]);
-              } else if (Platform.isMacOS) {
-                Process.run('open', [FileManager.documentsDirectory]);
-              }
-            },
           ),
         SettingsSwitch(
           title: t.settings.prefLabels.allowInsecureConnections,

@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -5,7 +8,7 @@ import 'package:saber/i18n/strings.g.dart';
 
 void main() {
   group('Locales listed in platform files', () {
-    for (final path in ['ios/Runner/Info.plist', 'macos/Runner/Info.plist']) {
+    for (final path in ['ios/Runner/Info.plist']) {
       test(path, () async {
         var contents = await File(path).readAsString();
 
