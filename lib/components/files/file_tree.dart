@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber/components/design_system/opennote_tokens.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
+import 'package:saber/data/file_manager/item_drag_state.dart';
 import 'package:saber/data/routes.dart';
 import 'package:saber/i18n/strings.g.dart';
 
@@ -272,6 +273,10 @@ class _FileTreeBranchState extends State<FileTreeBranch> {
         : isDesktop
         ? Draggable<String>(
             data: widget.path!,
+            onDragStarted: () => ItemDragState.startDrag(widget.path!),
+            onDragEnd: (_) => ItemDragState.endDrag(),
+            onDraggableCanceled: (_, _) => ItemDragState.endDrag(),
+            onDragCompleted: () => ItemDragState.endDrag(),
             feedback: feedbackWidget,
             childWhenDragging: Opacity(opacity: 0.4, child: nodeRow),
             child: nodeRow,
@@ -279,6 +284,10 @@ class _FileTreeBranchState extends State<FileTreeBranch> {
         : LongPressDraggable<String>(
             delay: const Duration(milliseconds: 200),
             data: widget.path!,
+            onDragStarted: () => ItemDragState.startDrag(widget.path!),
+            onDragEnd: (_) => ItemDragState.endDrag(),
+            onDraggableCanceled: (_, _) => ItemDragState.endDrag(),
+            onDragCompleted: () => ItemDragState.endDrag(),
             feedback: feedbackWidget,
             childWhenDragging: Opacity(opacity: 0.4, child: nodeRow),
             child: nodeRow,

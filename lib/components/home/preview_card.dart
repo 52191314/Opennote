@@ -8,9 +8,12 @@ import 'package:flutter/material.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/inner_canvas.dart';
 import 'package:saber/components/canvas/invert_widget.dart';
+import 'package:saber/components/home/delete_note_button.dart';
+import 'package:saber/components/home/rename_note_button.dart';
 import 'package:saber/components/home/sync_indicator.dart';
 import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
+import 'package:saber/data/file_manager/item_drag_state.dart';
 import 'package:saber/data/is_this_a_test.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/routes.dart';
@@ -236,7 +239,7 @@ class _PreviewCardState extends State<PreviewCard> {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
                 border: Border(
                   top: BorderSide(
@@ -245,16 +248,96 @@ class _PreviewCardState extends State<PreviewCard> {
                   ),
                 ),
               ),
-              child: Text(
-                widget.filePath.substring(widget.filePath.lastIndexOf('/') + 1),
-                maxLines: 2,
-                overflow: .ellipsis,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurface,
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.filePath.substring(
+                        widget.filePath.lastIndexOf('/') + 1,
+                      ),
+                      maxLines: 1,
+                      overflow: .ellipsis,
+                      textAlign: TextAlign.start,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: PopupMenuButton<String>(
+                      iconSize: 18,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 140),
+                      icon: Icon(
+                        Icons.more_vert_rounded,
+                        size: 18,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      onSelected: (value) async {
+                        if (value == 'select') {
+                          _toggleCardSelection();
+                        } else if (value == 'rename') {
+                          await RenameNoteButton.showRenameDialog(
+                            context,
+                            existingPath: widget.filePath,
+                          );
+                        } else if (value == 'delete') {
+                          await DeleteNoteButton.showDeleteDialog(
+                            context,
+                            filesToDelete: [widget.filePath],
+                          );
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'select',
+                          child: Row(
+                            children: [
+                              Icon(
+                                expanded.value
+                                    ? Icons.check_box_rounded
+                                    : Icons.check_box_outline_blank_rounded,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(expanded.value ? 'Deselect' : 'Select'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'rename',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.edit_square, size: 18),
+                              const SizedBox(width: 10),
+                              Text(t.home.renameNote.renameNote),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.delete_forever_rounded,
+                                size: 18,
+                                color: colorScheme.error,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                t.home.deleteNote,
+                                style: TextStyle(color: colorScheme.error),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -359,6 +442,10 @@ class _PreviewCardState extends State<PreviewCard> {
     return LongPressDraggable<String>(
       data: widget.filePath,
       delay: const Duration(milliseconds: 200),
+      onDragStarted: () => ItemDragState.startDrag(widget.filePath),
+      onDragEnd: (_) => ItemDragState.endDrag(),
+      onDraggableCanceled: (_, _) => ItemDragState.endDrag(),
+      onDragCompleted: () => ItemDragState.endDrag(),
       feedback: feedbackWidget,
       childWhenDragging: Opacity(opacity: 0.4, child: openContainerWidget),
       child: openContainerWidget,

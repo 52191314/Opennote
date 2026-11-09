@@ -11,6 +11,7 @@ import 'package:saber/components/home/rename_folder_button.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
 import 'package:saber/data/extensions/list_extensions.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
+import 'package:saber/data/file_manager/item_drag_state.dart';
 import 'package:saber/i18n/strings.g.dart';
 
 class GridFolders extends StatelessWidget {
@@ -189,6 +190,30 @@ class _GridFolderState extends State<_GridFolder> {
                       ),
                     ),
                     if (widget.cardType == .realFolder)
+                      Positioned(
+                        top: -4,
+                        right: -4,
+                        child: ValueListenableBuilder<bool>(
+                          valueListenable: expanded,
+                          builder: (context, isExpanded, _) => IconButton(
+                            iconSize: 18,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            tooltip: isExpanded
+                                ? t.common.cancel
+                                : t.home.tabs.settings,
+                            icon: Icon(
+                              isExpanded
+                                  ? Icons.close_rounded
+                                  : Icons.more_vert_rounded,
+                              size: 18,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            onPressed: () => expanded.value = !expanded.value,
+                          ),
+                        ),
+                      ),
+                    if (widget.cardType == .realFolder)
                       Positioned.fill(
                         child: ValueListenableBuilder(
                           valueListenable: expanded,
@@ -309,10 +334,15 @@ class _GridFolderState extends State<_GridFolder> {
 
     Widget wrapWithDraggable(Widget cardContent) {
       if (widget.cardType != _FolderCardType.realFolder) return cardContent;
+      if (expanded.value) return cardContent;
 
       if (isDesktop) {
         return Draggable<String>(
           data: targetFolderPath,
+          onDragStarted: () => ItemDragState.startDrag(targetFolderPath),
+          onDragEnd: (_) => ItemDragState.endDrag(),
+          onDraggableCanceled: (_, _) => ItemDragState.endDrag(),
+          onDragCompleted: () => ItemDragState.endDrag(),
           feedback: feedbackWidget,
           childWhenDragging: Opacity(opacity: 0.4, child: cardContent),
           child: cardContent,
@@ -321,6 +351,10 @@ class _GridFolderState extends State<_GridFolder> {
         return LongPressDraggable<String>(
           delay: const Duration(milliseconds: 200),
           data: targetFolderPath,
+          onDragStarted: () => ItemDragState.startDrag(targetFolderPath),
+          onDragEnd: (_) => ItemDragState.endDrag(),
+          onDraggableCanceled: (_, _) => ItemDragState.endDrag(),
+          onDragCompleted: () => ItemDragState.endDrag(),
           feedback: feedbackWidget,
           childWhenDragging: Opacity(opacity: 0.4, child: cardContent),
           child: cardContent,

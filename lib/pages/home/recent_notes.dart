@@ -17,6 +17,7 @@ import 'package:saber/components/home/notebook_shelf.dart';
 import 'package:saber/components/home/rename_note_button.dart';
 import 'package:saber/components/home/search_dialog.dart';
 import 'package:saber/components/home/syncing_button.dart';
+import 'package:saber/components/home/trash_drop_zone.dart';
 import 'package:saber/components/home/welcome.dart';
 import 'package:saber/components/theming/saber_theme.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
@@ -118,118 +119,142 @@ class _RecentPageState extends State<RecentPage> {
     final isStudioMode = stows.opennoteUiMode.value;
 
     return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: () => Future.wait([
-          findRecentlyAccessedNotes(),
-          Future.delayed(const Duration(milliseconds: 500)),
-        ]),
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              collapsedHeight: 56,
-              expandedHeight: 88,
-              pinned: true,
-              scrolledUnderElevation: 0.5,
-              surfaceTintColor: Colors.transparent,
-              shape: Border(
-                bottom: BorderSide(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.25),
-                  width: 1,
-                ),
-              ),
-              flexibleSpace: FlexibleSpaceBar(
-                title: Text(
-                  t.home.titles.home,
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.4,
-                  ),
-                ),
-                centerTitle: false,
-                titlePadding: const EdgeInsetsDirectional.only(
-                  start: 20,
-                  bottom: 12,
-                ),
-              ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.search),
-                  tooltip: t.home.search.hint,
-                  onPressed: () => SearchDialog.show(context),
-                ),
-                IconButton(
-                  icon: Icon(
-                    isStudioMode
-                        ? Icons.auto_stories_rounded
-                        : Icons.grid_view_rounded,
-                  ),
-                  tooltip: isStudioMode ? 'Notebook Shelf View' : 'Grid View',
-                  onPressed: () {
-                    stows.opennoteUiMode.value = !stows.opennoteUiMode.value;
-                  },
-                ),
-                const SyncingButton(),
-                const SizedBox(width: 4),
-              ],
-            ),
-            // Workspace Omnibar & Bento Hero Action Strip
-            SliverToBoxAdapter(
-              child: _WorkspaceHeroStrip(isStudioMode: isStudioMode),
-            ),
-            if (failed) ...[
-              const SliverSafeArea(
-                sliver: SliverToBoxAdapter(child: Welcome()),
-              ),
-            ] else if (isStudioMode && filePaths.isNotEmpty) ...[
-              // Jump Back In — Pinned & Recent Shelf
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 4),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.auto_stories_rounded,
-                        size: 18,
-                        color: colorScheme.primary,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: RefreshIndicator(
+              onRefresh: () => Future.wait([
+                findRecentlyAccessedNotes(),
+                Future.delayed(const Duration(milliseconds: 500)),
+              ]),
+              child: CustomScrollView(
+                slivers: [
+                  SliverAppBar(
+                    collapsedHeight: 56,
+                    expandedHeight: 88,
+                    pinned: true,
+                    scrolledUnderElevation: 0.5,
+                    surfaceTintColor: Colors.transparent,
+                    shape: Border(
+                      bottom: BorderSide(
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.25,
+                        ),
+                        width: 1,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Jump Back In — Pinned & Recent Shelf',
+                    ),
+                    flexibleSpace: FlexibleSpaceBar(
+                      title: Text(
+                        t.home.titles.home,
                         style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.3,
                           color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.4,
                         ),
                       ),
+                      centerTitle: false,
+                      titlePadding: const EdgeInsetsDirectional.only(
+                        start: 20,
+                        bottom: 12,
+                      ),
+                    ),
+                    actions: [
+                      IconButton(
+                        icon: const Icon(Icons.search),
+                        tooltip: t.home.search.hint,
+                        onPressed: () => SearchDialog.show(context),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          isStudioMode
+                              ? Icons.auto_stories_rounded
+                              : Icons.grid_view_rounded,
+                        ),
+                        tooltip: isStudioMode
+                            ? 'Notebook Shelf View'
+                            : 'Grid View',
+                        onPressed: () {
+                          stows.opennoteUiMode.value =
+                              !stows.opennoteUiMode.value;
+                        },
+                      ),
+                      const SyncingButton(),
+                      const SizedBox(width: 4),
                     ],
                   ),
-                ),
+                  // Workspace Omnibar & Bento Hero Action Strip
+                  SliverToBoxAdapter(
+                    child: _WorkspaceHeroStrip(isStudioMode: isStudioMode),
+                  ),
+                  if (failed) ...[
+                    const SliverSafeArea(
+                      sliver: SliverToBoxAdapter(child: Welcome()),
+                    ),
+                  ] else if (isStudioMode && filePaths.isNotEmpty) ...[
+                    // Jump Back In — Pinned & Recent Shelf
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 10, 20, 4),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.auto_stories_rounded,
+                              size: 18,
+                              color: colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Jump Back In — Pinned & Recent Shelf',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.3,
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: NotebookShelf(
+                        notes: filePaths,
+                        folders: const [],
+                        onOpenNote: (note) =>
+                            context.push(RoutePaths.editFilePath(note)),
+                        onOpenFolder: (_) {},
+                        onDeleteNote: (note) => findRecentlyAccessedNotes(),
+                        onRenameNote: (oldPath, newName) =>
+                            findRecentlyAccessedNotes(),
+                        onCreateNote: (note) =>
+                            context.push(RoutePaths.editFilePath(note)),
+                      ),
+                    ),
+                  ] else ...[
+                    SliverSafeArea(
+                      minimum: const .only(bottom: 70),
+                      sliver: MasonryFiles(
+                        crossAxisCount: crossAxisCount,
+                        files: [for (final filePath in filePaths) filePath],
+                        selectedFiles: selectedFiles,
+                      ),
+                    ),
+                  ],
+                ],
               ),
-              SliverToBoxAdapter(
-                child: NotebookShelf(
-                  notes: filePaths,
-                  folders: const [],
-                  onOpenNote: (note) =>
-                      context.push(RoutePaths.editFilePath(note)),
-                  onOpenFolder: (_) {},
-                  onCreateNote: (note) =>
-                      context.push(RoutePaths.editFilePath(note)),
-                ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 16,
+            child: Center(
+              child: TrashDropZone(
+                onItemDeleted: (deletedPath) => findRecentlyAccessedNotes(),
               ),
-            ] else ...[
-              SliverSafeArea(
-                minimum: const .only(bottom: 70),
-                sliver: MasonryFiles(
-                  crossAxisCount: crossAxisCount,
-                  files: [for (final filePath in filePaths) filePath],
-                  selectedFiles: selectedFiles,
-                ),
-              ),
-            ],
-          ],
-        ),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: NewNoteButton(cupertino: platform.isCupertino),
       bottomNavigationBar: selectedFiles.value.isEmpty

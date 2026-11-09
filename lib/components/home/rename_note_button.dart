@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
@@ -18,22 +21,33 @@ class RenameNoteButton extends StatelessWidget {
   final String existingPath;
   final void Function() unselectNotes;
 
+  /// Shows the standard rename dialog for a note file.
+  static Future<void> showRenameDialog(
+    BuildContext context, {
+    required String existingPath,
+    VoidCallback? onRenamed,
+  }) async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return _RenameNoteDialog(
+          existingPath: existingPath,
+          unselectNotes: onRenamed ?? () {},
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return IconButton(
       padding: .zero,
       tooltip: t.home.renameNote.renameNote,
-      onPressed: () {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return _RenameNoteDialog(
-              existingPath: existingPath,
-              unselectNotes: unselectNotes,
-            );
-          },
-        );
-      },
+      onPressed: () => showRenameDialog(
+        context,
+        existingPath: existingPath,
+        onRenamed: unselectNotes,
+      ),
       icon: const Icon(Icons.edit_square),
     );
   }

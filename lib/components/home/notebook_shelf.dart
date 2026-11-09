@@ -3,7 +3,12 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:saber/components/home/delete_folder_button.dart';
+import 'package:saber/components/home/delete_note_button.dart';
+import 'package:saber/components/home/rename_folder_button.dart';
+import 'package:saber/components/home/rename_note_button.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
+import 'package:saber/data/file_manager/item_drag_state.dart';
 import 'package:saber/i18n/strings.g.dart';
 
 /// Notebooks as covers on a shelf.
@@ -21,6 +26,12 @@ class NotebookShelf extends StatelessWidget {
     required this.onCreateNote,
     this.directory,
     this.onMoveItem,
+    this.onDeleteNote,
+    this.onRenameNote,
+    this.onDeleteFolder,
+    this.onRenameFolder,
+    this.doesFolderExist,
+    this.isFolderEmpty,
   });
 
   /// Note paths to show as covers.
@@ -40,6 +51,24 @@ class NotebookShelf extends StatelessWidget {
 
   /// Called when an item is dropped and moved into a folder on the shelf.
   final void Function(String itemPath, String targetFolderPath)? onMoveItem;
+
+  /// Called when a notebook is deleted from the shelf.
+  final void Function(String notePath)? onDeleteNote;
+
+  /// Called when a notebook is renamed.
+  final void Function(String oldPath, String newName)? onRenameNote;
+
+  /// Called when a folder is deleted from the shelf.
+  final void Function(String folderName)? onDeleteFolder;
+
+  /// Called when a folder is renamed.
+  final void Function(String oldName, String newName)? onRenameFolder;
+
+  /// Check whether a folder name already exists.
+  final bool Function(String folderName)? doesFolderExist;
+
+  /// Check whether a folder is empty before deletion.
+  final Future<bool> Function(String folderName)? isFolderEmpty;
 
   static const _coverColors = <Color>[
     Color(0xFF2B4C7E), // Royal Moleskine Navy
@@ -130,12 +159,94 @@ class NotebookShelf extends StatelessWidget {
                           size: 18,
                           color: scheme.primary,
                         ),
-                        label: Text(
-                          folder,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: scheme.onSurface,
-                          ),
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              folder,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: scheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            PopupMenuButton<String>(
+                              iconSize: 15,
+                              padding: EdgeInsets.zero,
+                              icon: Icon(
+                                Icons.more_vert_rounded,
+                                size: 15,
+                                color: scheme.onSurfaceVariant,
+                              ),
+                              onSelected: (value) async {
+                                if (value == 'open') {
+                                  onOpenFolder(folder);
+                                } else if (value == 'rename') {
+                                  await RenameFolderButton.showRenameDialog(
+                                    context,
+                                    folderName: folder,
+                                    doesFolderExist:
+                                        doesFolderExist ?? (_) => false,
+                                    renameFolder: (newName) async {
+                                      onRenameFolder?.call(folder, newName);
+                                    },
+                                  );
+                                } else if (value == 'delete') {
+                                  await DeleteFolderButton.showDeleteDialog(
+                                    context,
+                                    folderName: folder,
+                                    deleteFolder: (name) async {
+                                      onDeleteFolder?.call(name);
+                                    },
+                                    isFolderEmpty:
+                                        isFolderEmpty ?? (_) async => true,
+                                  );
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                PopupMenuItem(
+                                  value: 'open',
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.folder_open_rounded,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(t.home.tabs.browse),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem(
+                                  value: 'rename',
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.edit_square, size: 18),
+                                      const SizedBox(width: 10),
+                                      Text(t.home.renameFolder.renameFolder),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.delete_forever_rounded,
+                                        size: 18,
+                                        color: scheme.error,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        t.home.deleteFolder.deleteFolder,
+                                        style: TextStyle(color: scheme.error),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                         backgroundColor: isHovered
                             ? scheme.primary.withValues(alpha: 0.2)
@@ -170,6 +281,8 @@ class NotebookShelf extends StatelessWidget {
                   color:
                       _coverColors[note.hashCode.abs() % _coverColors.length],
                   onTap: () => onOpenNote(note),
+                  onDelete: () => onDeleteNote?.call(note),
+                  onRename: () => onRenameNote?.call(note, note),
                 ),
               _NewNotebook(onTap: () => _create(context)),
             ],
@@ -219,12 +332,16 @@ class _NotebookCover extends StatelessWidget {
     required this.title,
     required this.color,
     required this.onTap,
+    this.onDelete,
+    this.onRename,
   });
 
   final String filePath;
   final String title;
   final Color color;
   final VoidCallback onTap;
+  final VoidCallback? onDelete;
+  final VoidCallback? onRename;
 
   static const _bookRadius = BorderRadius.only(
     topLeft: Radius.circular(4),
@@ -233,7 +350,10 @@ class _NotebookCover extends StatelessWidget {
     bottomRight: Radius.circular(10),
   );
 
-  Widget _buildCoverContent() {
+  Widget _buildCoverContent(BuildContext context) {
+    final theme = Theme.of(context);
+    final errorColor = theme.colorScheme.error;
+
     return SizedBox(
       width: 104,
       height: 138,
@@ -328,6 +448,87 @@ class _NotebookCover extends StatelessWidget {
                 ),
               ),
             ),
+            // Top-right 3-dots action menu button
+            Positioned(
+              top: 4,
+              right: 4,
+              child: Material(
+                color: Colors.transparent,
+                child: PopupMenuButton<String>(
+                  iconSize: 16,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 140),
+                  icon: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.28),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.more_vert_rounded,
+                      size: 14,
+                      color: Colors.white,
+                    ),
+                  ),
+                  onSelected: (value) async {
+                    if (value == 'open') {
+                      onTap();
+                    } else if (value == 'rename') {
+                      await RenameNoteButton.showRenameDialog(
+                        context,
+                        existingPath: filePath,
+                        onRenamed: onRename,
+                      );
+                    } else if (value == 'delete') {
+                      await DeleteNoteButton.showDeleteDialog(
+                        context,
+                        filesToDelete: [filePath],
+                        onDeleted: onDelete,
+                      );
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'open',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.launch_rounded, size: 18),
+                          const SizedBox(width: 10),
+                          Text(t.home.tabs.home),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'rename',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.edit_square, size: 18),
+                          const SizedBox(width: 10),
+                          Text(t.home.renameNote.renameNote),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.delete_forever_rounded,
+                            size: 18,
+                            color: errorColor,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            t.home.deleteNote,
+                            style: TextStyle(color: errorColor),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -339,19 +540,23 @@ class _NotebookCover extends StatelessWidget {
     final bookWidget = InkWell(
       onTap: onTap,
       borderRadius: _bookRadius,
-      child: _buildCoverContent(),
+      child: _buildCoverContent(context),
     );
 
     final feedbackWidget = Material(
       color: Colors.transparent,
       elevation: 8,
       borderRadius: _bookRadius,
-      child: Transform.scale(scale: 0.9, child: _buildCoverContent()),
+      child: Transform.scale(scale: 0.9, child: _buildCoverContent(context)),
     );
 
     return LongPressDraggable<String>(
       data: filePath,
       delay: const Duration(milliseconds: 200),
+      onDragStarted: () => ItemDragState.startDrag(filePath),
+      onDragEnd: (_) => ItemDragState.endDrag(),
+      onDraggableCanceled: (_, _) => ItemDragState.endDrag(),
+      onDragCompleted: () => ItemDragState.endDrag(),
       feedback: feedbackWidget,
       childWhenDragging: Opacity(opacity: 0.4, child: bookWidget),
       child: bookWidget,

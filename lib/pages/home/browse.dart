@@ -20,6 +20,7 @@ import 'package:saber/components/home/path_components.dart';
 import 'package:saber/components/home/rename_note_button.dart';
 import 'package:saber/components/home/search_dialog.dart';
 import 'package:saber/components/home/syncing_button.dart';
+import 'package:saber/components/home/trash_drop_zone.dart';
 import 'package:saber/components/theming/saber_theme.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
 import 'package:saber/data/prefs.dart';
@@ -130,158 +131,206 @@ class _BrowsePageState extends State<BrowsePage> {
     final isStudioMode = stows.opennoteUiMode.value;
 
     return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: () => Future.wait([
-          findChildrenOfPath(),
-          Future.delayed(const Duration(milliseconds: 500)),
-        ]),
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              collapsedHeight: 56,
-              expandedHeight: 88,
-              pinned: true,
-              scrolledUnderElevation: 0.5,
-              surfaceTintColor: Colors.transparent,
-              shape: Border(
-                bottom: BorderSide(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.25),
-                  width: 1,
-                ),
-              ),
-              flexibleSpace: FlexibleSpaceBar(
-                title: Text(
-                  t.home.titles.browse,
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.4,
-                  ),
-                ),
-                centerTitle: false,
-                titlePadding: const EdgeInsetsDirectional.only(
-                  start: 20,
-                  bottom: 12,
-                ),
-              ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.search),
-                  tooltip: t.home.search.hint,
-                  onPressed: () => SearchDialog.show(context),
-                ),
-                IconButton(
-                  icon: Icon(
-                    isStudioMode
-                        ? Icons.auto_stories_rounded
-                        : Icons.grid_view_rounded,
-                  ),
-                  tooltip: isStudioMode ? 'Notebook Shelf View' : 'Grid View',
-                  onPressed: () {
-                    stows.opennoteUiMode.value = !stows.opennoteUiMode.value;
-                  },
-                ),
-                const SyncingButton(),
-                const SizedBox(width: 4),
-              ],
-            ),
-            // Workspace Omnibar & Bento Hero Action Strip
-            SliverToBoxAdapter(
-              child: _WorkspaceHeroStrip(
-                isStudioMode: isStudioMode,
-                createPath: path,
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: PathComponents(
-                path,
-                onPathComponentTap: onPathComponentTap,
-                onItemMoved: (item, target) => findChildrenOfPath(),
-              ),
-            ),
-            const SliverPadding(padding: .only(bottom: 8)),
-            GridFolders(
-              isAtRoot: path?.isEmpty ?? true,
-              currentPath: path,
-              crossAxisCount: crossAxisCount,
-              onTap: onDirectoryTap,
-              onItemMoved: (item, target) => findChildrenOfPath(),
-              createFolder: createFolder,
-              doesFolderExist: (String folderName) {
-                return children?.directories.contains(folderName) ?? false;
-              },
-              renameFolder: (String oldName, String newName) async {
-                final oldPath = '${path ?? ''}/$oldName';
-                await FileManager.renameDirectory(oldPath, newName);
-                findChildrenOfPath();
-              },
-              isFolderEmpty: (String folderName) async {
-                final folderPath = '${path ?? ''}/$folderName';
-                final children = await FileManager.getChildrenOfDirectory(
-                  folderPath,
-                );
-                return children?.isEmpty ?? true;
-              },
-              deleteFolder: (String folderName) async {
-                final folderPath = '${path ?? ''}/$folderName';
-                await FileManager.deleteDirectory(folderPath);
-                findChildrenOfPath();
-              },
-              folders: [
-                for (final directoryPath in children?.directories ?? const [])
-                  directoryPath,
-              ],
-            ),
-            if (children == null) ...[
-              // loading
-            ] else if (isStudioMode) ...[
-              SliverToBoxAdapter(
-                child: NotebookShelf(
-                  directory: path,
-                  notes: {
-                    for (final filePath in children?.files ?? const [])
-                      "${path ?? ""}/$filePath",
-                    ..._pendingNotes.where(
-                      (note) => path == null
-                          ? !note.substring(1).contains('/')
-                          : note.startsWith('$path/'),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: RefreshIndicator(
+              onRefresh: () => Future.wait([
+                findChildrenOfPath(),
+                Future.delayed(const Duration(milliseconds: 500)),
+              ]),
+              child: CustomScrollView(
+                slivers: [
+                  SliverAppBar(
+                    collapsedHeight: 56,
+                    expandedHeight: 88,
+                    pinned: true,
+                    scrolledUnderElevation: 0.5,
+                    surfaceTintColor: Colors.transparent,
+                    shape: Border(
+                      bottom: BorderSide(
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.25,
+                        ),
+                        width: 1,
+                      ),
                     ),
-                  }.toList(),
-                  folders: [
-                    for (final directoryPath
-                        in children?.directories ?? const [])
-                      directoryPath,
+                    flexibleSpace: FlexibleSpaceBar(
+                      title: Text(
+                        t.home.titles.browse,
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                      centerTitle: false,
+                      titlePadding: const EdgeInsetsDirectional.only(
+                        start: 20,
+                        bottom: 12,
+                      ),
+                    ),
+                    actions: [
+                      IconButton(
+                        icon: const Icon(Icons.search),
+                        tooltip: t.home.search.hint,
+                        onPressed: () => SearchDialog.show(context),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          isStudioMode
+                              ? Icons.auto_stories_rounded
+                              : Icons.grid_view_rounded,
+                        ),
+                        tooltip: isStudioMode
+                            ? 'Notebook Shelf View'
+                            : 'Grid View',
+                        onPressed: () {
+                          stows.opennoteUiMode.value =
+                              !stows.opennoteUiMode.value;
+                        },
+                      ),
+                      const SyncingButton(),
+                      const SizedBox(width: 4),
+                    ],
+                  ),
+                  // Workspace Omnibar & Bento Hero Action Strip
+                  SliverToBoxAdapter(
+                    child: _WorkspaceHeroStrip(
+                      isStudioMode: isStudioMode,
+                      createPath: path,
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: PathComponents(
+                      path,
+                      onPathComponentTap: onPathComponentTap,
+                      onItemMoved: (item, target) => findChildrenOfPath(),
+                    ),
+                  ),
+                  const SliverPadding(padding: .only(bottom: 8)),
+                  GridFolders(
+                    isAtRoot: path?.isEmpty ?? true,
+                    currentPath: path,
+                    crossAxisCount: crossAxisCount,
+                    onTap: onDirectoryTap,
+                    onItemMoved: (item, target) => findChildrenOfPath(),
+                    createFolder: createFolder,
+                    doesFolderExist: (String folderName) {
+                      return children?.directories.contains(folderName) ??
+                          false;
+                    },
+                    renameFolder: (String oldName, String newName) async {
+                      final oldPath = '${path ?? ''}/$oldName';
+                      await FileManager.renameDirectory(oldPath, newName);
+                      findChildrenOfPath();
+                    },
+                    isFolderEmpty: (String folderName) async {
+                      final folderPath = '${path ?? ''}/$folderName';
+                      final children = await FileManager.getChildrenOfDirectory(
+                        folderPath,
+                      );
+                      return children?.isEmpty ?? true;
+                    },
+                    deleteFolder: (String folderName) async {
+                      final folderPath = '${path ?? ''}/$folderName';
+                      await FileManager.deleteDirectory(folderPath);
+                      findChildrenOfPath();
+                    },
+                    folders: [
+                      for (final directoryPath
+                          in children?.directories ?? const [])
+                        directoryPath,
+                    ],
+                  ),
+                  if (children == null) ...[
+                    // loading
+                  ] else if (isStudioMode) ...[
+                    SliverToBoxAdapter(
+                      child: NotebookShelf(
+                        directory: path,
+                        notes: {
+                          for (final filePath in children?.files ?? const [])
+                            "${path ?? ""}/$filePath",
+                          ..._pendingNotes.where(
+                            (note) => path == null
+                                ? !note.substring(1).contains('/')
+                                : note.startsWith('$path/'),
+                          ),
+                        }.toList(),
+                        folders: [
+                          for (final directoryPath
+                              in children?.directories ?? const [])
+                            directoryPath,
+                        ],
+                        onOpenNote: (note) =>
+                            context.push(RoutePaths.editFilePath(note)),
+                        onOpenFolder: onDirectoryTap,
+                        onMoveItem: (item, target) => findChildrenOfPath(),
+                        onDeleteNote: (note) => findChildrenOfPath(),
+                        onRenameNote: (oldPath, newName) =>
+                            findChildrenOfPath(),
+                        onDeleteFolder: (folderName) async {
+                          final folderPath = '${path ?? ''}/$folderName';
+                          await FileManager.deleteDirectory(folderPath);
+                          findChildrenOfPath();
+                        },
+                        onRenameFolder: (oldName, newName) async {
+                          final oldPath = '${path ?? ''}/$oldName';
+                          await FileManager.renameDirectory(oldPath, newName);
+                          findChildrenOfPath();
+                        },
+                        doesFolderExist: (String folderName) {
+                          return children?.directories.contains(folderName) ??
+                              false;
+                        },
+                        isFolderEmpty: (String folderName) async {
+                          final folderPath = '${path ?? ''}/$folderName';
+                          final children =
+                              await FileManager.getChildrenOfDirectory(
+                                folderPath,
+                              );
+                          return children?.isEmpty ?? true;
+                        },
+                        onCreateNote: (note) {
+                          setState(() => _pendingNotes.add(note));
+                          context.push(RoutePaths.editFilePath(note));
+                        },
+                      ),
+                    ),
+                  ] else if (children!.isEmpty) ...[
+                    const SliverSafeArea(
+                      sliver: SliverToBoxAdapter(child: NoFiles()),
+                    ),
+                  ] else ...[
+                    SliverSafeArea(
+                      top: false,
+                      minimum: const .only(top: 8, bottom: 70),
+                      sliver: MasonryFiles(
+                        crossAxisCount: crossAxisCount,
+                        files: [
+                          for (final filePath in children?.files ?? const [])
+                            "${path ?? ""}/$filePath",
+                        ],
+                        selectedFiles: selectedFiles,
+                      ),
+                    ),
                   ],
-                  onOpenNote: (note) =>
-                      context.push(RoutePaths.editFilePath(note)),
-                  onOpenFolder: onDirectoryTap,
-                  onMoveItem: (item, target) => findChildrenOfPath(),
-                  onCreateNote: (note) {
-                    setState(() => _pendingNotes.add(note));
-                    context.push(RoutePaths.editFilePath(note));
-                  },
-                ),
+                ],
               ),
-            ] else if (children!.isEmpty) ...[
-              const SliverSafeArea(
-                sliver: SliverToBoxAdapter(child: NoFiles()),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 16,
+            child: Center(
+              child: TrashDropZone(
+                onItemDeleted: (deletedPath) => findChildrenOfPath(),
               ),
-            ] else ...[
-              SliverSafeArea(
-                top: false,
-                minimum: const .only(top: 8, bottom: 70),
-                sliver: MasonryFiles(
-                  crossAxisCount: crossAxisCount,
-                  files: [
-                    for (final filePath in children?.files ?? const [])
-                      "${path ?? ""}/$filePath",
-                  ],
-                  selectedFiles: selectedFiles,
-                ),
-              ),
-            ],
-          ],
-        ),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: NewNoteButton(
         cupertino: platform.isCupertino,

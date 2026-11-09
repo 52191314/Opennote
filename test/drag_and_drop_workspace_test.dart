@@ -7,7 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saber/components/files/file_tree.dart';
 import 'package:saber/components/home/grid_folders.dart';
+import 'package:saber/components/home/notebook_shelf.dart';
+import 'package:saber/components/home/trash_drop_zone.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
+import 'package:saber/data/file_manager/item_drag_state.dart';
 import 'package:saber/data/file_manager/note_paths.dart';
 import 'package:saber/data/flavor_config.dart';
 import 'package:saber/i18n/strings.g.dart';
@@ -185,6 +188,100 @@ void main() {
         ),
         findsWidgets,
       );
+    });
+
+    test('ItemDragState manages drag lifecycle', () {
+      expect(ItemDragState.isDragging, isFalse);
+      expect(ItemDragState.activeDragItem.value, isNull);
+
+      ItemDragState.startDrag('/notes/chemistry');
+      expect(ItemDragState.isDragging, isTrue);
+      expect(ItemDragState.activeDragItem.value, '/notes/chemistry');
+
+      ItemDragState.endDrag();
+      expect(ItemDragState.isDragging, isFalse);
+      expect(ItemDragState.activeDragItem.value, isNull);
+    });
+
+    testWidgets('TrashDropZone renders and activates when dragging', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: TrashDropZone())),
+      );
+      await tester.pump();
+
+      // DragTarget is present in tree
+      expect(find.byType(DragTarget<String>), findsOneWidget);
+
+      // Trigger drag active
+      ItemDragState.startDrag('/test_note');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(ItemDragState.isDragging, isTrue);
+
+      // Clear drag
+      ItemDragState.endDrag();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(ItemDragState.isDragging, isFalse);
+    });
+
+    testWidgets(
+      'NotebookShelf renders 3-dots menus on covers and folder chips',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: NotebookShelf(
+                notes: const ['/test_note'],
+                folders: const ['test_folder'],
+                onOpenNote: (_) {},
+                onOpenFolder: (_) {},
+                onCreateNote: (_) {},
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Both cover and folder chip have PopupMenuButton for delete/rename
+        expect(find.byType(PopupMenuButton<String>), findsNWidgets(2));
+      },
+    );
+
+    testWidgets('GridFolders real folder has 3-dots options button', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: CustomScrollView(
+              slivers: [
+                GridFolders(
+                  isAtRoot: false,
+                  currentPath: '/test_root',
+                  crossAxisCount: 2,
+                  onTap: (_) {},
+                  createFolder: (_) {},
+                  renameFolder: (oldName, newName) async {},
+                  isFolderEmpty: (_) async => true,
+                  deleteFolder: (_) async {},
+                  doesFolderExist: (_) => false,
+                  folders: const ['algebra'],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Check 3-dots button on folder card
+      expect(find.byIcon(Icons.more_vert_rounded), findsOneWidget);
     });
   });
 }
