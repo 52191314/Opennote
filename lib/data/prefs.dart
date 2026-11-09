@@ -195,9 +195,9 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
-  /// When true, enables the Goodnotes-inspired dual-tier toolbar and document tabs header.
-  final goodnotesUiMode = PlainStow(
-    'goodnotesUiMode',
+  /// When true, enables the Opennote Studio dual-tier toolbar, shelf, and document header.
+  late final opennoteUiMode = PlainStow(
+    'opennoteUiMode',
     true,
     volatile: !_isOnMainIsolate,
   );
@@ -456,7 +456,7 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
-  /// Goodnotes-inspired writing posture for palm rejection.
+  /// Writing posture configuration for palm rejection and wrist comfort.
   final writingPosture = PlainStow(
     'writingPosture',
     WritingPosture.rightBelow,

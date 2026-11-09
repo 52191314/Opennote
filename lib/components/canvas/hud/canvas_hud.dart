@@ -33,6 +33,8 @@ class CanvasHud extends HookWidget {
     this.hasTape = false,
     this.onRevealAllTape,
     this.onConcealAllTape,
+    this.isInfiniteCanvas = false,
+    this.onFitContent,
   });
 
   final TransformationController transformationController;
@@ -51,6 +53,8 @@ class CanvasHud extends HookWidget {
   final bool hasTape;
   final VoidCallback? onRevealAllTape;
   final VoidCallback? onConcealAllTape;
+  final bool isInfiniteCanvas;
+  final VoidCallback? onFitContent;
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +86,12 @@ class CanvasHud extends HookWidget {
     final isDraftingVisible = isDrafting || isRuler || isSnapActive;
     final effectiveOpacity = isDraftingVisible ? 1.0 : opacity.value;
 
-    final topOffset = setShowProtractor != null ? 165.0 : 125.0;
+    final colorScheme = ColorScheme.of(context);
+    final isOpennoteUi = useValueListenable(stows.opennoteUiMode);
+    final topPadding = MediaQuery.paddingOf(context).top;
+    final baseTop = isOpennoteUi ? (topPadding + 54.0 + 8.0) : 4.0;
+    final topOffset = setShowProtractor != null ? 168.0 : 128.0;
+    final railHeight = topOffset + 114.0;
 
     return IgnorePointer(
       ignoring: effectiveOpacity < 0.5,
@@ -91,9 +100,37 @@ class CanvasHud extends HookWidget {
         duration: const Duration(milliseconds: 200),
         child: Stack(
           children: [
+            // Sleek vertical floating Studio HUD pill backdrop
             Positioned(
-              top: 5,
-              left: 5,
+              top: baseTop,
+              left: 4,
+              child: IgnorePointer(
+                child: Container(
+                  width: 42,
+                  height: railHeight,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerLow.withValues(
+                      alpha: 0.72,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: baseTop + 4,
+              left: 8,
               child: CanvasGestureLockBtn(
                 lock: zoomLock,
                 setLock: setZoomLock,
@@ -104,8 +141,8 @@ class CanvasHud extends HookWidget {
               ),
             ),
             Positioned(
-              top: 45,
-              left: 5,
+              top: baseTop + 44,
+              left: 8,
               child: CanvasGestureLockBtn(
                 lock: singleFingerPanLock,
                 setLock: setSingleFingerPanLock,
@@ -116,8 +153,8 @@ class CanvasHud extends HookWidget {
               ),
             ),
             Positioned(
-              top: 85,
-              left: 5,
+              top: baseTop + 84,
+              left: 8,
               child: CanvasGestureLockBtn(
                 lock: axisAlignedPanLock,
                 setLock: setAxisAlignedPanLock,
@@ -133,8 +170,8 @@ class CanvasHud extends HookWidget {
             ),
             if (setShowProtractor != null)
               Positioned(
-                top: 125,
-                left: 5,
+                top: baseTop + 124,
+                left: 8,
                 child: CanvasGestureLockBtn(
                   lock: showProtractor,
                   setLock: setShowProtractor!,
@@ -145,8 +182,8 @@ class CanvasHud extends HookWidget {
                 ),
               ),
             Positioned(
-              top: topOffset,
-              left: 5,
+              top: baseTop + topOffset,
+              left: 8,
               child: CanvasGestureLockBtn(
                 lock: snapGrid,
                 setLock: (val) => stows.snapToGrid.value = val,
@@ -157,8 +194,8 @@ class CanvasHud extends HookWidget {
               ),
             ),
             Positioned(
-              top: topOffset + 40,
-              left: 5,
+              top: baseTop + topOffset + 40,
+              left: 8,
               child: CanvasGestureLockBtn(
                 lock: snapAngle,
                 setLock: (val) => stows.snapToAngle.value = val,
@@ -171,8 +208,8 @@ class CanvasHud extends HookWidget {
               ),
             ),
             Positioned(
-              top: topOffset + 80,
-              left: 5,
+              top: baseTop + topOffset + 80,
+              left: 8,
               child: GestureDetector(
                 onTap: () {
                   final cur = angleStep;
@@ -190,10 +227,16 @@ class CanvasHud extends HookWidget {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: ColorScheme.of(
-                      context,
-                    ).surface.withValues(alpha: 0.5),
-                    borderRadius: const BorderRadius.all(Radius.circular(16)),
+                    color: snapAngle
+                        ? colorScheme.primaryContainer.withValues(alpha: 0.92)
+                        : colorScheme.surface.withValues(alpha: 0.85),
+                    borderRadius: const BorderRadius.all(Radius.circular(12)),
+                    border: Border.all(
+                      color: snapAngle
+                          ? colorScheme.primary.withValues(alpha: 0.6)
+                          : colorScheme.outlineVariant.withValues(alpha: 0.55),
+                      width: 1,
+                    ),
                   ),
                   child: Tooltip(
                     message: t.editor.canvasHud.angleStep(
@@ -207,7 +250,9 @@ class CanvasHud extends HookWidget {
                             ? t.editor.canvasHud.iso
                             : '$angleStep°',
                         style: TextStyle(
-                          color: ColorScheme.of(context).onSurface,
+                          color: snapAngle
+                              ? colorScheme.onPrimaryContainer
+                              : colorScheme.onSurface,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
@@ -219,8 +264,8 @@ class CanvasHud extends HookWidget {
             ),
             if (onToggleBookmarked != null)
               Positioned(
-                top: 5,
-                right: 50,
+                top: baseTop + 4,
+                right: 60,
                 child: CanvasGestureLockBtn(
                   lock: bookmarked,
                   setLock: (_) => onToggleBookmarked!(),
@@ -230,9 +275,20 @@ class CanvasHud extends HookWidget {
                       : t.editor.bookmark.add,
                 ),
               ),
+            if (isInfiniteCanvas && onFitContent != null)
+              Positioned(
+                top: baseTop + 4,
+                right: onToggleBookmarked != null ? 102 : 60,
+                child: CanvasGestureLockBtn(
+                  lock: false,
+                  setLock: (_) => onFitContent!(),
+                  icon: Icons.fit_screen_rounded,
+                  tooltip: t.editor.canvasHud.fitContent,
+                ),
+              ),
             Positioned(
-              top: 5,
-              right: 5,
+              top: baseTop + 4,
+              right: 8,
               child: AnimatedBuilder(
                 animation: transformationController,
                 builder: (context, _) => CanvasZoomIndicator(
@@ -247,19 +303,23 @@ class CanvasHud extends HookWidget {
                 right: 16,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 2,
+                    horizontal: 6,
+                    vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: ColorScheme.of(
-                      context,
-                    ).surfaceContainerHighest.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(20),
+                    color: colorScheme.surfaceContainerLow.withValues(
+                      alpha: 0.92,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.55),
+                      width: 1,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 6,
-                        spreadRadius: 1,
+                        color: Colors.black.withValues(alpha: 0.14),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
@@ -267,11 +327,13 @@ class CanvasHud extends HookWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
+                        visualDensity: VisualDensity.compact,
                         icon: const Icon(Icons.visibility, size: 20),
                         tooltip: t.editor.tape.revealAllTooltip,
                         onPressed: onRevealAllTape,
                       ),
                       IconButton(
+                        visualDensity: VisualDensity.compact,
                         icon: const Icon(Icons.visibility_off, size: 20),
                         tooltip: t.editor.tape.concealAllTooltip,
                         onPressed: onConcealAllTape,

@@ -1,4 +1,4 @@
-/// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Claude Code (Claude Opus 5.5); Google Antigravity
 library;
 
 import 'dart:async';
@@ -384,6 +384,23 @@ class FileManager {
     fromPath = _sanitisePath(fromPath);
     toPath = _sanitisePath(toPath);
 
+    // If fromPath does not exist directly, check for note extension
+    if (!getFile(fromPath).existsSync()) {
+      if (getFile('$fromPath${NotePaths.extension}').existsSync()) {
+        fromPath = '$fromPath${NotePaths.extension}';
+        if (!toPath.endsWith(NotePaths.extension)) {
+          toPath = '$toPath${NotePaths.extension}';
+        }
+      } else if (getFile(
+        '$fromPath${NotePaths.extensionOldJson}',
+      ).existsSync()) {
+        fromPath = '$fromPath${NotePaths.extensionOldJson}';
+        if (!toPath.endsWith(NotePaths.extensionOldJson)) {
+          toPath = '$toPath${NotePaths.extensionOldJson}';
+        }
+      }
+    }
+
     if (!toPath.contains('/')) {
       // if toPath is a relative path
       toPath = fromPath.substring(0, fromPath.lastIndexOf('/') + 1) + toPath;
@@ -523,6 +540,113 @@ class FileManager {
       _renameReferences(directoryPath + child, newPath + child);
       broadcastFileWrite(FileOperationType.delete, directoryPath + child);
       broadcastFileWrite(FileOperationType.write, newPath + child);
+    }
+  }
+
+  /// Moves a directory from [fromPath] into [toParentPath].
+  ///
+  /// Returns the new directory path, or `null` if the move was invalid or failed.
+  static Future<String?> moveDirectory(
+    String fromPath,
+    String toParentPath,
+  ) async {
+    fromPath = _sanitisePath(fromPath);
+    if (!fromPath.startsWith('/')) fromPath = '/$fromPath';
+    if (fromPath.length > 1 && fromPath.endsWith('/')) {
+      fromPath = fromPath.substring(0, fromPath.length - 1);
+    }
+
+    final folderName = fromPath.substring(fromPath.lastIndexOf('/') + 1);
+    if (folderName.isEmpty) return null; // Cannot move root directory
+
+    toParentPath = _sanitisePath(toParentPath);
+    if (!toParentPath.startsWith('/')) toParentPath = '/$toParentPath';
+    if (toParentPath.length > 1 && toParentPath.endsWith('/')) {
+      toParentPath = toParentPath.substring(0, toParentPath.length - 1);
+    }
+
+    // A directory cannot be moved into itself or its descendants
+    if (toParentPath == fromPath || toParentPath.startsWith('$fromPath/')) {
+      log.warning(
+        'Cannot move directory $fromPath into itself or descendant $toParentPath',
+      );
+      return null;
+    }
+
+    // Check if target is already the parent
+    final currentParent = fromPath.substring(0, fromPath.lastIndexOf('/'));
+    final normalizedParent = currentParent.isEmpty ? '/' : currentParent;
+    if (toParentPath == normalizedParent) {
+      return fromPath;
+    }
+
+    final directory = Directory(documentsDirectory + fromPath);
+    if (!directory.existsSync()) {
+      log.warning('Source directory $fromPath does not exist');
+      return null;
+    }
+
+    final targetPath = toParentPath == '/'
+        ? '/$folderName'
+        : '$toParentPath/$folderName';
+
+    var uniqueTargetPath = targetPath;
+    int counter = 1;
+    while (Directory(documentsDirectory + uniqueTargetPath).existsSync()) {
+      counter++;
+      uniqueTargetPath = toParentPath == '/'
+          ? '/$folderName ($counter)'
+          : '$toParentPath/$folderName ($counter)';
+    }
+
+    final parentDir = Directory(documentsDirectory + toParentPath);
+    if (!parentDir.existsSync()) {
+      await parentDir.create(recursive: true);
+    }
+
+    // Recursively find children of [directory] for reference updates
+    final List<String> children = [];
+    await for (final entity in directory.list(recursive: true)) {
+      if (entity is File) {
+        children.add(entity.path.substring(directory.path.length));
+      }
+    }
+
+    await directory.rename(documentsDirectory + uniqueTargetPath);
+
+    for (final child in children) {
+      syncer.uploader.enqueueRel(fromPath + child);
+      syncer.uploader.enqueueRel(uniqueTargetPath + child);
+      _renameReferences(fromPath + child, uniqueTargetPath + child);
+      broadcastFileWrite(FileOperationType.delete, fromPath + child);
+      broadcastFileWrite(FileOperationType.write, uniqueTargetPath + child);
+    }
+
+    return uniqueTargetPath;
+  }
+
+  /// Moves either a note or directory [itemPath] into [targetParentFolder].
+  ///
+  /// Returns the final path of the moved item, or `null` if the operation failed.
+  static Future<String?> moveItem(
+    String itemPath,
+    String targetParentFolder,
+  ) async {
+    if (isDirectory(itemPath)) {
+      return await moveDirectory(itemPath, targetParentFolder);
+    } else {
+      itemPath = _sanitisePath(itemPath);
+      final fileName = itemPath.substring(itemPath.lastIndexOf('/') + 1);
+      if (targetParentFolder.length > 1 && targetParentFolder.endsWith('/')) {
+        targetParentFolder = targetParentFolder.substring(
+          0,
+          targetParentFolder.length - 1,
+        );
+      }
+      final toPath = targetParentFolder == '/'
+          ? '/$fileName'
+          : '$targetParentFolder/$fileName';
+      return await moveFile(itemPath, toPath);
     }
   }
 

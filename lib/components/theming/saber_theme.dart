@@ -1,5 +1,9 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:saber/components/design_system/opennote_tokens.dart';
 import 'package:saber/components/theming/yaru_builder.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:sbn/font_fallbacks.dart';
@@ -11,15 +15,27 @@ abstract class SaberTheme {
     TargetPlatform platform,
   ) {
     colorScheme = _adjustColorScheme(colorScheme, platform);
+    final isDark = colorScheme.brightness == .dark;
+    final scaffoldBg = Color.lerp(
+      colorScheme.surface,
+      isDark
+          ? OpennoteTokens.studioDarkSurface
+          : OpennoteTokens.studioLightSurface,
+      0.45,
+    )!;
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
+      scaffoldBackgroundColor: scaffoldBg,
       textTheme: _Components.textTheme(platform, colorScheme),
       platform: platform,
       progressIndicatorTheme: _Components.progressIndicatorTheme,
       cardColor: colorScheme.surface,
       cardTheme: _Components.cardTheme(colorScheme),
+      dialogTheme: _Components.dialogTheme(colorScheme),
+      bottomSheetTheme: _Components.bottomSheetTheme(colorScheme),
+      navigationRailTheme: _Components.navigationRailTheme(colorScheme),
       cupertinoOverrideTheme: _Components.cupertinoOverrideTheme,
       appBarTheme: _Components.appBarTheme,
     );
@@ -105,6 +121,9 @@ abstract class SaberTheme {
       textTheme: textTheme,
       progressIndicatorTheme: _Components.progressIndicatorTheme,
       cardTheme: _Components.cardTheme(base.colorScheme),
+      dialogTheme: _Components.dialogTheme(base.colorScheme),
+      bottomSheetTheme: _Components.bottomSheetTheme(base.colorScheme),
+      navigationRailTheme: _Components.navigationRailTheme(base.colorScheme),
       cupertinoOverrideTheme: _Components.cupertinoOverrideTheme,
       listTileTheme: base.listTileTheme.copyWith(
         // Yaru forces list tiles to use Ubuntu font, fix that
@@ -166,11 +185,59 @@ abstract class _Components {
       surfaceTintColor: Colors.transparent,
       shadowColor: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: const .all(.circular(kYaruContainerRadius)),
+        borderRadius: const .all(.circular(OpennoteTokens.radiusMd)),
         side: BorderSide(
-          color: colorScheme.onSurface.withValues(alpha: 0.12),
-          width: 2,
+          color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+          width: 1,
         ),
+      ),
+    );
+  }
+
+  static DialogThemeData dialogTheme(ColorScheme colorScheme) {
+    return DialogThemeData(
+      elevation: 4,
+      backgroundColor: colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: const .all(.circular(OpennoteTokens.radiusLg)),
+        side: OpennoteTokens.subtleBorder(colorScheme, 0.28),
+      ),
+    );
+  }
+
+  static BottomSheetThemeData bottomSheetTheme(ColorScheme colorScheme) {
+    return BottomSheetThemeData(
+      elevation: 4,
+      backgroundColor: colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: .vertical(top: .circular(OpennoteTokens.radiusLg)),
+      ),
+    );
+  }
+
+  static NavigationRailThemeData navigationRailTheme(ColorScheme colorScheme) {
+    return NavigationRailThemeData(
+      backgroundColor: Colors.transparent,
+      indicatorColor: colorScheme.primary.withValues(alpha: 0.14),
+      selectedIconTheme: IconThemeData(color: colorScheme.primary, size: 22),
+      unselectedIconTheme: IconThemeData(
+        color: colorScheme.onSurfaceVariant,
+        size: 22,
+      ),
+      selectedLabelTextStyle: TextStyle(
+        color: colorScheme.primary,
+        fontWeight: .w600,
+        fontSize: 13,
+      ),
+      unselectedLabelTextStyle: TextStyle(
+        color: colorScheme.onSurfaceVariant,
+        fontWeight: .w500,
+        fontSize: 13,
+      ),
+      indicatorShape: const RoundedRectangleBorder(
+        borderRadius: .all(.circular(OpennoteTokens.radiusSm)),
       ),
     );
   }
@@ -179,7 +246,10 @@ abstract class _Components {
     applyThemeToAll: true,
   );
 
-  static const appBarTheme = AppBarTheme(centerTitle: false);
+  static const appBarTheme = AppBarTheme(
+    centerTitle: false,
+    scrolledUnderElevation: 0,
+  );
 }
 
 extension SaberThemePlatform on TargetPlatform {

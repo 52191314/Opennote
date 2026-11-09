@@ -8,7 +8,7 @@ import 'package:saber/data/tools/_tool.dart';
 /// What the editor's toolbars need to know about the editor,
 /// and what they can ask it to do.
 ///
-/// `Toolbar` and `GoodnotesToolbar` lay the same tools out differently,
+/// `Toolbar` and `OpennoteToolbar` lay the same tools out differently,
 /// so the editor describes itself to both with one of these.
 class EditorToolbarActions {
   const EditorToolbarActions({
@@ -22,13 +22,17 @@ class EditorToolbarActions {
     required this.pickPhoto,
     required this.pickShape,
     required this.paste,
+    this.cutSelection,
     required this.copySelection,
     required this.pasteSelection,
     required this.duplicateSelection,
     required this.deleteSelection,
+    this.onSetColor,
     this.cropPossible = false,
     this.cropActive = false,
     this.toggleCrop,
+    this.toggleResize,
+    this.isResizeActive = false,
     this.bringToFront,
     this.sendToBack,
     this.smoothen,
@@ -70,6 +74,9 @@ class EditorToolbarActions {
   /// Pastes the system clipboard onto the page.
   final VoidCallback paste;
 
+  /// Cuts the selection to the editor's clipboard and deletes it.
+  final VoidCallback? cutSelection;
+
   /// Copies the selection to the editor's own clipboard.
   final VoidCallback copySelection;
 
@@ -82,6 +89,9 @@ class EditorToolbarActions {
   /// Deletes the selection.
   final VoidCallback deleteSelection;
 
+  /// Sets the color of the selected strokes.
+  final ValueChanged<Color>? onSetColor;
+
   /// Whether the selection is something that can be cropped.
   final bool cropPossible;
 
@@ -90,6 +100,12 @@ class EditorToolbarActions {
 
   /// Starts or stops cropping the selection.
   final VoidCallback? toggleCrop;
+
+  /// Toggles transform/resize handles on the selection.
+  final VoidCallback? toggleResize;
+
+  /// Whether the transform handles are actively shown.
+  final bool isResizeActive;
 
   /// Moves the selection above everything else on the page.
   final VoidCallback? bringToFront;

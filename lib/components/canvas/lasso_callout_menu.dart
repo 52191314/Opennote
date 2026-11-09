@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:saber/i18n/strings.g.dart';
 
 /// Floating callout action pill appearing directly above/below a lasso selection
-/// providing quick in-context actions matching Goodnotes 6/7:
+/// providing quick in-context actions:
 /// (Cut, Copy, Delete, Resize, Color, Screenshot, Element, Arrange, Smoothen, Crop).
 class LassoCalloutMenu extends StatefulWidget {
   final VoidCallback onCut;
@@ -60,6 +60,9 @@ class LassoCalloutMenu extends StatefulWidget {
 class _LassoCalloutMenuState extends State<LassoCalloutMenu> {
   var _showColorPicker = false;
   var _showArrangeMenu = false;
+  final _scrollController = ScrollController();
+  var _canScrollLeft = false;
+  var _canScrollRight = false;
 
   static const _quickColors = [
     Color(0xFF000000), // Black
@@ -70,6 +73,54 @@ class _LassoCalloutMenuState extends State<LassoCalloutMenu> {
     Color(0xFF7B1FA2), // Purple
     Color(0xFFF57C00), // Orange
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_updateScrollButtons);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateScrollButtons());
+  }
+
+  @override
+  void didUpdateWidget(covariant LassoCalloutMenu oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateScrollButtons());
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_updateScrollButtons);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _updateScrollButtons() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    final canLeft = position.pixels > 2.0;
+    final canRight = position.pixels < position.maxScrollExtent - 2.0;
+    if (canLeft != _canScrollLeft || canRight != _canScrollRight) {
+      if (mounted) {
+        setState(() {
+          _canScrollLeft = canLeft;
+          _canScrollRight = canRight;
+        });
+      }
+    }
+  }
+
+  void _scroll(double delta) {
+    if (!_scrollController.hasClients) return;
+    final target = (_scrollController.offset + delta).clamp(
+      0.0,
+      _scrollController.position.maxScrollExtent,
+    );
+    _scrollController.animateTo(
+      target,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +137,9 @@ class _LassoCalloutMenuState extends State<LassoCalloutMenu> {
     // Counter-scale so the callout maintains a comfortable readable size on zoomed canvas
     final scaleMultiplier = (1.0 / widget.currentScale).clamp(0.65, 1.4);
 
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final maxPillWidth = (screenWidth - 32.0).clamp(280.0, double.infinity);
+
     return Transform.scale(
       scale: scaleMultiplier,
       alignment: Alignment.center,
@@ -96,6 +150,7 @@ class _LassoCalloutMenuState extends State<LassoCalloutMenu> {
         borderRadius: BorderRadius.circular(20),
         clipBehavior: Clip.antiAlias,
         child: Container(
+          constraints: BoxConstraints(maxWidth: maxPillWidth),
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
@@ -208,106 +263,155 @@ class _LassoCalloutMenuState extends State<LassoCalloutMenu> {
       );
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        _updateScrollButtons();
+        return false;
+      },
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _CalloutButton(
-            icon: Icons.content_cut_rounded,
-            label: t.editor.actions.cut,
-            onTap: widget.onCut,
+          if (_canScrollLeft)
+            InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => _scroll(-180),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+                child: Icon(
+                  Icons.chevron_left_rounded,
+                  size: 20,
+                  color: colorScheme.primary,
+                ),
+              ),
+            ),
+          Flexible(
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _CalloutButton(
+                    icon: Icons.content_cut_rounded,
+                    label: t.editor.actions.cut,
+                    onTap: widget.onCut,
+                  ),
+                  divider,
+                  _CalloutButton(
+                    icon: Icons.copy_rounded,
+                    label: t.editor.actions.copy,
+                    onTap: widget.onCopy,
+                  ),
+                  divider,
+                  _CalloutButton(
+                    icon: Icons.copy_all_rounded,
+                    label: t.editor.selectionBar.duplicate,
+                    onTap: widget.onDuplicate,
+                  ),
+                  divider,
+                  _CalloutButton(
+                    icon: Icons.delete_outline_rounded,
+                    label: t.editor.actions.delete,
+                    isDestructive: true,
+                    onTap: widget.onDelete,
+                  ),
+                  if (widget.onToggleResize != null) ...[
+                    divider,
+                    _CalloutButton(
+                      icon: Icons.open_in_full_rounded,
+                      label: widget.isResizeActive
+                          ? t.common.done
+                          : t.editor.lasso.resize,
+                      isActive: widget.isResizeActive,
+                      onTap: widget.onToggleResize,
+                    ),
+                  ],
+                  if (widget.onReduceTextSize != null) ...[
+                    divider,
+                    _CalloutButton(
+                      icon: Icons.text_decrease_rounded,
+                      label: t.editor.lasso.reduceSize,
+                      onTap: widget.onReduceTextSize,
+                    ),
+                  ],
+                  if (widget.onEnlargeTextSize != null) ...[
+                    divider,
+                    _CalloutButton(
+                      icon: Icons.text_increase_rounded,
+                      label: t.editor.lasso.enlargeSize,
+                      onTap: widget.onEnlargeTextSize,
+                    ),
+                  ],
+                  divider,
+                  _CalloutButton(
+                    icon: Icons.palette_outlined,
+                    label: t.editor.lasso.color,
+                    onTap: () => setState(() => _showColorPicker = true),
+                  ),
+                  if (widget.onTakeScreenshot != null) ...[
+                    divider,
+                    _CalloutButton(
+                      icon: Icons.crop_free_rounded,
+                      label: t.editor.lasso.screenshot,
+                      onTap: widget.onTakeScreenshot,
+                    ),
+                  ],
+                  if (widget.onAddToElements != null) ...[
+                    divider,
+                    _CalloutButton(
+                      icon: Icons.bookmark_add_outlined,
+                      label: t.editor.lasso.element,
+                      onTap: widget.onAddToElements,
+                    ),
+                  ],
+                  if (widget.onBringToFront != null ||
+                      widget.onSendToBack != null) ...[
+                    divider,
+                    _CalloutButton(
+                      icon: Icons.layers_outlined,
+                      label: t.editor.lasso.arrange,
+                      onTap: () => setState(() => _showArrangeMenu = true),
+                    ),
+                  ],
+                  if (widget.onSmoothen != null) ...[
+                    divider,
+                    _CalloutButton(
+                      icon: Icons.auto_fix_high_rounded,
+                      label: t.editor.lasso.smoothen,
+                      onTap: widget.onSmoothen,
+                    ),
+                  ],
+                  if (widget.cropPossible) ...[
+                    divider,
+                    _CalloutButton(
+                      icon: widget.cropActive
+                          ? Icons.check_rounded
+                          : Icons.crop_rounded,
+                      label: widget.cropActive
+                          ? t.common.done
+                          : t.editor.lasso.crop,
+                      isActive: widget.cropActive,
+                      onTap: widget.onToggleCrop,
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
-          divider,
-          _CalloutButton(
-            icon: Icons.copy_rounded,
-            label: t.editor.actions.copy,
-            onTap: widget.onCopy,
-          ),
-          divider,
-          _CalloutButton(
-            icon: Icons.delete_outline_rounded,
-            label: t.editor.actions.delete,
-            isDestructive: true,
-            onTap: widget.onDelete,
-          ),
-          if (widget.onToggleResize != null) ...[
-            divider,
-            _CalloutButton(
-              icon: Icons.open_in_full_rounded,
-              label: widget.isResizeActive
-                  ? t.common.done
-                  : t.editor.lasso.resize,
-              isActive: widget.isResizeActive,
-              onTap: widget.onToggleResize,
+          if (_canScrollRight)
+            InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => _scroll(180),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: colorScheme.primary,
+                ),
+              ),
             ),
-          ],
-          if (widget.onReduceTextSize != null) ...[
-            divider,
-            _CalloutButton(
-              icon: Icons.text_decrease_rounded,
-              label: t.editor.lasso.reduceSize,
-              onTap: widget.onReduceTextSize,
-            ),
-          ],
-          if (widget.onEnlargeTextSize != null) ...[
-            divider,
-            _CalloutButton(
-              icon: Icons.text_increase_rounded,
-              label: t.editor.lasso.enlargeSize,
-              onTap: widget.onEnlargeTextSize,
-            ),
-          ],
-          divider,
-          _CalloutButton(
-            icon: Icons.palette_outlined,
-            label: t.editor.lasso.color,
-            onTap: () => setState(() => _showColorPicker = true),
-          ),
-          if (widget.onTakeScreenshot != null) ...[
-            divider,
-            _CalloutButton(
-              icon: Icons.crop_free_rounded,
-              label: t.editor.lasso.screenshot,
-              onTap: widget.onTakeScreenshot,
-            ),
-          ],
-          if (widget.onAddToElements != null) ...[
-            divider,
-            _CalloutButton(
-              icon: Icons.bookmark_add_outlined,
-              label: t.editor.lasso.element,
-              onTap: widget.onAddToElements,
-            ),
-          ],
-          if (widget.onBringToFront != null || widget.onSendToBack != null) ...[
-            divider,
-            _CalloutButton(
-              icon: Icons.layers_outlined,
-              label: t.editor.lasso.arrange,
-              onTap: () => setState(() => _showArrangeMenu = true),
-            ),
-          ],
-          if (widget.onSmoothen != null) ...[
-            divider,
-            _CalloutButton(
-              icon: Icons.auto_fix_high_rounded,
-              label: t.editor.lasso.smoothen,
-              onTap: widget.onSmoothen,
-            ),
-          ],
-          if (widget.cropPossible) ...[
-            divider,
-            _CalloutButton(
-              icon: widget.cropActive
-                  ? Icons.check_rounded
-                  : Icons.crop_rounded,
-              label: widget.cropActive ? t.common.done : t.editor.lasso.crop,
-              isActive: widget.cropActive,
-              onTap: widget.onToggleCrop,
-            ),
-          ],
         ],
       ),
     );

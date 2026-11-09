@@ -1,4 +1,4 @@
-# Project: Opennote (Goodnotes Parity Student Features)
+# Project: Opennote (Advanced Student & Canvas Features)
 
 ## Architecture
 Opennote (forked from Saber Notes) is a Flutter cross-platform handwritten note-taking application.

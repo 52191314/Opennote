@@ -1,4 +1,4 @@
-/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Generated wholely or partially with Claude Code; Gemini; Google Antigravity
 /// 🤖 Modified with Grok 4.7
 library;
 
@@ -52,6 +52,7 @@ class CanvasGestureDetector extends StatefulWidget {
     this.activePage,
     this.onLayersChanged,
     this.isInfiniteCanvas = false,
+    this.onFitContent,
     TransformationController? transformationController,
   }) : _transformationController =
            transformationController ?? TransformationController();
@@ -100,13 +101,14 @@ class CanvasGestureDetector extends StatefulWidget {
   final EditorPage? activePage;
   final VoidCallback? onLayersChanged;
   final bool isInfiniteCanvas;
+  final VoidCallback? onFitContent;
 
   late final TransformationController _transformationController;
 
   @override
   State<CanvasGestureDetector> createState() => CanvasGestureDetectorState();
 
-  static const kMinScale = 0.3;
+  static const kMinScale = 0.001;
   static const kMaxScale = 10.0;
 
   static double getTopOfPage({
@@ -198,20 +200,30 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
   /// Whether the protractor overlay is visible.
   var showProtractor = false;
 
-  void zoomIn() => widget._transformationController.value =
-      setZoom(
-        scaleDelta: 0.1,
-        transformation: widget._transformationController.value,
-        containerBounds: containerBounds,
-      ) ??
-      widget._transformationController.value;
-  void zoomOut() => widget._transformationController.value =
-      setZoom(
-        scaleDelta: -0.1,
-        transformation: widget._transformationController.value,
-        containerBounds: containerBounds,
-      ) ??
-      widget._transformationController.value;
+  void zoomIn() {
+    final oldScale = widget._transformationController.value.approxScale;
+    final delta = oldScale < 0.2 ? oldScale * 0.25 : 0.1;
+    widget._transformationController.value =
+        setZoom(
+          scaleDelta: delta,
+          transformation: widget._transformationController.value,
+          containerBounds: containerBounds,
+        ) ??
+        widget._transformationController.value;
+  }
+
+  void zoomOut() {
+    final oldScale = widget._transformationController.value.approxScale;
+    final delta = oldScale <= 0.15 ? -oldScale * 0.25 : -0.1;
+    widget._transformationController.value =
+        setZoom(
+          scaleDelta: delta,
+          transformation: widget._transformationController.value,
+          containerBounds: containerBounds,
+        ) ??
+        widget._transformationController.value;
+  }
+
   @visibleForTesting
   static Matrix4? setZoom({
     required double scaleDelta,
@@ -219,10 +231,29 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
     required BoxConstraints containerBounds,
   }) {
     final oldScale = transformation.approxScale;
-    final newScale = oldScale + scaleDelta;
+    double newScale = oldScale + scaleDelta;
 
-    if (newScale < CanvasGestureDetector.kMinScale) return null;
-    if (newScale > CanvasGestureDetector.kMaxScale) return null;
+    if (scaleDelta < 0 && oldScale <= CanvasGestureDetector.kMinScale) {
+      return null;
+    }
+    if (scaleDelta > 0 && oldScale >= CanvasGestureDetector.kMaxScale) {
+      return null;
+    }
+
+    if (newScale < CanvasGestureDetector.kMinScale) {
+      if (oldScale > CanvasGestureDetector.kMinScale) {
+        newScale = CanvasGestureDetector.kMinScale;
+      } else {
+        return null;
+      }
+    }
+    if (newScale > CanvasGestureDetector.kMaxScale) {
+      if (oldScale < CanvasGestureDetector.kMaxScale) {
+        newScale = CanvasGestureDetector.kMaxScale;
+      } else {
+        return null;
+      }
+    }
 
     final center = Vector3(
       containerBounds.maxWidth / 2,
@@ -410,6 +441,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
   /// Otherwise, prevents the user from scrolling past the edges.
   void onTransformChanged() {
     final scale = widget._transformationController.value.approxScale;
+    if (scale <= 0 || scale.isNaN || scale.isInfinite) return;
 
     // snap to 1.0x zoom
     _snapZoomTimer?.cancel();
@@ -427,9 +459,11 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
     double adjustmentY = 0;
 
     if (scale < 1) {
-      // horizontally center pages if zoomed out
-      final center = containerBounds.maxWidth * (1 - scale) / 2;
-      adjustmentX = center - translation.x;
+      if (containerBounds.hasBoundedWidth && containerBounds.maxWidth > 0) {
+        // horizontally center pages if zoomed out
+        final center = containerBounds.maxWidth * (1 - scale) / 2;
+        adjustmentX = center - translation.x;
+      }
     } else {
       // if zoomed in, don't allow scrolling past the edges
       late final minX = containerBounds.maxWidth * (1 - scale);
@@ -594,8 +628,6 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
 
   @override
   Widget build(BuildContext context) {
-    final Size screenSize = MediaQuery.sizeOf(context);
-
     return Stack(
       children: [
         Listener(
@@ -620,12 +652,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
 
                   // we need a non-zero boundary margin so we can zoom out
                   // past the size of the page (for minScale < 1)
-                  boundaryMargin: widget.isInfiniteCanvas
-                      ? const EdgeInsets.all(double.infinity)
-                      : EdgeInsets.symmetric(
-                          vertical: 0,
-                          horizontal: screenSize.width * 2,
-                        ),
+                  boundaryMargin: const EdgeInsets.all(double.infinity),
 
                   transformationController: widget._transformationController,
 
@@ -681,6 +708,8 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
             hasTape: widget.hasTape,
             onRevealAllTape: widget.onRevealAllTape,
             onConcealAllTape: widget.onConcealAllTape,
+            isInfiniteCanvas: widget.isInfiniteCanvas,
+            onFitContent: widget.onFitContent,
           ),
         ),
         if (widget.activePage != null)

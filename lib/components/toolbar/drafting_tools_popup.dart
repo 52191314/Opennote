@@ -11,7 +11,7 @@ import 'package:saber/data/tools/dimension.dart';
 import 'package:saber/data/tools/ruler.dart';
 import 'package:saber/i18n/strings.g.dart';
 
-/// A sleek Goodnotes-style popup menu providing quick access to shapes,
+/// A sleek popup menu providing quick access to shapes,
 /// the precision ruler, arrow strokes, and dimension lines.
 class DraftingToolsPopup extends StatelessWidget {
   const DraftingToolsPopup({

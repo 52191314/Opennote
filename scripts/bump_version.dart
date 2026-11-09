@@ -123,22 +123,25 @@ Future<String> findEditor() async {
 }
 
 Future<void> updateAllFiles() async {
-  // update windows installer
-  await File('installers/desktop_inno_script.iss').replace({
-    // e.g. #define MyAppVersion "0.5.5"
-    RegExp(r'#define MyAppVersion .+'):
-        '#define MyAppVersion "${newVersion.buildName}"',
-  });
+  // update windows installer if present
+  final innoScript = File('installers/desktop_inno_script.iss');
+  if (innoScript.existsSync()) {
+    await innoScript.replace({
+      RegExp(r'#define MyAppVersion .+'):
+          '#define MyAppVersion "${newVersion.buildName}"',
+    });
+  }
 
-  // update windows runner
-  await File('windows/runner/Runner.rc').replace({
-    // e.g. #define VERSION_AS_NUMBER 0,5,5,0
-    RegExp(r'#define VERSION_AS_NUMBER .+'):
-        '#define VERSION_AS_NUMBER ${newVersion.buildNameWithCommas},0',
-    // e.g. #define VERSION_AS_STRING "0.5.5.0"
-    RegExp(r'#define VERSION_AS_STRING .+'):
-        '#define VERSION_AS_STRING "${newVersion.buildName}.0"',
-  });
+  // update windows runner if present
+  final runnerRc = File('windows/runner/Runner.rc');
+  if (runnerRc.existsSync()) {
+    await runnerRc.replace({
+      RegExp(r'#define VERSION_AS_NUMBER .+'):
+          '#define VERSION_AS_NUMBER ${newVersion.buildNameWithCommas},0',
+      RegExp(r'#define VERSION_AS_STRING .+'):
+          '#define VERSION_AS_STRING "${newVersion.buildName}.0"',
+    });
+  }
 
   // update version file
   await File('lib/data/version.dart').replace({
@@ -157,11 +160,13 @@ Future<void> updateAllFiles() async {
         'version: ${newVersion.buildName}+${newVersion.buildNumber}',
   });
 
-  // update snap
-  await File('snap/snapcraft.yaml').replace({
-    // e.g. source-tag: 'v0.5.5'
-    RegExp(r"source-tag: 'v.+"): "source-tag: 'v${newVersion.buildName}'",
-  });
+  // update snap if present
+  final snapcraft = File('snap/snapcraft.yaml');
+  if (snapcraft.existsSync()) {
+    await snapcraft.replace({
+      RegExp(r"source-tag: 'v.+"): "source-tag: 'v${newVersion.buildName}'",
+    });
+  }
 
   // update download link in READMEs
   final readmes = Directory('.').listSync().whereType<File>().where(
@@ -197,21 +202,22 @@ Future<void> updateAllFiles() async {
     await changelogFile.writeAsString('• $dummyChangelog\n');
   }
 
-  // update flatpak changelog
+  // update flatpak changelog if present
   final metainfoFile = File('flatpak/com.adilhanney.saber.metainfo.xml');
-  final metainfoLines = await metainfoFile.readAsLines();
-  final originalMetainfoLines = metainfoLines.toList();
-  if (await metainfoFile.contains(newVersion.buildName)) {
-    print('<release> tag already exists in flatpak file');
-  } else {
-    if (failOnChanges) {
-      print('Failed: No release tag found at ${metainfoFile.path}');
-      exit(ErrorCodes.changesNeeded.code);
-    }
-    print('Adding a new <release> tag to flatpak file');
-    final date = DateFormat('yyyy-MM-dd').format(DateTime.now().toUtc());
-    final releaseTag =
-        '''
+  if (metainfoFile.existsSync()) {
+    final metainfoLines = await metainfoFile.readAsLines();
+    final originalMetainfoLines = metainfoLines.toList();
+    if (await metainfoFile.contains(newVersion.buildName)) {
+      print('<release> tag already exists in flatpak file');
+    } else {
+      if (failOnChanges) {
+        print('Failed: No release tag found at ${metainfoFile.path}');
+        exit(ErrorCodes.changesNeeded.code);
+      }
+      print('Adding a new <release> tag to flatpak file');
+      final date = DateFormat('yyyy-MM-dd').format(DateTime.now().toUtc());
+      final releaseTag =
+          '''
         <release version="${newVersion.buildName}" date="$date">
             <description>
                 <ul>
@@ -219,22 +225,23 @@ Future<void> updateAllFiles() async {
                 </ul>
             </description>
         </release>''';
-    final index =
-        metainfoLines.indexWhere((line) => line.endsWith('<releases>')) + 1;
-    metainfoLines.insert(index, releaseTag);
-  }
-  if (!failOnChanges) {
-    // Skipped if we're running a test.
-    _generateMetainfoDescription(metainfoLines);
-    _generateMetainfoScreenshots(metainfoLines);
-  }
-  if (!listEquals(metainfoLines, originalMetainfoLines)) {
-    if (failOnChanges) {
-      print('Failed: Misc change found for ${metainfoFile.path}');
-      exit(ErrorCodes.changesNeeded.code);
+      final index =
+          metainfoLines.indexWhere((line) => line.endsWith('<releases>')) + 1;
+      metainfoLines.insert(index, releaseTag);
     }
-    if (metainfoLines.last.isNotEmpty) metainfoLines.add('');
-    await metainfoFile.writeAsString(metainfoLines.join('\n'));
+    if (!failOnChanges) {
+      // Skipped if we're running a test.
+      _generateMetainfoDescription(metainfoLines);
+      _generateMetainfoScreenshots(metainfoLines);
+    }
+    if (!listEquals(metainfoLines, originalMetainfoLines)) {
+      if (failOnChanges) {
+        print('Failed: Misc change found for ${metainfoFile.path}');
+        exit(ErrorCodes.changesNeeded.code);
+      }
+      if (metainfoLines.last.isNotEmpty) metainfoLines.add('');
+      await metainfoFile.writeAsString(metainfoLines.join('\n'));
+    }
   }
 
   print('');

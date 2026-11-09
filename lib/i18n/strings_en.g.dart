@@ -1824,8 +1824,8 @@ class Translations$editor$tools$en {
 	/// en: 'Tap canvas to add or edit text'
 	String get tapToAddText => 'Tap canvas to add or edit text';
 
-	/// en: 'Goodnotes Studio Toolbar'
-	String get toolbarLabel => 'Goodnotes Studio Toolbar';
+	/// en: 'Opennote Studio Toolbar'
+	String get toolbarLabel => 'Opennote Studio Toolbar';
 
 	/// en: 'Draw in Straight Line: ON'
 	String get straightLineOn => 'Draw in Straight Line: ON';
