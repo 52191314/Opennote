@@ -5,6 +5,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:perfect_freehand/perfect_freehand.dart';
+import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/lasso_callout_menu.dart';
 import 'package:saber/components/canvas/lasso_screenshot_dialog.dart';
 import 'package:saber/components/toolbar/lasso_filter_popup.dart';
@@ -40,6 +42,29 @@ void main() {
       final select = Select.currentSelect;
       select.isResizeActive = true;
       select.onDragStart(const Offset(10, 10), 0);
+      expect(select.isResizeActive, isFalse);
+    });
+
+    test('selectStrokes sets isResizeActive = true for immediate resizing', () {
+      final select = Select.currentSelect;
+      expect(select.isResizeActive, isFalse);
+
+      final page = EditorPage(size: const Size(1000, 1400));
+      final stroke =
+          Stroke(
+              color: Colors.black,
+              pressureEnabled: false,
+              options: StrokeOptions(),
+              pageIndex: 0,
+              page: page,
+              toolId: .fountainPen,
+            )
+            ..addPoint(const Offset(10, 10))
+            ..addPoint(const Offset(20, 20));
+      select.selectStrokes([stroke], 0);
+      expect(select.isResizeActive, isTrue);
+
+      select.unselect();
       expect(select.isResizeActive, isFalse);
     });
 
@@ -88,6 +113,7 @@ void main() {
 
       var cutCalled = false;
       var copyCalled = false;
+      var duplicateCalled = false;
       var deleteCalled = false;
       var resizeToggled = false;
       var screenshotCalled = false;
@@ -102,7 +128,7 @@ void main() {
             body: LassoCalloutMenu(
               onCut: () => cutCalled = true,
               onCopy: () => copyCalled = true,
-              onDuplicate: () {},
+              onDuplicate: () => duplicateCalled = true,
               onDelete: () => deleteCalled = true,
               onSetColor: (_) {},
               isResizeActive: false,
@@ -119,6 +145,7 @@ void main() {
 
       expect(find.text('Cut'), findsOneWidget);
       expect(find.text('Copy'), findsOneWidget);
+      expect(find.text('Duplicate'), findsOneWidget);
       expect(find.text('Delete'), findsOneWidget);
       expect(find.text('Resize'), findsOneWidget);
       expect(find.text('Color'), findsOneWidget);
@@ -134,6 +161,10 @@ void main() {
       // Tap Copy
       await tester.tap(find.text('Copy'));
       expect(copyCalled, isTrue);
+
+      // Tap Duplicate
+      await tester.tap(find.text('Duplicate'));
+      expect(duplicateCalled, isTrue);
 
       // Tap Delete
       await tester.tap(find.text('Delete'));
@@ -340,6 +371,52 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.crop_free_rounded));
       expect(screenshotCalled, isTrue);
+    });
+
+    testWidgets('renders cut and color toolbar buttons and handles actions', (
+      tester,
+    ) async {
+      var cutCalled = false;
+      Color? selectedColor;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SelectionBar(
+              cutSelection: () => cutCalled = true,
+              copySelection: () {},
+              pasteSelection: () {},
+              duplicateSelection: () {},
+              deleteSelection: () {},
+              onSetColor: (c) => selectedColor = c,
+            ),
+          ),
+        ),
+      );
+
+      // Verify Cut button is present and functional
+      expect(find.byIcon(Icons.content_cut), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.content_cut));
+      expect(cutCalled, isTrue);
+
+      // Verify Color button is present and opens popup menu with colors
+      expect(find.byIcon(Icons.palette_outlined), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.palette_outlined));
+      await tester.pumpAndSettle();
+
+      // Quick colors should be visible in popup menu
+      expect(find.text('Black'), findsOneWidget);
+      expect(find.text('Blue'), findsOneWidget);
+      expect(find.text('Red'), findsOneWidget);
+      expect(find.text('Green'), findsOneWidget);
+      expect(find.text('Yellow'), findsOneWidget);
+      expect(find.text('Purple'), findsOneWidget);
+      expect(find.text('Orange'), findsOneWidget);
+
+      // Selecting Blue
+      await tester.tap(find.text('Blue'));
+      await tester.pumpAndSettle();
+      expect(selectedColor, equals(const Color(0xFF1976D2)));
     });
   });
 

@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:saber/data/file_manager/file_manager.dart';
 import 'package:saber/i18n/strings.g.dart';
 
 /// Notebooks as covers on a shelf.
@@ -19,6 +20,7 @@ class NotebookShelf extends StatelessWidget {
     required this.onOpenFolder,
     required this.onCreateNote,
     this.directory,
+    this.onMoveItem,
   });
 
   /// Note paths to show as covers.
@@ -35,6 +37,9 @@ class NotebookShelf extends StatelessWidget {
 
   /// Called with the path of a notebook the user just created.
   final ValueChanged<String> onCreateNote;
+
+  /// Called when an item is dropped and moved into a folder on the shelf.
+  final void Function(String itemPath, String targetFolderPath)? onMoveItem;
 
   static const _coverColors = <Color>[
     Color(0xFF2B4C7E), // Royal Moleskine Navy
@@ -75,30 +80,78 @@ class NotebookShelf extends StatelessWidget {
               runSpacing: 10,
               children: [
                 for (final folder in folders)
-                  ActionChip(
-                    key: ValueKey('shelf-folder-$folder'),
-                    avatar: Icon(
-                      Icons.folder_rounded,
-                      size: 18,
-                      color: scheme.primary,
-                    ),
-                    label: Text(
-                      folder,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: scheme.onSurface,
-                      ),
-                    ),
-                    backgroundColor: scheme.secondaryContainer.withValues(
-                      alpha: 0.65,
-                    ),
-                    side: BorderSide(
-                      color: scheme.outlineVariant.withValues(alpha: 0.5),
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    onPressed: () => onOpenFolder(folder),
+                  DragTarget<String>(
+                    onWillAcceptWithDetails: (details) {
+                      final sourcePath = details.data;
+                      final targetFolderPath = pathFor(folder);
+                      if (sourcePath == targetFolderPath) return false;
+                      if (targetFolderPath.startsWith('$sourcePath/')) {
+                        return false;
+                      }
+                      final sourceParent = sourcePath.substring(
+                        0,
+                        sourcePath.lastIndexOf('/'),
+                      );
+                      final normalizedParent = sourceParent.isEmpty
+                          ? '/'
+                          : sourceParent;
+                      if (targetFolderPath == normalizedParent) {
+                        return false;
+                      }
+                      return true;
+                    },
+                    onAcceptWithDetails: (details) async {
+                      final sourcePath = details.data;
+                      final targetFolderPath = pathFor(folder);
+                      final itemName = sourcePath.substring(
+                        sourcePath.lastIndexOf('/') + 1,
+                      );
+
+                      await FileManager.moveItem(sourcePath, targetFolderPath);
+                      onMoveItem?.call(sourcePath, targetFolderPath);
+
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Moved $itemName to $folder'),
+                            duration: const Duration(seconds: 2),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    },
+                    builder: (context, candidateData, rejectedData) {
+                      final isHovered = candidateData.isNotEmpty;
+                      return ActionChip(
+                        key: ValueKey('shelf-folder-$folder'),
+                        avatar: Icon(
+                          Icons.folder_rounded,
+                          size: 18,
+                          color: scheme.primary,
+                        ),
+                        label: Text(
+                          folder,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: scheme.onSurface,
+                          ),
+                        ),
+                        backgroundColor: isHovered
+                            ? scheme.primary.withValues(alpha: 0.2)
+                            : scheme.secondaryContainer.withValues(alpha: 0.65),
+                        side: BorderSide(
+                          color: isHovered
+                              ? scheme.primary
+                              : scheme.outlineVariant.withValues(alpha: 0.5),
+                          width: isHovered ? 1.5 : 1.0,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        onPressed: () => onOpenFolder(folder),
+                      );
+                    },
                   ),
               ],
             ),
@@ -112,6 +165,7 @@ class NotebookShelf extends StatelessWidget {
               for (final note in notes)
                 _NotebookCover(
                   key: ValueKey('shelf-cover-$note'),
+                  filePath: note,
                   title: _title(note),
                   color:
                       _coverColors[note.hashCode.abs() % _coverColors.length],
@@ -161,11 +215,13 @@ class NotebookShelf extends StatelessWidget {
 class _NotebookCover extends StatelessWidget {
   const _NotebookCover({
     super.key,
+    required this.filePath,
     required this.title,
     required this.color,
     required this.onTap,
   });
 
+  final String filePath;
   final String title;
   final Color color;
   final VoidCallback onTap;
@@ -177,112 +233,128 @@ class _NotebookCover extends StatelessWidget {
     bottomRight: Radius.circular(10),
   );
 
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: _bookRadius,
-      child: SizedBox(
-        width: 104,
-        height: 138,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: _bookRadius,
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x38000000),
-                blurRadius: 10,
-                offset: Offset(0, 5),
-              ),
-              BoxShadow(
-                color: Color(0x1F000000),
-                blurRadius: 3,
-                offset: Offset(2, 2),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              // Left spine crease gradient
-              const Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: 12,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(4),
-                      bottomLeft: Radius.circular(4),
-                    ),
-                    gradient: LinearGradient(
-                      colors: [
-                        Color(0x42000000),
-                        Color(0x1F000000),
-                        Color(0x28FFFFFF),
-                      ],
-                    ),
+  Widget _buildCoverContent() {
+    return SizedBox(
+      width: 104,
+      height: 138,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: _bookRadius,
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x38000000),
+              blurRadius: 10,
+              offset: Offset(0, 5),
+            ),
+            BoxShadow(
+              color: Color(0x1F000000),
+              blurRadius: 3,
+              offset: Offset(2, 2),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Left spine crease gradient
+            const Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 12,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(4),
+                    bottomLeft: Radius.circular(4),
                   ),
-                ),
-              ),
-              // Subtle right page-edge highlight
-              const Positioned(
-                right: 0,
-                top: 3,
-                bottom: 3,
-                width: 3,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Color(0x26FFFFFF),
-                    borderRadius: BorderRadius.only(
-                      topRight: Radius.circular(8),
-                      bottomRight: Radius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-              // Refined paper title label card
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.fromLTRB(18, 16, 10, 16),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 7,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFDFBF7),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(
-                      color: const Color(0xFFDCD6CA),
-                      width: 0.8,
-                    ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x22000000),
-                        blurRadius: 4,
-                        offset: Offset(0, 1.5),
-                      ),
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0x42000000),
+                      Color(0x1F000000),
+                      Color(0x28FFFFFF),
                     ],
                   ),
-                  child: Text(
-                    title,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF2C2416),
-                      height: 1.2,
-                    ),
+                ),
+              ),
+            ),
+            // Subtle right page-edge highlight
+            const Positioned(
+              right: 0,
+              top: 3,
+              bottom: 3,
+              width: 3,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Color(0x26FFFFFF),
+                  borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(8),
+                    bottomRight: Radius.circular(8),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+            // Refined paper title label card
+            Center(
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(18, 16, 10, 16),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFDFBF7),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: const Color(0xFFDCD6CA),
+                    width: 0.8,
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x22000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 1.5),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  title,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2C2416),
+                    height: 1.2,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bookWidget = InkWell(
+      onTap: onTap,
+      borderRadius: _bookRadius,
+      child: _buildCoverContent(),
+    );
+
+    final feedbackWidget = Material(
+      color: Colors.transparent,
+      elevation: 8,
+      borderRadius: _bookRadius,
+      child: Transform.scale(scale: 0.9, child: _buildCoverContent()),
+    );
+
+    return LongPressDraggable<String>(
+      data: filePath,
+      delay: const Duration(milliseconds: 200),
+      feedback: feedbackWidget,
+      childWhenDragging: Opacity(opacity: 0.4, child: bookWidget),
+      child: bookWidget,
     );
   }
 }

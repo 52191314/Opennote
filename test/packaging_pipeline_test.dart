@@ -504,4 +504,46 @@ void main() {
       );
     });
   });
+
+  group('GitHub Actions iOS Workflow (.github/workflows/ios.yml)', () {
+    late File iosWorkflowFile;
+    late String iosWorkflowContent;
+
+    setUpAll(() {
+      iosWorkflowFile = File('.github/workflows/ios.yml');
+      expect(
+        iosWorkflowFile.existsSync(),
+        isTrue,
+        reason: '.github/workflows/ios.yml must exist',
+      );
+      iosWorkflowContent = iosWorkflowFile.readAsStringSync();
+    });
+
+    test('validates Opennote IPA naming in move step', () {
+      expect(
+        iosWorkflowContent,
+        contains(r'export ipaPath="Opennote_v${buildName}.ipa"'),
+        reason:
+            'iOS workflow must export ipaPath with Opennote branding and version',
+      );
+      expect(
+        iosWorkflowContent,
+        isNot(contains(r'export ipaPath="Saber_v${buildName}.ipa"')),
+        reason: 'Legacy Saber IPA naming must not be used',
+      );
+    });
+
+    test('validates Opennote-iOS-Archive artifact upload naming', () {
+      expect(
+        iosWorkflowContent,
+        contains('name: Opennote-iOS-Archive'),
+        reason: 'Workflow artifact upload must use Opennote-iOS-Archive name',
+      );
+      expect(
+        iosWorkflowContent,
+        isNot(contains('name: Saber-iOS-Archive')),
+        reason: 'Legacy Saber-iOS-Archive artifact name must not be used',
+      );
+    });
+  });
 }

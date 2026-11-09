@@ -589,6 +589,7 @@ class EditorState extends State<Editor>
           for (final stroke in item.strokes) {
             stroke.color = item.colorChange![stroke]!.previous;
           }
+          coreInfo.pages[item.pageIndex].redrawStrokes();
 
         case .backgroundPattern:
           coreInfo.backgroundPattern = item.backgroundPatternChange!.previous;
@@ -1781,6 +1782,7 @@ class EditorState extends State<Editor>
         path: select.selectResult.path.shift(duplicationFeedbackOffset),
       );
 
+      coreInfo.pages[pageIndex].placeSelectionHandles(select.selectResult);
       history.recordChange(duplicated);
       autosaveAfterDelay();
     });
@@ -1803,6 +1805,7 @@ class EditorState extends State<Editor>
     if (!select.doneSelecting) return;
     final strokes = select.selectResult.strokes;
     if (strokes.isEmpty) return;
+    final page = coreInfo.pages[select.selectResult.pageIndex];
 
     setState(() {
       updateColorBar(color);
@@ -1813,6 +1816,7 @@ class EditorState extends State<Editor>
         stroke.color = color;
       }
 
+      page.redrawStrokes();
       history.recordChange(
         EditorHistoryItem(
           type: .changeColor,
@@ -1991,6 +1995,7 @@ class EditorState extends State<Editor>
 
       selection.path = scalePathAround(selection.path, factor, factor, center);
       page.placeSelectionHandles(selection);
+      page.redrawStrokes();
       history.recordChange(transform.finish(pageIndex: pageIndex));
       autosaveAfterDelay();
     });
@@ -2291,13 +2296,18 @@ class EditorState extends State<Editor>
     pickPhoto: _pickPhotos,
     pickShape: _insertShapeFromLibrary,
     paste: paste,
+    cutSelection: _cutSelection,
     copySelection: _copySelection,
     pasteSelection: _pasteSelection,
     duplicateSelection: _duplicateSelection,
     deleteSelection: _deleteCurrentSelection,
+    onSetColor: _setSelectionColor,
     cropPossible: _cropPossible,
     cropActive: _cropActive,
     toggleCrop: _toggleCrop,
+    toggleResize: _toggleSelectionResize,
+    isResizeActive:
+        currentTool is Select && (currentTool as Select).isResizeActive,
     bringToFront: _bringSelectionToFront,
     sendToBack: _sendSelectionToBack,
     smoothen: _smoothenSelection,

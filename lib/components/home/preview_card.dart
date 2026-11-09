@@ -262,7 +262,7 @@ class _PreviewCardState extends State<PreviewCard> {
       ),
     );
 
-    return ValueListenableBuilder(
+    final openContainerWidget = ValueListenableBuilder(
       valueListenable: expanded,
       builder: (context, expanded, _) {
         return OpenContainer(
@@ -288,6 +288,80 @@ class _PreviewCardState extends State<PreviewCard> {
           onClosed: (_) => _refreshThumbnailAfterDelay(),
         );
       },
+    );
+
+    final String displayName = widget.filePath.substring(
+      widget.filePath.lastIndexOf('/') + 1,
+    );
+
+    final feedbackWidget = Material(
+      color: Colors.transparent,
+      elevation: 8,
+      borderRadius: BorderRadius.circular(_cardRadius),
+      child: SizedBox(
+        width: 140,
+        height: 180,
+        child: Transform.scale(
+          scale: 0.9,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(_cardRadius),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 16,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(_cardRadius),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: thumbnail.doesImageExist
+                        ? Image(
+                            image: thumbnail.image!,
+                            fit: BoxFit.cover,
+                            alignment: Alignment.topCenter,
+                          )
+                        : _FallbackThumbnail(filePath: widget.filePath),
+                  ),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
+                    color: colorScheme.surfaceContainerHigh,
+                    child: Text(
+                      displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    return LongPressDraggable<String>(
+      data: widget.filePath,
+      delay: const Duration(milliseconds: 200),
+      feedback: feedbackWidget,
+      childWhenDragging: Opacity(opacity: 0.4, child: openContainerWidget),
+      child: openContainerWidget,
     );
   }
 

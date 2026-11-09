@@ -18,6 +18,7 @@ import 'package:saber/components/toolbar/lasso_filter_popup.dart';
 import 'package:saber/components/toolbar/pen_modal.dart';
 import 'package:saber/components/toolbar/pen_tray_bar.dart';
 import 'package:saber/components/toolbar/quick_palette_bar.dart';
+import 'package:saber/components/toolbar/selection_bar.dart';
 import 'package:saber/components/toolbar/tape_options_popup.dart';
 import 'package:saber/components/toolbar/toolbar_button.dart';
 import 'package:saber/components/toolbar/toolbar_dialog.dart';
@@ -746,6 +747,76 @@ class _OpennoteToolbarState extends State<OpennoteToolbar> {
                         tooltip: t.editor.lasso.settings,
                         onPressed: _showLassoOptions,
                       ),
+                      if (Select.currentSelect.doneSelecting &&
+                          Select.currentSelect.selectResult.isNotEmpty) ...[
+                        _ToolbarGroupDivider(colorScheme: colorScheme),
+                        if (widget.actions.cutSelection != null)
+                          IconButton(
+                            visualDensity: VisualDensity.compact,
+                            icon: const Icon(
+                              Icons.content_cut_rounded,
+                              size: 16,
+                            ),
+                            tooltip: t.editor.actions.cut,
+                            onPressed: widget.actions.cutSelection,
+                          ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.copy_rounded, size: 16),
+                          tooltip: t.editor.actions.copy,
+                          onPressed: widget.actions.copySelection,
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.copy_all_rounded, size: 16),
+                          tooltip: t.editor.selectionBar.duplicate,
+                          onPressed: widget.actions.duplicateSelection,
+                        ),
+                        PopupMenuButton<Color>(
+                          tooltip: t.editor.lasso.color,
+                          icon: const Icon(Icons.palette_outlined, size: 16),
+                          padding: EdgeInsets.zero,
+                          onSelected: (color) =>
+                              (widget.actions.onSetColor ??
+                              widget.actions.setColor)(color),
+                          itemBuilder: (context) => [
+                            for (final item in SelectionBar.quickColorOptions)
+                              PopupMenuItem<Color>(
+                                value: item.color,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 16,
+                                      height: 16,
+                                      decoration: BoxDecoration(
+                                        color: item.color,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.grey.withValues(
+                                            alpha: 0.5,
+                                          ),
+                                          width: 1,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(item.name),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(
+                            Icons.delete_outline_rounded,
+                            size: 16,
+                          ),
+                          tooltip: t.editor.actions.delete,
+                          onPressed: widget.actions.deleteSelection,
+                        ),
+                      ],
                     ]
                     // CASE E: General Pen / Pencil / Highlighter
                     else if (widget.actions.currentTool is Pen) ...[

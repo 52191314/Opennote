@@ -196,13 +196,16 @@ class _BrowsePageState extends State<BrowsePage> {
               child: PathComponents(
                 path,
                 onPathComponentTap: onPathComponentTap,
+                onItemMoved: (item, target) => findChildrenOfPath(),
               ),
             ),
             const SliverPadding(padding: .only(bottom: 8)),
             GridFolders(
               isAtRoot: path?.isEmpty ?? true,
+              currentPath: path,
               crossAxisCount: crossAxisCount,
               onTap: onDirectoryTap,
+              onItemMoved: (item, target) => findChildrenOfPath(),
               createFolder: createFolder,
               doesFolderExist: (String folderName) {
                 return children?.directories.contains(folderName) ?? false;
@@ -244,10 +247,15 @@ class _BrowsePageState extends State<BrowsePage> {
                           : note.startsWith('$path/'),
                     ),
                   }.toList(),
-                  folders: const [],
+                  folders: [
+                    for (final directoryPath
+                        in children?.directories ?? const [])
+                      directoryPath,
+                  ],
                   onOpenNote: (note) =>
                       context.push(RoutePaths.editFilePath(note)),
                   onOpenFolder: onDirectoryTap,
+                  onMoveItem: (item, target) => findChildrenOfPath(),
                   onCreateNote: (note) {
                     setState(() => _pendingNotes.add(note));
                     context.push(RoutePaths.editFilePath(note));

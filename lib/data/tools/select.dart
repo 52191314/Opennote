@@ -69,7 +69,7 @@ class Select extends Tool {
       return;
     }
     doneSelecting = true;
-    isResizeActive = false;
+    isResizeActive = true;
     final allPoints = <Offset>[];
     for (final s in strokes) {
       if (s.lowQualityPolygon.isNotEmpty) {
@@ -95,7 +95,7 @@ class Select extends Tool {
       return;
     }
     doneSelecting = true;
-    isResizeActive = false;
+    isResizeActive = true;
     Rect? totalRect;
     for (final img in images) {
       totalRect = totalRect == null
@@ -216,6 +216,10 @@ class Select extends Tool {
       if (percentInside >= minPercentInside) {
         selectResult.textSelected = true;
       }
+    }
+
+    if (selectResult.isNotEmpty) {
+      isResizeActive = true;
     }
   }
 
@@ -345,6 +349,7 @@ class Select extends Tool {
             images: [],
             path: _createTightSelectionPath(stroke.lowQualityPolygon),
           );
+          isResizeActive = true;
           return;
         }
       }
@@ -360,6 +365,7 @@ class Select extends Tool {
             images: [image],
             path: _createRectSelectionPath(image.dstRect),
           );
+          isResizeActive = true;
           return;
         }
       }
@@ -376,6 +382,7 @@ class Select extends Tool {
         textSelected: true,
         path: _createRectSelectionPath(textRect),
       );
+      isResizeActive = true;
       return;
     }
 

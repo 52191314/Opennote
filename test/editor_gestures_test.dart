@@ -1,4 +1,4 @@
-/// 🤖 Generated wholely or partially with Claude Code (Claude Opus 5.5)
+/// 🤖 Generated wholely or partially with Claude Code (Claude Opus 5.5); Google Antigravity
 library;
 
 import 'package:flutter/material.dart';
@@ -237,7 +237,7 @@ void main() {
       select.isResizeActive = true;
       _drag(editorState, page, from: _start, to: const []);
 
-      expect(select.isResizeActive, isFalse);
+      expect(select.isResizeActive, isTrue);
       expect(select.selectResult.strokes, [stroke]);
       await tester.pump();
     });
