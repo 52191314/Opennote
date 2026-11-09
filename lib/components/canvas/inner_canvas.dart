@@ -310,10 +310,10 @@ class _InnerCanvasState extends State<InnerCanvas> {
                   final bounds = widget.currentSelection!.path.getBounds();
                   final double left;
                   if (widget.coreInfo.isInfiniteCanvas) {
-                    left = bounds.center.dx - 160.0;
+                    left = bounds.center.dx - 190.0;
                   } else {
-                    left = (bounds.center.dx - 160.0)
-                        .clamp(12.0, max(12.0, widget.width - 330.0))
+                    left = (bounds.center.dx - 190.0)
+                        .clamp(12.0, max(12.0, widget.width - 390.0))
                         .toDouble();
                   }
                   final top = bounds.top - 58 > 10

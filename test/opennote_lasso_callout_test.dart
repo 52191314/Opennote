@@ -254,6 +254,49 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Color'), findsOneWidget);
     });
+
+    testWidgets(
+      'shows scroll chevrons and scrolls when constrained on narrow screen',
+      (tester) async {
+        tester.view.physicalSize = const Size(360, 600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: LassoCalloutMenu(
+                onCut: () {},
+                onCopy: () {},
+                onDuplicate: () {},
+                onDelete: () {},
+                onSetColor: (_) {},
+                onToggleResize: () {},
+                onTakeScreenshot: () {},
+                onAddToElements: () {},
+                onBringToFront: () {},
+                onSendToBack: () {},
+                onSmoothen: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Right chevron is present because content overflows 360px
+        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+
+        // Tap right chevron to scroll right
+        await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+        await tester.pumpAndSettle();
+
+        // Left chevron appears after scrolling
+        expect(find.byIcon(Icons.chevron_left_rounded), findsOneWidget);
+      },
+    );
   });
 
   group('LassoScreenshotDialog Widget Tests', () {
