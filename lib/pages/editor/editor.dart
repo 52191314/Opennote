@@ -734,6 +734,7 @@ class EditorState extends State<Editor>
     } else {
       // Stylus is a precision hardware tool; never blocked by prior multi-finger zoom residue
       lastSeenPointerCount = 1;
+      if (details.pointerCount >= 2) return false;
     }
 
     dragPageIndex = onWhichPageIsFocalPoint(details.focalPoint);

@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/gestures.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_screenshot/golden_screenshot.dart';
 import 'package:saber/components/canvas/interactive_canvas.dart';
@@ -392,6 +393,140 @@ void main() {
       );
 
       // Adding stylus must preempt touch pointers
+      expect(() => recognizer.addAllowedPointer(stylusDown), returnsNormally);
+    });
+
+    testWidgets(
+      'palm-rejected touch pointer does not leak into subsequent stylus strokes',
+      (tester) async {
+        final engine = PalmRejectionEngine(
+          writingPosture: WritingPosture.rightBelow,
+          sensitivity: PalmRejectionSensitivity.medium,
+        );
+
+        final starts = <ScaleStartDetails>[];
+        final updates = <ScaleUpdateDetails>[];
+
+        await tester.pumpWidget(
+          RawGestureDetector(
+            behavior: HitTestBehavior.opaque,
+            gestures: <Type, GestureRecognizerFactory>{
+              CanvasScaleGestureRecognizer:
+                  GestureRecognizerFactoryWithHandlers<
+                    CanvasScaleGestureRecognizer
+                  >(() => CanvasScaleGestureRecognizer(palmEngine: engine), (
+                    CanvasScaleGestureRecognizer instance,
+                  ) {
+                    instance
+                      ..onStart = starts.add
+                      ..onUpdate = updates.add;
+                  }),
+            },
+            child: const SizedBox.expand(),
+          ),
+        );
+
+        // 1. Touch pointer lands with small initial contact (not yet classified as palm)
+        await tester.sendEventToBinding(
+          const PointerAddedEvent(
+            pointer: 50,
+            position: Offset(400, 400),
+            kind: PointerDeviceKind.touch,
+          ),
+        );
+        await tester.sendEventToBinding(
+          const PointerDownEvent(
+            pointer: 50,
+            position: Offset(400, 400),
+            kind: PointerDeviceKind.touch,
+            radiusMajor: 8.0,
+          ),
+        );
+
+        // 2. Touch flattens into a palm on move, then lifts
+        await tester.sendEventToBinding(
+          const PointerMoveEvent(
+            pointer: 50,
+            position: Offset(405, 405),
+            kind: PointerDeviceKind.touch,
+            radiusMajor: 28.0,
+          ),
+        );
+        await tester.sendEventToBinding(
+          const PointerUpEvent(
+            pointer: 50,
+            position: Offset(405, 405),
+            kind: PointerDeviceKind.touch,
+            radiusMajor: 28.0,
+          ),
+        );
+        await tester.pump();
+
+        starts.clear();
+        updates.clear();
+
+        // 3. Subsequent stylus stroke at (100, 100) -> (140, 140)
+        await tester.sendEventToBinding(
+          const PointerAddedEvent(
+            pointer: 51,
+            position: Offset(100, 100),
+            kind: PointerDeviceKind.stylus,
+          ),
+        );
+        await tester.sendEventToBinding(
+          const PointerDownEvent(
+            pointer: 51,
+            position: Offset(100, 100),
+            kind: PointerDeviceKind.stylus,
+          ),
+        );
+        await tester.sendEventToBinding(
+          const PointerMoveEvent(
+            pointer: 51,
+            position: Offset(140, 140),
+            delta: Offset(40, 40),
+            kind: PointerDeviceKind.stylus,
+          ),
+        );
+        await tester.sendEventToBinding(
+          const PointerUpEvent(
+            pointer: 51,
+            position: Offset(140, 140),
+            kind: PointerDeviceKind.stylus,
+          ),
+        );
+        await tester.pump();
+
+        expect(starts, isNotEmpty);
+        expect(starts.last.pointerCount, equals(1));
+        expect(starts.last.focalPoint, equals(const Offset(100, 100)));
+        expect(updates, isNotEmpty);
+        expect(updates.last.pointerCount, equals(1));
+      },
+    );
+
+    test('rejectGesture cleans up tracked touch pointer before stylus arrives', () {
+      final engine = PalmRejectionEngine(
+        writingPosture: WritingPosture.rightBelow,
+        sensitivity: PalmRejectionSensitivity.medium,
+      );
+
+      final recognizer = CanvasScaleGestureRecognizer(palmEngine: engine);
+      addTearDown(recognizer.dispose);
+
+      const touchDown = PointerDownEvent(
+        pointer: 60,
+        position: Offset(400, 400),
+        kind: PointerDeviceKind.touch,
+      );
+      recognizer.addAllowedPointer(touchDown);
+      recognizer.rejectGesture(60);
+
+      const stylusDown = PointerDownEvent(
+        pointer: 61,
+        position: Offset(100, 100),
+        kind: PointerDeviceKind.stylus,
+      );
       expect(() => recognizer.addAllowedPointer(stylusDown), returnsNormally);
     });
   });

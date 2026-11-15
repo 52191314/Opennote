@@ -634,6 +634,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
           onPointerDown: _listenerPointerEvent,
           onPointerMove: _listenerPointerEvent,
           onPointerUp: _listenerPointerUpEvent,
+          onPointerCancel: _listenerPointerUpEvent,
           onPointerHover: _listenerPointerHoverEvent,
           child: GestureDetector(
             child: LayoutBuilder(
