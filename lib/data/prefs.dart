@@ -4,7 +4,6 @@
 library;
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -165,7 +164,7 @@ class Stows {
   );
   final editorPromptRename = PlainStow(
     'editorPromptRename',
-    isDesktop,
+    false,
     volatile: !_isOnMainIsolate,
   );
   final autosaveDelay = PlainStow(
@@ -195,9 +194,9 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
-  /// When true, enables the Goodnotes-inspired dual-tier toolbar and document tabs header.
-  final goodnotesUiMode = PlainStow(
-    'goodnotesUiMode',
+  /// When true, enables the Opennote Studio dual-tier toolbar, shelf, and document header.
+  late final opennoteUiMode = PlainStow(
+    'opennoteUiMode',
     true,
     volatile: !_isOnMainIsolate,
   );
@@ -456,7 +455,7 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
-  /// Goodnotes-inspired writing posture for palm rejection.
+  /// Writing posture configuration for palm rejection and wrist comfort.
   final writingPosture = PlainStow(
     'writingPosture',
     WritingPosture.rightBelow,
@@ -675,7 +674,7 @@ class Stows {
 
   final shouldCheckForUpdates = PlainStow(
     'shouldCheckForUpdates',
-    FlavorConfig.shouldCheckForUpdatesByDefault && !Platform.isLinux,
+    FlavorConfig.shouldCheckForUpdatesByDefault,
     volatile: !_isOnMainIsolate,
   );
   final shouldAlwaysAlertForUpdates = PlainStow(
@@ -692,10 +691,6 @@ class Stows {
     codec: SentryConsent.codec,
     volatile: !_isOnMainIsolate,
   );
-
-  @pragma('vm:platform-const')
-  static final isDesktop =
-      Platform.isLinux || Platform.isWindows || Platform.isMacOS;
 }
 
 /// An [Stow] that transforms the value of another [Stow].

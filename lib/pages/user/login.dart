@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:saber/components/nextcloud/done_login_step.dart';

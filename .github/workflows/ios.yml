@@ -95,6 +95,9 @@ jobs:
         run: |
           if [ -n "$APP_STORE_CERTIFICATE_KEY" ]; then
             flutter build ipa \
+              --split-debug-info=build/ios/debug-info \
+              --obfuscate \
+              --tree-shake-icons \
               --dart-define=FLAVOR="App Store" \
               --dart-define=APP_STORE="App Store" \
               --dart-define=UPDATE_CHECK="false" \
@@ -102,6 +105,9 @@ jobs:
           else
             echo "No signing certificate key found. Building unsigned iOS app archive..."
             flutter build ios --no-codesign \
+              --split-debug-info=build/ios/debug-info \
+              --obfuscate \
+              --tree-shake-icons \
               --dart-define=FLAVOR="App Store" \
               --dart-define=APP_STORE="App Store" \
               --dart-define=UPDATE_CHECK="false"
@@ -112,7 +118,7 @@ jobs:
         run: |
           brew install grep
           buildName=$(ggrep -oP "(?<=buildName = ').*(?=')" lib/data/version.dart)
-          export ipaPath="Saber_v${buildName}.ipa"
+          export ipaPath="Opennote_v${buildName}.ipa"
           if [ -n "$(find $(pwd) -name "*.ipa")" ]; then
             mv $(find $(pwd) -name "*.ipa") $ipaPath
           else
@@ -140,7 +146,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: Saber-iOS-Archive
+          name: Opennote-iOS-Archive
           path: ${{ steps.move.outputs.ipaPath }}
 
       - name: Upload to GitHub release

@@ -51,15 +51,97 @@ class Stroke {
   Offset? get lastPoint =>
       points.isNotEmpty ? Offset(points.last.x, points.last.y) : null;
 
-  /// Returns a path along the center line of the stroke points.
+  Path? _centerlinePath;
+
+  /// Returns a cached path along the center line of the stroke points.
   Path get centerlinePath {
+    if (_centerlinePath != null) return _centerlinePath!;
     final path = Path();
-    if (points.isEmpty) return path;
-    path.moveTo(points.first.x, points.first.y);
-    for (int i = 1; i < points.length; i++) {
-      path.lineTo(points[i].x, points[i].y);
+    if (points.isNotEmpty) {
+      path.moveTo(points.first.x, points.first.y);
+      for (int i = 1; i < points.length; i++) {
+        path.lineTo(points[i].x, points[i].y);
+      }
     }
-    return path;
+    return _centerlinePath = path;
+  }
+
+  Rect? _boundingBox;
+
+  /// Returns the axis-aligned bounding box of this stroke in page coordinates.
+  Rect get boundingBox {
+    if (this case final CircleStroke circle) {
+      return Rect.fromCircle(center: circle.center, radius: circle.radius);
+    }
+    if (this case final RectangleStroke rectangle) {
+      return rectangle.rect;
+    }
+    if (this case final TapeStroke tape) {
+      return tape.rect;
+    }
+    if (this case final ArrowStroke arrow) {
+      return Rect.fromPoints(arrow.start, arrow.end).inflate(arrow.headLength);
+    }
+    if (this case final DimensionStroke dim) {
+      final (_, perp) = dim.computeVectors();
+      final dimOffset = perp * dim.offset;
+      final dimStart = dim.start + dimOffset;
+      final dimEnd = dim.end + dimOffset;
+      final minX = min(
+        min(dim.start.dx, dim.end.dx),
+        min(dimStart.dx, dimEnd.dx),
+      );
+      final minY = min(
+        min(dim.start.dy, dim.end.dy),
+        min(dimStart.dy, dimEnd.dy),
+      );
+      final maxX = max(
+        max(dim.start.dx, dim.end.dx),
+        max(dimStart.dx, dimEnd.dx),
+      );
+      final maxY = max(
+        max(dim.start.dy, dim.end.dy),
+        max(dimStart.dy, dimEnd.dy),
+      );
+      return Rect.fromLTRB(minX, minY, maxX, maxY).inflate(dim.headLength + 60);
+    }
+    if (this case final PolygonStroke polygon) {
+      if (polygon.vertices.isEmpty) return Rect.zero;
+      var minX = polygon.vertices.first.dx;
+      var maxX = minX;
+      var minY = polygon.vertices.first.dy;
+      var maxY = minY;
+      for (int i = 1; i < polygon.vertices.length; i++) {
+        final v = polygon.vertices[i];
+        if (v.dx < minX) minX = v.dx;
+        if (v.dx > maxX) maxX = v.dx;
+        if (v.dy < minY) minY = v.dy;
+        if (v.dy > maxY) maxY = v.dy;
+      }
+      return Rect.fromLTRB(minX, minY, maxX, maxY);
+    }
+
+    if (_boundingBox != null) return _boundingBox!;
+    if (points.isEmpty) return _boundingBox = Rect.zero;
+
+    var minX = points.first.x;
+    var maxX = minX;
+    var minY = points.first.y;
+    var maxY = minY;
+    for (int i = 1; i < points.length; i++) {
+      final p = points[i];
+      if (p.x < minX) minX = p.x;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.y > maxY) maxY = p.y;
+    }
+    final halfSize = options.size * 0.5;
+    return _boundingBox = Rect.fromLTRB(
+      minX - halfSize,
+      minY - halfSize,
+      maxX + halfSize,
+      maxY + halfSize,
+    );
   }
 
   int pageIndex;
@@ -99,6 +181,8 @@ class Stroke {
     _highQualityPolygon?.shift(offset);
     _lowQualityPath = _lowQualityPath?.shift(offset);
     _highQualityPath = _highQualityPath?.shift(offset);
+    _centerlinePath = _centerlinePath?.shift(offset);
+    _boundingBox = _boundingBox?.shift(offset);
   }
 
   /// Rotates all vertices by [angleRadians] radians around [center].
@@ -148,6 +232,8 @@ class Stroke {
     _highQualityPath = _highQualityPolygon != null
         ? getPath(_highQualityPolygon!)
         : null;
+    _centerlinePath = null;
+    _boundingBox = null;
   }
 
   /// Scales all vertices by [scaleX]/[scaleY] around [pivot].
@@ -189,6 +275,8 @@ class Stroke {
     _highQualityPath = _highQualityPolygon != null
         ? getPath(_highQualityPolygon!)
         : null;
+    _centerlinePath = null;
+    _boundingBox = null;
   }
 
   void markPolygonNeedsUpdating() {
@@ -196,6 +284,8 @@ class Stroke {
     _highQualityPolygon = null;
     _lowQualityPath = null;
     _highQualityPath = null;
+    _centerlinePath = null;
+    _boundingBox = null;
   }
 
   Stroke({
@@ -639,6 +729,7 @@ class Stroke {
     options.isComplete = true;
     options.start.taperEnabled = false;
     options.end.taperEnabled = false;
+    markPolygonNeedsUpdating();
   }
 
   /// Sets this stroke to a straight line segment from [start] to [end].

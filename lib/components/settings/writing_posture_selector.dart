@@ -3,12 +3,11 @@ library;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/palm_rejection.dart';
 import 'package:saber/i18n/strings.g.dart';
 
-/// Goodnotes-inspired writing posture and palm rejection selector widget.
+/// Writing posture and palm rejection selector widget.
 class WritingPostureSelector extends StatefulWidget {
   const WritingPostureSelector({super.key, this.compact = false});
 
@@ -90,14 +89,14 @@ class _WritingPostureSelectorState extends State<WritingPostureSelector> {
                 ButtonSegment<bool>(
                   value: true,
                   label: Text(t.settings.writingPosture.handRight),
-                  icon: const Icon(Symbols.pan_tool_rounded, size: 18),
+                  icon: const Icon(Icons.pan_tool_rounded, size: 18),
                 ),
                 ButtonSegment<bool>(
                   value: false,
                   label: Text(t.settings.writingPosture.handLeft),
                   icon: Transform.flip(
                     flipX: true,
-                    child: const Icon(Symbols.pan_tool_rounded, size: 18),
+                    child: const Icon(Icons.pan_tool_rounded, size: 18),
                   ),
                 ),
               ],
@@ -135,9 +134,7 @@ class _WritingPostureSelectorState extends State<WritingPostureSelector> {
                       ? WritingPosture.rightBelow
                       : WritingPosture.leftBelow,
                   currentPosture: posture,
-                  icon: isRightHanded
-                      ? Symbols.edit_rounded
-                      : Symbols.edit_rounded,
+                  icon: Icons.edit_rounded,
                   title: t.settings.writingPosture.postureBelow,
                   subtitle: t.settings.writingPosture.postureBelowDesc,
                 ),
@@ -147,7 +144,7 @@ class _WritingPostureSelectorState extends State<WritingPostureSelector> {
                       ? WritingPosture.rightLevel
                       : WritingPosture.leftLevel,
                   currentPosture: posture,
-                  icon: Symbols.border_horizontal_rounded,
+                  icon: Icons.border_horizontal_rounded,
                   title: t.settings.writingPosture.postureLevel,
                   subtitle: t.settings.writingPosture.postureLevelDesc,
                 ),
@@ -157,7 +154,7 @@ class _WritingPostureSelectorState extends State<WritingPostureSelector> {
                       ? WritingPosture.rightAbove
                       : WritingPosture.leftAbove,
                   currentPosture: posture,
-                  icon: Symbols.turn_slight_left_rounded,
+                  icon: Icons.turn_slight_left_rounded,
                   title: t.settings.writingPosture.postureAbove,
                   subtitle: t.settings.writingPosture.postureAboveDesc,
                 ),

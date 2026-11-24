@@ -1,4 +1,5 @@
-import 'dart:io';
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
 
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/cupertino.dart';
@@ -8,19 +9,18 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:go_router/go_router.dart';
+import 'package:saber/components/design_system/opennote_tokens.dart';
 import 'package:saber/components/theming/saber_theme.dart';
-import 'package:saber/components/theming/yaru_builder.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/i18n/extensions/redirecting_localization_delegate.dart';
 import 'package:saber/i18n/strings.g.dart';
-import 'package:window_manager/window_manager.dart';
 
 class DynamicMaterialApp extends StatefulHookWidget {
   const DynamicMaterialApp({
     super.key,
     required this.title,
     required this.router,
-    this.defaultSwatch = Colors.yellow,
+    this.defaultSwatch = OpennoteTokens.brandSeed,
   });
 
   final String title;
@@ -37,13 +37,9 @@ class DynamicMaterialApp extends StatefulHookWidget {
     _isFullscreen.value = value;
     if (!updateSystem) return;
 
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-      windowManager.setFullScreen(value);
-    } else {
-      SystemChrome.setEnabledSystemUIMode(
-        value ? SystemUiMode.immersive : SystemUiMode.edgeToEdge,
-      );
-    }
+    SystemChrome.setEnabledSystemUIMode(
+      value ? SystemUiMode.immersive : SystemUiMode.edgeToEdge,
+    );
   }
 
   static void addFullscreenListener(void Function() listener) {
@@ -55,24 +51,12 @@ class DynamicMaterialApp extends StatefulHookWidget {
   }
 }
 
-class DynamicMaterialAppState extends State<DynamicMaterialApp>
-    with WindowListener {
+class DynamicMaterialAppState extends State<DynamicMaterialApp> {
   @override
   void initState() {
-    windowManager.addListener(this);
     SystemChrome.setSystemUIChangeCallback(_onFullscreenChange);
 
     super.initState();
-  }
-
-  @override
-  void onWindowEnterFullScreen() {
-    DynamicMaterialApp.setFullscreen(true, updateSystem: false);
-  }
-
-  @override
-  void onWindowLeaveFullScreen() {
-    DynamicMaterialApp.setFullscreen(false, updateSystem: false);
   }
 
   Future<void> _onFullscreenChange(bool systemOverlaysAreVisible) async {
@@ -90,25 +74,6 @@ class DynamicMaterialAppState extends State<DynamicMaterialApp>
     if ((chosenAccentColor?.a ?? 0) < double.minPositive)
       chosenAccentColor = null; // discard transparent accent color
     useListenable(stows.hyperlegibleFont);
-
-    // Use Yaru theme, with or without [chosenAccentColor]
-    if (platform == .linux) {
-      return YaruBuilder(
-        primary: chosenAccentColor, // if null, falls back to system color
-        platform: platform,
-        builder: (context, themes) {
-          return ExplicitlyThemedApp(
-            title: widget.title,
-            router: widget.router,
-            themeMode: themeMode,
-            theme: themes.theme,
-            darkTheme: themes.darkTheme,
-            highContrastTheme: themes.highContrastTheme,
-            highContrastDarkTheme: themes.highContrastDarkTheme,
-          );
-        },
-      );
-    }
 
     // Use [chosenAccentColor] with material/cupertino theme
     if (chosenAccentColor != null) {
@@ -136,14 +101,14 @@ class DynamicMaterialAppState extends State<DynamicMaterialApp>
           title: widget.title,
           router: widget.router,
           themeMode: themeMode,
-          theme: (!platform.usesYaruColors && lightColorScheme != null)
+          theme: (!platform.isCupertino && lightColorScheme != null)
               ? SaberTheme.createTheme(lightColorScheme, platform)
               : SaberTheme.createThemeFromSeed(
                   lightColorScheme?.primary ?? widget.defaultSwatch,
                   .light,
                   platform,
                 ),
-          darkTheme: (!platform.usesYaruColors && darkColorScheme != null)
+          darkTheme: (!platform.isCupertino && darkColorScheme != null)
               ? SaberTheme.createTheme(darkColorScheme, platform)
               : SaberTheme.createThemeFromSeed(
                   darkColorScheme?.primary ?? widget.defaultSwatch,
@@ -157,7 +122,6 @@ class DynamicMaterialAppState extends State<DynamicMaterialApp>
 
   @override
   void dispose() {
-    windowManager.removeListener(this);
     SystemChrome.setSystemUIChangeCallback(null);
 
     super.dispose();

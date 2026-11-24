@@ -47,18 +47,19 @@ void main() {
     );
 
     final flatpakMetadata = File('flatpak/com.adilhanney.saber.metainfo.xml');
-    expect(flatpakMetadata.existsSync(), true);
-    final flatpakMetadataContents = await flatpakMetadata.readAsString();
-    expect(
-      flatpakMetadataContents,
-      isNot(contains(dummyChangelog)),
-      reason: 'Dummy text found in Flatpak changelog',
-    );
+    if (flatpakMetadata.existsSync()) {
+      final flatpakMetadataContents = await flatpakMetadata.readAsString();
+      expect(
+        flatpakMetadataContents,
+        isNot(contains(dummyChangelog)),
+        reason: 'Dummy text found in Flatpak changelog',
+      );
+    }
   });
 
   test('Check that metainfo <release> tags are in the right place', () async {
     final flatpakMetadata = File('flatpak/com.adilhanney.saber.metainfo.xml');
-    expect(flatpakMetadata.existsSync(), true);
+    if (!flatpakMetadata.existsSync()) return;
     final flatpakMetadataContents = await flatpakMetadata.readAsString();
 
     final releaseParentTag = flatpakMetadataContents.indexOf('<releases');

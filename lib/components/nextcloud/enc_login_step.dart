@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -12,7 +15,6 @@ import 'package:saber/data/nextcloud/nextcloud_client_extension.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/i18n/strings.g.dart';
 import 'package:sbn/font_fallbacks.dart';
-import 'package:yaru/yaru.dart';
 
 class EncLoginStep extends HookWidget {
   const EncLoginStep({super.key, required this.recheckCurrentStep});
@@ -57,7 +59,7 @@ class EncLoginStep extends HookWidget {
           t.login.notYou(
             undoLogin: (text) => TextSpan(
               text: text,
-              style: TextStyle(color: colorScheme.link),
+              style: TextStyle(color: colorScheme.primary),
               recognizer: TapGestureRecognizer()
                 ..onTap = () {
                   stows.url.value = '';

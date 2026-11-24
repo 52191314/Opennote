@@ -4,16 +4,20 @@ library;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
 import 'package:saber/components/toolbar/lasso_filter_popup.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/i18n/strings.g.dart';
 
 class SelectionBar extends StatelessWidget {
+  final VoidCallback? cutSelection;
+  final VoidCallback? onCutSelection;
   final VoidCallback copySelection;
   final VoidCallback pasteSelection;
   final VoidCallback duplicateSelection;
   final VoidCallback deleteSelection;
+  final ValueChanged<Color>? onSetColor;
   final bool cropPossible;
   final bool cropActive;
   final VoidCallback? toggleCrop;
@@ -27,12 +31,25 @@ class SelectionBar extends StatelessWidget {
   final VoidCallback? reduceTextSize;
   final VoidCallback? enlargeTextSize;
 
+  static List<({String name, Color color})> get quickColorOptions => [
+    (name: t.editor.colors.black, color: const Color(0xFF000000)),
+    (name: t.editor.colors.blue, color: const Color(0xFF1976D2)),
+    (name: t.editor.colors.red, color: const Color(0xFFD32F2F)),
+    (name: t.editor.colors.green, color: const Color(0xFF388E3C)),
+    (name: t.editor.colors.yellow, color: const Color(0xFFFBC02D)),
+    (name: t.editor.colors.purple, color: const Color(0xFF7B1FA2)),
+    (name: t.editor.colors.orange, color: const Color(0xFFF57C00)),
+  ];
+
   const SelectionBar({
     super.key,
+    this.cutSelection,
+    this.onCutSelection,
     required this.copySelection,
     required this.pasteSelection,
     required this.duplicateSelection,
     required this.deleteSelection,
+    this.onSetColor,
     this.cropPossible = false,
     this.cropActive = false,
     this.toggleCrop,
@@ -114,6 +131,20 @@ class SelectionBar extends StatelessWidget {
                 color: cropActive ? ColorScheme.of(context).primary : null,
               ),
             ),
+          if (cutSelection != null || onCutSelection != null)
+            IconButton(
+              onPressed: cutSelection ?? onCutSelection,
+              style: TextButton.styleFrom(
+                foregroundColor: ColorScheme.of(context).secondary,
+                backgroundColor: Colors.transparent,
+                shape: const CircleBorder(),
+              ),
+              tooltip: t.editor.actions.cut,
+              icon: const AdaptiveIcon(
+                icon: Icons.content_cut,
+                cupertinoIcon: CupertinoIcons.scissors,
+              ),
+            ),
           IconButton(
             onPressed: copySelection,
             style: TextButton.styleFrom(
@@ -153,6 +184,45 @@ class SelectionBar extends StatelessWidget {
               cupertinoIcon: CupertinoIcons.plus_rectangle_on_rectangle,
             ),
           ),
+          if (onSetColor != null)
+            PopupMenuButton<Color>(
+              tooltip: t.editor.lasso.color,
+              icon: const Icon(Icons.palette_outlined),
+              style: TextButton.styleFrom(
+                foregroundColor: ColorScheme.of(context).secondary,
+                backgroundColor: Colors.transparent,
+                shape: const CircleBorder(),
+              ),
+              onSelected: (color) {
+                HapticFeedback.selectionClick();
+                onSetColor?.call(color);
+              },
+              itemBuilder: (context) => [
+                for (final item in quickColorOptions)
+                  PopupMenuItem<Color>(
+                    value: item.color,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 16,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            color: item.color,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.grey.withValues(alpha: 0.5),
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(item.name),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           if (bringToFront != null)
             IconButton(
               onPressed: bringToFront,

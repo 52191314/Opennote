@@ -214,7 +214,7 @@ class _InnerCanvasState extends State<InnerCanvas> {
           )
         : null;
 
-    final customPaint = CustomPaint(
+    final backgroundLayer = CustomPaint(
       painter: CanvasBackgroundPainter(
         invert: invert,
         backgroundColor: pageBackground,
@@ -226,24 +226,7 @@ class _InnerCanvasState extends State<InnerCanvas> {
         isInfiniteCanvas: widget.coreInfo.isInfiniteCanvas,
         viewportRect: widget.viewportRect,
       ),
-      foregroundPainter: CanvasPainter(
-        repaint: widget.redrawPageListenable,
-        invert: invert,
-        laserStrokes: page.laserStrokes,
-        currentStroke: widget.currentStroke,
-        currentSelection: widget.currentSelection,
-        isDoneSelecting: widget.isDoneSelecting,
-        primaryColor: colorScheme.primary,
-        page: page,
-        showPageIndicator: widget.showPageIndicator,
-        pageIndex: widget.pageIndex,
-        totalPages: widget.coreInfo.pages.length,
-        currentScale: widget.currentScale,
-        defaultTextStyle: theme.textTheme.bodyMedium!,
-        isInfiniteCanvas: widget.coreInfo.isInfiniteCanvas,
-      ),
       isComplex: true,
-      willChange: true,
       child: SizedBox(
         width: widget.width,
         height: widget.height,
@@ -310,10 +293,10 @@ class _InnerCanvasState extends State<InnerCanvas> {
                   final bounds = widget.currentSelection!.path.getBounds();
                   final double left;
                   if (widget.coreInfo.isInfiniteCanvas) {
-                    left = bounds.center.dx - 160.0;
+                    left = bounds.center.dx - 190.0;
                   } else {
-                    left = (bounds.center.dx - 160.0)
-                        .clamp(12.0, max(12.0, widget.width - 330.0))
+                    left = (bounds.center.dx - 190.0)
+                        .clamp(12.0, max(12.0, widget.width - 390.0))
                         .toDouble();
                   }
                   final top = bounds.top - 58 > 10
@@ -351,6 +334,30 @@ class _InnerCanvasState extends State<InnerCanvas> {
           ),
         ),
       ),
+    );
+
+    final customPaint = CustomPaint(
+      foregroundPainter: CanvasPainter(
+        repaint: widget.redrawPageListenable,
+        invert: invert,
+        laserStrokes: page.laserStrokes,
+        currentStroke: widget.currentStroke,
+        currentSelection: widget.currentSelection,
+        isDoneSelecting: widget.isDoneSelecting,
+        primaryColor: colorScheme.primary,
+        page: page,
+        showPageIndicator: widget.showPageIndicator,
+        pageIndex: widget.pageIndex,
+        totalPages: widget.coreInfo.pages.length,
+        currentScale: widget.currentScale,
+        defaultTextStyle: theme.textTheme.bodyMedium!,
+        isInfiniteCanvas: widget.coreInfo.isInfiniteCanvas,
+      ),
+      isComplex: true,
+      willChange: true,
+      child: widget.coreInfo.isInfiniteCanvas
+          ? backgroundLayer
+          : RepaintBoundary(child: backgroundLayer),
     );
 
     if (widget.coreInfo.isInfiniteCanvas) {

@@ -12,7 +12,7 @@ import 'package:saber/data/tools/pen.dart';
 import 'package:saber/data/tools/pen_tray.dart';
 import 'package:saber/i18n/strings.g.dart';
 
-/// Pinned 3-color and 3-thickness quick access palette bar (Goodnotes ergonomics).
+/// Pinned 3-color and 3-thickness quick access palette bar (Opennote Studio ergonomics).
 /// Allows 1-tap switching between lecture colors and stroke widths.
 class QuickPaletteBar extends StatefulWidget {
   const QuickPaletteBar({
@@ -244,10 +244,14 @@ class _QuickPaletteBarState extends State<QuickPaletteBar> {
     });
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+          width: 0.75,
+        ),
       ),
       child: Flex(
         direction: widget.axis,
@@ -260,12 +264,12 @@ class _QuickPaletteBarState extends State<QuickPaletteBar> {
           ),
           Container(
             margin: EdgeInsets.symmetric(
-              horizontal: isVertical ? 0 : 4,
-              vertical: isVertical ? 4 : 0,
+              horizontal: isVertical ? 0 : 5,
+              vertical: isVertical ? 5 : 0,
             ),
             width: isVertical ? 16 : 1,
             height: isVertical ? 1 : 16,
-            color: colorScheme.onSurface.withValues(alpha: 0.2),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.45),
           ),
           Flex(
             direction: widget.axis,

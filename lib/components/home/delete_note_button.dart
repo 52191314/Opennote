@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:saber/components/theming/adaptive_alert_dialog.dart';
@@ -15,20 +18,31 @@ class DeleteNoteButton extends StatelessWidget {
   final List<String> filesToDelete;
   final void Function() unselectNotes;
 
+  /// Shows the standard delete confirmation dialog for one or more note files.
+  static Future<void> showDeleteDialog(
+    BuildContext context, {
+    required List<String> filesToDelete,
+    VoidCallback? onDeleted,
+  }) async {
+    await showDialog(
+      context: context,
+      builder: (context) => _DeleteNoteDialog(
+        filesToDelete: filesToDelete,
+        unselectNotes: onDeleted ?? () {},
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return IconButton(
       padding: EdgeInsets.zero,
       tooltip: t.home.deleteNote,
-      onPressed: () async {
-        await showDialog(
-          context: context,
-          builder: (context) => _DeleteNoteDialog(
-            filesToDelete: filesToDelete,
-            unselectNotes: unselectNotes,
-          ),
-        );
-      },
+      onPressed: () => showDeleteDialog(
+        context,
+        filesToDelete: filesToDelete,
+        onDeleted: unselectNotes,
+      ),
       icon: const Icon(Icons.delete_forever),
     );
   }

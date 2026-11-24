@@ -1,5 +1,7 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/pen.dart';
 import 'package:saber/i18n/strings.g.dart';
@@ -20,5 +22,5 @@ class Pencil extends Pen {
 
   static var currentPencil = Pencil();
 
-  static const pencilIcon = FontAwesomeIcons.pencil;
+  static const pencilIcon = Icons.create_rounded;
 }

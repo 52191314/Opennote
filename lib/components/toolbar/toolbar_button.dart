@@ -3,7 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 
-/// An iPadOS / Goodnotes-styled toolbar button featuring soft rounded pill
+/// An Opennote Studio toolbar button featuring soft rounded pill
 /// backgrounds, refined primary accent indicators, and ergonomic touch states.
 class ToolbarIconButton extends StatelessWidget {
   const ToolbarIconButton({
@@ -35,13 +35,13 @@ class ToolbarIconButton extends StatelessWidget {
         return Colors.transparent;
       }
       if (states.contains(WidgetState.selected)) {
-        return colorScheme.primaryContainer.withValues(alpha: 0.7);
+        return colorScheme.primaryContainer.withValues(alpha: 0.85);
       }
       if (states.contains(WidgetState.hovered)) {
-        return colorScheme.onSurface.withValues(alpha: 0.06);
+        return colorScheme.onSurface.withValues(alpha: 0.07);
       }
       if (states.contains(WidgetState.pressed)) {
-        return colorScheme.onSurface.withValues(alpha: 0.12);
+        return colorScheme.onSurface.withValues(alpha: 0.13);
       }
       return Colors.transparent;
     });
@@ -53,17 +53,28 @@ class ToolbarIconButton extends StatelessWidget {
       if (states.contains(WidgetState.selected)) {
         return colorScheme.primary;
       }
-      return colorScheme.onSurfaceVariant.withValues(alpha: 0.85);
+      return colorScheme.onSurfaceVariant.withValues(alpha: 0.88);
+    });
+
+    final side = WidgetStateProperty.resolveWith<BorderSide>((states) {
+      if (states.contains(WidgetState.selected)) {
+        return BorderSide(
+          color: colorScheme.primary.withValues(alpha: 0.32),
+          width: 1,
+        );
+      }
+      return BorderSide.none;
     });
 
     final shape = WidgetStateProperty.all<OutlinedBorder>(
-      RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
     );
 
     final buttonStyle = ButtonStyle(
       backgroundColor: backgroundColor,
       iconColor: foregroundColor,
       foregroundColor: foregroundColor,
+      side: side,
       shape: shape,
       visualDensity: VisualDensity.standard,
       iconSize: const WidgetStatePropertyAll(19),
@@ -84,7 +95,7 @@ class ToolbarIconButton extends StatelessWidget {
           Positioned(
             bottom: -5,
             child: Container(
-              width: 14,
+              width: 16,
               height: 2.5,
               decoration: BoxDecoration(
                 color: colorScheme.primary,

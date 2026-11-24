@@ -1,5 +1,7 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
-import 'package:yaru/yaru.dart';
 
 class FaqListView extends StatelessWidget {
   const FaqListView({super.key, required this.items, this.shrinkWrap = false});
@@ -30,12 +32,11 @@ class _FaqTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return YaruExpandable(
-      header: Text(item.question),
-      child: Padding(
-        padding: const .all(16),
-        child: SelectableText(item.answer),
-      ),
+    return ExpansionTile(
+      title: Text(item.question),
+      childrenPadding: const .all(16),
+      expandedCrossAxisAlignment: CrossAxisAlignment.start,
+      children: [SelectableText(item.answer)],
     );
   }
 }

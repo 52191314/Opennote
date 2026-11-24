@@ -3,7 +3,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/i18n/strings.g.dart';
 
@@ -46,8 +45,8 @@ class _EraserSizePopupState extends State<EraserSizePopup> {
             children: [
               Row(
                 children: [
-                  FaIcon(
-                    FontAwesomeIcons.eraser,
+                  Icon(
+                    Icons.auto_fix_normal_rounded,
                     size: 20,
                     color: colorScheme.onSurface,
                   ),

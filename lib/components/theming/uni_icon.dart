@@ -1,7 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
 
-/// An Icon widget that can take an [IconData] or [FaIconData].
+import 'package:flutter/material.dart';
+
+/// An Icon widget that wraps an [IconData] (accepting [Object] for backwards
+/// compatibility with callers that pass typed or untyped icon objects).
 class UniIcon extends Icon {
   const UniIcon(
     this.uniIcon, {
@@ -16,38 +19,30 @@ class UniIcon extends Icon {
   @override
   Widget build(BuildContext context) {
     final uniIcon = this.uniIcon;
-    return switch (uniIcon) {
-      FaIconData() => FaIcon(
+    if (uniIcon is IconData) {
+      return Icon(
         uniIcon,
         key: ValueKey(uniIcon),
         size: size,
         color: color,
         semanticLabel: semanticLabel,
-      ),
-      IconData() => Icon(
-        uniIcon,
-        key: ValueKey(uniIcon),
-        size: size,
-        color: color,
-        semanticLabel: semanticLabel,
-      ),
-      _ => throw ArgumentError.value(
-        uniIcon,
-        'uniIcon',
-        'uniIcon must be a FaIconData or IconData',
-      ),
-    };
+      );
+    }
+    throw ArgumentError.value(
+      uniIcon,
+      'uniIcon',
+      'uniIcon must be an IconData',
+    );
   }
 
   @override
   @Deprecated('Use uniIcon directly')
-  IconData get icon => switch (uniIcon) {
-    IconData() => uniIcon as IconData,
-    FaIconData() => (uniIcon as FaIconData).data,
-    _ => throw ArgumentError.value(
+  IconData get icon {
+    if (uniIcon is IconData) return uniIcon as IconData;
+    throw ArgumentError.value(
       uniIcon,
       'uniIcon',
-      'uniIcon must be a FaIconData or IconData',
-    ),
-  };
+      'uniIcon must be an IconData',
+    );
+  }
 }

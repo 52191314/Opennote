@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
@@ -38,7 +41,7 @@ class HorizontalNavbar extends StatelessWidget {
       child: Padding(
         padding: const .all(16),
         child: Align(
-          alignment: AlignmentDirectional.bottomEnd,
+          alignment: Alignment.bottomCenter,
           child: GlassyContainer(
             child: Padding(
               padding: platform.isCupertino ? const .all(4) : const .all(8),

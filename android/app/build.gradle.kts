@@ -48,8 +48,14 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
             ndk {
-                debugSymbolLevel = "FULL"
+                debugSymbolLevel = "SYMBOL_TABLE"
             }
         }
         debug {
@@ -59,6 +65,15 @@ android {
 
     packaging {
         jniLibs.pickFirsts.add("lib/*/libc++_shared.so")
+        resources.excludes.addAll(
+            listOf(
+                "META-INF/{AL2.0,LGPL2.1}",
+                "META-INF/*.kotlin_module",
+                "DebugProbesKt.bin",
+                "kotlin/**",
+                "META-INF/com.android.tools/**",
+            ),
+        )
     }
 }
 

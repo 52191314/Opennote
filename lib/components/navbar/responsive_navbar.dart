@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
@@ -66,7 +69,7 @@ class ResponsiveNavbar extends HookWidget {
           children: [
             IntrinsicWidth(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 300),
+                constraints: const BoxConstraints(maxWidth: 280),
                 child: VerticalNavbar(
                   destinations: HomeRoutes.navigationRailDestinations,
                   selectedIndex: selectedIndex,
@@ -95,13 +98,16 @@ class ResponsiveNavbar extends HookWidget {
             ),
             child: body,
           ),
-          PositionedDirectional(
+          Positioned(
+            left: 0,
+            right: 0,
             bottom: 0,
-            end: 0,
-            child: HorizontalNavbar(
-              destinations: HomeRoutes.navigationDestinations,
-              selectedIndex: selectedIndex,
-              onDestinationSelected: (i) => onDestinationSelected(context, i),
+            child: Center(
+              child: HorizontalNavbar(
+                destinations: HomeRoutes.navigationDestinations,
+                selectedIndex: selectedIndex,
+                onDestinationSelected: (i) => onDestinationSelected(context, i),
+              ),
             ),
           ),
         ],

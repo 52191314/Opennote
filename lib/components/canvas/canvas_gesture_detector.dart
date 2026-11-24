@@ -1,16 +1,15 @@
-/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Generated wholely or partially with Claude Code; Gemini; Google Antigravity
 /// 🤖 Modified with Grok 4.7
 library;
 
 import 'dart:async';
-import 'dart:collection';
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:keybinder/keybinder.dart';
+import 'package:saber/components/canvas/gesture_detector/canvas_transform_cache.dart';
 import 'package:saber/components/canvas/hud/canvas_hud.dart';
 import 'package:saber/components/canvas/hud/floating_layers_overlay.dart';
 import 'package:saber/components/canvas/hud/protractor_overlay.dart';
@@ -22,6 +21,12 @@ import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/palm_rejection.dart';
 import 'package:saber/pages/editor/editor.dart';
 import 'package:vector_math/vector_math_64.dart';
+
+export 'gesture_detector/canvas_transform_cache.dart';
+
+part 'gesture_detector/canvas_navigation_controls.dart';
+part 'gesture_detector/canvas_pages_builder.dart';
+part 'gesture_detector/canvas_pointer_handlers.dart';
 
 class CanvasGestureDetector extends StatefulWidget {
   CanvasGestureDetector({
@@ -52,6 +57,7 @@ class CanvasGestureDetector extends StatefulWidget {
     this.activePage,
     this.onLayersChanged,
     this.isInfiniteCanvas = false,
+    this.onFitContent,
     TransformationController? transformationController,
   }) : _transformationController =
            transformationController ?? TransformationController();
@@ -100,13 +106,14 @@ class CanvasGestureDetector extends StatefulWidget {
   final EditorPage? activePage;
   final VoidCallback? onLayersChanged;
   final bool isInfiniteCanvas;
+  final VoidCallback? onFitContent;
 
   late final TransformationController _transformationController;
 
   @override
   State<CanvasGestureDetector> createState() => CanvasGestureDetectorState();
 
-  static const kMinScale = 0.3;
+  static const kMinScale = 0.001;
   static const kMaxScale = 10.0;
 
   static double getTopOfPage({
@@ -198,20 +205,19 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
   /// Whether the protractor overlay is visible.
   var showProtractor = false;
 
-  void zoomIn() => widget._transformationController.value =
-      setZoom(
-        scaleDelta: 0.1,
-        transformation: widget._transformationController.value,
-        containerBounds: containerBounds,
-      ) ??
-      widget._transformationController.value;
-  void zoomOut() => widget._transformationController.value =
-      setZoom(
-        scaleDelta: -0.1,
-        transformation: widget._transformationController.value,
-        containerBounds: containerBounds,
-      ) ??
-      widget._transformationController.value;
+  final Map<AxisDirection, Timer> _arrowKeyPanTimers = {};
+  var _setupKeybindings = false;
+  late Keybinding _ctrlPlus, _ctrlEquals, _ctrlMinus;
+  late Keybinding _leftKey, _rightKey, _upKey, _downKey;
+
+  Timer? _snapZoomTimer;
+
+  final Map<int, Offset> _pointerPositions = {};
+  DateTime? _multiPointerDownTime;
+  var _maxPointerCountDuringGesture = 0;
+  var _multiPointerMoved = false;
+  var stylusButtonWasPressed = false;
+
   @visibleForTesting
   static Matrix4? setZoom({
     required double scaleDelta,
@@ -219,10 +225,29 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
     required BoxConstraints containerBounds,
   }) {
     final oldScale = transformation.approxScale;
-    final newScale = oldScale + scaleDelta;
+    double newScale = oldScale + scaleDelta;
 
-    if (newScale < CanvasGestureDetector.kMinScale) return null;
-    if (newScale > CanvasGestureDetector.kMaxScale) return null;
+    if (scaleDelta < 0 && oldScale <= CanvasGestureDetector.kMinScale) {
+      return null;
+    }
+    if (scaleDelta > 0 && oldScale >= CanvasGestureDetector.kMaxScale) {
+      return null;
+    }
+
+    if (newScale < CanvasGestureDetector.kMinScale) {
+      if (oldScale > CanvasGestureDetector.kMinScale) {
+        newScale = CanvasGestureDetector.kMinScale;
+      } else {
+        return null;
+      }
+    }
+    if (newScale > CanvasGestureDetector.kMaxScale) {
+      if (oldScale < CanvasGestureDetector.kMaxScale) {
+        newScale = CanvasGestureDetector.kMaxScale;
+      } else {
+        return null;
+      }
+    }
 
     final center = Vector3(
       containerBounds.maxWidth / 2,
@@ -235,116 +260,6 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
 
     return Matrix4.translation(translation)
       ..scaleByDouble(newScale, newScale, newScale, 1);
-  }
-
-  final Map<AxisDirection, Timer> _arrowKeyPanTimers = {};
-  void arrowKeyPan(AxisDirection direction, bool pressed) {
-    _arrowKeyPanTimers.remove(direction)?.cancel();
-    if (!pressed) return;
-
-    // arrow keys are used to navigate around text
-    if (widget.isTextEditing()) return;
-
-    _arrowKeyPanNow(direction);
-
-    // Wait for 200ms, then pan every 100ms
-    const ms100 = Duration(milliseconds: 100);
-    const ms200 = Duration(milliseconds: 200);
-    _arrowKeyPanTimers[direction] = Timer(ms200, () {
-      _arrowKeyPanTimers[direction] = Timer.periodic(ms100, (_) {
-        _arrowKeyPanNow(direction);
-      });
-    });
-  }
-
-  void _arrowKeyPanNow(AxisDirection direction) {
-    final transformation = widget._transformationController.value;
-    const panAmount = 50.0;
-
-    transformation.leftTranslateByDouble(
-      switch (direction) {
-        AxisDirection.left => panAmount,
-        AxisDirection.right => -panAmount,
-        AxisDirection.up => 0.0,
-        AxisDirection.down => 0.0,
-      },
-      switch (direction) {
-        AxisDirection.left => 0.0,
-        AxisDirection.right => 0.0,
-        AxisDirection.up => panAmount,
-        AxisDirection.down => -panAmount,
-      },
-      0,
-      1,
-    );
-    widget._transformationController.notifyListenersPlease();
-  }
-
-  var _setupKeybindings = false;
-  late Keybinding _ctrlPlus, _ctrlEquals, _ctrlMinus;
-  late Keybinding _leftKey, _rightKey, _upKey, _downKey;
-  void _assignKeybindings() {
-    _ctrlPlus = Keybinding([
-      KeyCode.ctrl,
-      KeyCode.from(LogicalKeyboardKey.add),
-    ], inclusive: true);
-    _ctrlEquals = Keybinding([
-      KeyCode.ctrl,
-      KeyCode.from(LogicalKeyboardKey.equal),
-    ], inclusive: true);
-    _ctrlMinus = Keybinding([
-      KeyCode.ctrl,
-      KeyCode.from(LogicalKeyboardKey.minus),
-    ], inclusive: true);
-    Keybinder.bind(_ctrlPlus, zoomIn);
-    Keybinder.bind(_ctrlEquals, zoomIn);
-    Keybinder.bind(_ctrlMinus, zoomOut);
-
-    _leftKey = Keybinding([
-      KeyCode.from(LogicalKeyboardKey.arrowLeft),
-    ], inclusive: true);
-    _rightKey = Keybinding([
-      KeyCode.from(LogicalKeyboardKey.arrowRight),
-    ], inclusive: true);
-    _upKey = Keybinding([
-      KeyCode.from(LogicalKeyboardKey.arrowUp),
-    ], inclusive: true);
-    _downKey = Keybinding([
-      KeyCode.from(LogicalKeyboardKey.arrowDown),
-    ], inclusive: true);
-    Keybinder.bind(
-      _leftKey,
-      (bool pressed) => arrowKeyPan(AxisDirection.left, pressed),
-    );
-    Keybinder.bind(
-      _rightKey,
-      (bool pressed) => arrowKeyPan(AxisDirection.right, pressed),
-    );
-    Keybinder.bind(
-      _upKey,
-      (bool pressed) => arrowKeyPan(AxisDirection.up, pressed),
-    );
-    Keybinder.bind(
-      _downKey,
-      (bool pressed) => arrowKeyPan(AxisDirection.down, pressed),
-    );
-
-    _setupKeybindings = true;
-  }
-
-  void _removeKeybindings() {
-    if (!_setupKeybindings) return;
-    _setupKeybindings = false;
-
-    Keybinder.remove(_ctrlPlus);
-    Keybinder.remove(_ctrlEquals);
-    Keybinder.remove(_ctrlMinus);
-
-    Keybinder.remove(_leftKey);
-    Keybinder.remove(_rightKey);
-    Keybinder.remove(_upKey);
-    Keybinder.remove(_downKey);
-    _arrowKeyPanTimers.forEach((_, timer) => timer.cancel());
   }
 
   @override
@@ -403,20 +318,20 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
     }
   }
 
-  Timer? _snapZoomTimer;
-
   /// Corrects the transform if it's out of bounds.
   /// If the scale is less than 1, centers the pages horizontally.
   /// Otherwise, prevents the user from scrolling past the edges.
   void onTransformChanged() {
     final scale = widget._transformationController.value.approxScale;
+    if (scale <= 0 || scale.isNaN || scale.isInfinite) return;
 
     // snap to 1.0x zoom
     _snapZoomTimer?.cancel();
     final diffFrom1 = (scale - 1).abs();
     // allow 0.001 leeway for floating point error
-    if (diffFrom1 < 0.05 && diffFrom1 > 0.001)
+    if (diffFrom1 < 0.05 && diffFrom1 > 0.001) {
       _snapZoomTimer = Timer(const Duration(milliseconds: 200), resetZoom);
+    }
 
     // In infinite canvas mode, allow completely free pan in all 2D directions
     if (widget.isInfiniteCanvas) return;
@@ -427,9 +342,11 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
     double adjustmentY = 0;
 
     if (scale < 1) {
-      // horizontally center pages if zoomed out
-      final center = containerBounds.maxWidth * (1 - scale) / 2;
-      adjustmentX = center - translation.x;
+      if (containerBounds.hasBoundedWidth && containerBounds.maxWidth > 0) {
+        // horizontally center pages if zoomed out
+        final center = containerBounds.maxWidth * (1 - scale) / 2;
+        adjustmentX = center - translation.x;
+      }
     } else {
       // if zoomed in, don't allow scrolling past the edges
       late final minX = containerBounds.maxWidth * (1 - scale);
@@ -454,154 +371,15 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
     }
   }
 
-  /// Resets the zoom level to 1.0x
-  void resetZoom() {
-    final transformation = widget._transformationController.value;
-    final scale = transformation.approxScale;
-    if (scale == 1) return;
-
-    widget._transformationController.value =
-        setZoom(
-          scaleDelta: 1 - scale,
-          transformation: transformation,
-          containerBounds: containerBounds,
-        ) ??
-        transformation;
-  }
-
-  final Map<int, Offset> _pointerPositions = {};
-  DateTime? _multiPointerDownTime;
-  var _maxPointerCountDuringGesture = 0;
-  var _multiPointerMoved = false;
-
-  void _trackPointerForTapGestures(PointerEvent event) {
-    if (!stows.twoFingerTapUndo.value) return;
-
-    if (event is PointerDownEvent) {
-      _pointerPositions[event.pointer] = event.position;
-      if (_pointerPositions.length > _maxPointerCountDuringGesture) {
-        _maxPointerCountDuringGesture = _pointerPositions.length;
-      }
-      if (_pointerPositions.length >= 2) {
-        _multiPointerDownTime ??= DateTime.now();
-      }
-    } else if (event is PointerMoveEvent) {
-      final initial = _pointerPositions[event.pointer];
-      if (initial != null && (event.position - initial).distance > 18.0) {
-        _multiPointerMoved = true;
-      }
-    } else if (event is PointerUpEvent || event is PointerCancelEvent) {
-      _pointerPositions.remove(event.pointer);
-
-      if (_pointerPositions.isEmpty) {
-        if (!_multiPointerMoved && _multiPointerDownTime != null) {
-          final duration = DateTime.now()
-              .difference(_multiPointerDownTime!)
-              .inMilliseconds;
-          if (duration < 350) {
-            if (_maxPointerCountDuringGesture == 2) {
-              HapticFeedback.lightImpact();
-              widget.undo();
-            } else if (_maxPointerCountDuringGesture >= 3) {
-              HapticFeedback.lightImpact();
-              widget.redo();
-            }
-          }
-        }
-        _multiPointerDownTime = null;
-        _maxPointerCountDuringGesture = 0;
-        _multiPointerMoved = false;
-      }
-    }
-  }
-
-  void _listenerPointerEvent(PointerEvent event) {
-    final isStylus =
-        event.kind == PointerDeviceKind.stylus ||
-        event.kind == PointerDeviceKind.invertedStylus;
-
-    if (isStylus) {
-      _palmEngine.notifyStylusEvent(event);
-    } else if (_palmEngine.isPalm(event)) {
-      return;
-    }
-
-    _trackPointerForTapGestures(event);
-    if (isStylus && event is PointerDownEvent) {
-      _detectStylusButton(event);
-    }
-
-    final double? pressure;
-    if (isStylus) {
-      if (event.pressureMin != event.pressureMax) {
-        pressure = _inverseLerp(
-          event.pressure,
-          min: event.pressureMin,
-          max: event.pressureMax,
-        );
-      } else {
-        // Detected as stylus, but no pressure values
-        pressure = null;
-      }
-    } else {
-      pressure = null;
-    }
-    widget.updatePointerData(event.kind, pressure);
-
-    if (isStylus &&
-        stows.autoDisableFingerDrawingWhenStylusDetected.value &&
-        // Don't change if the user has a fixed value for finger drawing
-        !stows.hideFingerDrawingToggle.value) {
-      stows.editorFingerDrawing.value = false;
-    }
-  }
-
-  var stylusButtonWasPressed = false;
-
-  void _listenerPointerHoverEvent(PointerEvent event) {
-    if (event.kind != .stylus && event.kind != .invertedStylus) return;
-    _palmEngine.notifyStylusEvent(event);
-
-    // Apparently flutter synthesizes a hover event on pointer down,
-    // so these are used to detect when hovering ends
-    if (event.synthesized) {
-      widget.onHoveringEnd();
-    } else {
-      widget.onHovering();
-    }
-
-    _detectStylusButton(event);
-  }
-
-  void _detectStylusButton(PointerEvent event) {
-    final pressed =
-        event.buttons == kSecondaryButton || event.kind == .invertedStylus;
-    if (stylusButtonWasPressed != pressed) {
-      stylusButtonWasPressed = pressed;
-      widget.onStylusButtonChanged(pressed);
-    }
-  }
-
-  void _listenerPointerUpEvent(PointerEvent event) {
-    _palmEngine.onPointerUpOrCancel(event);
-    _trackPointerForTapGestures(event);
-    widget.updatePointerData(event.kind, null);
-    if (stylusButtonWasPressed) {
-      stylusButtonWasPressed = false;
-      widget.onStylusButtonChanged(false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final Size screenSize = MediaQuery.sizeOf(context);
-
     return Stack(
       children: [
         Listener(
           onPointerDown: _listenerPointerEvent,
           onPointerMove: _listenerPointerEvent,
           onPointerUp: _listenerPointerUpEvent,
+          onPointerCancel: _listenerPointerUpEvent,
           onPointerHover: _listenerPointerHoverEvent,
           child: GestureDetector(
             child: LayoutBuilder(
@@ -620,12 +398,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
 
                   // we need a non-zero boundary margin so we can zoom out
                   // past the size of the page (for minScale < 1)
-                  boundaryMargin: widget.isInfiniteCanvas
-                      ? const EdgeInsets.all(double.infinity)
-                      : EdgeInsets.symmetric(
-                          vertical: 0,
-                          horizontal: screenSize.width * 2,
-                        ),
+                  boundaryMargin: const EdgeInsets.all(double.infinity),
 
                   transformationController: widget._transformationController,
 
@@ -652,35 +425,40 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
         ),
         if (showProtractor) const ProtractorOverlay(),
         Positioned.fill(
-          child: CanvasHud(
-            transformationController: widget._transformationController,
-            zoomLock: zoomLockedValue != null,
-            setZoomLock: (bool zoomLock) => setState(() {
-              zoomLockedValue = zoomLock
-                  ? widget._transformationController.value.approxScale
-                  : null;
-              stows.lastZoomLock.value = zoomLock;
-            }),
-            resetZoom: zoomLockedValue != null ? null : resetZoom,
-            singleFingerPanLock: singleFingerPanLock,
-            setSingleFingerPanLock: (bool singleFingerPanLock) => setState(() {
-              this.singleFingerPanLock = singleFingerPanLock;
-              stows.lastSingleFingerPanLock.value = singleFingerPanLock;
-            }),
-            axisAlignedPanLock: axisAlignedPanLock,
-            setAxisAlignedPanLock: (bool axisAlignedPanLock) => setState(() {
-              this.axisAlignedPanLock = axisAlignedPanLock;
-              stows.lastAxisAlignedPanLock.value = axisAlignedPanLock;
-            }),
-            showProtractor: showProtractor,
-            setShowProtractor: (bool visible) => setState(() {
-              showProtractor = visible;
-            }),
-            bookmarked: widget.bookmarked,
-            onToggleBookmarked: widget.onToggleBookmarked,
-            hasTape: widget.hasTape,
-            onRevealAllTape: widget.onRevealAllTape,
-            onConcealAllTape: widget.onConcealAllTape,
+          child: RepaintBoundary(
+            child: CanvasHud(
+              transformationController: widget._transformationController,
+              zoomLock: zoomLockedValue != null,
+              setZoomLock: (bool zoomLock) => setState(() {
+                zoomLockedValue = zoomLock
+                    ? widget._transformationController.value.approxScale
+                    : null;
+                stows.lastZoomLock.value = zoomLock;
+              }),
+              resetZoom: zoomLockedValue != null ? null : resetZoom,
+              singleFingerPanLock: singleFingerPanLock,
+              setSingleFingerPanLock: (bool singleFingerPanLock) =>
+                  setState(() {
+                    this.singleFingerPanLock = singleFingerPanLock;
+                    stows.lastSingleFingerPanLock.value = singleFingerPanLock;
+                  }),
+              axisAlignedPanLock: axisAlignedPanLock,
+              setAxisAlignedPanLock: (bool axisAlignedPanLock) => setState(() {
+                this.axisAlignedPanLock = axisAlignedPanLock;
+                stows.lastAxisAlignedPanLock.value = axisAlignedPanLock;
+              }),
+              showProtractor: showProtractor,
+              setShowProtractor: (bool visible) => setState(() {
+                showProtractor = visible;
+              }),
+              bookmarked: widget.bookmarked,
+              onToggleBookmarked: widget.onToggleBookmarked,
+              hasTape: widget.hasTape,
+              onRevealAllTape: widget.onRevealAllTape,
+              onConcealAllTape: widget.onConcealAllTape,
+              isInfiniteCanvas: widget.isInfiniteCanvas,
+              onFitContent: widget.onFitContent,
+            ),
           ),
         ),
         if (widget.activePage != null)
@@ -735,167 +513,4 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
 
     return .fromLTRB(left, top, right, bottom);
   }
-}
-
-class _PagesBuilder extends StatelessWidget {
-  const _PagesBuilder({
-    // ignore: unused_element_parameter
-    super.key,
-    required this.pages,
-    required this.pageBuilder,
-    required this.placeholderPageBuilder,
-    required this.boundingBox,
-    required this.containerWidth,
-    this.isInfiniteCanvas = false,
-  });
-
-  final List<EditorPage> pages;
-  final Widget Function(
-    BuildContext context,
-    int pageIndex, [
-    Rect? viewportRect,
-  ])
-  pageBuilder;
-  final Widget Function(BuildContext context, int pageIndex)
-  placeholderPageBuilder;
-  final Rect boundingBox;
-  final double containerWidth;
-  final bool isInfiniteCanvas;
-
-  @override
-  Widget build(BuildContext context) {
-    if (isInfiniteCanvas) {
-      if (pages.isEmpty) return const SizedBox.shrink();
-      pages.first.isRendered = true;
-      return pageBuilder(context, 0, boundingBox);
-    }
-
-    final List<Widget> children = [
-      const SizedBox.square(dimension: Editor.gapBetweenPages),
-      const SizedBox.square(dimension: Editor.gapBetweenPages),
-    ];
-
-    double topOfPage = Editor.gapBetweenPages * 2;
-    for (int pageIndex = 0; pageIndex < pages.length; pageIndex++) {
-      final page = pages[pageIndex];
-      final pageWidth = min(
-        page.size.width,
-        containerWidth,
-      ); // because of FittedBox
-      final pageHeight = pageWidth / page.size.width * page.size.height;
-      final bottomOfPage = topOfPage + pageHeight;
-
-      final isFocused = page.quill.focusNode.hasFocus;
-      final isInViewport =
-          boundingBox.bottom >= topOfPage && boundingBox.top <= bottomOfPage;
-      final shouldRender = isFocused || isInViewport;
-
-      page.isRendered = shouldRender;
-      children.add(
-        shouldRender
-            ? pageBuilder(context, pageIndex)
-            : placeholderPageBuilder(context, pageIndex),
-      );
-
-      children.add(const SizedBox.square(dimension: Editor.gapBetweenPages));
-
-      topOfPage = bottomOfPage + Editor.gapBetweenPages;
-    }
-
-    children.add(const SizedBox.square(dimension: Editor.gapBetweenPages));
-    return Column(children: children);
-  }
-}
-
-/// How to place the canvas when a note opens.
-enum CanvasOpenScroll { unchanged, restoreCache, scrollToPage, identity }
-
-/// The scroll decision for opening a note.
-class CanvasOpenTarget {
-  const CanvasOpenTarget(this.scroll, [this.pageIndex]);
-
-  final CanvasOpenScroll scroll;
-  final int? pageIndex;
-}
-
-/// Chooses the opening scroll.
-///
-/// An explicit route page, such as an ink-search hit, is shown even when
-/// [cachedTransform] is the position from the last time this note was open.
-CanvasOpenTarget chooseCanvasOpenTarget({
-  required bool noteLoaded,
-  required bool userHasScrolled,
-  required Matrix4? cachedTransform,
-  required bool isInfiniteCanvas,
-  required int? explicitPageIndex,
-  required int? savedPageIndex,
-}) {
-  if (!noteLoaded || userHasScrolled) {
-    return const CanvasOpenTarget(CanvasOpenScroll.unchanged);
-  }
-  if (explicitPageIndex != null) {
-    return CanvasOpenTarget(CanvasOpenScroll.scrollToPage, explicitPageIndex);
-  }
-  if (cachedTransform != null) {
-    return const CanvasOpenTarget(CanvasOpenScroll.restoreCache);
-  }
-  if (isInfiniteCanvas) {
-    return const CanvasOpenTarget(CanvasOpenScroll.identity);
-  }
-  if (savedPageIndex != null) {
-    return CanvasOpenTarget(CanvasOpenScroll.scrollToPage, savedPageIndex);
-  }
-  return const CanvasOpenTarget(CanvasOpenScroll.unchanged);
-}
-
-@visibleForTesting
-class CanvasTransformCache {
-  static const _maxCacheSize = 5;
-  static final _cache = LinkedList<CanvasTransformCacheItem>();
-
-  CanvasTransformCache._();
-
-  static void add(String filePath, Matrix4 transform) {
-    for (final entry in _cache) {
-      if (entry.filePath != filePath) continue;
-      entry.unlink();
-      break;
-    }
-    _cache.add(CanvasTransformCacheItem(filePath, transform));
-
-    if (_cache.length > _maxCacheSize) {
-      _cache.first.unlink();
-    }
-  }
-
-  static CanvasTransformCacheItem? get(String filePath) {
-    try {
-      return _cache.firstWhere((item) => item.filePath == filePath);
-    } on StateError {
-      return null;
-    }
-  }
-
-  @visibleForTesting
-  static void clear() {
-    _cache.clear();
-  }
-}
-
-@visibleForTesting
-base class CanvasTransformCacheItem
-    extends LinkedListEntry<CanvasTransformCacheItem> {
-  final String filePath;
-  final Matrix4 transform;
-
-  CanvasTransformCacheItem(this.filePath, this.transform);
-}
-
-double _inverseLerp(num value, {required num min, required num max}) {
-  assert(max >= min, 'Max ($max) must be >= min ($min)');
-  assert(
-    value >= min && value <= max,
-    'Value ($value) must be between $min and $max',
-  );
-  return (value - min) / (max - min);
 }

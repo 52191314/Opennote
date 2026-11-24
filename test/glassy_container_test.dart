@@ -1,6 +1,8 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:golden_screenshot/golden_screenshot.dart';
 import 'package:saber/components/navbar/horizontal_navbar.dart';
@@ -127,8 +129,8 @@ class _TestTile extends StatelessWidget {
                             switch (platform) {
                               .iOS || .macOS => Icons.apple,
                               .android || .fuchsia => Icons.android,
-                              .linux => FontAwesomeIcons.linux,
-                              .windows => FontAwesomeIcons.windows,
+                              .linux => Icons.laptop_rounded,
+                              .windows => Icons.desktop_windows_rounded,
                             },
                             size: 24,
                             color: theme.colorScheme.onSurface,

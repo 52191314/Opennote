@@ -1,7 +1,9 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:logging/logging.dart';
 import 'package:one_dollar_unistroke_recognizer/one_dollar_unistroke_recognizer.dart';
 import 'package:saber/components/canvas/_circle_stroke.dart';
@@ -27,7 +29,7 @@ class ShapePen extends Pen {
 
   static final log = Logger('ShapePen');
 
-  static const shapePenIcon = FontAwesomeIcons.shapes;
+  static const shapePenIcon = Icons.category_rounded;
 
   static RecognizedUnistroke? detectedShape;
   void _detectShape() {

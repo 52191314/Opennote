@@ -479,7 +479,7 @@ editor:
     medium: "Medium"
     broad: "Broad"
     tapToAddText: "Tap canvas to add or edit text"
-    toolbarLabel: "Goodnotes Studio Toolbar"
+    toolbarLabel: "Opennote Studio Toolbar"
     straightLineOn: "Draw in Straight Line: ON"
     straightLineOff: "Draw in Straight Line: OFF"
     scribbleOn: "Scribble to Erase: ON"

@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:saber/components/theming/adaptive_alert_dialog.dart';
@@ -16,23 +19,36 @@ class RenameFolderButton extends StatelessWidget {
   final bool Function(String) doesFolderExist;
   final Future<void> Function(String newName) renameFolder;
 
+  /// Shows the standard rename dialog for a folder.
+  static Future<void> showRenameDialog(
+    BuildContext context, {
+    required String folderName,
+    required bool Function(String) doesFolderExist,
+    required Future<void> Function(String newName) renameFolder,
+  }) async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return _RenameFolderDialog(
+          folderName: folderName,
+          doesFolderExist: doesFolderExist,
+          renameFolder: renameFolder,
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return IconButton(
       padding: .zero,
       tooltip: t.home.renameFolder.renameFolder,
-      onPressed: () {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return _RenameFolderDialog(
-              folderName: folderName,
-              doesFolderExist: doesFolderExist,
-              renameFolder: renameFolder,
-            );
-          },
-        );
-      },
+      onPressed: () => showRenameDialog(
+        context,
+        folderName: folderName,
+        doesFolderExist: doesFolderExist,
+        renameFolder: renameFolder,
+      ),
       icon: const Icon(Icons.edit_square),
     );
   }

@@ -3,7 +3,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:saber/components/canvas/_arrow_stroke.dart';
 import 'package:saber/data/tools/_tool.dart';
 import 'package:saber/data/tools/arrow.dart';
@@ -11,7 +10,7 @@ import 'package:saber/data/tools/dimension.dart';
 import 'package:saber/data/tools/ruler.dart';
 import 'package:saber/i18n/strings.g.dart';
 
-/// A sleek Goodnotes-style popup menu providing quick access to shapes,
+/// A sleek popup menu providing quick access to shapes,
 /// the precision ruler, arrow strokes, and dimension lines.
 class DraftingToolsPopup extends StatelessWidget {
   const DraftingToolsPopup({
@@ -68,7 +67,7 @@ class DraftingToolsPopup extends StatelessWidget {
                   ),
                 ),
                 _DraftingOptionTile(
-                  icon: const FaIcon(FontAwesomeIcons.shapes, size: 16),
+                  icon: const Icon(Icons.category_rounded, size: 18),
                   title: t.editor.drafting.shapeLibrary,
                   subtitle: t.editor.drafting.shapeLibraryDescription,
                   selected: false,
@@ -79,7 +78,7 @@ class DraftingToolsPopup extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 _DraftingOptionTile(
-                  icon: const FaIcon(Ruler.rulerIcon, size: 16),
+                  icon: const Icon(Ruler.rulerIcon, size: 18),
                   title: t.editor.pens.ruler,
                   subtitle: t.editor.drafting.rulerDescription,
                   selected: currentTool is Ruler,

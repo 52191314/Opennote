@@ -1,4 +1,4 @@
-/// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Claude Code (Claude Opus 5.5); Google Antigravity
 library;
 
 import 'dart:io';
@@ -60,7 +60,7 @@ class AppInfo extends StatelessWidget {
     applicationLegalese: t.appInfo.licenseNotice(buildYear: buildYear),
     children: [
       const SizedBox(height: 10),
-      if (!Platform.isIOS && !Platform.isMacOS)
+      if (!Platform.isIOS)
         // Apple rejected the app for having donations not through the App Store
         TextButton(
           onPressed: () => launchUrl(sponsorUrl),

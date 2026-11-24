@@ -2,7 +2,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/prefs.dart';
@@ -27,7 +26,7 @@ class Highlighter extends Pen {
 
   static Pen currentHighlighter = Highlighter();
 
-  static const highlighterIcon = FontAwesomeIcons.highlighter;
+  static const highlighterIcon = Icons.border_color_rounded;
 
   Offset? _dragStart;
 

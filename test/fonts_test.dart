@@ -1,14 +1,11 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_screenshot/golden_screenshot.dart';
 
-const _appFonts = [
-  'AtkinsonHyperlegibleNext',
-  'Dekko',
-  'FiraMono',
-  'Inter',
-  'Neucha',
-];
+const _appFonts = ['AtkinsonHyperlegibleNext', 'FiraMono', 'Inter', 'Neucha'];
 
 void main() {
   group('Fonts', () {

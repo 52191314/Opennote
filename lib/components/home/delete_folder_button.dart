@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+library;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:saber/components/theming/adaptive_alert_dialog.dart';
@@ -15,21 +18,34 @@ class DeleteFolderButton extends StatelessWidget {
   final Future<void> Function(String) deleteFolder;
   final Future<bool> Function(String) isFolderEmpty;
 
+  /// Shows the standard delete confirmation dialog for a folder.
+  static Future<void> showDeleteDialog(
+    BuildContext context, {
+    required String folderName,
+    required Future<void> Function(String) deleteFolder,
+    required Future<bool> Function(String) isFolderEmpty,
+  }) async {
+    await showDialog(
+      context: context,
+      builder: (context) => _DeleteFolderDialog(
+        folderName: folderName,
+        deleteFolder: deleteFolder,
+        isFolderEmpty: isFolderEmpty,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return IconButton(
       padding: .zero,
       tooltip: t.home.deleteFolder.deleteFolder,
-      onPressed: () async {
-        await showDialog(
-          context: context,
-          builder: (context) => _DeleteFolderDialog(
-            folderName: folderName,
-            deleteFolder: deleteFolder,
-            isFolderEmpty: isFolderEmpty,
-          ),
-        );
-      },
+      onPressed: () => showDeleteDialog(
+        context,
+        folderName: folderName,
+        deleteFolder: deleteFolder,
+        isFolderEmpty: isFolderEmpty,
+      ),
       icon: const Icon(Icons.delete_forever),
     );
   }

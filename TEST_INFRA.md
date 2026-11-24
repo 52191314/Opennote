@@ -1,4 +1,4 @@
-# E2E Test Infrastructure: Opennote (Goodnotes Parity Student Features)
+# E2E Test Infrastructure: Opennote (Advanced Student & Canvas Features)
 
 ## 1. Test Philosophy & Principles
 - **Opaque-Box Requirement-Driven**: Tests are derived strictly from authoritative specifications in `ORIGINAL_REQUEST.md` (R1–R5), `PROJECT.md` (F1–F18), and `AGENTS.md`.

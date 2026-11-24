@@ -1,4 +1,4 @@
-/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Generated wholely or partially with Claude Code; Gemini; Google Antigravity
 library;
 
 import 'dart:math';
@@ -6,7 +6,7 @@ import 'dart:math';
 import 'package:flutter/gestures.dart';
 import 'package:saber/data/prefs.dart';
 
-/// Goodnotes-inspired writing postures for palm rejection and wrist protection.
+/// Writing postures for palm rejection and wrist protection.
 enum WritingPosture {
   /// Right-handed with wrist resting below the writing line.
   rightBelow,
@@ -51,7 +51,7 @@ enum PalmRejectionSensitivity {
   /// Low sensitivity: only rejects very large contacts.
   low,
 
-  /// Medium sensitivity: standard Goodnotes-style palm rejection.
+  /// Medium sensitivity: standard balanced palm rejection.
   medium,
 
   /// High sensitivity: aggressive rejection of any contact near the writing posture zone.
@@ -208,24 +208,26 @@ class PalmRejectionEngine {
   ) {
     switch (posture) {
       case WritingPosture.rightBelow:
-        if (dy > 30 && dx.abs() < 350) return true;
-        return dy > -20 && dx > -80;
+        if (dx < -60 || dx > 280 || dy < -10 || dy > 380) return false;
+        if (dy > 30 && dx.abs() < 280) return true;
+        return dy > -10 && dx > -60;
 
       case WritingPosture.rightLevel:
-        return dx > 20 && dy.abs() < 240;
+        return dx > 20 && dx <= 280 && dy.abs() <= 180;
 
       case WritingPosture.rightAbove:
-        return dy < 20 && dx > -80;
+        return dy >= -380 && dy <= 10 && dx >= -60 && dx <= 280;
 
       case WritingPosture.leftBelow:
-        if (dy > 30 && dx.abs() < 350) return true;
-        return dy > -20 && dx < 80;
+        if (dx > 60 || dx < -280 || dy < -10 || dy > 380) return false;
+        if (dy > 30 && dx.abs() < 280) return true;
+        return dy > -10 && dx < 60;
 
       case WritingPosture.leftLevel:
-        return dx < -20 && dy.abs() < 240;
+        return dx < -20 && dx >= -280 && dy.abs() <= 180;
 
       case WritingPosture.leftAbove:
-        return dy < 20 && dx < 80;
+        return dy >= -380 && dy <= 10 && dx >= -280 && dx <= 60;
     }
   }
 }
