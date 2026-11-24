@@ -1,5 +1,7 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
-import 'package:yaru/yaru.dart';
 
 class AdaptiveCircularProgressIndicator extends CircularProgressIndicator {
   const AdaptiveCircularProgressIndicator({
@@ -46,27 +48,6 @@ class _CircularProgressIndicatorState
     extends State<AdaptiveCircularProgressIndicator> {
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    if (theme.platform == .linux) {
-      return _buildYaru(context);
-    } else {
-      return _buildDefault(context);
-    }
-  }
-
-  Widget _buildYaru(BuildContext context) {
-    return YaruCircularProgressIndicator(
-      value: widget.value,
-      strokeWidth: widget.strokeWidth,
-      color: widget.color,
-      valueColor: widget.valueColor,
-      trackColor: widget.backgroundColor,
-      semanticsLabel: widget.semanticsLabel,
-      semanticsValue: widget.semanticsValue,
-    );
-  }
-
-  Widget _buildDefault(BuildContext context) {
     return CircularProgressIndicator.adaptive(
       value: widget.value,
       backgroundColor: widget.backgroundColor,

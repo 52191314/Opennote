@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -17,7 +20,6 @@ import 'package:saber/i18n/strings.g.dart';
 import 'package:saber/pages/editor/editor.dart';
 import 'package:saber/pages/home/home.dart';
 import 'package:saber/pages/user/login.dart';
-import 'package:yaru/yaru.dart';
 
 import 'utils/test_mock_channel_handlers.dart';
 import 'utils/test_user.dart';
@@ -76,7 +78,7 @@ void main() {
       await setupDemoFiles();
     });
 
-    const seedColor = YaruColors.blue;
+    const seedColor = Color(0xFF0073E5);
     final materialTheme = SaberTheme.createThemeFromSeed(
       seedColor,
       .light,
@@ -87,33 +89,28 @@ void main() {
       .light,
       .iOS,
     );
-    final yaruTheme = SaberTheme.createThemeFromSeed(seedColor, .light, .linux);
 
     _screenshot(
       materialTheme: materialTheme,
       cupertinoTheme: cupertinoTheme,
-      yaruTheme: yaruTheme,
       goldenFileName: '1_home',
       child: const HomePage(subpage: HomePage.recentSubpage, path: ''),
     );
     _screenshot(
       materialTheme: materialTheme,
       cupertinoTheme: cupertinoTheme,
-      yaruTheme: yaruTheme,
       goldenFileName: '2_editor',
       child: Editor(path: '/Metric Spaces Week 1'),
     );
     _screenshot(
       materialTheme: materialTheme,
       cupertinoTheme: cupertinoTheme,
-      yaruTheme: yaruTheme,
       goldenFileName: '3_login',
       child: const NcLoginPage(forceAppBarLeading: true),
     );
     _screenshot(
       materialTheme: materialTheme,
       cupertinoTheme: cupertinoTheme,
-      yaruTheme: yaruTheme,
       goldenFileName: '4_settings',
       child: const HomePage(subpage: HomePage.settingsSubpage, path: ''),
     );
@@ -124,7 +121,6 @@ void _screenshot({
   ScreenshotFrameColors? frameColors,
   required ThemeData materialTheme,
   required ThemeData cupertinoTheme,
-  required ThemeData yaruTheme,
   required String goldenFileName,
   required Widget child,
 }) {
@@ -133,27 +129,30 @@ void _screenshot({
   const localesWithNoFonts = {'ja', 'zh-Hans-CN', 'zh-Hant-TW'};
 
   /// These locales are supported by InterNotoSansHybrid but not
-  /// Apple or Ubuntu fonts.
+  /// Apple fonts.
   const localesWithOnlyMaterialFonts = {'ar', 'fa', 'he', 'th'};
 
   const allScreenshots = bool.fromEnvironment('ALL_SCREENSHOTS');
   final localeDeviceMatrix = allScreenshots
       ? {
-          // for english, do all devices
-          for (final goldenDevice in GoldenScreenshotDevices.values)
+          // for english, do all mobile devices
+          for (final goldenDevice in [
+            GoldenScreenshotDevices.androidPhone,
+            GoldenScreenshotDevices.androidTablet,
+            GoldenScreenshotDevices.iphone,
+            GoldenScreenshotDevices.ipad,
+          ])
             ('en', goldenDevice),
           // for other locales (except those with font issues)
-          // create screenshots for flathub and android only
+          // create screenshots for android only
           for (final locale in localeNames.keys)
             if (!localesWithNoFonts.contains(locale)) ...[
-              (locale, GoldenScreenshotDevices.flathub),
               (locale, GoldenScreenshotDevices.androidTablet),
               (locale, GoldenScreenshotDevices.androidPhone),
             ],
         }
       : {
           // limited screenshots are used to speed up tests
-          ('en', GoldenScreenshotDevices.flathub),
           ('en', GoldenScreenshotDevices.iphone),
           ('en', GoldenScreenshotDevices.androidPhone),
         };
@@ -171,7 +170,6 @@ void _screenshot({
         }
 
         var theme = switch (device.platform) {
-          .linux => yaruTheme,
           .iOS || .macOS => cupertinoTheme,
           _ => materialTheme,
         };

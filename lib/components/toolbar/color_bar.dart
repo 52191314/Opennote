@@ -1,7 +1,9 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:saber/components/theming/adaptive_alert_dialog.dart';
 import 'package:saber/components/toolbar/color_option.dart';
 import 'package:saber/data/extensions/color_extensions.dart';
@@ -260,7 +262,7 @@ class _ColorBarState extends State<ColorBar> {
         tooltip: t.editor.colors.colorPicker,
         child: const DecoratedBox(
           decoration: BoxDecoration(color: Colors.transparent, shape: .circle),
-          child: Center(child: FaIcon(FontAwesomeIcons.droplet, size: 16)),
+          child: Center(child: Icon(Icons.water_drop_rounded, size: 16)),
         ),
       ),
 

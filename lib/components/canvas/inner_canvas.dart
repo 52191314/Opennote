@@ -214,7 +214,7 @@ class _InnerCanvasState extends State<InnerCanvas> {
           )
         : null;
 
-    final customPaint = CustomPaint(
+    final backgroundLayer = CustomPaint(
       painter: CanvasBackgroundPainter(
         invert: invert,
         backgroundColor: pageBackground,
@@ -226,24 +226,7 @@ class _InnerCanvasState extends State<InnerCanvas> {
         isInfiniteCanvas: widget.coreInfo.isInfiniteCanvas,
         viewportRect: widget.viewportRect,
       ),
-      foregroundPainter: CanvasPainter(
-        repaint: widget.redrawPageListenable,
-        invert: invert,
-        laserStrokes: page.laserStrokes,
-        currentStroke: widget.currentStroke,
-        currentSelection: widget.currentSelection,
-        isDoneSelecting: widget.isDoneSelecting,
-        primaryColor: colorScheme.primary,
-        page: page,
-        showPageIndicator: widget.showPageIndicator,
-        pageIndex: widget.pageIndex,
-        totalPages: widget.coreInfo.pages.length,
-        currentScale: widget.currentScale,
-        defaultTextStyle: theme.textTheme.bodyMedium!,
-        isInfiniteCanvas: widget.coreInfo.isInfiniteCanvas,
-      ),
       isComplex: true,
-      willChange: true,
       child: SizedBox(
         width: widget.width,
         height: widget.height,
@@ -351,6 +334,30 @@ class _InnerCanvasState extends State<InnerCanvas> {
           ),
         ),
       ),
+    );
+
+    final customPaint = CustomPaint(
+      foregroundPainter: CanvasPainter(
+        repaint: widget.redrawPageListenable,
+        invert: invert,
+        laserStrokes: page.laserStrokes,
+        currentStroke: widget.currentStroke,
+        currentSelection: widget.currentSelection,
+        isDoneSelecting: widget.isDoneSelecting,
+        primaryColor: colorScheme.primary,
+        page: page,
+        showPageIndicator: widget.showPageIndicator,
+        pageIndex: widget.pageIndex,
+        totalPages: widget.coreInfo.pages.length,
+        currentScale: widget.currentScale,
+        defaultTextStyle: theme.textTheme.bodyMedium!,
+        isInfiniteCanvas: widget.coreInfo.isInfiniteCanvas,
+      ),
+      isComplex: true,
+      willChange: true,
+      child: widget.coreInfo.isInfiniteCanvas
+          ? backgroundLayer
+          : RepaintBoundary(child: backgroundLayer),
     );
 
     if (widget.coreInfo.isInfiniteCanvas) {

@@ -1,10 +1,12 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:saber/components/theming/adaptive_toggle_buttons.dart';
 import 'package:saber/components/theming/uni_icon.dart';
 import 'package:saber/pages/home/settings.dart';
 import 'package:stow/stow.dart';
-import 'package:yaru/yaru.dart';
 
 class SettingsDropdown<T> extends StatefulWidget {
   const SettingsDropdown({
@@ -94,16 +96,9 @@ class _SettingsDropdownState<T> extends State<SettingsDropdown<T>> {
           widget.subtitle ?? '',
           style: const TextStyle(fontSize: 13),
         ),
-        trailing: YaruPopupMenuButton<T>(
+        trailing: PopupMenuButton<T>(
           initialValue: widget.pref.value,
           onSelected: (value) => widget.pref.value = value,
-          style:
-              OutlinedButtonTheme.of(context).style ??
-              OutlinedButton.styleFrom(
-                shape: const RoundedRectangleBorder(
-                  borderRadius: .all(.circular(8)),
-                ),
-              ),
           itemBuilder: (context) => [
             for (final option in widget.options)
               PopupMenuItem(
@@ -119,9 +114,23 @@ class _SettingsDropdownState<T> extends State<SettingsDropdown<T>> {
                 ),
               ),
           ],
-          child: widget.options
-              .firstWhere((option) => option.value == widget.pref.value)
-              .widget,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: const .all(.circular(8)),
+              border: Border.all(color: ColorScheme.of(context).outlineVariant),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                widget.options
+                    .firstWhere((option) => option.value == widget.pref.value)
+                    .widget,
+                const SizedBox(width: 4),
+                const Icon(Icons.arrow_drop_down, size: 18),
+              ],
+            ),
+          ),
         ),
       ),
     );

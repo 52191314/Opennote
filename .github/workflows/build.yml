@@ -43,7 +43,7 @@ jobs:
           flutter precache --ios
 
       - name: Build iOS (release, unsigned)
-        run: flutter build ios --release --no-codesign 2>&1
+        run: flutter build ios --release --no-codesign --split-debug-info=build/ios/debug-info --obfuscate --tree-shake-icons 2>&1
 
       - name: Package unsigned IPA
         run: |

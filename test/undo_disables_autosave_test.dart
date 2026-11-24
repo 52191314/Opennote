@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
@@ -16,7 +19,6 @@ void main() {
       TestWidgetsFlutterBinding.ensureInitialized();
       setupMockPathProvider();
       setupMockPrinting();
-      setupMockWindowManager();
 
       FlavorConfig.setup();
       await FileManager.init();

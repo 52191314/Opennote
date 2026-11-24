@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'dart:async';
 import 'dart:io';
 
@@ -111,7 +114,7 @@ void main() {
               coreInfo: coreInfo,
             ),
           );
-          await tester.loadAssets(alsoLoadTheseFonts: ['Dekko']);
+          await tester.loadAssets();
           await tester.pumpAndSettle();
 
           await expectLater(
@@ -135,7 +138,7 @@ void main() {
               coreInfo: coreInfo,
             ),
           );
-          await tester.loadAssets(alsoLoadTheseFonts: ['Dekko']);
+          await tester.loadAssets();
           await tester.pumpAndSettle();
 
           await expectLater(
@@ -160,7 +163,7 @@ void main() {
               currentScale: double.minPositive, // Very zoomed out
             ),
           );
-          await tester.loadAssets(alsoLoadTheseFonts: ['Dekko']);
+          await tester.loadAssets();
           await tester.pumpAndSettle();
 
           await expectLater(
@@ -279,7 +282,7 @@ void main() {
           coreInfo: importedCoreInfo,
         ),
       );
-      await tester.loadAssets(alsoLoadTheseFonts: ['Dekko']);
+      await tester.loadAssets();
       await tester.pumpAndSettle();
 
       await expectLater(
@@ -318,7 +321,7 @@ Future<BuildContext> _getBuildContext(
     ),
   );
 
-  await tester.loadAssets(alsoLoadTheseFonts: ['Dekko']);
+  await tester.loadAssets();
   await tester.pump();
 
   return completer.future;

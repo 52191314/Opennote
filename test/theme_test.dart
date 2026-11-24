@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -71,7 +74,6 @@ void _testTheme({
           ? 'AtkinsonHyperlegibleNext'
           : switch (platform) {
               .iOS => RegExp('CupertinoSystem(Display|Text)'),
-              .linux => 'Adwaita Sans',
               .macOS => '.AppleSystemUIFont',
               .windows => 'Segoe UI',
               _ => 'Roboto',

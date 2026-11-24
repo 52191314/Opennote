@@ -5,7 +5,6 @@ library;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:saber/components/settings/writing_posture_selector.dart';
 import 'package:saber/components/toolbar/size_picker.dart';
 import 'package:saber/components/toolbar/toolbar_dialog.dart';
@@ -125,7 +124,7 @@ class _PenModalState extends State<PenModal> {
               shape: const CircleBorder(),
             ),
             tooltip: t.editor.pens.shapePen,
-            icon: const FaIcon(ShapePen.shapePenIcon),
+            icon: const Icon(ShapePen.shapePenIcon),
           ),
         ],
         if (currentPen is Highlighter) ...[
@@ -176,7 +175,7 @@ class _PenModalState extends State<PenModal> {
             tooltip: stows.scribbleToErase.value
                 ? t.editor.tools.scribbleOn
                 : t.editor.tools.scribbleOff,
-            icon: const FaIcon(FontAwesomeIcons.eraser),
+            icon: const Icon(Icons.auto_fix_normal_rounded),
           ),
         ],
         if (currentPen is! Highlighter &&

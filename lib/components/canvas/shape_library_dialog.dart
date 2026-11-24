@@ -3,7 +3,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:saber/components/theming/uni_icon.dart';
 import 'package:saber/i18n/strings.g.dart';
 
@@ -98,7 +97,7 @@ class _ShapeLibraryDialogState extends State<ShapeLibraryDialog> {
 class _SymbolEntry {
   final String name;
   final String svg;
-  final Object icon;
+  final IconData icon;
 
   const _SymbolEntry(this.name, this.svg, this.icon);
 }
@@ -114,7 +113,7 @@ const _symbols = <_SymbolEntry>[
         'fill="none" stroke="black" stroke-width="2"/>'
         '<line x1="65" y1="50" x2="90" y2="50" stroke="black" stroke-width="2"/>'
         '</svg>',
-    FontAwesomeIcons.bolt,
+    Icons.bolt_rounded,
   ),
   _SymbolEntry(
     'Capacitor',
@@ -124,7 +123,7 @@ const _symbols = <_SymbolEntry>[
         '<line x1="45" y1="25" x2="45" y2="75" stroke="black" stroke-width="2"/>'
         '<line x1="45" y1="50" x2="90" y2="50" stroke="black" stroke-width="2"/>'
         '</svg>',
-    FontAwesomeIcons.bars,
+    Icons.pause_rounded,
   ),
   _SymbolEntry(
     'Diode',
@@ -134,7 +133,7 @@ const _symbols = <_SymbolEntry>[
         '<line x1="65" y1="28" x2="65" y2="72" stroke="black" stroke-width="2"/>'
         '<line x1="65" y1="50" x2="90" y2="50" stroke="black" stroke-width="2"/>'
         '</svg>',
-    FontAwesomeIcons.arrowRight,
+    Icons.arrow_forward_rounded,
   ),
   _SymbolEntry(
     'Ground',
@@ -144,7 +143,7 @@ const _symbols = <_SymbolEntry>[
         '<line x1="30" y1="60" x2="70" y2="60" stroke="black" stroke-width="2"/>'
         '<line x1="40" y1="70" x2="60" y2="70" stroke="black" stroke-width="2"/>'
         '</svg>',
-    FontAwesomeIcons.triangleExclamation,
+    Icons.warning_amber_rounded,
   ),
   _SymbolEntry(
     'Inductor',
@@ -154,7 +153,7 @@ const _symbols = <_SymbolEntry>[
         'fill="none" stroke="black" stroke-width="2"/>'
         '<line x1="65" y1="50" x2="90" y2="50" stroke="black" stroke-width="2"/>'
         '</svg>',
-    FontAwesomeIcons.waveSquare,
+    Icons.waves_rounded,
   ),
   _SymbolEntry(
     'Voltage Source',
@@ -164,7 +163,7 @@ const _symbols = <_SymbolEntry>[
         '<line x1="35" y1="55" x2="65" y2="55" stroke="black" stroke-width="2"/>'
         '<line x1="50" y1="50" x2="50" y2="70" stroke="black" stroke-width="2"/>'
         '</svg>',
-    FontAwesomeIcons.bolt,
+    Icons.bolt_rounded,
   ),
   _SymbolEntry(
     'Op-Amp',
@@ -176,7 +175,7 @@ const _symbols = <_SymbolEntry>[
         '<text x="55" y="55" font-size="14" text-anchor="middle">+</text>'
         '<text x="45" y="35" font-size="14" text-anchor="middle">-</text>'
         '</svg>',
-    FontAwesomeIcons.shapes,
+    Icons.category_rounded,
   ),
   _SymbolEntry(
     'NPN Transistor',
@@ -188,6 +187,6 @@ const _symbols = <_SymbolEntry>[
         '<line x1="50" y1="80" x2="50" y2="90" stroke="black" stroke-width="2"/>'
         '<polygon points="55,50 65,55 55,60" fill="black"/>'
         '</svg>',
-    FontAwesomeIcons.microchip,
+    Icons.memory_rounded,
   ),
 ];

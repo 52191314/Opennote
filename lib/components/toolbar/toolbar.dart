@@ -9,9 +9,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:keybinder/keybinder.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
 import 'package:saber/components/theming/dynamic_material_app.dart';
 import 'package:saber/components/theming/uni_icon.dart';
@@ -393,7 +391,7 @@ class _ToolbarState extends State<Toolbar> {
                 },
                 onLongPress: () => _showPenSettings(() => Pencil.currentPencil),
                 padding: buttonPadding,
-                child: const FaIcon(Pencil.pencilIcon, size: 16),
+                child: const Icon(Pencil.pencilIcon, size: 16),
               ),
 
               // 3. Highlighter
@@ -414,7 +412,7 @@ class _ToolbarState extends State<Toolbar> {
                 onLongPress: () =>
                     _showPenSettings(() => Highlighter.currentHighlighter),
                 padding: buttonPadding,
-                child: const FaIcon(Highlighter.highlighterIcon, size: 16),
+                child: const Icon(Highlighter.highlighterIcon, size: 16),
               ),
 
               // 4. Eraser
@@ -437,7 +435,7 @@ class _ToolbarState extends State<Toolbar> {
                   builder: (_) => const EraserSizePopup(),
                 ),
                 padding: buttonPadding,
-                child: const FaIcon(FontAwesomeIcons.eraser, size: 16),
+                child: const Icon(Icons.auto_fix_normal_rounded, size: 16),
               ),
 
               // 5. Drafting & Shapes (Shapes, Ruler, Arrow, Dimension)
@@ -451,7 +449,7 @@ class _ToolbarState extends State<Toolbar> {
                 onPressed: _showDraftingTools,
                 onLongPress: _showDraftingTools,
                 padding: buttonPadding,
-                child: const FaIcon(FontAwesomeIcons.shapes, size: 16),
+                child: const Icon(Icons.category_rounded, size: 16),
               ),
 
               // 6. Lasso
@@ -586,7 +584,7 @@ class _ToolbarState extends State<Toolbar> {
                 child: Icon(
                   stows.laserPointerMode.value == 'spotlight'
                       ? Icons.adjust_rounded
-                      : Symbols.stylus_laser_pointer,
+                      : Icons.flare_rounded,
                   size: 16,
                 ),
               ),

@@ -113,7 +113,6 @@ void main() {
 
       var cutCalled = false;
       var copyCalled = false;
-      var duplicateCalled = false;
       var deleteCalled = false;
       var resizeToggled = false;
       var screenshotCalled = false;
@@ -128,7 +127,7 @@ void main() {
             body: LassoCalloutMenu(
               onCut: () => cutCalled = true,
               onCopy: () => copyCalled = true,
-              onDuplicate: () => duplicateCalled = true,
+              onDuplicate: () {},
               onDelete: () => deleteCalled = true,
               onSetColor: (_) {},
               isResizeActive: false,
@@ -145,7 +144,7 @@ void main() {
 
       expect(find.text('Cut'), findsOneWidget);
       expect(find.text('Copy'), findsOneWidget);
-      expect(find.text('Duplicate'), findsOneWidget);
+      expect(find.text('Duplicate'), findsNothing);
       expect(find.text('Delete'), findsOneWidget);
       expect(find.text('Resize'), findsOneWidget);
       expect(find.text('Color'), findsOneWidget);
@@ -161,10 +160,6 @@ void main() {
       // Tap Copy
       await tester.tap(find.text('Copy'));
       expect(copyCalled, isTrue);
-
-      // Tap Duplicate
-      await tester.tap(find.text('Duplicate'));
-      expect(duplicateCalled, isTrue);
 
       // Tap Delete
       await tester.tap(find.text('Delete'));

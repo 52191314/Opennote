@@ -4,10 +4,8 @@ library;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:saber/components/design_system/opennote_tokens.dart';
-import 'package:saber/components/theming/yaru_builder.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:sbn/font_fallbacks.dart';
-import 'package:yaru/yaru.dart';
 
 abstract class SaberTheme {
   static ThemeData createTheme(
@@ -51,28 +49,45 @@ abstract class SaberTheme {
     )
     bool highContrast = false,
   }) {
-    late final yaruVariant = YaruBuilder.getYaruVariant(seedColor);
-    if (platform == .linux) {
-      return getThemeFromYaru(
-        YaruThemeData(variant: yaruVariant),
-        brightness,
-        platform,
-        highContrast,
-      );
-    }
-
-    final ColorScheme colorScheme;
-    if (platform.usesYaruColors) {
-      colorScheme = brightness == .light
-          ? yaruVariant.theme.colorScheme
-          : yaruVariant.darkTheme.colorScheme;
-    } else {
-      colorScheme = ColorScheme.fromSeed(
-        brightness: brightness,
-        seedColor: seedColor,
-      );
-    }
+    final colorScheme = platform.isCupertino
+        ? _cupertinoColorScheme(seedColor, brightness)
+        : ColorScheme.fromSeed(brightness: brightness, seedColor: seedColor);
     return createTheme(colorScheme, platform);
+  }
+
+  /// Creates a clean, native-feeling iOS [ColorScheme] seeded from [seedColor].
+  static ColorScheme _cupertinoColorScheme(
+    Color seedColor,
+    Brightness brightness,
+  ) {
+    final base = ColorScheme.fromSeed(
+      brightness: brightness,
+      seedColor: seedColor,
+    );
+    return _applyCupertinoSurfaces(base);
+  }
+
+  /// Applies iOS Human Interface Guidelines grouped surface hierarchy colors.
+  static ColorScheme _applyCupertinoSurfaces(ColorScheme colorScheme) {
+    final isDark = colorScheme.brightness == .dark;
+    return colorScheme.copyWith(
+      surface: isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7),
+      surfaceContainerLowest: isDark
+          ? const Color(0xFF000000)
+          : const Color(0xFFFFFFFF),
+      surfaceContainerLow: isDark
+          ? const Color(0xFF1C1C1E)
+          : const Color(0xFFFFFFFF),
+      surfaceContainer: isDark
+          ? const Color(0xFF2C2C2E)
+          : const Color(0xFFF9F9FB),
+      surfaceContainerHigh: isDark
+          ? const Color(0xFF3A3A3C)
+          : const Color(0xFFE5E5EA),
+      outlineVariant: isDark
+          ? const Color(0x52545458)
+          : const Color(0x333C3C43),
+    );
   }
 
   /// Adjusts certain colors in the [ColorScheme].
@@ -80,12 +95,10 @@ abstract class SaberTheme {
     ColorScheme colorScheme,
     TargetPlatform platform,
   ) {
+    if (platform.isCupertino) {
+      return _applyCupertinoSurfaces(colorScheme);
+    }
     return colorScheme.copyWith(
-      surface: platform.isCupertino
-          ? (colorScheme.brightness == .light
-                ? CupertinoColors.white
-                : CupertinoColors.darkBackgroundGray)
-          : null,
       // Hack: Mimic Material 3 Expressive color schemes by making
       // surfaceContainer much closer to surface.
       // Remove this when Flutter supports M3E natively.
@@ -94,57 +107,6 @@ abstract class SaberTheme {
         colorScheme.surfaceTint,
         0.02,
       )!,
-    );
-  }
-
-  static ThemeData getThemeFromYaru(
-    YaruThemeData yaru,
-    Brightness brightness,
-    TargetPlatform platform,
-    bool highContrast,
-  ) {
-    final base = highContrast
-        ? (brightness == .light ? yaruHighContrastLight : yaruHighContrastDark)
-        : (brightness == .light ? yaru.theme : yaru.darkTheme);
-    return getThemeFromYaruFixed(base, platform);
-  }
-
-  static ThemeData getThemeFromYaruFixed(
-    ThemeData base,
-    TargetPlatform platform,
-  ) {
-    final textTheme = _Components.textTheme(platform, base.colorScheme);
-    final fontFamily = textTheme.bodyMedium!.fontFamily;
-    final fontFamilyFallback = textTheme.bodyMedium!.fontFamilyFallback;
-    return base.copyWith(
-      platform: platform,
-      textTheme: textTheme,
-      progressIndicatorTheme: _Components.progressIndicatorTheme,
-      cardTheme: _Components.cardTheme(base.colorScheme),
-      dialogTheme: _Components.dialogTheme(base.colorScheme),
-      bottomSheetTheme: _Components.bottomSheetTheme(base.colorScheme),
-      navigationRailTheme: _Components.navigationRailTheme(base.colorScheme),
-      cupertinoOverrideTheme: _Components.cupertinoOverrideTheme,
-      listTileTheme: base.listTileTheme.copyWith(
-        // Yaru forces list tiles to use Ubuntu font, fix that
-        titleTextStyle: base.listTileTheme.titleTextStyle?.copyWith(
-          fontFamily: fontFamily,
-          fontFamilyFallback: fontFamilyFallback,
-        ),
-        subtitleTextStyle: base.listTileTheme.subtitleTextStyle?.copyWith(
-          fontFamily: fontFamily,
-          fontFamilyFallback: fontFamilyFallback,
-        ),
-        leadingAndTrailingTextStyle: base
-            .listTileTheme
-            .leadingAndTrailingTextStyle
-            ?.copyWith(
-              fontFamily: fontFamily,
-              fontFamilyFallback: fontFamilyFallback,
-            ),
-      ),
-      // Leave Yaru's app bar theme, since it adds a border bottom.
-      // appBarTheme: _Components.appBarTheme,
     );
   }
 }
@@ -164,9 +126,6 @@ abstract class _Components {
         fontFamily: 'AtkinsonHyperlegibleNext',
         fontFamilyFallback: saberSansSerifFontFallbacks,
       );
-    } else if (platform == .linux) {
-      // Flutter picks Roboto but Adwaita Sans is a better default
-      return textTheme.withFont(fontFamily: 'Adwaita Sans');
     } else {
       return textTheme;
     }
@@ -253,14 +212,6 @@ abstract class _Components {
 }
 
 extension SaberThemePlatform on TargetPlatform {
-  /// iOS uses Yaru's colorscheme since it looks more native than M3.
-  bool get usesYaruColors => switch (this) {
-    .linux => true,
-    .iOS => true,
-    .macOS => true,
-    _ => false,
-  };
-
   bool get isCupertino => switch (this) {
     .iOS => true,
     .macOS => true,

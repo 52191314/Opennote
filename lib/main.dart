@@ -1,4 +1,4 @@
-/// 🤖 Modified with Grok 4.7
+/// 🤖 Modified with Grok 4.7; Google Antigravity
 library;
 
 import 'dart:async';
@@ -32,7 +32,6 @@ import 'package:saber/pages/editor/editor.dart';
 import 'package:saber/pages/home/home.dart';
 import 'package:saber/pages/logs.dart';
 import 'package:saber/pages/user/login.dart';
-import 'package:window_manager/window_manager.dart';
 import 'package:worker_manager/worker_manager.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -89,17 +88,10 @@ Future<void> appRunner(List<String> args) async {
 
   await Future.wait([
     stows.customDataDir.waitUntilRead().then((_) => FileManager.init()),
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
-      windowManager.ensureInitialized(),
     workerManager.init(),
     stows.locale.waitUntilRead(),
     stows.url.waitUntilRead(),
     stows.allowInsecureConnections.waitUntilRead(),
-    PencilShader.init(),
-    Printing.info().then((info) {
-      Editor.canRasterPdf = info.canRaster;
-    }),
-    OnyxSdkPenArea.init(),
   ]);
 
   setLocale();
@@ -110,7 +102,6 @@ Future<void> appRunner(List<String> args) async {
   LicenseRegistry.addLicense(() async* {
     for (final licenseFile in const [
       'assets/google_fonts/Atkinson_Hyperlegible_Next/OFL.txt',
-      'assets/google_fonts/Dekko/OFL.txt',
       'assets/google_fonts/Fira_Mono/OFL.txt',
       'assets/google_fonts/Neucha/OFL.txt',
     ]) {
@@ -121,6 +112,15 @@ Future<void> appRunner(List<String> args) async {
 
   HttpOverrides.global = NcHttpOverrides();
   runApp(SentryWidget(child: TranslationProvider(child: const App())));
+
+  unawaited(PencilShader.init());
+  unawaited(
+    Printing.info().then((info) {
+      Editor.canRasterPdf = info.canRaster;
+    }),
+  );
+  if (Platform.isAndroid) unawaited(OnyxSdkPenArea.init());
+
   startSyncAfterLoaded();
   setupBackgroundSync();
 }

@@ -550,16 +550,18 @@ class _NotebookCover extends StatelessWidget {
       child: Transform.scale(scale: 0.9, child: _buildCoverContent(context)),
     );
 
-    return LongPressDraggable<String>(
-      data: filePath,
-      delay: const Duration(milliseconds: 200),
-      onDragStarted: () => ItemDragState.startDrag(filePath),
-      onDragEnd: (_) => ItemDragState.endDrag(),
-      onDraggableCanceled: (_, _) => ItemDragState.endDrag(),
-      onDragCompleted: () => ItemDragState.endDrag(),
-      feedback: feedbackWidget,
-      childWhenDragging: Opacity(opacity: 0.4, child: bookWidget),
-      child: bookWidget,
+    return RepaintBoundary(
+      child: LongPressDraggable<String>(
+        data: filePath,
+        delay: const Duration(milliseconds: 200),
+        onDragStarted: () => ItemDragState.startDrag(filePath),
+        onDragEnd: (_) => ItemDragState.endDrag(),
+        onDraggableCanceled: (_, _) => ItemDragState.endDrag(),
+        onDragCompleted: () => ItemDragState.endDrag(),
+        feedback: feedbackWidget,
+        childWhenDragging: Opacity(opacity: 0.4, child: bookWidget),
+        child: bookWidget,
+      ),
     );
   }
 }

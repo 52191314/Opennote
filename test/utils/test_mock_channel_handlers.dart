@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -44,18 +47,6 @@ void setupMockPrinting() {
       .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
         if (methodCall.method == 'printingInfo') {
           return {}; // [PrintingInfo.unavailable]
-        }
-        return null;
-      });
-}
-
-void setupMockWindowManager() {
-  const channel = MethodChannel('window_manager');
-  TestWidgetsFlutterBinding.ensureInitialized();
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
-        if (methodCall.method == 'setFullScreen') {
-          return true;
         }
         return null;
       });

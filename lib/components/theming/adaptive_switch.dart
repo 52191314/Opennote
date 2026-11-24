@@ -1,5 +1,7 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
-import 'package:yaru/widgets.dart';
 
 class AdaptiveSwitch extends Switch {
   const AdaptiveSwitch({
@@ -12,27 +14,4 @@ class AdaptiveSwitch extends Switch {
     super.autofocus = false,
     super.mouseCursor,
   }) : super.adaptive();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    if (theme.platform == .linux) {
-      return _buildYaru(context);
-    }
-    return super.build(context);
-  }
-
-  Widget _buildYaru(BuildContext context) {
-    return YaruSwitch(
-      value: value,
-      onChanged: onChanged,
-      thumbColor: thumbColor?.resolve({
-        if (value) WidgetState.selected,
-        if (onChanged == null) WidgetState.disabled,
-      }),
-      focusNode: focusNode,
-      autofocus: autofocus,
-      mouseCursor: mouseCursor,
-    );
-  }
 }

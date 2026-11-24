@@ -126,12 +126,6 @@ class _GridFolderState extends State<_GridFolder> {
       colorScheme.primary.withValues(alpha: 0.06),
       colorScheme.surface,
     );
-    final isDesktop = switch (Theme.of(context).platform) {
-      TargetPlatform.windows ||
-      TargetPlatform.macOS ||
-      TargetPlatform.linux => true,
-      _ => false,
-    };
 
     final String currentDir = widget.currentPath ?? '/';
     final String targetFolderPath =
@@ -336,30 +330,17 @@ class _GridFolderState extends State<_GridFolder> {
       if (widget.cardType != _FolderCardType.realFolder) return cardContent;
       if (expanded.value) return cardContent;
 
-      if (isDesktop) {
-        return Draggable<String>(
-          data: targetFolderPath,
-          onDragStarted: () => ItemDragState.startDrag(targetFolderPath),
-          onDragEnd: (_) => ItemDragState.endDrag(),
-          onDraggableCanceled: (_, _) => ItemDragState.endDrag(),
-          onDragCompleted: () => ItemDragState.endDrag(),
-          feedback: feedbackWidget,
-          childWhenDragging: Opacity(opacity: 0.4, child: cardContent),
-          child: cardContent,
-        );
-      } else {
-        return LongPressDraggable<String>(
-          delay: const Duration(milliseconds: 200),
-          data: targetFolderPath,
-          onDragStarted: () => ItemDragState.startDrag(targetFolderPath),
-          onDragEnd: (_) => ItemDragState.endDrag(),
-          onDraggableCanceled: (_, _) => ItemDragState.endDrag(),
-          onDragCompleted: () => ItemDragState.endDrag(),
-          feedback: feedbackWidget,
-          childWhenDragging: Opacity(opacity: 0.4, child: cardContent),
-          child: cardContent,
-        );
-      }
+      return LongPressDraggable<String>(
+        delay: const Duration(milliseconds: 200),
+        data: targetFolderPath,
+        onDragStarted: () => ItemDragState.startDrag(targetFolderPath),
+        onDragEnd: (_) => ItemDragState.endDrag(),
+        onDraggableCanceled: (_, _) => ItemDragState.endDrag(),
+        onDragCompleted: () => ItemDragState.endDrag(),
+        feedback: feedbackWidget,
+        childWhenDragging: Opacity(opacity: 0.4, child: cardContent),
+        child: cardContent,
+      );
     }
 
     Widget buildClickableCard(bool isTargeted) {

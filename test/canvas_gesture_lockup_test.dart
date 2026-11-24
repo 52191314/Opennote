@@ -505,30 +505,33 @@ void main() {
       },
     );
 
-    test('rejectGesture cleans up tracked touch pointer before stylus arrives', () {
-      final engine = PalmRejectionEngine(
-        writingPosture: WritingPosture.rightBelow,
-        sensitivity: PalmRejectionSensitivity.medium,
-      );
+    test(
+      'rejectGesture cleans up tracked touch pointer before stylus arrives',
+      () {
+        final engine = PalmRejectionEngine(
+          writingPosture: WritingPosture.rightBelow,
+          sensitivity: PalmRejectionSensitivity.medium,
+        );
 
-      final recognizer = CanvasScaleGestureRecognizer(palmEngine: engine);
-      addTearDown(recognizer.dispose);
+        final recognizer = CanvasScaleGestureRecognizer(palmEngine: engine);
+        addTearDown(recognizer.dispose);
 
-      const touchDown = PointerDownEvent(
-        pointer: 60,
-        position: Offset(400, 400),
-        kind: PointerDeviceKind.touch,
-      );
-      recognizer.addAllowedPointer(touchDown);
-      recognizer.rejectGesture(60);
+        const touchDown = PointerDownEvent(
+          pointer: 60,
+          position: Offset(400, 400),
+          kind: PointerDeviceKind.touch,
+        );
+        recognizer.addAllowedPointer(touchDown);
+        recognizer.rejectGesture(60);
 
-      const stylusDown = PointerDownEvent(
-        pointer: 61,
-        position: Offset(100, 100),
-        kind: PointerDeviceKind.stylus,
-      );
-      expect(() => recognizer.addAllowedPointer(stylusDown), returnsNormally);
-    });
+        const stylusDown = PointerDownEvent(
+          pointer: 61,
+          position: Offset(100, 100),
+          kind: PointerDeviceKind.stylus,
+        );
+        expect(() => recognizer.addAllowedPointer(stylusDown), returnsNormally);
+      },
+    );
   });
 }
 

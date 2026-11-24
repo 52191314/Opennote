@@ -110,7 +110,7 @@ jobs:
         if: ${{ steps.cache.outputs.cache-hit == '' }}
 
       - name: Build apk
-        run: flutter build apk
+        run: flutter build apk --split-debug-info=build/debug-info/android --obfuscate --tree-shake-icons
         if: ${{ steps.cache.outputs.cache-hit == '' }}
 
       - name: Save Android cache
@@ -230,8 +230,8 @@ jobs:
 
       - name: Build apk
         run: |
-          flutter build apk --split-per-abi
-          flutter build apk
+          flutter build apk --split-per-abi --split-debug-info=build/debug-info/android --obfuscate --tree-shake-icons
+          flutter build apk --split-debug-info=build/debug-info/android --obfuscate --tree-shake-icons
 
       - name: Rename apk
         id: rename_apk
@@ -284,6 +284,9 @@ jobs:
         if: ${{ matrix.foss == false }}
         run: |
           flutter build appbundle --no-pub \
+            --split-debug-info=build/debug-info/android \
+            --obfuscate \
+            --tree-shake-icons \
             --dart-define=FLAVOR="Google Play" \
             --dart-define=APP_STORE="Google Play" \
             --dart-define=UPDATE_CHECK="false"

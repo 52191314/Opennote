@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
 
 const saberSansSerifFontFallbacks = [
@@ -13,7 +16,6 @@ const saberSansSerifFontFallbacks = [
   'AtkinsonHyperlegible',
   'sans-serif',
   'Ubuntu',
-  'packages/yaru/Ubuntu',
   'CupertinoSystemDisplay',
   'CupertinoSystemText',
   '.AppleSystemUIFont',
@@ -35,7 +37,6 @@ const saberMonoFontFallbacks = [
 ];
 const saberHandwritingFontFallbacks = [
   'Neucha',
-  'Dekko',
   // Fallback fonts from https://github.com/system-fonts/modern-font-stacks#handwritten
   'Segoe Print',
   'Bradley Hand',

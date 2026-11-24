@@ -1,5 +1,7 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:http/http.dart' as http;
@@ -8,7 +10,6 @@ import 'package:nextcloud/core.dart';
 import 'package:nextcloud/nextcloud.dart';
 import 'package:saber/data/nextcloud/nc_http_overrides.dart';
 import 'package:saber/data/nextcloud/nextcloud_client_extension.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class SaberLoginFlow {
   SaberLoginFlow.start({required this.serverUrl}) {
@@ -30,19 +31,12 @@ class SaberLoginFlow {
     final init = this.init;
     if (init == null) return;
 
-    if (Platform.isMacOS || Platform.isIOS || Platform.isAndroid) {
-      // Use FlutterWebAuth2 which returns to Saber when authenticated
-      log.info('Opening login link in-app: ${init.login}');
-      await FlutterWebAuth2.authenticate(
-        url: init.login,
-        callbackUrlScheme: 'nc',
-      );
-    } else {
-      // Use url_launcher to open the link in the default browser
-      log.info('Opening login link in browser: ${init.login}');
-      final loginLink = Uri.parse(init.login);
-      await launchUrl(loginLink);
-    }
+    // Use FlutterWebAuth2 which returns to Saber when authenticated
+    log.info('Opening login link in-app: ${init.login}');
+    await FlutterWebAuth2.authenticate(
+      url: init.login,
+      callbackUrlScheme: 'nc',
+    );
   }
 
   Future<void> _run() async {

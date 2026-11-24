@@ -4,7 +4,6 @@ library;
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/data/editor/page.dart';
@@ -71,13 +70,13 @@ class Pen extends Tool {
   final double sizeMin, sizeMax, sizeStep;
   late final int sizeStepsBetweenMinAndMax = ((sizeMax - sizeMin) / sizeStep)
       .round();
-  final Object icon;
+  final IconData icon;
 
   @override
   final ToolId toolId;
 
-  static const fountainPenIcon = FontAwesomeIcons.penFancy;
-  static const ballpointPenIcon = FontAwesomeIcons.pen;
+  static const fountainPenIcon = Icons.draw_rounded;
+  static const ballpointPenIcon = Icons.edit_rounded;
 
   static Stroke? currentStroke;
   Color color;

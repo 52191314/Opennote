@@ -19,7 +19,6 @@ import 'package:saber/data/sentry/sentry_init.dart';
 import 'package:saber/i18n/strings.g.dart';
 import 'package:saber/pages/editor/editor.dart';
 import 'package:saber/pages/home/home.dart';
-import 'package:yaru/yaru.dart';
 
 import 'utils/test_mock_channel_handlers.dart';
 import 'utils/test_user.dart';
@@ -75,7 +74,7 @@ void main() {
       await setupDemoFiles();
     });
 
-    const seedColor = YaruColors.blue;
+    const seedColor = Color(0xFF0073E5);
     final lightTheme = SaberTheme.createThemeFromSeed(
       seedColor,
       .light,

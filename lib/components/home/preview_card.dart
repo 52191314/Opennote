@@ -2,6 +2,7 @@
 library;
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +20,8 @@ import 'package:saber/data/prefs.dart';
 import 'package:saber/data/routes.dart';
 import 'package:saber/i18n/strings.g.dart';
 import 'package:saber/pages/editor/editor.dart';
-import 'package:yaru/yaru.dart';
+
+const _focusBorderWidth = 2.0;
 
 class PreviewCard extends StatefulWidget {
   PreviewCard({
@@ -43,6 +45,7 @@ class _PreviewCardState extends State<PreviewCard> {
 
   final expanded = ValueNotifier(false);
   final thumbnail = _ThumbnailState();
+  File? _imageFile;
 
   @override
   void initState() {
@@ -69,24 +72,60 @@ class _PreviewCardState extends State<PreviewCard> {
     final imageFile = FileManager.getFile(
       '${widget.filePath}${Editor.extension}.p',
     );
+    final isSameFile = _imageFile?.path == imageFile.path;
+    _imageFile = imageFile;
+
     if (isThisATest) {
       // Avoid FileImages in tests
-      thumbnail.image = imageFile.existsSync()
-          ? MemoryImage(imageFile.readAsBytesSync())
-          : null;
-    } else {
-      thumbnail.image = FileImage(imageFile);
+      final exists = imageFile.existsSync();
+      thumbnail.setImage(
+        exists ? MemoryImage(imageFile.readAsBytesSync()) : null,
+        exists: exists,
+      );
+    } else if (!isSameFile || thumbnail.image == null) {
+      thumbnail.setImage(
+        ResizeImage(FileImage(imageFile), width: 400),
+        exists: thumbnail.doesImageExist,
+      );
+      unawaited(_checkImageExists(imageFile));
     }
+  }
+
+  Future<void> _checkImageExists(
+    File imageFile, {
+    bool forceNotify = false,
+  }) async {
+    // ignore: avoid_slow_async_io
+    final exists = await imageFile.exists();
+    if (!mounted || _imageFile?.path != imageFile.path) return;
+    thumbnail.setExists(exists, forceNotify: forceNotify);
   }
 
   StreamSubscription? fileWriteSubscription;
   void fileWriteListener(FileOperation event) {
     if (event.filePath != widget.filePath) return;
     if (event.type == .delete) {
-      thumbnail.image = null;
+      thumbnail.setImage(null, exists: false);
     } else if (event.type == .write) {
       thumbnail.image?.evict();
-      thumbnail.markAsChanged();
+      final imageFile = _imageFile;
+      if (isThisATest && imageFile != null) {
+        final exists = imageFile.existsSync();
+        thumbnail.setImage(
+          exists ? MemoryImage(imageFile.readAsBytesSync()) : null,
+          exists: exists,
+        );
+      } else if (imageFile != null) {
+        if (thumbnail.image == null) {
+          thumbnail.setImage(
+            ResizeImage(FileImage(imageFile), width: 400),
+            exists: thumbnail.doesImageExist,
+          );
+        }
+        unawaited(_checkImageExists(imageFile, forceNotify: true));
+      } else {
+        thumbnail.markAsChanged();
+      }
     } else {
       throw Exception('Unknown file operation type: ${event.type}');
     }
@@ -101,8 +140,14 @@ class _PreviewCardState extends State<PreviewCard> {
   void _refreshThumbnailAfterDelay() {
     _refreshThumbnailTimer?.cancel();
     _refreshThumbnailTimer = Timer(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
       thumbnail.image?.evict();
-      thumbnail.markAsChanged();
+      final imageFile = _imageFile;
+      if (!isThisATest && imageFile != null) {
+        unawaited(_checkImageExists(imageFile, forceNotify: true));
+      } else {
+        thumbnail.markAsChanged();
+      }
     });
   }
 
@@ -132,8 +177,8 @@ class _PreviewCardState extends State<PreviewCard> {
                 children: [
                   Positioned.fill(
                     top: _cardRadius,
-                    left: kYaruFocusBorderWidth,
-                    right: kYaruFocusBorderWidth,
+                    left: _focusBorderWidth,
+                    right: _focusBorderWidth,
                     child: ColoredBox(
                       color: InnerCanvas.defaultBackgroundColor.withInversion(
                         invert,
@@ -152,17 +197,17 @@ class _PreviewCardState extends State<PreviewCard> {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.only(
-                            top: kYaruFocusBorderWidth,
-                            left: kYaruFocusBorderWidth,
-                            right: kYaruFocusBorderWidth,
+                            top: _focusBorderWidth,
+                            left: _focusBorderWidth,
+                            right: _focusBorderWidth,
                           ),
                           child: ClipRRect(
                             borderRadius: const .only(
                               topLeft: .circular(
-                                _cardRadius - kYaruFocusBorderWidth,
+                                _cardRadius - _focusBorderWidth,
                               ),
                               topRight: .circular(
-                                _cardRadius - kYaruFocusBorderWidth,
+                                _cardRadius - _focusBorderWidth,
                               ),
                             ),
                             child: InvertWidget(
@@ -172,6 +217,7 @@ class _PreviewCardState extends State<PreviewCard> {
                                       image: thumbnail.image!,
                                       alignment: .topCenter,
                                       fit: .cover,
+                                      gaplessPlayback: true,
                                     )
                                   : _FallbackThumbnail(
                                       filePath: widget.filePath,
@@ -356,7 +402,7 @@ class _PreviewCardState extends State<PreviewCard> {
               color: expanded
                   ? colorScheme.primary
                   : colorScheme.outlineVariant.withValues(alpha: 0.45),
-              width: expanded ? kYaruFocusBorderWidth : 1.0,
+              width: expanded ? _focusBorderWidth : 1.0,
             ),
             borderRadius: const .all(.circular(_cardRadius)),
           ),
@@ -409,6 +455,7 @@ class _PreviewCardState extends State<PreviewCard> {
                             image: thumbnail.image!,
                             fit: BoxFit.cover,
                             alignment: Alignment.topCenter,
+                            gaplessPlayback: true,
                           )
                         : _FallbackThumbnail(filePath: widget.filePath),
                   ),
@@ -439,16 +486,18 @@ class _PreviewCardState extends State<PreviewCard> {
       ),
     );
 
-    return LongPressDraggable<String>(
-      data: widget.filePath,
-      delay: const Duration(milliseconds: 200),
-      onDragStarted: () => ItemDragState.startDrag(widget.filePath),
-      onDragEnd: (_) => ItemDragState.endDrag(),
-      onDraggableCanceled: (_, _) => ItemDragState.endDrag(),
-      onDragCompleted: () => ItemDragState.endDrag(),
-      feedback: feedbackWidget,
-      childWhenDragging: Opacity(opacity: 0.4, child: openContainerWidget),
-      child: openContainerWidget,
+    return RepaintBoundary(
+      child: LongPressDraggable<String>(
+        data: widget.filePath,
+        delay: const Duration(milliseconds: 200),
+        onDragStarted: () => ItemDragState.startDrag(widget.filePath),
+        onDragEnd: (_) => ItemDragState.endDrag(),
+        onDraggableCanceled: (_, _) => ItemDragState.endDrag(),
+        onDragCompleted: () => ItemDragState.endDrag(),
+        feedback: feedbackWidget,
+        childWhenDragging: Opacity(opacity: 0.4, child: openContainerWidget),
+        child: openContainerWidget,
+      ),
     );
   }
 
@@ -456,6 +505,8 @@ class _PreviewCardState extends State<PreviewCard> {
   void dispose() {
     _refreshThumbnailTimer?.cancel();
     fileWriteSubscription?.cancel();
+    expanded.dispose();
+    thumbnail.dispose();
     super.dispose();
   }
 }
@@ -486,8 +537,8 @@ class _FallbackThumbnail extends StatelessWidget {
         decoration: BoxDecoration(
           color: coverColor,
           borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(14.0 - kYaruFocusBorderWidth),
-            topRight: Radius.circular(14.0 - kYaruFocusBorderWidth),
+            topLeft: Radius.circular(14.0 - _focusBorderWidth),
+            topRight: Radius.circular(14.0 - _focusBorderWidth),
           ),
         ),
         child: Stack(
@@ -603,6 +654,7 @@ class _FallbackThumbnail extends StatelessWidget {
 class _ThumbnailState extends ChangeNotifier {
   var updateCount = 0;
   ImageProvider? _image;
+  var _imageExists = false;
 
   void markAsChanged() {
     ++updateCount;
@@ -610,14 +662,17 @@ class _ThumbnailState extends ChangeNotifier {
   }
 
   ImageProvider? get image => _image;
-  set image(ImageProvider? image) {
+  bool get doesImageExist => _image != null && _imageExists;
+
+  void setImage(ImageProvider? image, {required bool exists}) {
     _image = image;
+    _imageExists = exists;
     markAsChanged();
   }
 
-  bool get doesImageExist => switch (image) {
-    (final FileImage fileImage) => fileImage.file.existsSync(),
-    null => false,
-    _ => true,
-  };
+  void setExists(bool exists, {bool forceNotify = false}) {
+    if (_imageExists == exists && !forceNotify) return;
+    _imageExists = exists;
+    markAsChanged();
+  }
 }

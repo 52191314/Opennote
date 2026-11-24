@@ -71,11 +71,20 @@ class EditorPage extends ChangeNotifier implements HasSize {
   final List<EditorImage> images;
   final QuillStruct quill;
 
+  /// Monotonically increasing version counter incremented whenever strokes or
+  /// layers on this page are mutated or redrawn.
+  var strokesVersion = 0;
+
   /// All strokes from all visible layers, flattened for rendering.
-  List<Stroke> get strokes => [
-    for (final layer in layers)
-      if (layer.visible) ...layer.strokes,
-  ];
+  List<Stroke> get strokes {
+    if (layers.length == 1) {
+      return layers.first.visible ? layers.first.strokes : const [];
+    }
+    return [
+      for (final layer in layers)
+        if (layer.visible) ...layer.strokes,
+    ];
+  }
 
   /// Strokes in the currently active layer (for mutation).
   List<Stroke> get activeLayerStrokes => activeLayer.strokes;
@@ -434,7 +443,10 @@ class EditorPage extends ChangeNotifier implements HasSize {
   bool removeStroke(Stroke stroke) {
     for (final layer in layers) {
       if (layer.locked) continue;
-      if (layer.strokes.remove(stroke)) return true;
+      if (layer.strokes.remove(stroke)) {
+        strokesVersion++;
+        return true;
+      }
     }
     return false;
   }
@@ -447,6 +459,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
       final index = layer.strokes.indexOf(oldStroke);
       if (index == -1) continue;
       layer.strokes[index] = newStroke;
+      strokesVersion++;
       return true;
     }
     return false;
@@ -477,6 +490,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
     }
 
     activeLayer.strokes.insert(index, newStroke);
+    strokesVersion++;
   }
 
   /// Sorts the strokes in each layer by pen type and color.
@@ -489,6 +503,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
         return a.color.toARGB32().compareTo(b.color.toARGB32());
       });
     }
+    strokesVersion++;
   }
 
   static List<Stroke> parseStrokesJson(
@@ -554,6 +569,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
   /// Triggers a redraw of the strokes. If you need to redraw images,
   /// call [setState] instead.
   void redrawStrokes() {
+    strokesVersion++;
     notifyListeners();
   }
 

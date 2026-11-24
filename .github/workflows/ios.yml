@@ -95,6 +95,9 @@ jobs:
         run: |
           if [ -n "$APP_STORE_CERTIFICATE_KEY" ]; then
             flutter build ipa \
+              --split-debug-info=build/ios/debug-info \
+              --obfuscate \
+              --tree-shake-icons \
               --dart-define=FLAVOR="App Store" \
               --dart-define=APP_STORE="App Store" \
               --dart-define=UPDATE_CHECK="false" \
@@ -102,6 +105,9 @@ jobs:
           else
             echo "No signing certificate key found. Building unsigned iOS app archive..."
             flutter build ios --no-codesign \
+              --split-debug-info=build/ios/debug-info \
+              --obfuscate \
+              --tree-shake-icons \
               --dart-define=FLAVOR="App Store" \
               --dart-define=APP_STORE="App Store" \
               --dart-define=UPDATE_CHECK="false"

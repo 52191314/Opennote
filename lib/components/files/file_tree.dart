@@ -155,13 +155,6 @@ class _FileTreeBranchState extends State<FileTreeBranch> {
     final textTheme = TextTheme.of(context);
     final rowRadius = BorderRadius.circular(OpennoteTokens.radiusSm);
 
-    final isDesktop = switch (Theme.of(context).platform) {
-      TargetPlatform.windows ||
-      TargetPlatform.macOS ||
-      TargetPlatform.linux => true,
-      _ => false,
-    };
-
     final nodeRow = widget.path == null
         ? const SizedBox.shrink()
         : Padding(
@@ -270,17 +263,6 @@ class _FileTreeBranchState extends State<FileTreeBranch> {
 
     final draggableNode = widget.path == null
         ? const SizedBox.shrink()
-        : isDesktop
-        ? Draggable<String>(
-            data: widget.path!,
-            onDragStarted: () => ItemDragState.startDrag(widget.path!),
-            onDragEnd: (_) => ItemDragState.endDrag(),
-            onDraggableCanceled: (_, _) => ItemDragState.endDrag(),
-            onDragCompleted: () => ItemDragState.endDrag(),
-            feedback: feedbackWidget,
-            childWhenDragging: Opacity(opacity: 0.4, child: nodeRow),
-            child: nodeRow,
-          )
         : LongPressDraggable<String>(
             delay: const Duration(milliseconds: 200),
             data: widget.path!,

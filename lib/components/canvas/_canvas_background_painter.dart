@@ -3,7 +3,6 @@ library;
 
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:sbn/canvas_background_pattern.dart';
@@ -42,13 +41,35 @@ class CanvasBackgroundPainter extends CustomPainter {
   /// The visible viewport bounding box in scene coordinates for infinite canvas.
   final Rect? viewportRect;
 
+  static const _infiniteQuantizeStep = 500.0;
+
+  /// Quantizes [rect] outward to multiples of [_infiniteQuantizeStep] after
+  /// inflating by 1000px so small pan deltas reuse the same cached background.
+  static Rect? _quantizedInfiniteRect(Rect? rect) {
+    if (rect == null || !_isValidViewport(rect)) return null;
+    final inflated = rect.inflate(1000.0);
+    final left =
+        (inflated.left / _infiniteQuantizeStep).floorToDouble() *
+        _infiniteQuantizeStep;
+    final top =
+        (inflated.top / _infiniteQuantizeStep).floorToDouble() *
+        _infiniteQuantizeStep;
+    final right =
+        (inflated.right / _infiniteQuantizeStep).ceilToDouble() *
+        _infiniteQuantizeStep;
+    final bottom =
+        (inflated.bottom / _infiniteQuantizeStep).ceilToDouble() *
+        _infiniteQuantizeStep;
+    return Rect.fromLTRB(left, top, right, bottom);
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     final Rect visibleRect;
     if (isInfiniteCanvas) {
-      if (viewportRect != null && _isValidViewport(viewportRect!)) {
-        // Generously inflate the visible viewport so panning doesn't reveal edges
-        visibleRect = viewportRect!.inflate(1000.0);
+      final quantized = _quantizedInfiniteRect(viewportRect);
+      if (quantized != null) {
+        visibleRect = quantized;
       } else {
         final clip = canvas.getLocalClipBounds();
         if (_isValidViewport(clip)) {
@@ -130,17 +151,24 @@ class CanvasBackgroundPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(CanvasBackgroundPainter oldDelegate) =>
-      oldDelegate.viewportRect != viewportRect ||
-      isInfiniteCanvas ||
-      kDebugMode ||
-      oldDelegate.invert != invert ||
-      oldDelegate.backgroundColor != backgroundColor ||
-      oldDelegate.backgroundPattern != backgroundPattern ||
-      oldDelegate.lineHeight != lineHeight ||
-      oldDelegate.primaryColor != primaryColor ||
-      oldDelegate.secondaryColor != secondaryColor ||
-      oldDelegate.isInfiniteCanvas != isInfiniteCanvas;
+  bool shouldRepaint(CanvasBackgroundPainter oldDelegate) {
+    final viewportChanged =
+        isInfiniteCanvas &&
+        (viewportRect == null ||
+            oldDelegate.viewportRect == null ||
+            _quantizedInfiniteRect(oldDelegate.viewportRect) !=
+                _quantizedInfiniteRect(viewportRect));
+    return viewportChanged ||
+        oldDelegate.invert != invert ||
+        oldDelegate.backgroundColor != backgroundColor ||
+        oldDelegate.backgroundPattern != backgroundPattern ||
+        oldDelegate.lineHeight != lineHeight ||
+        oldDelegate.lineThickness != lineThickness ||
+        oldDelegate.primaryColor != primaryColor ||
+        oldDelegate.secondaryColor != secondaryColor ||
+        oldDelegate.preview != preview ||
+        oldDelegate.isInfiniteCanvas != isInfiniteCanvas;
+  }
 
   static Iterable<PatternElement> getPatternElements({
     required CanvasBackgroundPattern pattern,

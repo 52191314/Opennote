@@ -258,11 +258,7 @@ class _BrowsePageState extends State<BrowsePage> {
                                 : note.startsWith('$path/'),
                           ),
                         }.toList(),
-                        folders: [
-                          for (final directoryPath
-                              in children?.directories ?? const [])
-                            directoryPath,
-                        ],
+                        folders: const [],
                         onOpenNote: (note) =>
                             context.push(RoutePaths.editFilePath(note)),
                         onOpenFolder: onDirectoryTap,
@@ -270,28 +266,6 @@ class _BrowsePageState extends State<BrowsePage> {
                         onDeleteNote: (note) => findChildrenOfPath(),
                         onRenameNote: (oldPath, newName) =>
                             findChildrenOfPath(),
-                        onDeleteFolder: (folderName) async {
-                          final folderPath = '${path ?? ''}/$folderName';
-                          await FileManager.deleteDirectory(folderPath);
-                          findChildrenOfPath();
-                        },
-                        onRenameFolder: (oldName, newName) async {
-                          final oldPath = '${path ?? ''}/$oldName';
-                          await FileManager.renameDirectory(oldPath, newName);
-                          findChildrenOfPath();
-                        },
-                        doesFolderExist: (String folderName) {
-                          return children?.directories.contains(folderName) ??
-                              false;
-                        },
-                        isFolderEmpty: (String folderName) async {
-                          final folderPath = '${path ?? ''}/$folderName';
-                          final children =
-                              await FileManager.getChildrenOfDirectory(
-                                folderPath,
-                              );
-                          return children?.isEmpty ?? true;
-                        },
                         onCreateNote: (note) {
                           setState(() => _pendingNotes.add(note));
                           context.push(RoutePaths.editFilePath(note));

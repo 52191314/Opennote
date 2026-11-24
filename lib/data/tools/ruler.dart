@@ -2,7 +2,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/data/editor/page.dart';
@@ -29,7 +28,7 @@ class Ruler extends Pen {
         toolId: .ruler,
       );
 
-  static const rulerIcon = FontAwesomeIcons.ruler;
+  static const rulerIcon = Icons.straighten_rounded;
 
   Offset? _dragStart;
   EditorPage? _activePage;
