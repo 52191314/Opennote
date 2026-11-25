@@ -1,5 +1,6 @@
 /// 🤖 Modified with DeepSeek v4 Flash
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'dart:math' as math;
@@ -52,7 +53,8 @@ class _PresentationModeState extends State<PresentationMode>
   var _showControls = true;
 
   // Flashcard-specific state
-  final Set<int> _studiedPageIndices = {};
+  final Set<int> _knownPageIndices = {};
+  final Set<int> _reviewAgainPageIndices = {};
   var _isFlipped = false;
   late final AnimationController _flipController;
   late final Animation<double> _flipAnimation;
@@ -60,11 +62,10 @@ class _PresentationModeState extends State<PresentationMode>
   @override
   void initState() {
     super.initState();
-    _currentPageIndex = widget.initialPageIndex.clamp(
-      0,
-      widget.coreInfo.pages.length - 1,
-    );
     _totalPages = widget.coreInfo.pages.length;
+    _currentPageIndex = _totalPages == 0
+        ? 0
+        : widget.initialPageIndex.clamp(0, _totalPages - 1);
 
     _flipController = AnimationController(
       vsync: this,
@@ -88,7 +89,16 @@ class _PresentationModeState extends State<PresentationMode>
   bool get _canGoPrevious => _currentPageIndex > 0;
   bool get _canGoNext => _currentPageIndex < _totalPages - 1;
 
-  int get _studiedCount => _studiedPageIndices.length;
+  int get _studiedCount => _knownPageIndices.length;
+
+  @visibleForTesting
+  int get knownCount => _knownPageIndices.length;
+
+  @visibleForTesting
+  int get reviewAgainCount => _reviewAgainPageIndices.length;
+
+  @visibleForTesting
+  int get currentPageIndex => _currentPageIndex;
 
   void _previousPage() {
     if (!_canGoPrevious) return;
@@ -117,7 +127,12 @@ class _PresentationModeState extends State<PresentationMode>
   }
 
   void _resetStudyProgress() {
-    setState(() => _studiedPageIndices.clear());
+    setState(() {
+      _knownPageIndices.clear();
+      _reviewAgainPageIndices.clear();
+      _isFlipped = false;
+    });
+    if (_isFlashcardMode) _flipController.reverse();
   }
 
   void _toggleFlip() {
@@ -133,7 +148,13 @@ class _PresentationModeState extends State<PresentationMode>
   void _markStudied(bool known) {
     if (!_isFlashcardMode) return;
     setState(() {
-      _studiedPageIndices.add(_currentPageIndex);
+      if (known) {
+        _knownPageIndices.add(_currentPageIndex);
+        _reviewAgainPageIndices.remove(_currentPageIndex);
+      } else {
+        _reviewAgainPageIndices.add(_currentPageIndex);
+        _knownPageIndices.remove(_currentPageIndex);
+      }
     });
     _nextPage();
   }
@@ -178,6 +199,16 @@ class _PresentationModeState extends State<PresentationMode>
               ),
             ),
 
+            // Tap zones — full screen, placed beneath interactive controls so
+            // Exit, Reset, and Know/Don't Know buttons remain directly tappable.
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTapUp: _isFlashcardMode ? _handleFlashcardTap : _handleTap,
+                onHorizontalDragEnd: _handleSwipe,
+              ),
+            ),
+
             // Controls overlay
             if (_showControls) ...[
               // Exit button — top-right corner
@@ -210,28 +241,30 @@ class _PresentationModeState extends State<PresentationMode>
                 bottom: _isFlashcardMode ? 96 : 24,
                 left: 0,
                 right: 0,
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      _isFlashcardMode
-                          ? t.editor.presentation.flashcardProgress(
-                              current: _currentPageIndex + 1,
-                              total: _totalPages,
-                              studied: _studiedCount,
-                            )
-                          : '${_currentPageIndex + 1} / $_totalPages',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                child: IgnorePointer(
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        _isFlashcardMode
+                            ? t.editor.presentation.flashcardProgress(
+                                current: _currentPageIndex + 1,
+                                total: _totalPages,
+                                studied: _studiedCount,
+                              )
+                            : '${_currentPageIndex + 1} / $_totalPages',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),
@@ -265,15 +298,6 @@ class _PresentationModeState extends State<PresentationMode>
                 ),
               ],
             ],
-
-            // Tap zones — full screen
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTapUp: _isFlashcardMode ? _handleFlashcardTap : _handleTap,
-                onHorizontalDragEnd: _handleSwipe,
-              ),
-            ),
           ],
         ),
       ),
@@ -336,12 +360,19 @@ class _PresentationModeState extends State<PresentationMode>
                 fontSize: 16,
               ),
             ),
-            if (_studiedPageIndices.contains(_currentPageIndex)) ...[
+            if (_knownPageIndices.contains(_currentPageIndex)) ...[
               const SizedBox(height: 24),
               Icon(
                 Icons.check_circle,
                 size: 28,
                 color: Colors.greenAccent.withValues(alpha: 0.7),
+              ),
+            ] else if (_reviewAgainPageIndices.contains(_currentPageIndex)) ...[
+              const SizedBox(height: 24),
+              Icon(
+                Icons.replay_circle_filled,
+                size: 28,
+                color: Colors.orangeAccent.withValues(alpha: 0.8),
               ),
             ],
           ],

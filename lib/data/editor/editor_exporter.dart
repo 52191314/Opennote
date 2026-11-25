@@ -1,16 +1,14 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'dart:async';
-import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:image/image.dart' as im;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:pool/pool.dart';
 import 'package:saber/components/canvas/_arrow_stroke.dart';
 import 'package:saber/components/canvas/_circle_stroke.dart';
 import 'package:saber/components/canvas/_dimension_stroke.dart';
@@ -33,66 +31,65 @@ abstract class EditorExporter {
     return stroke.toolId == .highlighter || stroke.toolId == .pencil;
   }
 
+  /// Resolves the ordered list of page indices to export.
+  ///
+  /// When [pageIndices] is `null`, exports all pages except a single trailing
+  /// empty page (the editor's auto-appended blank page). When [pageIndices] is
+  /// provided, filters to valid in-range indices.
+  @visibleForTesting
+  static List<int> resolveExportPageIndices(
+    EditorCoreInfo coreInfo, {
+    Set<int>? pageIndices,
+  }) {
+    final pageCount = coreInfo.pages.length;
+    if (pageCount == 0) return const [];
+
+    if (pageIndices != null) {
+      return pageIndices
+          .where((index) => index >= 0 && index < pageCount)
+          .toList(growable: false);
+    }
+
+    final effectiveCount = coreInfo.pages.last.isEmpty
+        ? pageCount - 1
+        : pageCount;
+    return List.generate(effectiveCount, (i) => i, growable: false);
+  }
+
   static Future<pw.Document> generatePdf(
     EditorCoreInfo coreInfo,
     BuildContext context, {
     Set<int>? pageIndices,
   }) async {
-    if (pageIndices == null) {
-      if (coreInfo.pages.isNotEmpty && coreInfo.pages.last.isEmpty) {
-        // don't export the empty last page
-        coreInfo = coreInfo.copyWith(
-          pages: coreInfo.pages.toList()..removeLast(),
-        );
-      }
-    }
-
     final pdf = pw.Document();
-
-    // Determine which pages to export
-    final exportIndices =
-        (pageIndices ?? List.generate(coreInfo.pages.length, (i) => i))
-            .toList();
-
-    // Remove trailing empty page only when exporting all
-    var pages = coreInfo.pages;
-    if (pageIndices == null && pages.isNotEmpty && pages.last.isEmpty) {
-      pages = pages.toList()..removeLast();
-    }
-
-    // screenshot each page
-    final pool = Pool((Platform.numberOfProcessors ~/ 2).clamp(1, 4));
-    final pageScreenshots = await Future.wait(
-      List.generate(
-        exportIndices.length,
-        (i) => pool.withResource(() async {
-          final pageIndex = exportIndices[i];
-          final uiImage = await screenshotPage(
-            coreInfo: coreInfo,
-            pageIndex: pageIndex,
-          );
-          final byteData = await uiImage.toByteData(
-            format: ui.ImageByteFormat.rawRgba,
-          );
-          assert(
-            byteData != null,
-            'Judging by the code, this should never be null.',
-          );
-          final imImage = im.Image.fromBytes(
-            width: uiImage.width,
-            height: uiImage.height,
-            bytes: byteData!.buffer,
-            order: im.ChannelOrder.rgba,
-          );
-          uiImage.dispose();
-          return imImage;
-        }),
-      ),
+    final exportIndices = resolveExportPageIndices(
+      coreInfo,
+      pageIndices: pageIndices,
     );
 
-    for (int i = 0; i < pageScreenshots.length; ++i) {
-      final page = pages[exportIndices[i]];
+    // Rasterize and add one page at a time using compressed PNG bytes so
+    // multi-page exports do not retain all raw RGBA bitmaps in RAM at once.
+    for (final pageIndex in exportIndices) {
+      final page = coreInfo.pages[pageIndex];
       final pageSize = page.size;
+      final uiImage = await screenshotPage(
+        coreInfo: coreInfo,
+        pageIndex: pageIndex,
+      );
+      final pw.MemoryImage rasterBackground;
+      try {
+        final byteData = await uiImage.toByteData(
+          format: ui.ImageByteFormat.png,
+        );
+        assert(
+          byteData != null,
+          'Judging by the code, this should never be null.',
+        );
+        rasterBackground = pw.MemoryImage(byteData!.buffer.asUint8List());
+      } finally {
+        uiImage.dispose();
+      }
+
       pdf.addPage(
         pw.Page(
           pageFormat: PdfPageFormat(pageSize.width, pageSize.height),
@@ -222,7 +219,7 @@ abstract class EditorExporter {
                   }
                 },
                 child: pw.Image(
-                  pw.ImageImage(pageScreenshots[i]),
+                  rasterBackground,
                   width: pageSize.width,
                   height: pageSize.height,
                 ),

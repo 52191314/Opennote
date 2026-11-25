@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 part of 'editor.dart';
 
 extension EditorMediaImport on EditorState {
@@ -490,18 +491,39 @@ extension EditorMediaImport on EditorState {
     );
   }
 
+  /// Computes a crisp, OOM-safe pixel ratio for PNG exports.
+  ///
+  /// Defaults to [desiredPixelRatio] (`2.5x` for Retina/print clarity) while
+  /// clamping so the rasterized longest side never exceeds
+  /// [maxRasterizableSize].
+  @visibleForTesting
+  static double computePngExportPixelRatio(
+    Size pageSize, {
+    double desiredPixelRatio = 2.5,
+    double maxRasterizableSize = 4096.0,
+  }) {
+    final longestSide = pageSize.longestSide;
+    if (!longestSide.isFinite || longestSide <= 0) {
+      return desiredPixelRatio.clamp(1.0, 3.0);
+    }
+    final maxSafeRatio = maxRasterizableSize / longestSide;
+    final ratio = desiredPixelRatio < maxSafeRatio
+        ? desiredPixelRatio
+        : maxSafeRatio;
+    return ratio.clamp(0.25, 3.0);
+  }
+
   /// Exports the current page as a PNG image file.
   ///
-  /// This captures the canvas natively via [EditorExporter.screenshotPage],
-  /// which guarantees the correct background color and omits UI elements
-  /// like selection bounds or the text cursor. It computes a dynamic [pixelRatio]
-  /// to ensure high quality while averting Out-Of-Memory exceptions on large canvases.
-  Future exportAsPng(BuildContext context) async {
+  /// Captures the canvas natively via [EditorExporter.screenshotPage] at a
+  /// Retina-grade [pixelRatio] (default `2.5x`), automatically clamped by
+  /// [computePngExportPixelRatio] to avoid OOM on oversized canvases.
+  Future exportAsPng(BuildContext context, {double pixelRatio = 2.5}) async {
     final page = coreInfo.pages[currentPageIndex];
-
-    const maxRasterizableSize = 3000.0;
-    var targetPixelRatio = maxRasterizableSize / page.size.longestSide;
-    if (targetPixelRatio > 1) targetPixelRatio = 1;
+    final targetPixelRatio = computePngExportPixelRatio(
+      page.size,
+      desiredPixelRatio: pixelRatio,
+    );
 
     try {
       final image = await EditorExporter.screenshotPage(
@@ -510,13 +532,18 @@ extension EditorMediaImport on EditorState {
         rasterizeAllStrokes: true,
         pixelRatio: targetPixelRatio,
       );
-      final pngBytes = await image.toByteData(format: .png);
-      image.dispose();
+      final ByteData? pngBytes;
+      try {
+        pngBytes = await image.toByteData(format: .png);
+      } finally {
+        image.dispose();
+      }
+      if (pngBytes == null) return;
 
       if (!context.mounted) return;
       await FileManager.exportFile(
         '${coreInfo.fileName}_page_${currentPageIndex + 1}.png',
-        pngBytes!.buffer.asUint8List(),
+        pngBytes.buffer.asUint8List(),
         isImage: true,
         context: context,
       );
