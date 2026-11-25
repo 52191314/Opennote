@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
 import 'package:saber/components/theming/adaptive_circular_progress_indicator.dart';
 import 'package:saber/i18n/strings.g.dart';
@@ -65,7 +68,7 @@ class _ExportBarState extends State<ExportBar> {
         builder: (context) {
           return TextButton(
             onPressed: _onPressed(widget.exportAsSba, context),
-            child: _buttonChild(widget.exportAsSba, 'SBA'),
+            child: _buttonChild(widget.exportAsSba, 'Archive (.sba)'),
           );
         },
       ),

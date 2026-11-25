@@ -1,7 +1,9 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Modified with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:saber/components/toolbar/editor_toolbar_actions.dart';
 import 'package:saber/components/toolbar/opennote/toolbar_primitives.dart';
 import 'package:saber/components/toolbar/selection_bar.dart';
@@ -31,12 +33,14 @@ class OpennoteLassoSubBar extends StatelessWidget {
       children: [
         FilterChip(
           visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           label: Text(
             t.editor.lasso.handwriting,
             style: const TextStyle(fontSize: 11),
           ),
           selected: stows.lassoSelectHandwriting.value,
           onSelected: (val) {
+            HapticFeedback.selectionClick();
             stows.lassoSelectHandwriting.value = val;
             onStateChanged();
           },
@@ -44,12 +48,14 @@ class OpennoteLassoSubBar extends StatelessWidget {
         const SizedBox(width: 4),
         FilterChip(
           visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           label: Text(
             t.editor.lasso.images,
             style: const TextStyle(fontSize: 11),
           ),
           selected: stows.lassoSelectImages.value,
           onSelected: (val) {
+            HapticFeedback.selectionClick();
             stows.lassoSelectImages.value = val;
             onStateChanged();
           },
@@ -57,12 +63,14 @@ class OpennoteLassoSubBar extends StatelessWidget {
         const SizedBox(width: 4),
         FilterChip(
           visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           label: Text(
             t.editor.lasso.textBoxes,
             style: const TextStyle(fontSize: 11),
           ),
           selected: stows.lassoSelectText.value,
           onSelected: (val) {
+            HapticFeedback.selectionClick();
             stows.lassoSelectText.value = val;
             onStateChanged();
           },
@@ -70,12 +78,14 @@ class OpennoteLassoSubBar extends StatelessWidget {
         const SizedBox(width: 4),
         FilterChip(
           visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           label: Text(
             t.editor.tape.short,
             style: const TextStyle(fontSize: 11),
           ),
           selected: stows.lassoSelectTape.value,
           onSelected: (val) {
+            HapticFeedback.selectionClick();
             stows.lassoSelectTape.value = val;
             onStateChanged();
           },

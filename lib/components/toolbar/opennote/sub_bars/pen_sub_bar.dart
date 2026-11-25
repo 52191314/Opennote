@@ -1,7 +1,9 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Modified with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:saber/components/toolbar/editor_toolbar_actions.dart';
 import 'package:saber/components/toolbar/opennote/toolbar_primitives.dart';
 import 'package:saber/components/toolbar/pen_tray_bar.dart';
@@ -52,17 +54,20 @@ class OpennotePenSubBar extends StatelessWidget {
         Tooltip(
           message: t.editor.toolbar.toggleColors,
           child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: onToggleColorOptions,
+            borderRadius: BorderRadius.circular(18),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onToggleColorOptions();
+            },
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.4,
+                  alpha: 0.45,
                 ),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.45),
                   width: 0.75,
                 ),
               ),

@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Modified with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'package:flutter/material.dart';
@@ -26,7 +27,7 @@ class OpennoteStudyTapeSubBar extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         ActionChip(
-          visualDensity: VisualDensity.standard,
+          visualDensity: VisualDensity.compact,
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           avatar: const Icon(Icons.visibility_off_rounded, size: 14),
           label: Text(
@@ -35,9 +36,9 @@ class OpennoteStudyTapeSubBar extends StatelessWidget {
           ),
           onPressed: actions.onConcealAllTape,
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 5),
         ActionChip(
-          visualDensity: VisualDensity.standard,
+          visualDensity: VisualDensity.compact,
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           avatar: const Icon(Icons.visibility_rounded, size: 14),
           label: Text(
@@ -48,7 +49,7 @@ class OpennoteStudyTapeSubBar extends StatelessWidget {
         ),
         ToolbarGroupDivider(colorScheme: colorScheme),
         ActionChip(
-          visualDensity: VisualDensity.standard,
+          visualDensity: VisualDensity.compact,
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           avatar: const Icon(Icons.palette_outlined, size: 14),
           label: Text(
