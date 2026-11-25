@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:saber/i18n/strings.g.dart';
 
 /// Canonical subscription product identifiers offered during onboarding.
 abstract final class OnboardingPlanSku {
@@ -40,8 +41,6 @@ class OnboardingSuperpower {
 enum OnboardingPersona {
   /// Technical schematics, architecture diagrams, and drafting.
   engineeringDiagrams(
-    title: 'Engineering & Diagrams',
-    subtitle: 'System schematics, circuit sketches, and precision drafting.',
     icon: Icons.architecture_rounded,
     recommendedPaperTemplate: 'Blueprint Engineering Grid',
     recommendedTemplateId: 'grid',
@@ -55,35 +54,10 @@ enum OnboardingPersona {
       'Infinite blueprint canvas with multi-layer vector ink',
       'High-resolution PDF & vector SVG exports for technical docs',
     ],
-    superpowers: [
-      OnboardingSuperpower(
-        icon: Icons.straighten_rounded,
-        title: 'Drafting Ruler & Snap Shapes',
-        subtitle:
-            'Draw razor-sharp straight lines, exact angles, and clean blocks that snap effortlessly.',
-        badge: 'Precision',
-      ),
-      OnboardingSuperpower(
-        icon: Icons.grid_4x4_rounded,
-        title: 'Infinite Blueprint Canvas',
-        subtitle:
-            'Expand complex architecture flows in any direction without hitting page margins.',
-        badge: 'Unbounded',
-      ),
-      OnboardingSuperpower(
-        icon: Icons.gesture_rounded,
-        title: '120Hz Vector Ink Engine',
-        subtitle:
-            'Zero-lag stylus response with crisp zoom-independent vector strokes.',
-        badge: '120Hz Ink',
-      ),
-    ],
   ),
 
   /// University lectures, STEM coursework, and exam preparation.
   universityNotes(
-    title: 'University & Lecture Notes',
-    subtitle: 'Fast lecture capture, STEM formulas, and active-recall exams.',
     icon: Icons.school_rounded,
     recommendedPaperTemplate: 'Cornell Active-Recall Grid',
     recommendedTemplateId: 'cornell',
@@ -97,35 +71,10 @@ enum OnboardingPersona {
       'Cornell, lined, and math grid templates ready out of the box',
       'Scribble-to-erase & circle-to-select keep up with fast lectures',
     ],
-    superpowers: [
-      OnboardingSuperpower(
-        icon: Icons.visibility_off_rounded,
-        title: 'Study Tape & Active Recall',
-        subtitle:
-            'Mask key formulas and definitions, then tap to reveal while quizzing yourself.',
-        badge: 'Exam Mode',
-      ),
-      OnboardingSuperpower(
-        icon: Icons.view_quilt_rounded,
-        title: 'Cornell & STEM Templates',
-        subtitle:
-            'Structured cue columns, summary footers, and clean math grids for every course.',
-        badge: 'Structured',
-      ),
-      OnboardingSuperpower(
-        icon: Icons.auto_fix_high_rounded,
-        title: 'Scribble-to-Erase Gestures',
-        subtitle:
-            'Scratch out mistakes naturally without ever switching tools mid-lecture.',
-        badge: 'Zero Friction',
-      ),
-    ],
   ),
 
   /// Reading, highlighting, and marking up academic or work PDFs.
   pdfAnnotation(
-    title: 'PDF & Paper Annotation',
-    subtitle: 'Research papers, textbooks, contracts, and margin commentary.',
     icon: Icons.picture_as_pdf_rounded,
     recommendedPaperTemplate: 'Infinite-Margin PDF Sheet',
     recommendedTemplateId: 'blank',
@@ -139,35 +88,10 @@ enum OnboardingPersona {
       'Infinite margin expansion for deep paper commentary',
       'Lossless vector PDF export with searchable layers intact',
     ],
-    superpowers: [
-      OnboardingSuperpower(
-        icon: Icons.dark_mode_rounded,
-        title: 'PDF Dark Mode & Smart Ink',
-        subtitle:
-            'Invert harsh white pages for late-night reading while keeping ink legible.',
-        badge: 'Eye Comfort',
-      ),
-      OnboardingSuperpower(
-        icon: Icons.open_in_full_rounded,
-        title: 'Infinite Margin Notes',
-        subtitle:
-            'Write spacious proofs and summaries beside dense PDF columns.',
-        badge: 'Extra Space',
-      ),
-      OnboardingSuperpower(
-        icon: Icons.layers_rounded,
-        title: 'Non-Destructive Markup',
-        subtitle:
-            'Keep highlights, ink, and sticky notes cleanly organized and exportable.',
-        badge: 'Clean Export',
-      ),
-    ],
   ),
 
   /// Freeform mindmaps, product ideation, and visual thinking.
   visualBrainstorming(
-    title: 'Visual Brainstorming',
-    subtitle: 'Mindmaps, product flows, moodboards, and freeform ideation.',
     icon: Icons.hub_rounded,
     recommendedPaperTemplate: 'Infinite Dot Canvas',
     recommendedTemplateId: 'dots',
@@ -181,34 +105,9 @@ enum OnboardingPersona {
       'Reusable element & sticker tray for rapid visual framing',
       'Instant circle-to-select lasso for reorganizing ideas fast',
     ],
-    superpowers: [
-      OnboardingSuperpower(
-        icon: Icons.all_inclusive_rounded,
-        title: 'Unbounded Infinite Canvas',
-        subtitle:
-            'Pan and zoom freely across massive visual boards with zero frame drops.',
-        badge: 'Infinite',
-      ),
-      OnboardingSuperpower(
-        icon: Icons.polyline_rounded,
-        title: 'Circle-to-Select Lasso',
-        subtitle:
-            'Draw a quick loop around any cluster of ideas to move, scale, or recolor it.',
-        badge: 'Fluid Flow',
-      ),
-      OnboardingSuperpower(
-        icon: Icons.dashboard_customize_rounded,
-        title: 'Reusable Element Tray',
-        subtitle:
-            'Save diagrams, callouts, and visual blocks to stamp onto any future board.',
-        badge: 'Reusable',
-      ),
-    ],
   );
 
   const OnboardingPersona({
-    required this.title,
-    required this.subtitle,
     required this.icon,
     required this.recommendedPaperTemplate,
     required this.recommendedTemplateId,
@@ -216,14 +115,7 @@ enum OnboardingPersona {
     required this.starterNotebookTitle,
     required this.trialHeadline,
     required this.trialBenefits,
-    required this.superpowers,
   });
-
-  /// Display title of the persona.
-  final String title;
-
-  /// Short description shown on the persona selection card.
-  final String subtitle;
 
   /// Icon representing this workflow.
   final IconData icon;
@@ -246,8 +138,123 @@ enum OnboardingPersona {
   /// Tailored list of Pro benefits highlighted on the Step 4 trial offer.
   final List<String> trialBenefits;
 
+  /// Localized display title of the persona.
+  String get title => switch (this) {
+    OnboardingPersona.engineeringDiagrams =>
+      t.onboarding.flow.personas.engineeringTitle,
+    OnboardingPersona.universityNotes =>
+      t.onboarding.flow.personas.universityTitle,
+    OnboardingPersona.pdfAnnotation => t.onboarding.flow.personas.pdfTitle,
+    OnboardingPersona.visualBrainstorming =>
+      t.onboarding.flow.personas.brainstormTitle,
+  };
+
+  /// Localized short description shown on the persona selection card.
+  String get subtitle => switch (this) {
+    OnboardingPersona.engineeringDiagrams =>
+      t.onboarding.flow.personas.engineeringSubtitle,
+    OnboardingPersona.universityNotes =>
+      t.onboarding.flow.personas.universitySubtitle,
+    OnboardingPersona.pdfAnnotation => t.onboarding.flow.personas.pdfSubtitle,
+    OnboardingPersona.visualBrainstorming =>
+      t.onboarding.flow.personas.brainstormSubtitle,
+  };
+
   /// Three persona-specific capabilities previewed on Step 3.
-  final List<OnboardingSuperpower> superpowers;
+  List<OnboardingSuperpower> get superpowers => switch (this) {
+    OnboardingPersona.engineeringDiagrams => [
+      OnboardingSuperpower(
+        icon: Icons.straighten_rounded,
+        title: t.onboarding.flow.personas.engineeringPower1,
+        subtitle:
+            'Draw razor-sharp straight lines, exact angles, and clean blocks that snap effortlessly.',
+        badge: 'Precision',
+      ),
+      OnboardingSuperpower(
+        icon: Icons.grid_4x4_rounded,
+        title: t.onboarding.flow.personas.engineeringPower2,
+        subtitle:
+            'Expand complex architecture flows in any direction without hitting page margins.',
+        badge: 'Unbounded',
+      ),
+      const OnboardingSuperpower(
+        icon: Icons.gesture_rounded,
+        title: '120Hz Vector Ink Engine',
+        subtitle:
+            'Zero-lag stylus response with crisp zoom-independent vector strokes.',
+        badge: '120Hz Ink',
+      ),
+    ],
+    OnboardingPersona.universityNotes => [
+      OnboardingSuperpower(
+        icon: Icons.visibility_off_rounded,
+        title: t.onboarding.flow.personas.universityPower1,
+        subtitle:
+            'Mask key formulas and definitions, then tap to reveal while quizzing yourself.',
+        badge: 'Exam Mode',
+      ),
+      OnboardingSuperpower(
+        icon: Icons.view_quilt_rounded,
+        title: t.onboarding.flow.personas.universityPower2,
+        subtitle:
+            'Structured cue columns, summary footers, and clean math grids for every course.',
+        badge: 'Structured',
+      ),
+      OnboardingSuperpower(
+        icon: Icons.auto_fix_high_rounded,
+        title: t.onboarding.flow.personas.universityPower3,
+        subtitle:
+            'Scratch out mistakes naturally without ever switching tools mid-lecture.',
+        badge: 'Zero Friction',
+      ),
+    ],
+    OnboardingPersona.pdfAnnotation => [
+      OnboardingSuperpower(
+        icon: Icons.dark_mode_rounded,
+        title: t.onboarding.flow.personas.pdfPower1,
+        subtitle:
+            'Invert harsh white pages for late-night reading while keeping ink legible.',
+        badge: 'Eye Comfort',
+      ),
+      OnboardingSuperpower(
+        icon: Icons.open_in_full_rounded,
+        title: t.onboarding.flow.personas.pdfPower2,
+        subtitle:
+            'Write spacious proofs and summaries beside dense PDF columns.',
+        badge: 'Extra Space',
+      ),
+      OnboardingSuperpower(
+        icon: Icons.layers_rounded,
+        title: t.onboarding.flow.personas.pdfPower3,
+        subtitle:
+            'Keep highlights, ink, and sticky notes cleanly organized and exportable.',
+        badge: 'Clean Export',
+      ),
+    ],
+    OnboardingPersona.visualBrainstorming => [
+      OnboardingSuperpower(
+        icon: Icons.all_inclusive_rounded,
+        title: t.onboarding.flow.personas.brainstormPower1,
+        subtitle:
+            'Pan and zoom freely across massive visual boards with zero frame drops.',
+        badge: 'Infinite',
+      ),
+      OnboardingSuperpower(
+        icon: Icons.polyline_rounded,
+        title: t.onboarding.flow.personas.brainstormPower2,
+        subtitle:
+            'Draw a quick loop around any cluster of ideas to move, scale, or recolor it.',
+        badge: 'Fluid Flow',
+      ),
+      OnboardingSuperpower(
+        icon: Icons.dashboard_customize_rounded,
+        title: t.onboarding.flow.personas.brainstormPower3,
+        subtitle:
+            'Save diagrams, callouts, and visual blocks to stamp onto any future board.',
+        badge: 'Reusable',
+      ),
+    ],
+  };
 }
 
 /// Outcome returned when [OpennoteOnboardingFlow] completes or is dismissed.

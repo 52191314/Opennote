@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:saber/components/onboarding/onboarding_models.dart';
+import 'package:saber/i18n/strings.g.dart';
 
 /// Step 4 ethical soft-paywall presenting a transparent 7-day Opennote Pro trial.
 class OnboardingTrialStep extends StatelessWidget {
@@ -156,7 +157,7 @@ class OnboardingTrialStep extends StatelessWidget {
               Center(
                 child: TextButton(
                   onPressed: isBusy ? null : onContinueFree,
-                  child: const Text('Continue with Free'),
+                  child: Text(t.onboarding.flow.continueWithFree),
                 ),
               ),
               const SizedBox(height: 4),
@@ -172,7 +173,7 @@ class OnboardingTrialStep extends StatelessWidget {
                       visualDensity: VisualDensity.compact,
                       textStyle: theme.textTheme.labelSmall,
                     ),
-                    child: const Text('Restore Purchases'),
+                    child: Text(t.onboarding.flow.restorePurchases),
                   ),
                   Text(
                     '•',
@@ -186,7 +187,7 @@ class OnboardingTrialStep extends StatelessWidget {
                       visualDensity: VisualDensity.compact,
                       textStyle: theme.textTheme.labelSmall,
                     ),
-                    child: const Text('Terms'),
+                    child: Text(t.onboarding.flow.terms),
                   ),
                   Text(
                     '•',
@@ -200,7 +201,7 @@ class OnboardingTrialStep extends StatelessWidget {
                       visualDensity: VisualDensity.compact,
                       textStyle: theme.textTheme.labelSmall,
                     ),
-                    child: const Text('Privacy'),
+                    child: Text(t.onboarding.flow.privacy),
                   ),
                 ],
               ),
@@ -235,22 +236,22 @@ class _TrialTimelineCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _TimelineItem(
+            _TimelineItem(
               icon: Icons.lock_open_rounded,
-              title: 'Today: Instant Full Access',
+              title: t.onboarding.flow.timelineTodayTitle,
               subtitle: 'Every Pro tool unlocked with \$0 due today.',
             ),
             const SizedBox(height: 8),
-            const _TimelineItem(
+            _TimelineItem(
               icon: Icons.notifications_active_outlined,
-              title: 'Day 5: Renewal Reminder',
-              subtitle: 'We remind you before your trial ends. No surprises.',
+              title: t.onboarding.flow.timelineDay5Title,
+              subtitle: t.onboarding.flow.timelineDay5Subtitle,
             ),
             const SizedBox(height: 8),
-            const _TimelineItem(
+            _TimelineItem(
               icon: Icons.verified_outlined,
-              title: 'Day 7: Trial Converts',
-              subtitle: 'Cancel anytime in one tap before renewal.',
+              title: t.onboarding.flow.timelineDay7Title,
+              subtitle: t.onboarding.flow.timelineDay7Subtitle,
             ),
             Divider(
               height: 20,
@@ -342,7 +343,7 @@ class _PlanSelectorRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final annualCard = _PlanOptionCard(
-      title: 'Annual',
+      title: t.onboarding.flow.annual,
       priceLabel: '\$29.99/yr',
       subPriceLabel: '\$2.50/mo • 7-day free trial',
       badge: 'SAVE 50%',
@@ -351,7 +352,7 @@ class _PlanSelectorRow extends StatelessWidget {
     );
 
     final monthlyCard = _PlanOptionCard(
-      title: 'Monthly',
+      title: t.onboarding.flow.monthly,
       priceLabel: '\$4.99/mo',
       subPriceLabel: 'Flexible monthly billing',
       isSelected: selectedPlanSku == OnboardingPlanSku.monthly,

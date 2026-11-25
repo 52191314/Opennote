@@ -388,6 +388,9 @@ class Translations$onboarding$en {
 
 	/// en: 'Get Started'
 	String get getStarted => 'Get Started';
+
+	late final Translations$onboarding$flow$en flow = Translations$onboarding$flow$en.internal(_root);
+	late final Translations$onboarding$studioActions$en studioActions = Translations$onboarding$studioActions$en.internal(_root);
 }
 
 // Path: home.tabs
@@ -2452,6 +2455,104 @@ class Translations$onboarding$elements$en {
 	String get tagTray => 'Elements Tray';
 }
 
+// Path: onboarding.flow
+class Translations$onboarding$flow$en {
+	Translations$onboarding$flow$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Back'
+	String get back => 'Back';
+
+	/// en: 'Skip'
+	String get skip => 'Skip';
+
+	/// en: 'Continue with Free'
+	String get continueWithFree => 'Continue with Free';
+
+	/// en: 'Restore Purchases'
+	String get restorePurchases => 'Restore Purchases';
+
+	/// en: 'Terms'
+	String get terms => 'Terms';
+
+	/// en: 'Privacy'
+	String get privacy => 'Privacy';
+
+	/// en: 'Annual'
+	String get annual => 'Annual';
+
+	/// en: 'Monthly'
+	String get monthly => 'Monthly';
+
+	/// en: 'Today: Instant Full Access'
+	String get timelineTodayTitle => 'Today: Instant Full Access';
+
+	/// en: 'Day 5: Renewal Reminder'
+	String get timelineDay5Title => 'Day 5: Renewal Reminder';
+
+	/// en: 'We remind you before your trial ends. No surprises.'
+	String get timelineDay5Subtitle => 'We remind you before your trial ends. No surprises.';
+
+	/// en: 'Day 7: Trial Converts'
+	String get timelineDay7Title => 'Day 7: Trial Converts';
+
+	/// en: 'Cancel anytime in one tap before renewal.'
+	String get timelineDay7Subtitle => 'Cancel anytime in one tap before renewal.';
+
+	/// en: 'Silky-smooth, zero-lag vector strokes.'
+	String get welcomeInkSubtitle => 'Silky-smooth, zero-lag vector strokes.';
+
+	/// en: 'Precision Drafting'
+	String get welcomeDraftingTitle => 'Precision Drafting';
+
+	/// en: 'Snap shapes, angles, and rulers on demand.'
+	String get welcomeDraftingSubtitle => 'Snap shapes, angles, and rulers on demand.';
+
+	/// en: 'Infinite Canvas'
+	String get welcomeInfiniteTitle => 'Infinite Canvas';
+
+	/// en: 'Unbounded space for sprawling diagrams.'
+	String get welcomeInfiniteSubtitle => 'Unbounded space for sprawling diagrams.';
+
+	/// en: 'Local-First Privacy'
+	String get welcomePrivacyTitle => 'Local-First Privacy';
+
+	/// en: 'Your notes stay encrypted and yours.'
+	String get welcomePrivacySubtitle => 'Your notes stay encrypted and yours.';
+
+	late final Translations$onboarding$flow$personas$en personas = Translations$onboarding$flow$personas$en.internal(_root);
+}
+
+// Path: onboarding.studioActions
+class Translations$onboarding$studioActions$en {
+	Translations$onboarding$studioActions$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Insert Page'
+	String get insertPage => 'Insert Page';
+
+	/// en: 'Page Grid'
+	String get pageGrid => 'Page Grid';
+
+	/// en: 'SVG'
+	String get exportSvg => 'SVG';
+
+	/// en: 'Image'
+	String get exportImage => 'Image';
+
+	/// en: 'Print'
+	String get exportPrint => 'Print';
+
+	/// en: 'Share'
+	String get exportShare => 'Share';
+}
+
 // Path: sentry.consent.description
 class Translations$sentry$consent$description$en {
 	Translations$sentry$consent$description$en.internal(this._root);
@@ -2652,4 +2753,70 @@ class Translations$editor$menu$bgPatterns$en {
 
 	/// en: 'Cornell'
 	String get cornell => 'Cornell';
+}
+
+// Path: onboarding.flow.personas
+class Translations$onboarding$flow$personas$en {
+	Translations$onboarding$flow$personas$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Engineering & Diagrams'
+	String get engineeringTitle => 'Engineering & Diagrams';
+
+	/// en: 'System schematics, circuit sketches, and precision drafting.'
+	String get engineeringSubtitle => 'System schematics, circuit sketches, and precision drafting.';
+
+	/// en: 'Drafting Ruler & Snap Shapes'
+	String get engineeringPower1 => 'Drafting Ruler & Snap Shapes';
+
+	/// en: 'Infinite Blueprint Canvas'
+	String get engineeringPower2 => 'Infinite Blueprint Canvas';
+
+	/// en: 'University & Lecture Notes'
+	String get universityTitle => 'University & Lecture Notes';
+
+	/// en: 'Fast lecture capture, STEM formulas, and active-recall exams.'
+	String get universitySubtitle => 'Fast lecture capture, STEM formulas, and active-recall exams.';
+
+	/// en: 'Study Tape & Active Recall'
+	String get universityPower1 => 'Study Tape & Active Recall';
+
+	/// en: 'Cornell & STEM Templates'
+	String get universityPower2 => 'Cornell & STEM Templates';
+
+	/// en: 'Scribble-to-Erase Gestures'
+	String get universityPower3 => 'Scribble-to-Erase Gestures';
+
+	/// en: 'PDF & Paper Annotation'
+	String get pdfTitle => 'PDF & Paper Annotation';
+
+	/// en: 'Research papers, textbooks, contracts, and margin commentary.'
+	String get pdfSubtitle => 'Research papers, textbooks, contracts, and margin commentary.';
+
+	/// en: 'PDF Dark Mode & Smart Ink'
+	String get pdfPower1 => 'PDF Dark Mode & Smart Ink';
+
+	/// en: 'Infinite Margin Notes'
+	String get pdfPower2 => 'Infinite Margin Notes';
+
+	/// en: 'Non-Destructive Markup'
+	String get pdfPower3 => 'Non-Destructive Markup';
+
+	/// en: 'Visual Brainstorming'
+	String get brainstormTitle => 'Visual Brainstorming';
+
+	/// en: 'Mindmaps, product flows, moodboards, and freeform ideation.'
+	String get brainstormSubtitle => 'Mindmaps, product flows, moodboards, and freeform ideation.';
+
+	/// en: 'Unbounded Infinite Canvas'
+	String get brainstormPower1 => 'Unbounded Infinite Canvas';
+
+	/// en: 'Circle-to-Select Lasso'
+	String get brainstormPower2 => 'Circle-to-Select Lasso';
+
+	/// en: 'Reusable Element Tray'
+	String get brainstormPower3 => 'Reusable Element Tray';
 }

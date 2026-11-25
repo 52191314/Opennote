@@ -60,7 +60,7 @@ class ExportHubSection extends StatelessWidget {
       _ExportAction(
         key: const ValueKey('export_hub_svg'),
         icon: Icons.polyline_rounded,
-        label: 'SVG',
+        label: t.onboarding.studioActions.exportSvg,
         color: colorScheme.tertiary,
         showProBadge: svgGated,
         onTap: svgCallback != null
@@ -76,7 +76,7 @@ class ExportHubSection extends StatelessWidget {
       _ExportAction(
         key: const ValueKey('export_hub_image'),
         icon: Icons.image_rounded,
-        label: 'Image',
+        label: t.onboarding.studioActions.exportImage,
         color: colorScheme.secondary,
         onTap: imageCallback != null
             ? () => _trigger(context, imageCallback)
@@ -85,7 +85,7 @@ class ExportHubSection extends StatelessWidget {
       _ExportAction(
         key: const ValueKey('export_hub_print'),
         icon: Icons.print_rounded,
-        label: 'Print',
+        label: t.onboarding.studioActions.exportPrint,
         color: colorScheme.onSurfaceVariant,
         onTap: printCallback != null
             ? () => _trigger(context, printCallback)
@@ -94,7 +94,7 @@ class ExportHubSection extends StatelessWidget {
       _ExportAction(
         key: const ValueKey('export_hub_share'),
         icon: Icons.ios_share_rounded,
-        label: 'Share',
+        label: t.onboarding.studioActions.exportShare,
         color: colorScheme.primary,
         onTap: shareCallback != null
             ? () => _trigger(context, shareCallback)

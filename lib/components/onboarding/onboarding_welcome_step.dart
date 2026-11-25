@@ -4,32 +4,33 @@ library;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:saber/i18n/strings.g.dart';
 
 /// Step 1 hero screen introducing Opennote's speed, precision, and privacy.
 class OnboardingWelcomeStep extends StatelessWidget {
   /// Creates the Step 1 welcome hero widget.
   const OnboardingWelcomeStep({super.key});
 
-  static const _highlights = [
+  static List<_WelcomeHighlight> get _highlights => [
     _WelcomeHighlight(
       icon: Icons.bolt_rounded,
       title: '120Hz Ink',
-      subtitle: 'Silky-smooth, zero-lag vector strokes.',
+      subtitle: t.onboarding.flow.welcomeInkSubtitle,
     ),
     _WelcomeHighlight(
       icon: Icons.straighten_rounded,
-      title: 'Precision Drafting',
-      subtitle: 'Snap shapes, angles, and rulers on demand.',
+      title: t.onboarding.flow.welcomeDraftingTitle,
+      subtitle: t.onboarding.flow.welcomeDraftingSubtitle,
     ),
     _WelcomeHighlight(
       icon: Icons.all_inclusive_rounded,
-      title: 'Infinite Canvas',
-      subtitle: 'Unbounded space for sprawling diagrams.',
+      title: t.onboarding.flow.welcomeInfiniteTitle,
+      subtitle: t.onboarding.flow.welcomeInfiniteSubtitle,
     ),
     _WelcomeHighlight(
       icon: Icons.lock_outline_rounded,
-      title: 'Local-First Privacy',
-      subtitle: 'Your notes stay encrypted and yours.',
+      title: t.onboarding.flow.welcomePrivacyTitle,
+      subtitle: t.onboarding.flow.welcomePrivacySubtitle,
     ),
   ];
 

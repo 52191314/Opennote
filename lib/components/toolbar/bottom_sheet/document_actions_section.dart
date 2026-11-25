@@ -206,7 +206,7 @@ class DocumentActionsSection extends StatelessWidget {
                         onInsertPage!();
                       },
                       icon: const Icon(Icons.note_add_outlined, size: 17),
-                      label: const Text('Insert Page'),
+                      label: Text(t.onboarding.studioActions.insertPage),
                     ),
                   if (onOpenPageGrid != null)
                     ElevatedButton.icon(
@@ -217,7 +217,7 @@ class DocumentActionsSection extends StatelessWidget {
                         onOpenPageGrid!();
                       },
                       icon: const Icon(Icons.grid_view_rounded, size: 17),
-                      label: const Text('Page Grid'),
+                      label: Text(t.onboarding.studioActions.pageGrid),
                     ),
                   ElevatedButton.icon(
                     style: actionButtonStyle,

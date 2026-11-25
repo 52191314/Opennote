@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'dart:io';
@@ -81,8 +82,8 @@ void main() {
       );
 
       test('T1.5: ios/Podfile platform declaration configuration', () {
-        // Podfile should reference ios platform target (e.g. 14.0)
-        expect(podfileContent, contains("platform :ios, '14.0'"));
+        // Podfile should reference ios platform target 15.0 for StoreKit 2
+        expect(podfileContent, contains("platform :ios, '15.0'"));
       });
 
       // -------------------------------------------------------------

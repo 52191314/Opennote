@@ -317,12 +317,6 @@ class _LassoCalloutMenuState extends State<LassoCalloutMenu> {
                   ),
                   divider,
                   _CalloutButton(
-                    icon: Icons.control_point_duplicate_rounded,
-                    label: 'Duplicate',
-                    onTap: widget.onDuplicate,
-                  ),
-                  divider,
-                  _CalloutButton(
                     icon: Icons.delete_outline_rounded,
                     label: t.editor.actions.delete,
                     isDestructive: true,

@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Modified with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'dart:convert';
@@ -219,12 +220,12 @@ void main() {
       podfileContent = podfile.readAsStringSync();
     });
 
-    test('uncomments platform :ios, 14.0 specification', () {
+    test('uncomments platform :ios, 15.0 specification', () {
       final lines = podfileContent.split('\n');
       final activePlatformLines = lines.where(
         (line) =>
             line.trim().startsWith('platform :ios') ||
-            line.trim().startsWith("platform :ios, '14.0'"),
+            line.trim().startsWith("platform :ios, '15.0'"),
       );
 
       expect(
@@ -235,13 +236,16 @@ void main() {
 
       expect(
         activePlatformLines.first.trim(),
-        equals("platform :ios, '14.0'"),
-        reason: 'platform :ios must be uncommented and set to 14.0',
+        equals("platform :ios, '15.0'"),
+        reason:
+            'platform :ios must be uncommented and set to 15.0 for StoreKit 2',
       );
 
       // Ensure commented platform is not left behind
       final commentedPlatformLines = lines.where(
-        (line) => line.trim().startsWith("# platform :ios, '14.0'"),
+        (line) =>
+            line.trim().startsWith("# platform :ios, '14.0'") ||
+            line.trim().startsWith("# platform :ios, '15.0'"),
       );
       expect(
         commentedPlatformLines,

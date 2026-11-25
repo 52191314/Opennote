@@ -7,6 +7,7 @@ import 'package:saber/components/onboarding/onboarding_persona_step.dart';
 import 'package:saber/components/onboarding/onboarding_superpowers_step.dart';
 import 'package:saber/components/onboarding/onboarding_trial_step.dart';
 import 'package:saber/components/onboarding/onboarding_welcome_step.dart';
+import 'package:saber/i18n/strings.g.dart';
 
 /// Callback invoked when the user starts a trial or subscription in Step 4.
 ///
@@ -288,7 +289,7 @@ class _OnboardingTopBar extends StatelessWidget {
               if (isLastStep && onBack != null)
                 IconButton(
                   onPressed: onBack,
-                  tooltip: 'Back',
+                  tooltip: t.onboarding.flow.back,
                   icon: const Icon(Icons.arrow_back_rounded, size: 20),
                 )
               else
@@ -323,7 +324,10 @@ class _OnboardingTopBar extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              TextButton(onPressed: onSkip, child: const Text('Skip')),
+              TextButton(
+                onPressed: onSkip,
+                child: Text(t.onboarding.flow.skip),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -380,7 +384,10 @@ class _OnboardingBottomBar extends StatelessWidget {
         child: Row(
           children: [
             if (onBack != null)
-              OutlinedButton(onPressed: onBack, child: const Text('Back')),
+              OutlinedButton(
+                onPressed: onBack,
+                child: Text(t.onboarding.flow.back),
+              ),
             const Spacer(),
             FilledButton(
               onPressed: onContinue,

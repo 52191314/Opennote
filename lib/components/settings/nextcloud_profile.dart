@@ -41,12 +41,12 @@ class NextcloudProfile extends HookWidget {
     final loginStep = forceLoginStep ?? NcLoginPage.getCurrentStep();
     final heading = switch (loginStep) {
       .waitingForPrefs => '',
-      .nc => 'Cloud Sync (Nextcloud / WebDAV)',
+      .nc => t.login.status.loggedOut,
       .enc || .done => t.login.status.hi(u: stows.username.value),
     };
     final subheading = switch (loginStep) {
       .waitingForPrefs => '',
-      .nc => 'Connect Nextcloud or WebDAV to sync notebooks across devices',
+      .nc => 'Cloud Sync (Nextcloud / WebDAV) · Tap to connect',
       .enc => t.login.status.almostDone,
       .done => 'Cloud Sync connected · Nextcloud / WebDAV',
     };

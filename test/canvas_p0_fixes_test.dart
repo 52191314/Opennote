@@ -436,31 +436,28 @@ void main() {
     });
   });
 
-  group('P0 #7: LassoCalloutMenu onDuplicate wiring', () {
-    testWidgets('Duplicate button renders and triggers onDuplicate', (
-      tester,
-    ) async {
-      var duplicated = false;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: LassoCalloutMenu(
-                onCut: () {},
-                onCopy: () {},
-                onDuplicate: () => duplicated = true,
-                onDelete: () {},
-                onSetColor: (_) {},
-              ),
-            ),
+  group('P0 #7: LassoCalloutMenu onDuplicate contract', () {
+    testWidgets(
+      'preserves onDuplicate callback without duplicating selection bar button',
+      (tester) async {
+        var duplicated = false;
+        final menu = LassoCalloutMenu(
+          onCut: () {},
+          onCopy: () {},
+          onDuplicate: () => duplicated = true,
+          onDelete: () {},
+          onSetColor: (_) {},
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(body: Center(child: menu)),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Duplicate'), findsOneWidget);
-      await tester.tap(find.text('Duplicate'));
-      await tester.pumpAndSettle();
-      expect(duplicated, true);
-    });
+        expect(find.text('Duplicate'), findsNothing);
+        menu.onDuplicate();
+        expect(duplicated, true);
+      },
+    );
   });
 }
