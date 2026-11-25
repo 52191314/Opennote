@@ -156,7 +156,8 @@ class EditorState extends State<Editor>
   final _transformationController = TransformationController();
   double get scrollY {
     final transformation = _transformationController.value;
-    final scale = transformation.approxScale;
+    final rawScale = transformation.maxScale2D;
+    final scale = (rawScale.isFinite && rawScale > 0) ? rawScale : 1.0;
     final translation = transformation.getTranslation();
     final gestureDetector = _canvasGestureDetectorKey.currentState;
 

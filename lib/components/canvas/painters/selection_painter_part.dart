@@ -2,6 +2,11 @@
 part of '../_canvas_painter.dart';
 
 extension _SelectionPainter on CanvasPainter {
+  double get _invSelectionScale =>
+      (currentScale.isFinite && currentScale > 0 && currentScale < 1.0)
+      ? 1.0 / currentScale.clamp(0.02, 1.0)
+      : 1.0;
+
   void _drawSelection(Canvas canvas) {
     if (currentSelection == null) return;
     if (isDoneSelecting && currentSelection!.isEmpty) {
@@ -11,6 +16,8 @@ extension _SelectionPainter on CanvasPainter {
       page.selectionVertexHandles = null;
       return;
     }
+
+    final invScale = _invSelectionScale;
 
     // While actively drawing the lasso loop, show only a delicate in-progress contour
     if (!isDoneSelecting) {
@@ -27,11 +34,11 @@ extension _SelectionPainter on CanvasPainter {
       canvas.drawPath(
         dashPath(
           currentSelection!.path,
-          dashArray: CircularIntervalList([6, 4]),
+          dashArray: CircularIntervalList([6 * invScale, 4 * invScale]),
         ),
         Paint()
           ..color = primaryColor.withValues(alpha: 0.85)
-          ..strokeWidth = 1.4
+          ..strokeWidth = 1.4 * invScale
           ..style = PaintingStyle.stroke
           ..strokeCap = StrokeCap.round,
       );
@@ -56,11 +63,11 @@ extension _SelectionPainter on CanvasPainter {
       canvas.drawPath(
         dashPath(
           currentSelection!.path,
-          dashArray: CircularIntervalList([6, 4]),
+          dashArray: CircularIntervalList([6 * invScale, 4 * invScale]),
         ),
         Paint()
           ..color = primaryColor.withValues(alpha: 0.85)
-          ..strokeWidth = 1.4
+          ..strokeWidth = 1.4 * invScale
           ..style = PaintingStyle.stroke
           ..strokeCap = StrokeCap.round,
       );
@@ -98,19 +105,22 @@ extension _SelectionPainter on CanvasPainter {
     canvas.drawPath(
       dashPath(
         Path()..addRRect(rrect),
-        dashArray: CircularIntervalList([6, 4]),
+        dashArray: CircularIntervalList([6 * invScale, 4 * invScale]),
       ),
       Paint()
         ..color = primaryColor.withValues(alpha: 0.75)
-        ..strokeWidth = 1.3
+        ..strokeWidth = 1.3 * invScale
         ..style = PaintingStyle.stroke,
     );
 
     canvas.drawPath(
-      dashPath(currentSelection!.path, dashArray: CircularIntervalList([4, 4])),
+      dashPath(
+        currentSelection!.path,
+        dashArray: CircularIntervalList([4 * invScale, 4 * invScale]),
+      ),
       Paint()
         ..color = primaryColor.withValues(alpha: 0.25)
-        ..strokeWidth = 1.0
+        ..strokeWidth = 1.0 * invScale
         ..style = PaintingStyle.stroke,
     );
 

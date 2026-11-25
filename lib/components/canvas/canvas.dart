@@ -2,6 +2,9 @@
 /// 🤖 Modified with Grok 4.7
 library;
 
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:one_dollar_unistroke_recognizer/one_dollar_unistroke_recognizer.dart';
 import 'package:onyxsdk_pen/onyxsdk_pen.dart';
@@ -148,57 +151,75 @@ class Canvas extends StatelessWidget {
     }
   }
 
+  Widget _wrapOnyxArea(Widget inner) {
+    if (kIsWeb || !Platform.isAndroid) return inner;
+    return OnyxSdkPenArea(
+      refreshDelay: const Duration(seconds: 1),
+      strokeStyle: _getOnyxTool(currentTool),
+      strokeColor: _getOnyxColor(),
+      strokeWidth: _getOnyxWidth(),
+      child: inner,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final inner = InnerCanvas(
+      key: page.innerCanvasKey,
+      pageIndex: pageIndex,
+      redrawPageListenable: page,
+      width: page.size.width,
+      height: page.size.height,
+      textEditing: textEditing,
+      coreInfo: coreInfo,
+      currentStroke: currentStroke,
+      currentStrokeDetectedShape: currentStrokeDetectedShape,
+      currentSelection: currentSelection,
+      isDoneSelecting: isDoneSelecting,
+      onCutSelection: onCutSelection,
+      onCopySelection: onCopySelection,
+      onDuplicateSelection: onDuplicateSelection,
+      onDeleteSelection: onDeleteSelection,
+      onSetColor: onSetColor,
+      isResizeActive: isResizeActive,
+      onToggleResize: onToggleResize,
+      onReduceTextSize: onReduceTextSize,
+      onEnlargeTextSize: onEnlargeTextSize,
+      onTakeScreenshot: onTakeScreenshot,
+      onAddToElements: onAddToElements,
+      onBringToFront: onBringToFront,
+      onSendToBack: onSendToBack,
+      onSmoothen: onSmoothen,
+      cropPossible: cropPossible,
+      cropActive: cropActive,
+      onToggleCrop: onToggleCrop,
+      setAsBackground: setAsBackground,
+      currentToolIsSelect: currentTool.toolId == ToolId.select,
+      currentScale: currentScale,
+      viewportRect: coreInfo.isInfiniteCanvas ? viewportRect : null,
+    );
+
     if (coreInfo.isInfiniteCanvas) {
       return !placeholder
           ? SizedBox(
               width: page.size.width,
               height: page.size.height,
-              child: _withForeground(
-                OnyxSdkPenArea(
-                  refreshDelay: const Duration(seconds: 1),
-                  strokeStyle: _getOnyxTool(currentTool),
-                  strokeColor: _getOnyxColor(),
-                  strokeWidth: _getOnyxWidth(),
-                  child: InnerCanvas(
-                    key: page.innerCanvasKey,
-                    pageIndex: pageIndex,
-                    redrawPageListenable: page,
-                    width: page.size.width,
-                    height: page.size.height,
-                    textEditing: textEditing,
-                    coreInfo: coreInfo,
-                    currentStroke: currentStroke,
-                    currentStrokeDetectedShape: currentStrokeDetectedShape,
-                    currentSelection: currentSelection,
-                    isDoneSelecting: isDoneSelecting,
-                    onCutSelection: onCutSelection,
-                    onCopySelection: onCopySelection,
-                    onDuplicateSelection: onDuplicateSelection,
-                    onDeleteSelection: onDeleteSelection,
-                    onSetColor: onSetColor,
-                    isResizeActive: isResizeActive,
-                    onToggleResize: onToggleResize,
-                    onReduceTextSize: onReduceTextSize,
-                    onEnlargeTextSize: onEnlargeTextSize,
-                    onTakeScreenshot: onTakeScreenshot,
-                    onAddToElements: onAddToElements,
-                    onBringToFront: onBringToFront,
-                    onSendToBack: onSendToBack,
-                    onSmoothen: onSmoothen,
-                    cropPossible: cropPossible,
-                    cropActive: cropActive,
-                    onToggleCrop: onToggleCrop,
-                    setAsBackground: setAsBackground,
-                    currentToolIsSelect: currentTool.toolId == ToolId.select,
-                    currentScale: currentScale,
-                    viewportRect: viewportRect,
-                  ),
-                ),
-              ),
+              child: _withForeground(_wrapOnyxArea(inner)),
             )
           : SizedBox(width: page.size.width, height: page.size.height);
+    }
+
+    final pageContent = !placeholder
+        ? SizedBox(
+            width: page.size.width,
+            height: page.size.height,
+            child: _withForeground(_wrapOnyxArea(inner)),
+          )
+        : SizedBox(width: page.size.width, height: page.size.height);
+
+    // Skip expensive Gaussian shadow blur and rounded-rect clip when zoomed far out
+    if (currentScale >= 0.0005 && currentScale < 0.25) {
+      return Center(child: FittedBox(child: pageContent));
     }
 
     return Center(
@@ -219,55 +240,7 @@ class Canvas extends StatelessWidget {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(6),
-            child: !placeholder
-                ? SizedBox(
-                    width: page.size.width,
-                    height: page.size.height,
-                    child: _withForeground(
-                      OnyxSdkPenArea(
-                        refreshDelay: const Duration(seconds: 1),
-                        strokeStyle: _getOnyxTool(currentTool),
-                        strokeColor: _getOnyxColor(),
-                        strokeWidth: _getOnyxWidth(),
-                        child: InnerCanvas(
-                          key: page.innerCanvasKey,
-                          pageIndex: pageIndex,
-                          redrawPageListenable: page,
-                          width: page.size.width,
-                          height: page.size.height,
-                          textEditing: textEditing,
-                          coreInfo: coreInfo,
-                          currentStroke: currentStroke,
-                          currentStrokeDetectedShape:
-                              currentStrokeDetectedShape,
-                          currentSelection: currentSelection,
-                          isDoneSelecting: isDoneSelecting,
-                          onCutSelection: onCutSelection,
-                          onCopySelection: onCopySelection,
-                          onDuplicateSelection: onDuplicateSelection,
-                          onDeleteSelection: onDeleteSelection,
-                          onSetColor: onSetColor,
-                          isResizeActive: isResizeActive,
-                          onToggleResize: onToggleResize,
-                          onReduceTextSize: onReduceTextSize,
-                          onEnlargeTextSize: onEnlargeTextSize,
-                          onTakeScreenshot: onTakeScreenshot,
-                          onAddToElements: onAddToElements,
-                          onBringToFront: onBringToFront,
-                          onSendToBack: onSendToBack,
-                          onSmoothen: onSmoothen,
-                          cropPossible: cropPossible,
-                          cropActive: cropActive,
-                          onToggleCrop: onToggleCrop,
-                          setAsBackground: setAsBackground,
-                          currentToolIsSelect:
-                              currentTool.toolId == ToolId.select,
-                          currentScale: currentScale,
-                        ),
-                      ),
-                    ),
-                  )
-                : SizedBox(width: page.size.width, height: page.size.height),
+            child: pageContent,
           ),
         ),
       ),

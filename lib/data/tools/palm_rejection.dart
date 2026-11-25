@@ -166,7 +166,7 @@ class PalmRejectionEngine {
   bool _isLargeContact(PointerEvent event) {
     final double radius = max(event.radiusMajor, event.radiusMinor);
     final (
-      double thresholdRadius,
+      double baseThresholdRadius,
       double thresholdSize,
     ) = switch (sensitivity) {
       PalmRejectionSensitivity.high => (16.0, 0.14),
@@ -174,6 +174,16 @@ class PalmRejectionEngine {
       PalmRejectionSensitivity.low => (32.0, 0.28),
       PalmRejectionSensitivity.disabled => (double.infinity, double.infinity),
     };
+
+    // On initial touch-down when no stylus is active or recently seen, allow
+    // wider thumb pads (< 30pt) so two-finger pinch-in gestures can start.
+    final hasRecentStylus =
+        isStylusDown ||
+        (lastStylusTime != null &&
+            DateTime.now().difference(lastStylusTime!).inMilliseconds <= 2500);
+    final thresholdRadius = (event is PointerDownEvent && !hasRecentStylus)
+        ? max(baseThresholdRadius, 30.0)
+        : baseThresholdRadius;
 
     return radius >= thresholdRadius || event.size >= thresholdSize;
   }

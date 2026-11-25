@@ -18,12 +18,16 @@ class CanvasZoomIndicator extends StatelessWidget {
   /// Formats the zoom magnification: displays percentage for scale < 0.1
   /// and multiplier 'Xx' for scale >= 0.1.
   static String formatZoomText(double scale) {
-    if (scale < 0.01) {
-      return '${(scale * 100).toStringAsFixed(1)}%';
-    } else if (scale < 0.1) {
-      return '${(scale * 100).toStringAsFixed(0)}%';
+    if (!scale.isFinite || scale <= 0) {
+      return '1.0x';
+    }
+    final clamped = scale < 0.001 ? 0.001 : scale;
+    if (clamped < 0.01) {
+      return '${(clamped * 100).toStringAsFixed(1)}%';
+    } else if (clamped < 0.1) {
+      return '${(clamped * 100).toStringAsFixed(0)}%';
     } else {
-      return '${scale.toStringAsFixed(1)}x';
+      return '${clamped.toStringAsFixed(1)}x';
     }
   }
 

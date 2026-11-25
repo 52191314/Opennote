@@ -82,23 +82,21 @@ class CanvasBackgroundPainter extends CustomPainter {
 
   static const _infiniteQuantizeStep = 500.0;
 
-  /// Quantizes [rect] outward to multiples of [_infiniteQuantizeStep] after
-  /// inflating by 1000px so small pan deltas reuse the same cached background.
-  static Rect? _quantizedInfiniteRect(Rect? rect) {
+  /// Quantizes [rect] outward to scale-proportional multiples of
+  /// [_infiniteQuantizeStep] so small pan deltas reuse the cached background
+  /// across both normal and deep zoom-out viewports.
+  static Rect? _quantizedInfiniteRect(Rect? rect, [double scale = 1.0]) {
     if (rect == null || !_isValidViewport(rect)) return null;
-    final inflated = rect.inflate(1000.0);
-    final left =
-        (inflated.left / _infiniteQuantizeStep).floorToDouble() *
-        _infiniteQuantizeStep;
-    final top =
-        (inflated.top / _infiniteQuantizeStep).floorToDouble() *
-        _infiniteQuantizeStep;
-    final right =
-        (inflated.right / _infiniteQuantizeStep).ceilToDouble() *
-        _infiniteQuantizeStep;
-    final bottom =
-        (inflated.bottom / _infiniteQuantizeStep).ceilToDouble() *
-        _infiniteQuantizeStep;
+    final safeScale = (scale.isFinite && scale > 0)
+        ? scale.clamp(0.001, 1.0)
+        : 1.0;
+    final step = _infiniteQuantizeStep / safeScale;
+    final inflateAmount = 1000.0 / safeScale;
+    final inflated = rect.inflate(inflateAmount);
+    final left = (inflated.left / step).floorToDouble() * step;
+    final top = (inflated.top / step).floorToDouble() * step;
+    final right = (inflated.right / step).ceilToDouble() * step;
+    final bottom = (inflated.bottom / step).ceilToDouble() * step;
     return Rect.fromLTRB(left, top, right, bottom);
   }
 
@@ -106,13 +104,16 @@ class CanvasBackgroundPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final Rect visibleRect;
     if (isInfiniteCanvas) {
-      final quantized = _quantizedInfiniteRect(viewportRect);
+      final quantized = _quantizedInfiniteRect(viewportRect, currentScale);
       if (quantized != null) {
         visibleRect = quantized;
       } else {
         final clip = canvas.getLocalClipBounds();
         if (_isValidViewport(clip)) {
-          visibleRect = clip.inflate(500.0);
+          final safeScale = (currentScale.isFinite && currentScale > 0)
+              ? currentScale.clamp(0.001, 1.0)
+              : 1.0;
+          visibleRect = clip.inflate(500.0 / safeScale);
         } else {
           // Safe bounded canvas region around the page for infinite canvas fallback
           const margin = 5000.0;
@@ -151,13 +152,13 @@ class CanvasBackgroundPainter extends CustomPainter {
           currentScale > 0) {
         final minScreenSpacing = backgroundPattern == .dots ? 10.0 : 6.0;
         while (effectiveLineHeight * currentScale < minScreenSpacing &&
-            effectiveLineHeight < 100000) {
+            effectiveLineHeight < 10000000) {
           effectiveLineHeight *= 2;
         }
       }
 
       final defaultThickness = isInfiniteCanvas && currentScale < 1.0
-          ? lineThickness / currentScale.clamp(0.15, 1.0)
+          ? lineThickness / currentScale.clamp(0.02, 1.0)
           : lineThickness.toDouble();
       final effectivePrimary = primaryColor.withValues(
         alpha: preview ? 0.5 : 0.2,
@@ -293,14 +294,14 @@ class CanvasBackgroundPainter extends CustomPainter {
   static bool _isValidViewport(Rect rect) {
     if (!rect.isFinite || rect.isEmpty) return false;
     // Skia unclipped sentinels use ±1e9. Any boundary beyond ±1e8
-    // or span exceeding 15,000 pixels is unclipped/invalid.
+    // or span exceeding 2,000,000 pixels is unclipped/invalid.
     if (rect.left <= -1e8 ||
         rect.top <= -1e8 ||
         rect.right >= 1e8 ||
         rect.bottom >= 1e8) {
       return false;
     }
-    if (rect.width > 50000 || rect.height > 50000) {
+    if (rect.width > 2000000 || rect.height > 2000000) {
       return false;
     }
     return true;
@@ -314,7 +315,7 @@ class CanvasBackgroundPainter extends CustomPainter {
     if (lineHeight <= 0 || !scale.isFinite || scale <= 0) return lineHeight;
     var step = lineHeight;
     final minScreenSpacing = pattern == .dots ? 10.0 : 6.0;
-    while (step * scale < minScreenSpacing && step < 100000) {
+    while (step * scale < minScreenSpacing && step < 10000000) {
       step *= 2;
     }
     return step;
@@ -326,8 +327,11 @@ class CanvasBackgroundPainter extends CustomPainter {
         isInfiniteCanvas &&
         (viewportRect == null ||
             oldDelegate.viewportRect == null ||
-            _quantizedInfiniteRect(oldDelegate.viewportRect) !=
-                _quantizedInfiniteRect(viewportRect) ||
+            _quantizedInfiniteRect(
+                  oldDelegate.viewportRect,
+                  oldDelegate.currentScale,
+                ) !=
+                _quantizedInfiniteRect(viewportRect, currentScale) ||
             _lodBucket(
                   oldDelegate.lineHeight,
                   oldDelegate.currentScale,
@@ -360,19 +364,18 @@ class CanvasBackgroundPainter extends CustomPainter {
           bounds.top <= -1e8 ||
           bounds.right >= 1e8 ||
           bounds.bottom >= 1e8 ||
-          bounds.width > 100000 ||
-          bounds.height > 100000) {
+          bounds.width > 5000000 ||
+          bounds.height > 5000000) {
         return;
       }
-      // Clamp span dimensions to prevent runaway memory allocation or freeze,
-      // while allowing rendering anywhere in the 2D infinite plane.
-      final double clampedWidth = bounds.width.clamp(0.0, 50000.0);
-      final double clampedHeight = bounds.height.clamp(0.0, 50000.0);
-      final clampedBounds = Rect.fromLTWH(
-        bounds.left,
-        bounds.top,
-        clampedWidth,
-        clampedHeight,
+      // Clamp span dimensions around center to prevent runaway memory allocation
+      // while supporting deep zoom-out viewports anywhere in the 2D plane.
+      final double clampedWidth = bounds.width.clamp(0.0, 2000000.0);
+      final double clampedHeight = bounds.height.clamp(0.0, 2000000.0);
+      final clampedBounds = Rect.fromCenter(
+        center: bounds.center,
+        width: clampedWidth,
+        height: clampedHeight,
       );
       if (clampedBounds.isEmpty) return;
 

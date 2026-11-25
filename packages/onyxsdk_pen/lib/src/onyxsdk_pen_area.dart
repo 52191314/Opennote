@@ -1,3 +1,6 @@
+/// 🤖 Modified with Google Antigravity
+library;
+
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -83,6 +86,7 @@ class _OnyxSdkPenAreaState extends State<OnyxSdkPenArea>
   @override
   void didUpdateWidget(OnyxSdkPenArea oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!isOnyxDevice) return;
 
     creationParams['refreshDelayMs'] = widget.refreshDelay.inMilliseconds;
     creationParams['strokeStyle'] = widget.strokeStyle.value;
@@ -91,14 +95,29 @@ class _OnyxSdkPenAreaState extends State<OnyxSdkPenArea>
     channel.invokeMethod('updateStroke', creationParams).catchError((e) {});
   }
 
+  var _observingLifecycle = false;
+
   @override
   void initState() {
-    WidgetsBinding.instance.addObserver(this);
     super.initState();
+    if (!kIsWeb && Platform.isAndroid) {
+      WidgetsBinding.instance.addObserver(this);
+      _observingLifecycle = true;
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_observingLifecycle) {
+      WidgetsBinding.instance.removeObserver(this);
+      _observingLifecycle = false;
+    }
+    super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (!isOnyxDevice) return;
     switch (state) {
       case AppLifecycleState.resumed:
         channel.invokeMethod('setDraw', true).catchError((e) {});

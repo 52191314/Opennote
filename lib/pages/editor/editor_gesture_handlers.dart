@@ -27,8 +27,11 @@ extension EditorGestureHandlers on EditorState {
         closestIndex = i;
       }
     }
-    // Snap to closest page if within 120px (gap between pages or margin)
-    if (closestIndex != null && minDistance <= 120.0) {
+    // Snap to closest page if within 120 screen px (gap between pages or margin)
+    final safeScale = (currentScale.isFinite && currentScale > 0)
+        ? currentScale.clamp(0.05, 1.0)
+        : 1.0;
+    if (closestIndex != null && minDistance <= 120.0 / safeScale) {
       return closestIndex;
     }
     return null;

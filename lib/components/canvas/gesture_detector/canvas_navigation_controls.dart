@@ -6,13 +6,17 @@ extension CanvasGestureNavigationControls on CanvasGestureDetectorState {
   /// Zooms in centered on the current viewport bounds.
   void zoomIn() {
     if (!mounted) return;
-    final oldScale = widget._transformationController.value.approxScale;
-    final delta = oldScale < 0.2 ? oldScale * 0.25 : 0.1;
+    final oldScale = widget._transformationController.value.maxScale2D;
+    final delta = oldScale < 0.2 ? max(0.02, oldScale * 0.5) : 0.1;
+    final minScale = CanvasGestureDetector.minScaleFor(
+      isInfiniteCanvas: widget.isInfiniteCanvas,
+    );
     widget._transformationController.value =
         CanvasGestureDetectorState.setZoom(
           scaleDelta: delta,
           transformation: widget._transformationController.value,
           containerBounds: containerBounds,
+          minScale: minScale,
         ) ??
         widget._transformationController.value;
   }
@@ -20,13 +24,17 @@ extension CanvasGestureNavigationControls on CanvasGestureDetectorState {
   /// Zooms out centered on the current viewport bounds.
   void zoomOut() {
     if (!mounted) return;
-    final oldScale = widget._transformationController.value.approxScale;
+    final oldScale = widget._transformationController.value.maxScale2D;
     final delta = oldScale <= 0.15 ? -oldScale * 0.25 : -0.1;
+    final minScale = CanvasGestureDetector.minScaleFor(
+      isInfiniteCanvas: widget.isInfiniteCanvas,
+    );
     widget._transformationController.value =
         CanvasGestureDetectorState.setZoom(
           scaleDelta: delta,
           transformation: widget._transformationController.value,
           containerBounds: containerBounds,
+          minScale: minScale,
         ) ??
         widget._transformationController.value;
   }
@@ -35,7 +43,7 @@ extension CanvasGestureNavigationControls on CanvasGestureDetectorState {
   void resetZoom() {
     if (!mounted) return;
     final transformation = widget._transformationController.value;
-    final scale = transformation.approxScale;
+    final scale = transformation.maxScale2D;
     if (scale == 1) return;
 
     widget._transformationController.value =
@@ -43,6 +51,9 @@ extension CanvasGestureNavigationControls on CanvasGestureDetectorState {
           scaleDelta: 1 - scale,
           transformation: transformation,
           containerBounds: containerBounds,
+          minScale: CanvasGestureDetector.minScaleFor(
+            isInfiniteCanvas: widget.isInfiniteCanvas,
+          ),
         ) ??
         transformation;
   }

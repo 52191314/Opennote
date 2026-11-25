@@ -14,10 +14,13 @@ import 'package:saber/components/canvas/_canvas_painter.dart';
 import 'package:saber/components/canvas/_dimension_stroke.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/_tape_stroke.dart';
+import 'package:saber/components/canvas/canvas_gesture_detector.dart';
+import 'package:saber/components/canvas/hud/canvas_zoom_indicator.dart';
 import 'package:saber/components/canvas/inner_canvas.dart';
 import 'package:saber/components/canvas/interactive_canvas.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/page.dart';
+import 'package:saber/data/extensions/matrix4_extensions.dart';
 import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/tools/highlighter.dart';
 import 'package:saber/data/tools/palm_rejection.dart';
@@ -691,7 +694,7 @@ void main() {
           await tester.pump(const Duration(milliseconds: 8));
         }
 
-        final scaleBeforeRelease = controller.value.getMaxScaleOnAxis();
+        final scaleBeforeRelease = controller.value.maxScale2D;
         expect(scaleBeforeRelease, greaterThan(1.5));
 
         const endTs = Duration(milliseconds: 48);
@@ -714,9 +717,206 @@ void main() {
         await tester.pumpAndSettle();
 
         // Scale must NOT reverse-bounce or collapse to 0.001x after finger lift!
-        final scaleAfterRelease = controller.value.getMaxScaleOnAxis();
+        final scaleAfterRelease = controller.value.maxScale2D;
         expect(scaleAfterRelease.isFinite, isTrue);
         expect(scaleAfterRelease, closeTo(scaleBeforeRelease, 1e-3));
+      },
+    );
+  });
+
+  group('6. Deep Zoom-Out (0% Cliff) & Z-Scale Invariant Regression Tests', () {
+    test(
+      'mode-aware minScaleFor enforces Impeller-safe floors while formatZoomText never prints 0.0%',
+      () {
+        expect(
+          CanvasGestureDetector.minScaleFor(isInfiniteCanvas: false),
+          equals(0.2),
+        );
+        expect(
+          CanvasGestureDetector.minScaleFor(isInfiniteCanvas: true),
+          equals(0.02),
+        );
+        expect(CanvasZoomIndicator.formatZoomText(0.0001), equals('0.1%'));
+        expect(CanvasZoomIndicator.formatZoomText(0.0), equals('1.0x'));
+        expect(CanvasZoomIndicator.formatZoomText(double.nan), equals('1.0x'));
+      },
+    );
+
+    testWidgets(
+      'non-uniform Z-scale from fitContentToView never drives 2D zoom below minScale or blocks pinch-in recovery',
+      (tester) async {
+        // Simulate fitContentToView matrix where X/Y = 0.05 and Z = 1.0
+        final controller = TransformationController(
+          Matrix4.identity()..scaleByDouble(0.05, 0.05, 1.0, 1.0),
+        );
+        addTearDown(controller.dispose);
+        final palmEngine = PalmRejectionEngine(
+          writingPosture: WritingPosture.rightBelow,
+          sensitivity: PalmRejectionSensitivity.medium,
+        );
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: SizedBox(
+              width: 800,
+              height: 600,
+              child: InteractiveCanvasViewer.builder(
+                palmEngine: palmEngine,
+                minScale: CanvasGestureDetector.kInfiniteMinScale,
+                maxScale: CanvasGestureDetector.kMaxScale,
+                interactionEndFrictionCoefficient: 0.3,
+                boundaryMargin: const EdgeInsets.all(double.infinity),
+                transformationController: controller,
+                builder: (context, viewport) =>
+                    const SizedBox(width: 1000, height: 1400),
+              ),
+            ),
+          ),
+        );
+
+        // Pinch OUT aggressively past kInfiniteMinScale (0.02)
+        await tester.sendEventToBinding(
+          const PointerAddedEvent(
+            pointer: 301,
+            position: Offset(200, 300),
+            kind: PointerDeviceKind.touch,
+          ),
+        );
+        await tester.sendEventToBinding(
+          const PointerAddedEvent(
+            pointer: 302,
+            position: Offset(600, 300),
+            kind: PointerDeviceKind.touch,
+          ),
+        );
+        await tester.sendEventToBinding(
+          const PointerDownEvent(
+            pointer: 301,
+            position: Offset(200, 300),
+            kind: PointerDeviceKind.touch,
+            radiusMajor: 24.0,
+          ),
+        );
+        await tester.sendEventToBinding(
+          const PointerDownEvent(
+            pointer: 302,
+            position: Offset(600, 300),
+            kind: PointerDeviceKind.touch,
+            radiusMajor: 24.0,
+          ),
+        );
+        await tester.pump();
+
+        // Pinch fingers inward from 400px span down to 40px span (0.1x factor -> tries 0.005, must clamp at 0.02!)
+        for (var i = 1; i <= 5; i++) {
+          final ts = Duration(milliseconds: i * 8);
+          await tester.sendEventToBinding(
+            PointerMoveEvent(
+              pointer: 301,
+              timeStamp: ts,
+              position: Offset(200.0 + i * 36, 300),
+              kind: PointerDeviceKind.touch,
+              radiusMajor: 24.0,
+            ),
+          );
+          await tester.sendEventToBinding(
+            PointerMoveEvent(
+              pointer: 302,
+              timeStamp: ts,
+              position: Offset(600.0 - i * 36, 300),
+              kind: PointerDeviceKind.touch,
+              radiusMajor: 24.0,
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 8));
+        }
+
+        // Must clamp cleanly at kInfiniteMinScale (0.02 = 2%), NEVER plunging to 0.0001 ("0.0%")!
+        expect(
+          controller.value.approxScale,
+          closeTo(CanvasGestureDetector.kInfiniteMinScale, 1e-4),
+        );
+        expect(
+          CanvasZoomIndicator.formatZoomText(controller.value.approxScale),
+          equals('2%'),
+        );
+
+        // Immediately reverse finger direction WITHOUT lifting to zoom back IN (must have zero dead-zone!)
+        for (var i = 1; i <= 4; i++) {
+          final ts = Duration(milliseconds: 50 + i * 8);
+          await tester.sendEventToBinding(
+            PointerMoveEvent(
+              pointer: 301,
+              timeStamp: ts,
+              position: Offset(380.0 - i * 40, 300),
+              kind: PointerDeviceKind.touch,
+              radiusMajor: 24.0,
+            ),
+          );
+          await tester.sendEventToBinding(
+            PointerMoveEvent(
+              pointer: 302,
+              timeStamp: ts,
+              position: Offset(420.0 + i * 40, 300),
+              kind: PointerDeviceKind.touch,
+              radiusMajor: 24.0,
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 8));
+        }
+
+        expect(
+          controller.value.approxScale,
+          greaterThan(CanvasGestureDetector.kInfiniteMinScale * 2),
+        );
+
+        await tester.sendEventToBinding(
+          const PointerUpEvent(
+            pointer: 301,
+            timeStamp: Duration(milliseconds: 90),
+            position: Offset(220, 300),
+            kind: PointerDeviceKind.touch,
+          ),
+        );
+        await tester.sendEventToBinding(
+          const PointerUpEvent(
+            pointer: 302,
+            timeStamp: Duration(milliseconds: 90),
+            position: Offset(580, 300),
+            kind: PointerDeviceKind.touch,
+          ),
+        );
+        await tester.pumpAndSettle();
+      },
+    );
+
+    test(
+      'CanvasBackgroundPainter tiles across >50,000px deep zoom-out iPad viewport without vanishing, and CanvasPainter skips redundant scale repaints',
+      () {
+        // At 2% zoom on a 1024x1366 iPad, scene viewport is 51,200 x 68,300 (> 50,000px!)
+        const ipadViewportAt2Percent = Rect.fromLTWH(
+          -25600,
+          -34150,
+          51200,
+          68300,
+        );
+        final elements = CanvasBackgroundPainter.getPatternElements(
+          pattern: CanvasBackgroundPattern.grid,
+          size: const Size(1000, 1400),
+          lineHeight: 640,
+          bounds: ipadViewportAt2Percent,
+        ).toList();
+        expect(elements, isNotEmpty);
+        expect(elements.any((e) => e.end.dx >= 25000), isTrue);
+        expect(elements.any((e) => e.end.dy >= 34000), isTrue);
+
+        // Continuous pinch-zoom within the same low-zoom bucket must not force CanvasPainter repaints
+        final page = EditorPage(size: _pageSize);
+        addTearDown(page.dispose);
+        final p1 = _buildPainter(page, currentScale: 0.35);
+        final p2 = _buildPainter(page, currentScale: 0.25);
+        expect(p2.shouldRepaint(p1), isFalse);
       },
     );
   });

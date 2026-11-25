@@ -114,7 +114,13 @@ class CanvasGestureDetector extends StatefulWidget {
   State<CanvasGestureDetector> createState() => CanvasGestureDetectorState();
 
   static const kMinScale = 0.001;
+  static const kInfiniteMinScale = 0.02;
+  static const kPagedMinScale = 0.2;
   static const kMaxScale = 10.0;
+
+  /// Returns the interactive minimum zoom scale for [isInfiniteCanvas].
+  static double minScaleFor({required bool isInfiniteCanvas}) =>
+      isInfiniteCanvas ? kInfiniteMinScale : kPagedMinScale;
 
   static double getTopOfPage({
     required int pageIndex,
@@ -223,20 +229,22 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
     required double scaleDelta,
     required Matrix4 transformation,
     required BoxConstraints containerBounds,
+    double minScale = CanvasGestureDetector.kMinScale,
   }) {
-    final oldScale = transformation.approxScale;
+    final oldScale = transformation.maxScale2D;
+    if (!oldScale.isFinite || oldScale <= 0) return null;
     double newScale = oldScale + scaleDelta;
 
-    if (scaleDelta < 0 && oldScale <= CanvasGestureDetector.kMinScale) {
+    if (scaleDelta < 0 && oldScale <= minScale) {
       return null;
     }
     if (scaleDelta > 0 && oldScale >= CanvasGestureDetector.kMaxScale) {
       return null;
     }
 
-    if (newScale < CanvasGestureDetector.kMinScale) {
-      if (oldScale > CanvasGestureDetector.kMinScale) {
-        newScale = CanvasGestureDetector.kMinScale;
+    if (newScale < minScale) {
+      if (oldScale > minScale) {
+        newScale = minScale;
       } else {
         return null;
       }
@@ -259,7 +267,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
         center;
 
     return Matrix4.translation(translation)
-      ..scaleByDouble(newScale, newScale, newScale, 1);
+      ..scaleByDouble(newScale, newScale, 1.0, 1.0);
   }
 
   @override
@@ -386,9 +394,13 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
               builder: (BuildContext context, BoxConstraints containerBounds) {
                 this.containerBounds = containerBounds;
 
+                final effectiveMinScale = CanvasGestureDetector.minScaleFor(
+                  isInfiniteCanvas: widget.isInfiniteCanvas,
+                );
+
                 return InteractiveCanvasViewer.builder(
                   palmEngine: _palmEngine,
-                  minScale: zoomLockedValue ?? CanvasGestureDetector.kMinScale,
+                  minScale: zoomLockedValue ?? effectiveMinScale,
                   maxScale: zoomLockedValue ?? CanvasGestureDetector.kMaxScale,
                   panEnabled: !singleFingerPanLock,
                   panAxis: axisAlignedPanLock ? PanAxis.aligned : PanAxis.free,

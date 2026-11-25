@@ -48,9 +48,15 @@ extension _CanvasGesturePointerHandlers on CanvasGestureDetectorState {
         event.kind == PointerDeviceKind.stylus ||
         event.kind == PointerDeviceKind.invertedStylus;
 
+    final isActiveTwoFingerPinch =
+        event is! PointerDownEvent &&
+        _pointerPositions.length >= 2 &&
+        _pointerPositions.containsKey(event.pointer) &&
+        !_palmEngine.isStylusDown;
+
     if (isStylus) {
       _palmEngine.notifyStylusEvent(event);
-    } else if (_palmEngine.isPalm(event)) {
+    } else if (!isActiveTwoFingerPinch && _palmEngine.isPalm(event)) {
       return;
     }
 

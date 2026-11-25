@@ -237,12 +237,16 @@ extension _StrokePainter on CanvasPainter {
         ? (Set<Stroke>.identity()..addAll(selectedList))
         : null;
 
+    final useSubPixelLod = currentScale >= 0.0005 && currentScale < 0.2;
+
     for (final stroke in strokes) {
       if (stroke.toolId == .highlighter) continue;
+      final strokeBounds = stroke.boundingBox;
       if (cullRect != null &&
-          !stroke.boundingBox
-              .inflate(stroke.options.size * 2)
-              .overlaps(cullRect)) {
+          !strokeBounds.inflate(stroke.options.size * 2).overlaps(cullRect)) {
+        continue;
+      }
+      if (useSubPixelLod && strokeBounds.longestSide * currentScale < 0.6) {
         continue;
       }
 
@@ -252,6 +256,12 @@ extension _StrokePainter on CanvasPainter {
           : (selectedList?.contains(stroke) ?? false);
       if (isSelected) {
         color = Color.lerp(color, primaryColor, 0.5)!;
+      }
+
+      if (useSubPixelLod && strokeBounds.longestSide * currentScale < 2.5) {
+        fillPaint.color = color;
+        canvas.drawRect(strokeBounds, fillPaint);
+        continue;
       }
 
       paint.color = color;

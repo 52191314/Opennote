@@ -20,6 +20,7 @@ import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:saber/components/canvas/interactive/canvas_matrix_math.dart';
 import 'package:saber/components/canvas/interactive/canvas_scale_gesture_recognizer.dart';
+import 'package:saber/data/extensions/matrix4_extensions.dart';
 import 'package:saber/data/tools/palm_rejection.dart';
 import 'package:vector_math/vector_math_64.dart' show Matrix4, Quad, Vector3;
 

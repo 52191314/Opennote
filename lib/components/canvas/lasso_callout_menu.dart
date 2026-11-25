@@ -135,7 +135,10 @@ class _LassoCalloutMenuState extends State<LassoCalloutMenu> {
     );
 
     // Counter-scale so the callout maintains a comfortable readable size on zoomed canvas
-    final scaleMultiplier = (1.0 / widget.currentScale).clamp(0.65, 1.4);
+    final scaleMultiplier =
+        (widget.currentScale.isFinite && widget.currentScale > 0)
+        ? (1.0 / widget.currentScale).clamp(0.65, 1.4)
+        : 1.0;
 
     final screenWidth = MediaQuery.sizeOf(context).width;
     final maxPillWidth = (screenWidth - 32.0).clamp(280.0, double.infinity);

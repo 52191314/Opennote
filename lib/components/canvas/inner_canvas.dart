@@ -184,7 +184,13 @@ class _InnerCanvasState extends State<InnerCanvas> {
         ? CanvasBackgroundPattern.none
         : page.paperPatternOr(widget.coreInfo.backgroundPattern);
 
-    final quillEditor = widget.coreInfo.pages.isNotEmpty
+    final shouldMountQuill =
+        widget.coreInfo.pages.isNotEmpty &&
+        (widget.textEditing ||
+            widget.currentScale >= 0.3 ||
+            !page.quill.controller.document.isEmpty());
+
+    final quillEditor = shouldMountQuill
         ? QuillEditor(
             controller:
                 widget.coreInfo.pages[widget.pageIndex].quill.controller,

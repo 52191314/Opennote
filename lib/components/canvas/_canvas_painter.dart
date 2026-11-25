@@ -123,7 +123,19 @@ class CanvasPainter extends CustomPainter {
     _drawSelection(canvas);
     _drawEraserCursor(canvas);
     _drawLaserSpotlight(canvas);
-    if (!isInfiniteCanvas) _drawPageIndicator(canvas, size);
+    if (!isInfiniteCanvas && (currentScale >= 0.2 || currentScale < 0.0005)) {
+      _drawPageIndicator(canvas, size);
+    }
+  }
+
+  /// Maps [scale] into discrete visual quality buckets so continuous pinch-zoom
+  /// does not needlessly re-record static stroke DisplayLists on every frame.
+  static int _visualScaleBucket(double scale) {
+    if (!scale.isFinite || scale <= 0) return 0;
+    if (scale < 0.08) return 1;
+    if (scale < 0.2) return 2;
+    if (scale < _zoomThreshold) return 3;
+    return 4 + (scale.clamp(0.5, 10.0) * 2).floor();
   }
 
   @override
@@ -148,7 +160,8 @@ class CanvasPainter extends CustomPainter {
         showPageIndicator != oldDelegate.showPageIndicator ||
         pageIndex != oldDelegate.pageIndex ||
         totalPages != oldDelegate.totalPages ||
-        currentScale != oldDelegate.currentScale ||
+        _visualScaleBucket(currentScale) !=
+            _visualScaleBucket(oldDelegate.currentScale) ||
         isInfiniteCanvas != oldDelegate.isInfiniteCanvas;
   }
 

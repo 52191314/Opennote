@@ -6,6 +6,7 @@ int _getPageIndexFromScrollPosition({
   required double screenWidth,
   required List<EditorPage> pages,
 }) {
+  if (pages.isEmpty) return 0;
   for (int pageIndex = 0; pageIndex < pages.length; pageIndex++) {
     final bottomOfPage = CanvasGestureDetector.getTopOfPage(
       pageIndex: pageIndex + 1, // top of next page
@@ -136,7 +137,9 @@ extension EditorPageManagement on EditorState {
 
     if (containerBounds != null &&
         containerBounds.maxWidth.isFinite &&
-        containerBounds.maxWidth > 0) {
+        containerBounds.maxWidth > 0 &&
+        containerBounds.maxHeight.isFinite &&
+        containerBounds.maxHeight > 0) {
       viewportWidth = containerBounds.maxWidth;
       viewportHeight = containerBounds.maxHeight;
     } else {
@@ -160,12 +163,12 @@ extension EditorPageManagement on EditorState {
 
     final scaleX = targetWidth / math.max(1.0, bounds.width);
     final scaleY = targetHeight / math.max(1.0, bounds.height);
+    final minScale = CanvasGestureDetector.minScaleFor(
+      isInfiniteCanvas: coreInfo.isInfiniteCanvas,
+    );
     final fitScale = math
         .min(scaleX, scaleY)
-        .clamp(
-          CanvasGestureDetector.kMinScale,
-          CanvasGestureDetector.kMaxScale,
-        );
+        .clamp(minScale, CanvasGestureDetector.kMaxScale);
 
     final viewportCenterX = viewportWidth / 2;
     final viewportCenterY = viewportHeight / 2;

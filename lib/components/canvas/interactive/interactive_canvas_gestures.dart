@@ -58,7 +58,7 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
     // Desired translation goes out of bounds, so translate to the nearest
     // in-bounds point instead.
     final Offset nextTotalTranslation = canvasGetMatrixTranslation(nextMatrix);
-    final double currentScale = matrix.getMaxScaleOnAxis();
+    final double currentScale = matrix.maxScale2D;
     final Offset correctedTotalTranslation = Offset(
       nextTotalTranslation.dx - offendingDistance.dx * currentScale,
       nextTotalTranslation.dy - offendingDistance.dy * currentScale,
@@ -118,7 +118,7 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
 
     // Don't allow a scale that results in an overall scale beyond min/max
     // scale.
-    final double currentScale = matrix.getMaxScaleOnAxis();
+    final double currentScale = matrix.maxScale2D;
     if (!currentScale.isFinite || currentScale <= 0.0) {
       return matrix.clone();
     }
@@ -138,8 +138,7 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
     if (!clampedScale.isFinite || clampedScale <= 0.0) {
       return matrix.clone();
     }
-    return matrix.clone()
-      ..scaleByDouble(clampedScale, clampedScale, clampedScale, 1);
+    return matrix.clone()..scaleByDouble(clampedScale, clampedScale, 1.0, 1.0);
   }
 
   // Return a new matrix representing the given matrix after applying the given
@@ -192,7 +191,7 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
 
     _gestureType = null;
     _currentAxis = null;
-    _scaleStart = _transformer.value.getMaxScaleOnAxis();
+    _scaleStart = _transformer.value.maxScale2D;
     _referenceFocalPoint = _transformer.toScene(details.localFocalPoint);
     _rotationStart = _currentRotation;
 
@@ -205,7 +204,7 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
   // Handle an update to an ongoing gesture. All of pan, scale, and rotate are
   // handled with GestureDetector's scale gesture.
   void _onScaleUpdate(ScaleUpdateDetails details) {
-    final double scale = _transformer.value.getMaxScaleOnAxis();
+    final double scale = _transformer.value.maxScale2D;
     final Offset focalPointScene = _transformer.toScene(
       details.localFocalPoint,
     );
@@ -253,6 +252,10 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
           _transformer.value,
           scaleChange,
         );
+        final double actualScale = scaledMatrix.maxScale2D;
+        if ((actualScale - desiredScale).abs() > 1e-9) {
+          _scaleStart = actualScale / details.scale;
+        }
 
         // While scaling, translate such that the user's two fingers stay on
         // the same places in the scene. That means that the focal point of
@@ -333,6 +336,8 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
       return widget.onDrawEnd?.call(details);
     }
 
+    final endedGestureType = _gestureType;
+    _gestureType = null;
     _scaleStart = null;
     _rotationStart = null;
     _referenceFocalPoint = null;
@@ -340,12 +345,12 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
     _animation?.removeListener(_handleInertiaAnimation);
     _controller.reset();
 
-    if (!_gestureIsSupported(_gestureType, details.pointerCount)) {
+    if (!_gestureIsSupported(endedGestureType, details.pointerCount)) {
       _currentAxis = null;
       return;
     }
 
-    switch (_gestureType) {
+    switch (endedGestureType) {
       case _GestureType.pan:
         if (details.velocity.pixelsPerSecond.distance < kMinFlingVelocity) {
           _currentAxis = null;
