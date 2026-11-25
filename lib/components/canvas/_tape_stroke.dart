@@ -4,6 +4,7 @@ library;
 
 import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart';
+import 'package:path_drawing/path_drawing.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_rect_rotation.dart';
 import 'package:saber/components/canvas/_stroke.dart';
@@ -32,6 +33,70 @@ class TapeStroke extends Stroke {
   TapePattern pattern;
 
   final _rotation = RectRotation();
+
+  Path? _concealedPatternPath;
+  Rect? _concealedPatternRect;
+  TapePattern? _concealedPatternType;
+
+  Path? _revealedBorderPath;
+  Rect? _revealedBorderRect;
+
+  /// Returns a cached [Path] for the concealed [pattern] texture inside [rect].
+  Path get concealedPatternPath {
+    if (_concealedPatternPath != null &&
+        _concealedPatternRect == rect &&
+        _concealedPatternType == pattern) {
+      return _concealedPatternPath!;
+    }
+    final path = Path();
+    switch (pattern) {
+      case TapePattern.stripes:
+        const step = 10.0;
+        for (
+          double x = rect.left - rect.height;
+          x < rect.right + rect.height;
+          x += step
+        ) {
+          path.moveTo(x, rect.bottom);
+          path.lineTo(x + rect.height, rect.top);
+        }
+      case TapePattern.dots:
+        const spacing = 8.0;
+        for (double x = rect.left + 4; x < rect.right; x += spacing) {
+          for (double y = rect.top + 4; y < rect.bottom; y += spacing) {
+            path.addOval(Rect.fromCircle(center: Offset(x, y), radius: 1.5));
+          }
+        }
+      case TapePattern.grid:
+        const spacing = 8.0;
+        for (double x = rect.left + spacing; x < rect.right; x += spacing) {
+          path.moveTo(x, rect.top);
+          path.lineTo(x, rect.bottom);
+        }
+        for (double y = rect.top + spacing; y < rect.bottom; y += spacing) {
+          path.moveTo(rect.left, y);
+          path.lineTo(rect.right, y);
+        }
+      case TapePattern.solid:
+        break;
+    }
+    _concealedPatternRect = rect;
+    _concealedPatternType = pattern;
+    return _concealedPatternPath = path;
+  }
+
+  /// Returns a cached dashed outline [Path] for the revealed state of [rect].
+  Path get revealedBorderPath {
+    if (_revealedBorderPath != null && _revealedBorderRect == rect) {
+      return _revealedBorderPath!;
+    }
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(5));
+    _revealedBorderRect = rect;
+    return _revealedBorderPath = dashPath(
+      Path()..addRRect(rrect),
+      dashArray: CircularIntervalList<double>([6, 4]),
+    );
+  }
 
   TapeStroke({
     required super.color,
@@ -173,7 +238,23 @@ class TapeStroke extends Stroke {
 
   @override
   void shift(Offset offset) {
+    if (offset == Offset.zero) return;
+    final previousRect = rect;
     rect = rect.shift(offset);
+    if (_concealedPatternPath != null &&
+        _concealedPatternRect == previousRect &&
+        _concealedPatternType == pattern) {
+      _concealedPatternPath = _concealedPatternPath!.shift(offset);
+      _concealedPatternRect = rect;
+    } else {
+      _concealedPatternPath = null;
+    }
+    if (_revealedBorderPath != null && _revealedBorderRect == previousRect) {
+      _revealedBorderPath = _revealedBorderPath!.shift(offset);
+      _revealedBorderRect = rect;
+    } else {
+      _revealedBorderPath = null;
+    }
     super.shift(offset);
   }
 
@@ -181,6 +262,8 @@ class TapeStroke extends Stroke {
   void rotateAround(double angleRadians, Offset center) {
     if (angleRadians == 0) return;
     rect = _rotation.rotate(rect, angleRadians, center);
+    _concealedPatternPath = null;
+    _revealedBorderPath = null;
     super.rotateAround(angleRadians, center);
   }
 
@@ -195,6 +278,8 @@ class TapeStroke extends Stroke {
     final p1 = scalePoint(rect.topLeft);
     final p2 = scalePoint(rect.bottomRight);
     rect = Rect.fromPoints(p1, p2);
+    _concealedPatternPath = null;
+    _revealedBorderPath = null;
     super.scaleAround(scaleX, scaleY, pivot);
   }
 

@@ -7,9 +7,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:saber/data/clipboard/mobile_clipboard.dart';
 import 'package:saber/i18n/strings.g.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:super_clipboard/super_clipboard.dart';
 
 /// Modal dialog displaying a high-resolution raster screenshot preview
 /// of lasso-selected content with copy-to-clipboard and share actions.
@@ -36,9 +36,7 @@ class _LassoScreenshotDialogState extends State<LassoScreenshotDialog> {
     setState(() => _isCopying = true);
 
     try {
-      final item = DataWriterItem();
-      item.add(Formats.png(widget.imageBytes));
-      await SystemClipboard.instance?.write([item]);
+      await MobileClipboard.copyImage(widget.imageBytes);
       HapticFeedback.mediumImpact();
 
       if (!mounted) return;

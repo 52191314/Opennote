@@ -27,19 +27,7 @@ extension _SpecializedStrokePainter on CanvasPainter {
             )!.withValues(alpha: 0.4)
             ..strokeWidth = 3.0
             ..style = PaintingStyle.stroke;
-          final rect = stroke.rect;
-          const step = 10.0;
-          for (
-            double x = rect.left - rect.height;
-            x < rect.right + rect.height;
-            x += step
-          ) {
-            canvas.drawLine(
-              Offset(x, rect.bottom),
-              Offset(x + rect.height, rect.top),
-              stripePaint,
-            );
-          }
+          canvas.drawPath(stroke.concealedPatternPath, stripePaint);
           canvas.restore();
         case TapePattern.dots:
           canvas.save();
@@ -51,13 +39,7 @@ extension _SpecializedStrokePainter on CanvasPainter {
               0.18,
             )!.withValues(alpha: 0.5)
             ..style = PaintingStyle.fill;
-          final rect = stroke.rect;
-          const spacing = 8.0;
-          for (double x = rect.left + 4; x < rect.right; x += spacing) {
-            for (double y = rect.top + 4; y < rect.bottom; y += spacing) {
-              canvas.drawCircle(Offset(x, y), 1.5, dotPaint);
-            }
-          }
+          canvas.drawPath(stroke.concealedPatternPath, dotPaint);
           canvas.restore();
         case TapePattern.grid:
           canvas.save();
@@ -70,22 +52,7 @@ extension _SpecializedStrokePainter on CanvasPainter {
             )!.withValues(alpha: 0.35)
             ..strokeWidth = 1.0
             ..style = PaintingStyle.stroke;
-          final rect = stroke.rect;
-          const spacing = 8.0;
-          for (double x = rect.left + spacing; x < rect.right; x += spacing) {
-            canvas.drawLine(
-              Offset(x, rect.top),
-              Offset(x, rect.bottom),
-              gridPaint,
-            );
-          }
-          for (double y = rect.top + spacing; y < rect.bottom; y += spacing) {
-            canvas.drawLine(
-              Offset(rect.left, y),
-              Offset(rect.right, y),
-              gridPaint,
-            );
-          }
+          canvas.drawPath(stroke.concealedPatternPath, gridPaint);
           canvas.restore();
         case TapePattern.solid:
           break;
@@ -106,15 +73,11 @@ extension _SpecializedStrokePainter on CanvasPainter {
         ..style = PaintingStyle.fill;
       canvas.drawRRect(rrect, fillPaint);
 
-      final dashedPath = dashPath(
-        Path()..addRRect(rrect),
-        dashArray: CircularIntervalList<double>([6, 4]),
-      );
       final borderPaint = Paint()
         ..color = baseColor.withValues(alpha: 0.7)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2;
-      canvas.drawPath(dashedPath, borderPaint);
+      canvas.drawPath(stroke.revealedBorderPath, borderPaint);
     }
   }
 
@@ -122,19 +85,7 @@ extension _SpecializedStrokePainter on CanvasPainter {
     if (stroke.text.isEmpty) return;
 
     final textColor = stroke.color.withInversion(invert);
-    final textSpan = TextSpan(
-      text: stroke.text,
-      style: TextStyle(
-        color: textColor,
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-      ),
-    );
-
-    final textPainter = TextPainter(
-      text: textSpan,
-      textDirection: TextDirection.ltr,
-    )..layout();
+    final textPainter = stroke.resolveTextPainter(textColor);
 
     final center = stroke.textPosition;
     final pillRect = Rect.fromCenter(
@@ -210,21 +161,13 @@ extension _SpecializedStrokePainter on CanvasPainter {
 
   void _drawStyledStroke(Canvas canvas, Stroke stroke, Paint paint) {
     if (stroke.isEmpty) return;
-    final centerPath = stroke.centerlinePath;
-    final strokeWidth = stroke.options.size;
-    final isDotted = stroke.lineStyle == LineStyle.dotted;
-    final dashArray = isDotted
-        ? CircularIntervalList<double>([1.0, strokeWidth * 1.8])
-        : CircularIntervalList<double>([strokeWidth * 3.0, strokeWidth * 1.8]);
-
     final styledPaint = Paint()
       ..color = paint.color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
+      ..strokeWidth = stroke.options.size
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    final dashedPath = dashPath(centerPath, dashArray: dashArray);
-    canvas.drawPath(dashedPath, styledPaint);
+    canvas.drawPath(stroke.styledPath, styledPaint);
   }
 }

@@ -6,7 +6,7 @@ library;
 import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
-import 'dart:ui' show FragmentShader;
+import 'dart:ui' show FragmentShader, Picture;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -24,6 +24,19 @@ typedef CanvasKey = GlobalKey<State<InnerCanvas>>;
 
 /// Where a page's text sits relative to its default position.
 typedef TextPlacement = ({Offset offset, double rotation, double scale});
+
+/// Key identifying the visual state of static committed strokes cached on [EditorPage].
+typedef StrokePictureCacheKey = ({
+  int strokesDigest,
+  bool invert,
+  int primaryColorValue,
+  bool isLowQuality,
+  int pencilShaderMask,
+  int selectionIdentity,
+  bool isInfiniteCanvas,
+  Size canvasSize,
+  Rect recordedCullRect,
+});
 
 class EditorPage extends ChangeNotifier implements HasSize {
   static const double defaultWidth = 1000;
@@ -74,6 +87,24 @@ class EditorPage extends ChangeNotifier implements HasSize {
   /// Monotonically increasing version counter incremented whenever strokes or
   /// layers on this page are mutated or redrawn.
   var strokesVersion = 0;
+
+  /// Cached display list for static highlighter strokes on this page.
+  Picture? cachedHighlighterPicture;
+
+  /// Cached display list for static non-highlighter strokes on this page.
+  Picture? cachedNonHighlighterPicture;
+
+  /// Cache key matching [cachedHighlighterPicture] and [cachedNonHighlighterPicture].
+  StrokePictureCacheKey? strokePictureCacheKey;
+
+  /// Disposes and clears any cached static stroke [Picture]s on this page.
+  void invalidateStrokePictureCache() {
+    cachedHighlighterPicture?.dispose();
+    cachedHighlighterPicture = null;
+    cachedNonHighlighterPicture?.dispose();
+    cachedNonHighlighterPicture = null;
+    strokePictureCacheKey = null;
+  }
 
   /// All strokes from all visible layers, flattened for rendering.
   List<Stroke> get strokes {
@@ -445,6 +476,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
       if (layer.locked) continue;
       if (layer.strokes.remove(stroke)) {
         strokesVersion++;
+        invalidateStrokePictureCache();
         return true;
       }
     }
@@ -460,6 +492,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
       if (index == -1) continue;
       layer.strokes[index] = newStroke;
       strokesVersion++;
+      invalidateStrokePictureCache();
       return true;
     }
     return false;
@@ -491,6 +524,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
 
     activeLayer.strokes.insert(index, newStroke);
     strokesVersion++;
+    invalidateStrokePictureCache();
   }
 
   /// Sorts the strokes in each layer by pen type and color.
@@ -504,6 +538,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
       });
     }
     strokesVersion++;
+    invalidateStrokePictureCache();
   }
 
   static List<Stroke> parseStrokesJson(
@@ -585,6 +620,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
 
   @override
   void dispose() {
+    invalidateStrokePictureCache();
     quill.dispose();
     _pencilShader?.dispose();
     isRendered = false;
@@ -602,6 +638,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
   /// Call this method instead of [dispose] to dispose only the resources
   /// exclusive to the cloned page.
   void disposeClonedData() {
+    invalidateStrokePictureCache();
     quill.dispose();
     _pencilShader?.dispose();
     isRendered = false;

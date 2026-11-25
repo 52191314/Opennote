@@ -1,14 +1,12 @@
 #!/bin/bash
 # The `pdfium_dart` package downloads prebuilt libs
 # from https://github.com/bblanchon/pdfium-binaries.
-# Build it manually to avoid the prebuilts.
+# Build it manually for arm64 to avoid the prebuilts.
 #
-# When built, the lib will be at one of these paths:
-# ./.dart_tool/hooks_runner/shared/pdfium_dart/build/chromium_7811/android-arm/libpdfium.so
+# When built, the lib will be at:
 # ./.dart_tool/hooks_runner/shared/pdfium_dart/build/chromium_7811/android-arm64/libpdfium.so
-# ./.dart_tool/hooks_runner/shared/pdfium_dart/build/chromium_7811/android-x64/libpdfium.so
 #
-# You may also wish to run `./scripts/disable_prebuilt_pdfium.sh`
+# You may also wish to run `./patches/post/disable_prebuilt_pdfium.sh`
 # to prevent the download entirely.
 #
 # This file is derived from https://github.com/bblanchon/pdfium-binaries:
@@ -22,9 +20,9 @@ export PDFium_IS_DEBUG=false
 export PDFium_TARGET_OS=android
 export PDFium_VERSION="149.0.7811.0"
 
-export PDFium_TARGET_CPU=$1
-if [ "$PDFium_TARGET_CPU" != "arm" ] && [ "$PDFium_TARGET_CPU" != "arm64" ] && [ "$PDFium_TARGET_CPU" != "x64" ]; then
-  echo "Expected PDFium_TARGET_CPU to be arm/arm64/x64, got: '$PDFium_TARGET_CPU'"
+export PDFium_TARGET_CPU="${1:-arm64}"
+if [ "$PDFium_TARGET_CPU" != "arm64" ]; then
+  echo "Expected PDFium_TARGET_CPU to be arm64, got: '$PDFium_TARGET_CPU'"
   exit 1
 fi
 
@@ -62,10 +60,4 @@ fi
 popd
 
 install -Dvm755 "submodules/pdfium-binaries/staging/lib/libpdfium.so" -t \
-  ".dart_tool/hooks_runner/shared/pdfium_dart/build/chromium_7811/android-${PDFium_TARGET_CPU}/"
-for CPU in arm arm64 x64; do
-  # Place empty file for other cpus to prevent downloading prebuilts
-  TARGET_DIR=".dart_tool/hooks_runner/shared/pdfium_dart/build/chromium_7811/android-${CPU}"
-  mkdir -p "${TARGET_DIR}"
-  touch "${TARGET_DIR}/libpdfium.so"
-done
+  ".dart_tool/hooks_runner/shared/pdfium_dart/build/chromium_7811/android-arm64/"

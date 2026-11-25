@@ -33,6 +33,34 @@ class DimensionStroke extends Stroke {
   /// Arrowhead head angle (forwarded to arrowheads).
   double headAngle;
 
+  TextPainter? _cachedTextPainter;
+  String? _cachedTextPainterText;
+  Color? _cachedTextPainterColor;
+
+  /// Returns a laid-out [TextPainter] for [text] and [effectiveTextColor],
+  /// reusing the cached layout when neither has changed.
+  TextPainter resolveTextPainter(Color effectiveTextColor) {
+    if (_cachedTextPainter != null &&
+        _cachedTextPainterText == text &&
+        _cachedTextPainterColor == effectiveTextColor) {
+      return _cachedTextPainter!;
+    }
+    _cachedTextPainter?.dispose();
+    _cachedTextPainterText = text;
+    _cachedTextPainterColor = effectiveTextColor;
+    return _cachedTextPainter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          color: effectiveTextColor,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+  }
+
   DimensionStroke({
     required super.color,
     required super.pressureEnabled,

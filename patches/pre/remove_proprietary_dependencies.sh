@@ -65,8 +65,8 @@ echo -n "Removing sentry code: "
 if [ -f "lib/data/sentry/_sentry_init_foss.dart" ]; then
   echo "found"
   mv lib/data/sentry/_sentry_init_foss.dart lib/data/sentry/sentry_init.dart
-  rm lib/data/sentry/sentry_filter.dart
-  rm test/sentry_filter_test.dart
+  rm -f lib/data/sentry/sentry_filter.dart
+  rm -f test/sentry_filter_test.dart
 else
   echo "not found"
 fi

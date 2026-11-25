@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'dart:math';
 
 import 'package:defer_pointer/defer_pointer.dart';
@@ -35,6 +38,17 @@ class CanvasImage extends StatefulHookWidget {
   /// When notified, all [CanvasImages] will have their [active] property set to false.
   static var activeListener = ChangeNotifier();
 
+  /// Whether any mounted [CanvasImage] is currently active and listening for deactivation.
+  static bool get hasActiveImage =>
+      // ignore: invalid_use_of_protected_member
+      activeListener.hasListeners;
+
+  /// Deactivates any currently active [CanvasImage] without notifying when none are active.
+  static void deactivateAll() {
+    if (!hasActiveImage) return;
+    activeListener.notifyListenersPlease();
+  }
+
   /// The minimum size of the interactive area for the image.
   static double minInteractiveSize = 50;
 
@@ -47,6 +61,7 @@ class CanvasImage extends StatefulHookWidget {
 
 class _CanvasImageState extends State<CanvasImage> {
   var _active = false;
+  ChangeNotifier? _subscribedActiveListener;
 
   /// Whether this image can be dragged
   bool get active => _active;
@@ -54,11 +69,16 @@ class _CanvasImageState extends State<CanvasImage> {
     if (active == value) return;
 
     if (value) {
-      CanvasImage.activeListener
-          .notifyListenersPlease(); // de-activate all other images
+      CanvasImage.deactivateAll(); // de-activate all other images
+      _active = true;
+      final listener = CanvasImage.activeListener;
+      listener.addListener(disableActive);
+      _subscribedActiveListener = listener;
+    } else {
+      _active = false;
+      _subscribedActiveListener?.removeListener(disableActive);
+      _subscribedActiveListener = null;
     }
-
-    _active = value;
 
     if (mounted) {
       try {
@@ -84,8 +104,6 @@ class _CanvasImageState extends State<CanvasImage> {
       active = true;
       widget.image.newImage = false;
     }
-
-    CanvasImage.activeListener.addListener(disableActive);
 
     super.initState();
   }
@@ -256,7 +274,8 @@ class _CanvasImageState extends State<CanvasImage> {
   @override
   void dispose() {
     widget.image.loadOut();
-    CanvasImage.activeListener.removeListener(disableActive);
+    _subscribedActiveListener?.removeListener(disableActive);
+    _subscribedActiveListener = null;
     super.dispose();
   }
 

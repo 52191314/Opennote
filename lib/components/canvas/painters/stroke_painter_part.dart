@@ -2,6 +2,154 @@
 part of '../_canvas_painter.dart';
 
 extension _StrokePainter on CanvasPainter {
+  static const _pictureCacheTileStep = 256.0;
+
+  static Rect _computeRecordedCullRect(Rect cullRect) {
+    final padX = max(_pictureCacheTileStep, cullRect.width * 0.25);
+    final padY = max(_pictureCacheTileStep, cullRect.height * 0.25);
+    final left =
+        ((cullRect.left - padX) / _pictureCacheTileStep).floorToDouble() *
+        _pictureCacheTileStep;
+    final top =
+        ((cullRect.top - padY) / _pictureCacheTileStep).floorToDouble() *
+        _pictureCacheTileStep;
+    final right =
+        ((cullRect.right + padX) / _pictureCacheTileStep).ceilToDouble() *
+        _pictureCacheTileStep;
+    final bottom =
+        ((cullRect.bottom + padY) / _pictureCacheTileStep).ceilToDouble() *
+        _pictureCacheTileStep;
+    return Rect.fromLTRB(left, top, right, bottom);
+  }
+
+  static bool _rectContains(Rect outer, Rect inner) =>
+      inner.left >= outer.left &&
+      inner.top >= outer.top &&
+      inner.right <= outer.right &&
+      inner.bottom <= outer.bottom;
+
+  void _paintWithPictureCache(
+    Canvas canvas,
+    Size size,
+    Rect? canvasRect,
+    Rect cullRect,
+  ) {
+    var strokesDigest = page.layers.length;
+    var pencilShaderMask = 0;
+    for (int i = 0; i < page.layers.length; i++) {
+      final layer = page.layers[i];
+      if (!layer.visible) {
+        strokesDigest = 0x1fffffff & (strokesDigest * 31 + 17);
+        continue;
+      }
+      final layerStrokes = layer.strokes;
+      strokesDigest = 0x1fffffff & (strokesDigest * 31 + layerStrokes.length);
+      for (int j = 0; j < layerStrokes.length; j++) {
+        final s = layerStrokes[j];
+        strokesDigest = 0x1fffffff & (strokesDigest * 31 + s.renderSignature);
+        if (s.toolId == .pencil) {
+          pencilShaderMask =
+              0x1fffffff &
+              (pencilShaderMask * 31 +
+                  (shouldUsePencilShader(s.options.size) ? 2 : 1));
+        }
+      }
+    }
+
+    var selectionIdentity = 0;
+    final selectedList = currentSelection?.strokes;
+    if (selectedList != null && selectedList.isNotEmpty) {
+      selectionIdentity = selectedList.length;
+      for (int i = 0; i < selectedList.length; i++) {
+        selectionIdentity =
+            0x1fffffff &
+            (selectionIdentity * 31 + identityHashCode(selectedList[i]));
+      }
+    }
+
+    final isLowQuality = currentScale < CanvasPainter._zoomThreshold;
+    final primaryColorValue = primaryColor.toARGB32();
+    final existingKey = page.strokePictureCacheKey;
+    final isCacheHit =
+        existingKey != null &&
+        existingKey.strokesDigest == strokesDigest &&
+        existingKey.invert == invert &&
+        existingKey.primaryColorValue == primaryColorValue &&
+        existingKey.isLowQuality == isLowQuality &&
+        existingKey.pencilShaderMask == pencilShaderMask &&
+        existingKey.selectionIdentity == selectionIdentity &&
+        existingKey.isInfiniteCanvas == isInfiniteCanvas &&
+        existingKey.canvasSize == size &&
+        _rectContains(existingKey.recordedCullRect, cullRect);
+
+    if (!isCacheHit) {
+      page.invalidateStrokePictureCache();
+      final recordedCullRect = _computeRecordedCullRect(cullRect);
+      final strokes = page.strokes;
+
+      var hasVisibleHighlighters = false;
+      var hasVisibleNonHighlighters = false;
+      for (int i = 0; i < strokes.length; i++) {
+        final s = strokes[i];
+        if (!s.boundingBox
+            .inflate(s.options.size * 2)
+            .overlaps(recordedCullRect)) {
+          continue;
+        }
+        if (s.toolId == .highlighter) {
+          hasVisibleHighlighters = true;
+        } else {
+          hasVisibleNonHighlighters = true;
+        }
+        if (hasVisibleHighlighters && hasVisibleNonHighlighters) break;
+      }
+
+      if (hasVisibleHighlighters) {
+        final hlRecorder = ui.PictureRecorder();
+        final hlCanvas = Canvas(hlRecorder);
+        _drawHighlighterStrokes(
+          hlCanvas,
+          canvasRect,
+          recordedCullRect,
+          strokes,
+        );
+        page.cachedHighlighterPicture = hlRecorder.endRecording();
+      }
+
+      if (hasVisibleNonHighlighters) {
+        final nonHlRecorder = ui.PictureRecorder();
+        final nonHlCanvas = Canvas(nonHlRecorder);
+        _drawNonHighlighterStrokes(nonHlCanvas, recordedCullRect, strokes);
+        page.cachedNonHighlighterPicture = nonHlRecorder.endRecording();
+      }
+
+      page.strokePictureCacheKey = (
+        strokesDigest: strokesDigest,
+        invert: invert,
+        primaryColorValue: primaryColorValue,
+        isLowQuality: isLowQuality,
+        pencilShaderMask: pencilShaderMask,
+        selectionIdentity: selectionIdentity,
+        isInfiniteCanvas: isInfiniteCanvas,
+        canvasSize: size,
+        recordedCullRect: recordedCullRect,
+      );
+    }
+
+    final highlighterPic = page.cachedHighlighterPicture;
+    if (highlighterPic != null) canvas.drawPicture(highlighterPic);
+
+    if (currentStroke?.toolId == .highlighter) {
+      _drawCurrentStroke(canvas);
+      final nonHighlighterPic = page.cachedNonHighlighterPicture;
+      if (nonHighlighterPic != null) canvas.drawPicture(nonHighlighterPic);
+    } else {
+      final nonHighlighterPic = page.cachedNonHighlighterPicture;
+      if (nonHighlighterPic != null) canvas.drawPicture(nonHighlighterPic);
+      _drawCurrentStroke(canvas);
+    }
+  }
+
   void _drawHighlighterStrokes(
     Canvas canvas,
     Rect? canvasRect,
@@ -12,35 +160,67 @@ extension _StrokePainter on CanvasPainter {
       ..blendMode = invert ? BlendMode.lighten : BlendMode.darken
       ..color = Colors.white.withAlpha(Highlighter.alpha);
     final strokePaint = Paint();
-    final layerBounds = canvasRect ?? cullRect;
-    bool needToRestoreCanvasLayer = false;
 
-    Color? lastColor;
-    for (final stroke in strokes) {
-      if (stroke.toolId != .highlighter) continue;
-      if (cullRect != null &&
-          !stroke.boundingBox
-              .inflate(stroke.options.size * 2)
-              .overlaps(cullRect)) {
+    int i = 0;
+    while (i < strokes.length) {
+      final first = strokes[i];
+      if (first.toolId != .highlighter) {
+        i++;
+        continue;
+      }
+      final firstBounds = first.boundingBox.inflate(first.options.size * 2);
+      if (cullRect != null && !firstBounds.overlaps(cullRect)) {
+        i++;
         continue;
       }
 
-      final color = stroke.color.withValues(alpha: 1).withInversion(invert);
+      final runColor = first.color.withValues(alpha: 1).withInversion(invert);
+      var tightBounds = firstBounds;
+      int runEnd = i + 1;
 
-      if (color != lastColor) {
-        // new layer for each color
-        if (needToRestoreCanvasLayer) canvas.restore();
-        canvas.saveLayer(layerBounds, layerPaint);
-
-        needToRestoreCanvasLayer = true;
-        lastColor = color;
+      while (runEnd < strokes.length) {
+        final next = strokes[runEnd];
+        if (next.toolId != .highlighter) {
+          runEnd++;
+          continue;
+        }
+        final nextBounds = next.boundingBox.inflate(next.options.size * 2);
+        if (cullRect != null && !nextBounds.overlaps(cullRect)) {
+          runEnd++;
+          continue;
+        }
+        final nextColor = next.color.withValues(alpha: 1).withInversion(invert);
+        if (nextColor != runColor) break;
+        tightBounds = tightBounds.expandToInclude(nextBounds);
+        runEnd++;
       }
 
-      strokePaint.color = color;
-      canvas.drawPath(_selectPath(stroke), strokePaint);
-    }
+      if (canvasRect != null) {
+        tightBounds = tightBounds.intersect(canvasRect);
+      }
+      if (cullRect != null) {
+        tightBounds = tightBounds.intersect(cullRect);
+      }
 
-    if (needToRestoreCanvasLayer) canvas.restore();
+      if (!tightBounds.isEmpty) {
+        canvas.saveLayer(tightBounds, layerPaint);
+        strokePaint.color = runColor;
+        for (int j = i; j < runEnd; j++) {
+          final stroke = strokes[j];
+          if (stroke.toolId != .highlighter) continue;
+          if (cullRect != null &&
+              !stroke.boundingBox
+                  .inflate(stroke.options.size * 2)
+                  .overlaps(cullRect)) {
+            continue;
+          }
+          canvas.drawPath(_selectPath(stroke), strokePaint);
+        }
+        canvas.restore();
+      }
+
+      i = runEnd;
+    }
   }
 
   void _drawNonHighlighterStrokes(
@@ -51,6 +231,11 @@ extension _StrokePainter on CanvasPainter {
     final paint = Paint();
     final shapePaint = Paint()..style = PaintingStyle.stroke;
     final fillPaint = Paint()..style = PaintingStyle.fill;
+    final selectedList = currentSelection?.strokes;
+    final Set<Stroke>? selectedSet =
+        selectedList != null && selectedList.length > 4
+        ? (Set<Stroke>.identity()..addAll(selectedList))
+        : null;
 
     for (final stroke in strokes) {
       if (stroke.toolId == .highlighter) continue;
@@ -62,7 +247,10 @@ extension _StrokePainter on CanvasPainter {
       }
 
       var color = stroke.color.withInversion(invert);
-      if (currentSelection?.strokes.contains(stroke) ?? false) {
+      final isSelected = selectedSet != null
+          ? selectedSet.contains(stroke)
+          : (selectedList?.contains(stroke) ?? false);
+      if (isSelected) {
         color = Color.lerp(color, primaryColor, 0.5)!;
       }
 

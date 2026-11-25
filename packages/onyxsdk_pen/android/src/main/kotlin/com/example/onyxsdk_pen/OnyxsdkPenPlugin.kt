@@ -21,8 +21,10 @@ class OnyxsdkPenPlugin: FlutterPlugin, MethodCallHandler {
     channel = MethodChannel(binding.binaryMessenger, "onyxsdk_pen")
     channel.setMethodCallHandler(this)
 
-    // Needed for new Onyx devices
-    RxManager.Builder.initAppContext(binding.applicationContext)
+    // Initialize Onyx RxManager only on actual Onyx Boox e-ink hardware
+    if (android.os.Build.BRAND.equals("onyx", ignoreCase = true)) {
+      RxManager.Builder.initAppContext(binding.applicationContext)
+    }
 
     binding
       .platformViewRegistry

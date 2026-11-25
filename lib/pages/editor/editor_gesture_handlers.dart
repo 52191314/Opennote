@@ -37,8 +37,7 @@ extension EditorGestureHandlers on EditorState {
   bool isDrawGesture(ScaleStartDetails details) {
     if (coreInfo.readOnly || _isHandScrollOnlyMode) return false;
 
-    CanvasImage.activeListener
-        .notifyListenersPlease(); // un-select active image
+    CanvasImage.deactivateAll(); // un-select active image
 
     final isStylus =
         currentPointerKind == PointerDeviceKind.stylus ||

@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -5,7 +8,6 @@ import 'dart:isolate';
 import 'dart:math';
 import 'dart:ui' as ui;
 
-import 'package:fast_image_resizer/fast_image_resizer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';

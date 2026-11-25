@@ -6,10 +6,6 @@ on:
   push:
     tags:
       - "**"
-    branches:
-      - "**"
-    paths:
-      - .github/workflows/android.yml
 
 jobs:
   warmup-android-cache:
@@ -56,12 +52,9 @@ jobs:
             .dart_tool/
             .flutter-plugins-dependencies
             build/
-            linux/flutter/ephemeral/
-            macos/Flutter/ephemeral/
             packages/**/.dart_tool/
             packages/**/.flutter-plugins-dependencies
             packages/**/pubspec.lock
-            windows/flutter/ephemeral/
             ~/.dartServer/
             ~/.dart-tool/
           key: ${{ runner.OS }}-opennote-${{ hashFiles('**/pubspec.yaml') }}
@@ -89,28 +82,19 @@ jobs:
         with:
           cache-write-only: true
 
-      - name: Setup Rust
-        uses: moonrepo/setup-rust@v1
-        if: ${{ steps.cache.outputs.cache-hit == '' }}
-        with:
-          # The rust version is read from rust-toolchain.toml
-          targets: armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android
-
       - name: Disable Flutter CLI animations
         run: flutter config --no-cli-animations
         if: ${{ steps.cache.outputs.cache-hit == '' }}
 
       - run: ./patches/pre/remove_dev_dependencies.sh
         if: ${{ steps.cache.outputs.cache-hit == '' }}
-      - run: ./patches/pre/remove_linux_dependencies.sh
+      - run: bash ./patches/pre/strip_unused_sentry_native.sh
         if: ${{ steps.cache.outputs.cache-hit == '' }}
       - run: flutter pub get
         if: ${{ steps.cache.outputs.cache-hit == '' }}
-      - run: ./patches/post/patch_rust_versions.sh
-        if: ${{ steps.cache.outputs.cache-hit == '' }}
 
       - name: Build apk
-        run: flutter build apk --split-debug-info=build/debug-info/android --obfuscate --tree-shake-icons
+        run: flutter build apk --target-platform android-arm64 --split-debug-info=build/debug-info/android --obfuscate --tree-shake-icons
         if: ${{ steps.cache.outputs.cache-hit == '' }}
 
       - name: Save Android cache
@@ -160,12 +144,9 @@ jobs:
             .dart_tool/
             .flutter-plugins-dependencies
             build/
-            linux/flutter/ephemeral/
-            macos/Flutter/ephemeral/
             packages/**/.dart_tool/
             packages/**/.flutter-plugins-dependencies
             packages/**/pubspec.lock
-            windows/flutter/ephemeral/
             ~/.dartServer/
             ~/.dart-tool/
           key: ${{ runner.OS }}-opennote-${{ hashFiles('**/pubspec.yaml') }}
@@ -212,26 +193,18 @@ jobs:
         with:
           cache-read-only: true
 
-      - name: Setup Rust
-        uses: moonrepo/setup-rust@v1
-        with:
-          # The rust version is read from rust-toolchain.toml
-          targets: armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android
-
       - name: Disable Flutter CLI animations
         run: flutter config --no-cli-animations
 
       - run: ./patches/pre/remove_dev_dependencies.sh
-      - run: ./patches/pre/remove_linux_dependencies.sh
+      - run: bash ./patches/pre/strip_unused_sentry_native.sh
       - run: ./patches/pre/remove_proprietary_dependencies.sh
         if: matrix.foss
       - run: flutter pub get
-      - run: ./patches/post/patch_rust_versions.sh
 
       - name: Build apk
         run: |
-          flutter build apk --split-per-abi --split-debug-info=build/debug-info/android --obfuscate --tree-shake-icons
-          flutter build apk --split-debug-info=build/debug-info/android --obfuscate --tree-shake-icons
+          flutter build apk --target-platform android-arm64 --split-debug-info=build/debug-info/android --obfuscate --tree-shake-icons
 
       - name: Rename apk
         id: rename_apk
@@ -244,24 +217,9 @@ jobs:
             prefix="Opennote"
           fi
 
-          # Universal APK
           if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
             cp "build/app/outputs/flutter-apk/app-release.apk" "output/${prefix}_v${buildName}.apk"
           fi
-
-          # Split-per-ABI APKs (arm64-v8a, armeabi-v7a, x86_64)
-          for f in build/app/outputs/flutter-apk/*-release.apk; do
-            filename=$(basename "$f")
-            if [ "$filename" != "app-release.apk" ]; then
-              abi=$(echo "$filename" | sed -e 's/app-//' -e 's/-release.apk//')
-              cp "$f" "output/${prefix}_v${buildName}_${abi}.apk"
-            fi
-          done
-
-          # Also include any directly named Gradle release APKs
-          for f in build/app/outputs/apk/release/*.apk; do
-            [ -f "$f" ] && cp "$f" output/
-          done
 
           echo "apkName=${prefix}_v${buildName}.apk" >> $GITHUB_OUTPUT
           echo "Generated APKs:"
@@ -284,6 +242,7 @@ jobs:
         if: ${{ matrix.foss == false }}
         run: |
           flutter build appbundle --no-pub \
+            --target-platform android-arm64 \
             --split-debug-info=build/debug-info/android \
             --obfuscate \
             --tree-shake-icons \

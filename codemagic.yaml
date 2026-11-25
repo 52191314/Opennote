@@ -9,12 +9,13 @@ workflows:
     scripts:
       - name: Get dependencies
         script: |
+          bash ./patches/pre/strip_unused_sentry_native.sh
           flutter pub get
           flutter pub get --directory=packages/sbn
           flutter pub get --directory=packages/onyxsdk_pen
       - name: Build iOS & package IPA
         script: |
-          flutter build ios --release --no-codesign
+          flutter build ios --release --no-codesign --tree-shake-icons --split-debug-info=build/ios/debug-info --obfuscate
           echo "=== Looking for Runner.app ==="
           find . -name "Runner.app" -type d 2>/dev/null
           APP="./build/ios/iphoneos/Runner.app"
@@ -29,7 +30,8 @@ workflows:
           echo "=== Packaging IPA from $APP ==="
           mkdir -p Payload
           cp -R "$APP" Payload/
-          zip -r Opennote.ipa Payload/
+          find Payload/Runner.app \( -name "*.dSYM" -o -name "Headers" -o -name "PrivateHeaders" -o -name "Modules" -o -name "BCSymbolMaps" -o -name ".DS_Store" \) -exec rm -rf {} + 2>/dev/null || true
+          zip -r Opennote.ipa Payload/ -9 -y
           rm -rf Payload/
           ls -lh Opennote.ipa
           echo "=== IPA created at $(pwd)/Opennote.ipa ==="

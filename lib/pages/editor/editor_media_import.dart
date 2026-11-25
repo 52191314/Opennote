@@ -363,59 +363,10 @@ extension EditorMediaImport on EditorState {
     return true;
   }
 
-  Future paste() async {
-    /// Maps image formats to their file extension.
-    const Map<SimpleFileFormat, String> formats = {
-      Formats.jpeg: '.jpeg',
-      Formats.png: '.png',
-      Formats.gif: '.gif',
-      Formats.tiff: '.tiff',
-      Formats.bmp: '.bmp',
-      Formats.ico: '.ico',
-      Formats.svg: '.svg',
-      Formats.webp: '.webp',
-    };
-
-    final reader = await SystemClipboard.instance?.read();
-    if (reader == null) return;
-
-    final List<_PhotoInfo> photoInfos = [];
-    final List<ReadProgress> progresses = [];
-
-    for (final format in formats.keys) {
-      if (!reader.canProvide(format)) continue;
-      final progress = reader.getFile(format, (file) async {
-        final stream = file.getStream();
-        final List<int> bytes = [];
-        await for (final chunk in stream) {
-          bytes.addAll(chunk);
-        }
-        if (bytes.isEmpty) {
-          log.warning('Pasted empty file: $file (${formats[format]})');
-          return;
-        }
-
-        String extension;
-        if (file.fileName != null) {
-          extension = file.fileName!.substring(file.fileName!.lastIndexOf('.'));
-        } else {
-          extension = formats[format]!;
-        }
-
-        photoInfos.add((
-          bytes: Uint8List.fromList(bytes),
-          extension: extension,
-        ));
-      });
-      if (progress != null) progresses.add(progress);
-    }
-
-    while (progresses.isNotEmpty) {
-      progresses.removeWhere((progress) => progress.fraction.value == 1);
-      await Future.delayed(const Duration(milliseconds: 50));
-    }
-
-    await _pickPhotos(photoInfos);
+  Future<void> paste() async {
+    final pasted = await MobileClipboard.pasteImage();
+    if (pasted == null || pasted.bytes.isEmpty) return;
+    await _pickPhotos([(bytes: pasted.bytes, extension: pasted.extension)]);
   }
 
   /// Calculates the target center for placing new elements, photos, or shapes.

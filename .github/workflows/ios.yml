@@ -87,9 +87,8 @@ jobs:
         run: flutter config --no-cli-animations
 
       - run: bash ./patches/pre/remove_dev_dependencies.sh
-      - run: bash ./patches/pre/remove_linux_dependencies.sh
+      - run: bash ./patches/pre/strip_unused_sentry_native.sh
       - run: flutter pub get
-      - run: bash ./patches/post/patch_rust_versions.sh
 
       - name: Build for iOS
         run: |
@@ -124,9 +123,11 @@ jobs:
           else
             mkdir -p Payload
             cp -r build/ios/iphoneos/Runner.app Payload/
-            zip -r $ipaPath Payload
+            find Payload/Runner.app \( -name "*.dSYM" -o -name "Headers" -o -name "PrivateHeaders" -o -name "Modules" -o -name "BCSymbolMaps" -o -name ".DS_Store" \) -exec rm -rf {} + 2>/dev/null || true
+            zip -r -9 -y $ipaPath Payload
             rm -rf Payload
           fi
+          ls -lh "$ipaPath"
           echo "ipaPath=$ipaPath" >> $GITHUB_OUTPUT
 
       - name: Restore keychain

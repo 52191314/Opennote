@@ -4,8 +4,8 @@ library;
 import 'dart:async';
 import 'dart:io';
 
-import 'package:args/args.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_sharing_intent/flutter_sharing_intent.dart';
@@ -21,6 +21,7 @@ import 'package:saber/components/canvas/pencil_shader.dart';
 import 'package:saber/components/theming/dynamic_material_app.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
 import 'package:saber/data/flavor_config.dart';
+import 'package:saber/data/is_this_a_test.dart';
 import 'package:saber/data/nextcloud/nc_http_overrides.dart';
 import 'package:saber/data/nextcloud/saber_syncer.dart';
 import 'package:saber/data/prefs.dart';
@@ -49,13 +50,11 @@ Future<void> main(List<String> args) async {
 
 Future<void> appRunner(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (!isThisATest) GestureBinding.instance.resamplingEnabled = true;
 
-  final parser = ArgParser()..addFlag('verbose', abbr: 'v', negatable: false);
-  final parsedArgs = parser.parse(args);
+  final verbose = args.contains('-v') || args.contains('--verbose');
 
-  Logger.root.level = (kDebugMode || parsedArgs.flag('verbose'))
-      ? Level.INFO
-      : Level.WARNING;
+  Logger.root.level = (kDebugMode || verbose) ? Level.INFO : Level.WARNING;
   Logger.root.onRecord.listen((record) {
     logsHistory.add(record);
 

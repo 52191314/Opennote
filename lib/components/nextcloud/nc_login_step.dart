@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
+library;
+
 import 'dart:async';
 import 'dart:math';
 
@@ -7,7 +10,6 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nextcloud/core.dart';
 import 'package:nextcloud/nextcloud.dart';
-import 'package:regexed_validator/regexed_validator.dart';
 import 'package:saber/components/settings/app_info.dart';
 import 'package:saber/components/theming/adaptive_circular_progress_indicator.dart';
 import 'package:saber/data/nextcloud/login_flow.dart';
@@ -21,6 +23,28 @@ class NcLoginStep extends StatefulHookWidget {
   const NcLoginStep({super.key, required this.recheckCurrentStep});
 
   final void Function() recheckCurrentStep;
+
+  /// Returns whether [url] is a valid HTTP or HTTPS Nextcloud server URL.
+  static bool isValidServerUrl(String url) {
+    if (url.isEmpty || url.contains(' ')) return false;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return false;
+    if (uri.scheme != 'http' && uri.scheme != 'https') return false;
+    final host = uri.host;
+    if (host.isEmpty || uri.authority.endsWith(':')) return false;
+    if (host == 'localhost') return true;
+    if (!host.contains('.')) return false;
+
+    final segments = host.split('.');
+    if (segments.length < 2 || segments.any((s) => s.isEmpty)) return false;
+    final isIpv4 =
+        segments.length == 4 &&
+        segments.every((s) {
+          final octet = int.tryParse(s);
+          return octet != null && octet >= 0 && octet <= 255;
+        });
+    return isIpv4 || segments.last.length >= 2;
+  }
 
   @override
   State<NcLoginStep> createState() => _NcLoginStepState();
@@ -82,7 +106,7 @@ class _NcLoginStepState extends State<NcLoginStep> {
 
     final isServerUrlValid = useListenableSelector(serverUrlController, () {
       final url = _prependHttpsIfMissing(serverUrlController.text);
-      return validator.url(url);
+      return NcLoginStep.isValidServerUrl(url);
     });
 
     final loginFlow = useState<SaberLoginFlow?>(null);

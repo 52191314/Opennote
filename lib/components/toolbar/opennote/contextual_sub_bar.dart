@@ -54,8 +54,7 @@ class OpennoteContextualSubBar extends StatelessWidget {
         actions.currentTool is DimensionTool;
 
     final platform = Theme.of(context).platform;
-    final scrollPhysics =
-        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS
+    final scrollPhysics = platform == TargetPlatform.iOS
         ? const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics())
         : const ClampingScrollPhysics();
 

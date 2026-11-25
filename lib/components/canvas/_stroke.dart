@@ -9,6 +9,7 @@ import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:one_dollar_unistroke_recognizer/one_dollar_unistroke_recognizer.dart';
+import 'package:path_drawing/path_drawing.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_arrow_stroke.dart';
 import 'package:saber/components/canvas/_circle_stroke.dart';
@@ -162,6 +163,42 @@ class Stroke {
   /// The line style for this stroke (solid, dashed, dotted).
   LineStyle lineStyle;
 
+  var _geometryRevision = 0;
+
+  /// Monotonic counter incremented when this stroke's geometry is mutated.
+  int get geometryRevision => _geometryRevision;
+
+  /// Fast state fingerprint covering in-place mutations to this stroke.
+  int get renderSignature {
+    var h = identityHashCode(this) ^ (_geometryRevision * 0x9E3779B9);
+    h ^= color.toARGB32();
+    h ^= (lineStyle.index << 16) ^ options.size.hashCode;
+    if (fillColor != null) h ^= fillColor!.toARGB32() << 1;
+    if (this case final TapeStroke tape) {
+      h ^=
+          (tape.isConcealed ? 0x5555 : 0xAAAA) ^
+          (tape.pattern.index << 8) ^
+          tape.rect.hashCode;
+    } else if (this case final DimensionStroke dim) {
+      h ^=
+          dim.start.hashCode ^
+          dim.end.hashCode ^
+          dim.offset.hashCode ^
+          dim.text.hashCode;
+    } else if (this case final ArrowStroke arrow) {
+      h ^=
+          arrow.start.hashCode ^
+          arrow.end.hashCode ^
+          (arrow.arrowheadStyle.index << 4) ^
+          (arrow.connectorStyle.index << 8);
+    } else if (this case final CircleStroke circle) {
+      h ^= circle.center.hashCode ^ circle.radius.hashCode;
+    } else if (this case final RectangleStroke rectStroke) {
+      h ^= rectStroke.rect.hashCode;
+    }
+    return h & 0x1fffffff;
+  }
+
   List<Offset>? _lowQualityPolygon, _highQualityPolygon;
   List<Offset> get lowQualityPolygon =>
       _lowQualityPolygon ??= getPolygon(quality: .low);
@@ -173,15 +210,45 @@ class Stroke {
       _lowQualityPath ??= getPath(lowQualityPolygon, smooth: true);
   Path get highQualityPath => _highQualityPath ??= getPath(highQualityPolygon);
 
+  Path? _styledPath;
+  LineStyle? _styledPathLineStyle;
+  double? _styledPathSize;
+
+  /// Returns a cached dashed or dotted [Path] for [lineStyle], or
+  /// [highQualityPath] when [lineStyle] is [LineStyle.solid].
+  Path get styledPath {
+    if (lineStyle == LineStyle.solid) return highQualityPath;
+    if (_styledPath != null &&
+        _styledPathLineStyle == lineStyle &&
+        _styledPathSize == options.size) {
+      return _styledPath!;
+    }
+    final strokeWidth = options.size;
+    final dashArray = lineStyle == LineStyle.dotted
+        ? CircularIntervalList<double>([1.0, strokeWidth * 1.8])
+        : CircularIntervalList<double>([strokeWidth * 3.0, strokeWidth * 1.8]);
+    _styledPathLineStyle = lineStyle;
+    _styledPathSize = strokeWidth;
+    return _styledPath = dashPath(centerlinePath, dashArray: dashArray);
+  }
+
   void shift(Offset offset) {
     if (offset == .zero) return;
 
+    _geometryRevision++;
     points.shift(offset);
     _lowQualityPolygon?.shift(offset);
     _highQualityPolygon?.shift(offset);
     _lowQualityPath = _lowQualityPath?.shift(offset);
     _highQualityPath = _highQualityPath?.shift(offset);
     _centerlinePath = _centerlinePath?.shift(offset);
+    if (_styledPath != null &&
+        _styledPathLineStyle == lineStyle &&
+        _styledPathSize == options.size) {
+      _styledPath = _styledPath!.shift(offset);
+    } else {
+      _styledPath = null;
+    }
     _boundingBox = _boundingBox?.shift(offset);
   }
 
@@ -189,6 +256,7 @@ class Stroke {
   void rotateAround(double angleRadians, Offset center) {
     if (angleRadians == 0) return;
 
+    _geometryRevision++;
     final cosA = cos(angleRadians);
     final sinA = sin(angleRadians);
 
@@ -233,6 +301,7 @@ class Stroke {
         ? getPath(_highQualityPolygon!)
         : null;
     _centerlinePath = null;
+    _styledPath = null;
     _boundingBox = null;
   }
 
@@ -240,6 +309,7 @@ class Stroke {
   void scaleAround(double scaleX, double scaleY, Offset pivot) {
     if (scaleX == 1 && scaleY == 1) return;
 
+    _geometryRevision++;
     Offset transformPoint(Offset point) {
       final newX = pivot.dx + (point.dx - pivot.dx) * scaleX;
       final newY = pivot.dy + (point.dy - pivot.dy) * scaleY;
@@ -276,15 +346,18 @@ class Stroke {
         ? getPath(_highQualityPolygon!)
         : null;
     _centerlinePath = null;
+    _styledPath = null;
     _boundingBox = null;
   }
 
   void markPolygonNeedsUpdating() {
+    _geometryRevision++;
     _lowQualityPolygon = null;
     _highQualityPolygon = null;
     _lowQualityPath = null;
     _highQualityPath = null;
     _centerlinePath = null;
+    _styledPath = null;
     _boundingBox = null;
   }
 

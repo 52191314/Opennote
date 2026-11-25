@@ -94,15 +94,19 @@ class CanvasPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final canvasRect = isInfiniteCanvas ? null : (Offset.zero & size);
     final cullRect = _tryGetCullRect(canvas);
-    final strokes = this.strokes ?? page.strokes;
 
-    _drawHighlighterStrokes(canvas, canvasRect, cullRect, strokes);
-    if (currentStroke?.toolId == .highlighter) {
-      _drawCurrentStroke(canvas);
-      _drawNonHighlighterStrokes(canvas, cullRect, strokes);
+    if (strokes == null && cullRect != null) {
+      _paintWithPictureCache(canvas, size, canvasRect, cullRect);
     } else {
-      _drawNonHighlighterStrokes(canvas, cullRect, strokes);
-      _drawCurrentStroke(canvas);
+      final strokes = this.strokes ?? page.strokes;
+      _drawHighlighterStrokes(canvas, canvasRect, cullRect, strokes);
+      if (currentStroke?.toolId == .highlighter) {
+        _drawCurrentStroke(canvas);
+        _drawNonHighlighterStrokes(canvas, cullRect, strokes);
+      } else {
+        _drawNonHighlighterStrokes(canvas, cullRect, strokes);
+        _drawCurrentStroke(canvas);
+      }
     }
     for (final stroke in laserStrokes) _drawLaserStroke(canvas, stroke);
     _drawDetectedShape(canvas);

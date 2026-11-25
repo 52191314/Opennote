@@ -1,4 +1,29 @@
+/// 🤖 Generated wholely or partially with Google Antigravity
 part of 'editor_image.dart';
+
+Future<Uint8List?> _resizeImageBytes(
+  Uint8List bytes, {
+  required int width,
+  required int height,
+}) async {
+  if (width <= 0 || height <= 0) return null;
+  final codec = await ui.instantiateImageCodec(
+    bytes,
+    targetWidth: width,
+    targetHeight: height,
+  );
+  ui.FrameInfo? frame;
+  try {
+    frame = await codec.getNextFrame();
+    final byteData = await frame.image.toByteData(
+      format: ui.ImageByteFormat.png,
+    );
+    return byteData?.buffer.asUint8List();
+  } finally {
+    frame?.image.dispose();
+    codec.dispose();
+  }
+}
 
 class PngEditorImage extends EditorImage {
   ImageProvider? imageProvider;
@@ -152,13 +177,13 @@ class PngEditorImage extends EditorImage {
       if (naturalSize.width != reducedSize.width && !isThumbnail) {
         await null; // wait for next event-loop iteration
 
-        final resizedByteData = await resizeImage(
+        final resizedBytes = await _resizeImageBytes(
           bytes,
           width: reducedSize.width.toInt(),
           height: reducedSize.height.toInt(),
         );
-        if (resizedByteData != null) {
-          imageProvider = MemoryImage(resizedByteData.buffer.asUint8List());
+        if (resizedBytes != null) {
+          imageProvider = MemoryImage(resizedBytes);
         }
 
         naturalSize = reducedSize;

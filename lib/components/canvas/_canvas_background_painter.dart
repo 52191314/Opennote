@@ -2,10 +2,45 @@
 library;
 
 import 'dart:math';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:saber/data/extensions/color_extensions.dart';
 import 'package:sbn/canvas_background_pattern.dart';
+
+class _Float32Buffer {
+  Float32List _data;
+  var _length = 0;
+
+  _Float32Buffer([int initialCapacity = 64])
+    : _data = Float32List(initialCapacity);
+
+  int get length => _length;
+
+  void addPoint(double x, double y) {
+    if (_length + 2 > _data.length) _grow(_length + 2);
+    _data[_length++] = x;
+    _data[_length++] = y;
+  }
+
+  void addSegment(Offset start, Offset end) {
+    if (_length + 4 > _data.length) _grow(_length + 4);
+    _data[_length++] = start.dx;
+    _data[_length++] = start.dy;
+    _data[_length++] = end.dx;
+    _data[_length++] = end.dy;
+  }
+
+  void _grow(int minCapacity) {
+    var newCap = _data.length * 2;
+    if (newCap < minCapacity) newCap = minCapacity;
+    final next = Float32List(newCap)..setRange(0, _length, _data);
+    _data = next;
+  }
+
+  Float32List view() => Float32List.sublistView(_data, 0, _length);
+}
 
 class CanvasBackgroundPainter extends CustomPainter {
   const CanvasBackgroundPainter({
@@ -104,30 +139,133 @@ class CanvasBackgroundPainter extends CustomPainter {
       canvas.clipRect(visibleRect);
     }
 
-    for (final element in getPatternElements(
-      pattern: backgroundPattern,
-      size: size,
-      lineHeight: lineHeight,
-      lineThickness: lineThickness,
-      bounds: isInfiniteCanvas ? visibleRect : null,
-    )) {
-      paint.strokeWidth = element.thickness ?? lineThickness.toDouble();
+    if (backgroundPattern != .none) {
+      final defaultThickness = lineThickness.toDouble();
+      final effectivePrimary = primaryColor.withValues(
+        alpha: preview ? 0.5 : 0.2,
+      );
+      final effectiveSecondary = secondaryColor.withValues(
+        alpha: preview ? 0.5 : 0.2,
+      );
 
-      if (element.secondaryColor) {
-        paint.color = secondaryColor.withValues(alpha: preview ? 0.5 : 0.2);
-      } else {
-        paint.color = primaryColor.withValues(alpha: preview ? 0.5 : 0.2);
+      final primaryLines = _Float32Buffer(128);
+      final dots = _Float32Buffer(256);
+      Map<double, _Float32Buffer>? customPrimaryLines;
+      List<PatternElement>? secondaryElements;
+
+      for (final element in getPatternElements(
+        pattern: backgroundPattern,
+        size: size,
+        lineHeight: lineHeight,
+        lineThickness: lineThickness,
+        bounds: isInfiniteCanvas ? visibleRect : null,
+      )) {
+        if (!element.isLine) {
+          if (element.secondaryColor || element.thickness != null) {
+            secondaryElements ??= <PatternElement>[];
+            secondaryElements.add(element);
+          } else {
+            dots.addPoint(element.start.dx, element.start.dy);
+          }
+          continue;
+        }
+
+        if (element.secondaryColor) {
+          secondaryElements ??= <PatternElement>[];
+          secondaryElements.add(element);
+        } else if (element.thickness == null ||
+            element.thickness == defaultThickness) {
+          primaryLines.addSegment(element.start, element.end);
+        } else {
+          customPrimaryLines ??= <double, _Float32Buffer>{};
+          (customPrimaryLines[element.thickness!] ??= _Float32Buffer(
+            32,
+          )).addSegment(element.start, element.end);
+        }
       }
 
-      if (element.isLine) {
-        canvas.drawLine(element.start, element.end, paint);
-      } else {
-        canvas.drawCircle(element.start, paint.strokeWidth * 4 / 3, paint);
+      if (primaryLines.length > 0) {
+        paint
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.butt
+          ..strokeWidth = defaultThickness
+          ..color = effectivePrimary;
+        _drawLineBatch(canvas, primaryLines, paint);
+      }
+
+      if (customPrimaryLines != null) {
+        paint
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.butt
+          ..color = effectivePrimary;
+        for (final entry in customPrimaryLines.entries) {
+          paint.strokeWidth = entry.key;
+          _drawLineBatch(canvas, entry.value, paint);
+        }
+      }
+
+      if (dots.length > 0) {
+        final dotRadius = defaultThickness * 4 / 3;
+        final raw = dots.view();
+        if (raw.length >= 16) {
+          paint
+            ..style = PaintingStyle.stroke
+            ..strokeCap = StrokeCap.round
+            ..strokeWidth = dotRadius * 2
+            ..color = effectivePrimary;
+          canvas.drawRawPoints(ui.PointMode.points, raw, paint);
+        } else {
+          paint
+            ..style = PaintingStyle.fill
+            ..color = effectivePrimary;
+          for (int i = 0; i < raw.length; i += 2) {
+            canvas.drawCircle(Offset(raw[i], raw[i + 1]), dotRadius, paint);
+          }
+        }
+      }
+
+      if (secondaryElements != null) {
+        for (final element in secondaryElements) {
+          final width = element.thickness ?? defaultThickness;
+          paint
+            ..strokeWidth = width
+            ..color = element.secondaryColor
+                ? effectiveSecondary
+                : effectivePrimary;
+          if (element.isLine) {
+            paint
+              ..style = PaintingStyle.stroke
+              ..strokeCap = StrokeCap.butt;
+            canvas.drawLine(element.start, element.end, paint);
+          } else {
+            paint.style = PaintingStyle.fill;
+            canvas.drawCircle(element.start, width * 4 / 3, paint);
+          }
+        }
       }
     }
 
     if (!isInfiniteCanvas && backgroundPattern.requiresClipping) {
       canvas.restore();
+    }
+  }
+
+  static void _drawLineBatch(
+    Canvas canvas,
+    _Float32Buffer buffer,
+    Paint paint,
+  ) {
+    final raw = buffer.view();
+    if (raw.length >= 32) {
+      canvas.drawRawPoints(ui.PointMode.lines, raw, paint);
+      return;
+    }
+    for (int i = 0; i < raw.length; i += 4) {
+      canvas.drawLine(
+        Offset(raw[i], raw[i + 1]),
+        Offset(raw[i + 2], raw[i + 3]),
+        paint,
+      );
     }
   }
 
