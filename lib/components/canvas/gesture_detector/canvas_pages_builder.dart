@@ -1,33 +1,6 @@
 /// 🤖 Generated wholely or partially with Claude Code; Gemini; Google Antigravity
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 part of '../canvas_gesture_detector.dart';
-
-Rect? _computePageLocalViewport({
-  required Size pageSize,
-  required double pageWidth,
-  required double topOfPage,
-  required double containerWidth,
-  required Rect boundingBox,
-}) {
-  final fitRatio = pageWidth > 0 && pageSize.width > 0
-      ? pageWidth / pageSize.width
-      : 1.0;
-  if (fitRatio <= 0 || !boundingBox.isFinite || boundingBox.isEmpty) {
-    return null;
-  }
-  final pageLeftInColumn = (containerWidth - pageWidth) * 0.5;
-  return Rect.fromLTRB(
-    ((boundingBox.left - pageLeftInColumn) / fitRatio).clamp(
-      0.0,
-      pageSize.width,
-    ),
-    ((boundingBox.top - topOfPage) / fitRatio).clamp(0.0, pageSize.height),
-    ((boundingBox.right - pageLeftInColumn) / fitRatio).clamp(
-      0.0,
-      pageSize.width,
-    ),
-    ((boundingBox.bottom - topOfPage) / fitRatio).clamp(0.0, pageSize.height),
-  );
-}
 
 class _PagesBuilder extends StatelessWidget {
   const _PagesBuilder({
@@ -70,10 +43,7 @@ class _PagesBuilder extends StatelessWidget {
     double topOfPage = Editor.gapBetweenPages * 2;
     for (int pageIndex = 0; pageIndex < pages.length; pageIndex++) {
       final page = pages[pageIndex];
-      final pageWidth = min(
-        page.size.width,
-        containerWidth,
-      ); // because of FittedBox
+      final pageWidth = min(page.size.width, containerWidth);
       final pageHeight = pageWidth / page.size.width * page.size.height;
       final bottomOfPage = topOfPage + pageHeight;
 
@@ -86,7 +56,7 @@ class _PagesBuilder extends StatelessWidget {
       if (shouldRender) {
         final Rect? pageLocalViewport = !isInViewport
             ? Rect.zero
-            : _computePageLocalViewport(
+            : CanvasViewportProjection.computePageLocalViewport(
                 pageSize: page.size,
                 pageWidth: pageWidth,
                 topOfPage: topOfPage,
@@ -99,7 +69,6 @@ class _PagesBuilder extends StatelessWidget {
       }
 
       children.add(const SizedBox.square(dimension: Editor.gapBetweenPages));
-
       topOfPage = bottomOfPage + Editor.gapBetweenPages;
     }
 
