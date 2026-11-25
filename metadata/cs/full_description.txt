@@ -1,15 +1,33 @@
-Saber je aplikace pro psaní poznámek uzpůsobená pro ruční psaní.
+Pište přirozeně rukou, anotujte PDF a tvořte přesné diagramy na bleskovém 120Hz vektorovém plátně. Opennote spojuje plynulé digitální psaní, nekonečné plátno a aktivní opakování — lokálně, soukromě a zcela bez reklam.
 
-Je navržena pro nejjednodušší a nejintuitivnější možné používání, přičemž stále nabízí unikátní funkce, které opravdu využijete. Navíc je Saber dostupný napříč všemi vašimi zařízeními, velkými i malými, mezi nimiž se bez povšimnutí synchronizuje.
+Ať už si děláte zápisky z přednášek, značíte učebnice v PDF, rýsujete technické schémata nebo řešíte rovnice, Opennote promění váš tablet či telefon v soustředěný digitální zápisník.
 
-Je na místě poznamenat, že umí invertovat vaše poznámky, pokud jste v temném módu. To vám umožňuje psát bílým inkoustem na černém pozadí, což je daleko příjemnější pro oči v prostředí s nedostatkem světla, jako když učitel ve třídě vypne osvětlení. Obrázky a PDF jsou také invertovány, takže stále můžete bez problému používat digitální výtisky nebo učebnice.
+120HZ RUČNÍ PSANÍ A PŘESNÉ RÝSOVÁNÍ
+• Vektorový inkoust s nízkou odezvou: Plnicí pero, kuličkové pero, tužka a věrný zvýrazňovač, který nikdy nezakrývá text.
+• Přirozená gesta: Škrtnutím smažete a zakroužkováním okamžitě vyberete.
+• Technická sada: Pravítko, úhloměr, rozpoznávání tvarů, přichytávání k mřížce a izometrické, milimetrové, šestihranné či Cornell šablony.
+• Zvětšovací okno: Pište drobné vzorce a poznámky pohodlně na jakékoli obrazovce.
 
-Saber používá systém dvou hesel, aby ochránil vaše poznámky před kýmkoliv kromě vás, i kdyby měl kompletní přístup k serveru. Můžete bezpečně ukládat své poznámky na oficiální server aplikace Saber, jiný server či dokonce pro tyto účely provozovat svůj vlastní server!
+NEKONEČNÉ PLÁTNO A STRÁNKOVANÉ ZÁPISNÍKY
+• Dva režimy: Přepínejte mezi stránkovanými zápisníky pro tisk a nekonečným plátnem pro myšlenkové mapy a schémata.
+• Neomezené složky: Uspořádejte předměty a projekty do přehledných vnořených složek.
+• Tmavý režim s inverzí: Invertujte poznámky, PDF i prezentace pro pohodlné večerní studium.
 
-Aplikace má kompletně otevřené zdrojové kódy, takže si je každý může prohlédnout a přesně vidět, co aplikace dělá a jakým způsobem jsou zpracovává vaše data. Spousta dalších aplikací pro pořizování poznámek má uzavřené zdrojové kódy a je proprietární, což znamená, že co se děje uvnitř, je pro veřejnost záhadou.
+ANOTACE PDF A STUDIJNÍ PÁSKA
+• Import PDF a obrázků: Anotujte skripta, pracovní listy i slajdy s přesným posunem a otáčením.
+• Studijní páska (Study Tape): Zakryjte klíčové vzorce a definice a klepnutím je při zkoušení odhalte.
+• Otevřený export: Exportujte ostré PDF, PNG ve vysokém rozlišení, SVG nebo otevřený formát .sbn.
 
-Jako někdo, kdo studuje matematiku, mohu říct, že pro mě vždy bylo utrpení zvýrazňovat víceřádkové rovnice v jiných aplikacích, kde zvýrazňovač mění barvu po přetažení již zvýrazněné části. Další problém, který jsem měl v některých aplikacích, spočíval v tom, že se zvýrazňovač vykresloval nad textem, takže se text ztrácel a špatně se četl. Zvýrazňovač aplikace Saber těmito neduhy netrpí. Využívá kompozice plátna k vykreslování zvýrazňovače způsobem, který je konzistentní s tradičním papírem, ba možná i lepší, jelikož řeší překrývání a udržuje konzistenci barev.
+SOUKROMÍ A ŠIFROVANÁ SYNCHRONIZACE
+• 100 % offline: Poznámky zůstávají ve vašem zařízení — bez povinného účtu, bez reklam a bez sledování.
+• Zero-knowledge synchronizace: Volitelná koncově šifrovaná synchronizace přes váš vlastní server Nextcloud nebo WebDAV.
 
-Saber má vše, co potřebujete k tomu, abyste dokázali organizovat své poznámky. Tvořte složky uvnitř složek uvnitř složek, jak jen chcete bez omezení na počet zanořených složek. Ačkoliv může být poznámka pohřbena hluboko uvnitř vnořené složky, pořád k ní můžete jednoduše přistoupit, jelikož jsou nejnovější poznámky vždy k dispozici na domovské obrazovce.
+OPENNOTE PRO
+Základní psaní, stránkované zápisníky, anotace PDF, tmavý režim a lokální úložiště jsou navždy zdarma. Opennote Pro odemyká Nekonečné plátno, Přesné rýsovací nástroje, Studijní pásku, neomezené šablony a export ve vysokém rozlišení.
 
-Objevte zcela nový způsob zaznamenávání a organizace vašich myšlenek s aplikací Saber. Ať již jste student, profesionál nebo kreativní duše, Saber je vaším důvěryhodným společníkem pro digitální psaní. Stáhněte si jej nyní a nechte volně plynout své nápady!
+• Pro Měsíční: $4.99 / měsíc
+• Pro Roční: $29.99 / rok (Ušetříte 50 % — 7 dní zdarma)
+• Pro Student Roční: $14.99 / rok
+• Pro Doživotní: $69.99 jednorázově
+
+Předplatné se automaticky obnovuje, pokud není zrušeno alespoň 24 hodin před koncem období v nastavení účtu obchodu.

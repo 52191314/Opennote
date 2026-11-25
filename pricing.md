@@ -1,36 +1,58 @@
-# Pricing
+# Opennote Pricing
 
 [English](./pricing.md) | [čeština](./pricing-cs.md)
 
-The app is free to use. However, to support Saber's development and fund the server,
-I'm offering some storage plans for the Saber Nextcloud server...
+Opennote is **free to download and use** for everyday handwriting, PDF annotation, and local-first note-taking. When you need an unbounded canvas, precision engineering tools, and active-recall study workflows, upgrade to **Opennote Pro**—with transparent pricing, zero ads, and no cloud lock-in.
 
-| Sponsorship | Storage                                                |
-|-------------|--------------------------------------------------------|
-| Free        | All accounts by default get 5GB of storage.            |
-| Standard    | Sponsor me _any amount_ per month for 10GB of storage. |
-| Premium     | Sponsor me $5 or more per month for 50GB of storage.   |
-| Hoarder     | Sponsor me $7 or more per month for 100GB of storage.  |
+## Plans at a Glance
 
-All sponsorships are in USD ($) because of GitHub Sponsors.
+| Plan | Price | Highlights |
+|---|---|---|
+| **Opennote Free** | **$0** forever | Core 120Hz handwriting, paginated notebooks, standard PDF import & annotation, dark mode inversion, local storage, optional self-hosted Nextcloud/WebDAV sync |
+| **Opennote Pro Monthly** | **$4.99 / month** | Full Pro toolkit, billed monthly, cancel anytime |
+| **Opennote Pro Annual** *(Most Popular)* | **$29.99 / year** | **Save 50%** vs monthly — includes a **7-day free trial** |
+| **Opennote Pro Student** | **$14.99 / year** | **50% off Annual** for verified students and educators |
+| **Opennote Pro Lifetime** | **$69.99** one-time | Pay once, own Opennote Pro forever — no recurring subscription |
 
-## How to sponsor
+## Free vs. Opennote Pro
 
-- Go to https://github.com/sponsors/adil192
-- Select the amount you want to sponsor me per month
-- Enter your card details
-- Email me at adilhanney@disroot.org with your Nextcloud username and
-  confirmation of your sponsorship, and I'll upgrade your account!
+| Feature | Opennote Free | Opennote Pro |
+|---|:---:|:---:|
+| 120Hz Vector Ink (Pen, Fountain, Pencil, True Highlighter) | Yes | Yes |
+| Scribble-to-Erase & Circle-to-Select Gestures | Yes | Yes |
+| Paginated Notebooks & Standard Paper Templates | Yes | Yes |
+| PDF & Image Import + Annotation | Yes | Yes |
+| Dark Mode Note & PDF Inversion | Yes | Yes |
+| Local-First Offline Storage & Open `.sbn` Format | Yes | Yes |
+| Self-Hosted Nextcloud / WebDAV Encrypted Sync | Yes | Yes |
+| **Infinite Canvas Mode** | — | **Included** |
+| **Precision Drafting Suite** (Ruler, Protractor, Snap-to-Grid) | — | **Included** |
+| **Engineering Templates** (Isometric, Millimeter, Hex, Cornell, Blueprint) | — | **Included** |
+| **Study Tape Active Recall** (Hide & Tap-to-Reveal) | — | **Included** |
+| **High-Res & Vector Export** (Batch PDF, SVG, High-DPI PNG) | — | **Included** |
+| **Unlimited Custom Templates & Pen Presets** | — | **Included** |
+| **Priority Cloud Sync & Backup Controls** | — | **Included** |
 
-## I'm a student
+## Frequently Asked Questions
 
-If you're a student, you can get the Standard plan for free! Just email me at
-adilhanney@disroot.org with your Nextcloud username and confirmation of your
-student status (e.g. a screenshot of your UNiDAYS iD),
-and I'll upgrade your account!
+### How does the 7-day free trial work?
+Choose **Opennote Pro Annual ($29.99/year)** to start a 7-day free trial with full access to every Pro feature. You will not be charged during the trial, and you can cancel anytime in your App Store or Google Play account settings at least 24 hours before the trial ends.
 
-# Other options
+### Do I lose my notes if I cancel Pro?
+Never. Your notes are stored locally on your device in open formats. If your Pro subscription ends, you keep full read, edit, and export access to all existing notes—only Pro-exclusive creation tools pause until you resubscribe.
 
-- You can see a community maintained list of alternative Nextcloud providers here, 
-  many of which offer free plans: https://github.com/nextcloud/providers#providers.
-- You could also self-host a Nextcloud server. See https://nextcloud.com/install/#instructions-server
+### How do I claim the Student Annual plan ($14.99/year)?
+Select **Student Annual** inside the Opennote Pro upgrade sheet and verify your academic status with a valid `.edu` / university email or student ID (such as ISIC or UNiDAYS).
+
+### Does Opennote require a paid cloud subscription to sync?
+No. Opennote is local-first and supports zero-knowledge, client-side encrypted sync with any standard **Nextcloud** or **WebDAV** server—including free community providers or your own self-hosted server.
+
+### Are my notes ever used for ads or analytics?
+No. Opennote contains zero ads, zero third-party ad SDKs, and zero behavioral tracking. Crash diagnostics are strictly opt-in.
+
+### Is Opennote open source?
+Yes. Opennote is open-source software licensed under the **GNU General Public License v3.0 (GPLv3)**. Purchasing Opennote Pro directly funds continued development of cross-platform engineering, study, and canvas features.
+
+---
+
+*Prices are listed in USD; local store currencies and regional taxes may apply on Apple App Store and Google Play. Subscriptions renew automatically unless canceled at least 24 hours before the end of the current billing period.*

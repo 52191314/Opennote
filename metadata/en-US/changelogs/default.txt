@@ -1,0 +1,5 @@
+• Refreshed Opennote v2 workspace with faster 120Hz vector ink and streamlined floating toolbars
+• Precision drafting upgrades: ruler, protractor, isometric grids, and shape snapping
+• Study Tape active recall tool to hide and tap-to-reveal formulas and key terms
+• Smoother infinite canvas viewport rendering and PDF annotation
+• Introducing Opennote Pro with a 7-day free trial on the Annual plan

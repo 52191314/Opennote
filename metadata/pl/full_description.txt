@@ -1,17 +1,33 @@
-Saber to aplikacja do notatek stworzona z myślą o piśmie odręcznym.
+Pisz naturalnie odręcznie, dodawaj adnotacje do plików PDF i twórz precyzyjne diagramy na błyskawicznym płótnie wektorowym 120Hz. Opennote łączy płynne pismo odręczne, nieskończone płótno i aktywną naukę — lokalnie, prywatnie i bez reklam.
 
-Zaprojektowano ją tak, aby była maksymalnie prosta i intuicyjna, a jednocześnie oferowała unikalne funkcje, z których rzeczywiście będziesz korzystać. Co więcej, Saber jest dostępny na wszystkich twoich urządzeniach – zarówno tych mniejszych, jak i większych – bezproblemowo i płynnie się między nimi synchronizując.
+Idealny do notatek z wykładów, podręczników PDF, szkiców inżynierskich i równań matematycznych. Opennote zamienia tablet lub telefon w cyfrowy zeszyt bez rozpraszaczy.
 
-Co istotne, aplikacja potrafi odwrócić kolory twoich notatek, gdy korzystasz z trybu ciemnego. Pozwala ci to na pisanie białym atramentem po czarnym tle, co znacznie mniej męczy wzrok w słabym oświetleniu – na przykład wtedy, gdy nauczyciel zgasi światło na sali.
-Obrazy oraz pliki PDF również ulegają inwersji, więc możesz bez najmniejszego problemu i zbędnego zamieszania korzystać z cyfrowych wydruków czy podręczników.
+PISMO 120HZ I PRECYZYJNE RYSOWANIE
+• Responsywny atrament wektorowy: Pióro wieczne, długopis, ołówek i prawdziwy zakreślacz, który nie rozmywa tekstu przy nakładaniu.
+• Intuicyjne gesty: Zamazuj, aby wymazać, i zakreślaj kółkiem, aby zaznaczyć.
+• Zestaw kreślarski: Linijka, kątomierz, rozpoznawanie kształtów, przyciąganie do siatki oraz szablony izometryczne, milimetrowe, heksagonalne i Cornella.
+• Okno powiększenia: Pisz drobne wzory i adnotacje wygodnie na każdym ekranie.
 
-Saber wykorzystuje system podwójnego hasła, by chronić twoje notatki przed każdym niepowołanym dostępem, nawet w przypadku przejęcia przez kogoś całkowitej kontroli nad serwerem. Możesz bezpiecznie przechowywać swoje zapiski na oficjalnym serwerze Saber, na dowolnym innym serwerze, a nawet postawić swój własny!
+NIESKOŃCZONE PŁÓTNO I ZESZYTY STRONICOWANE
+• Tryb podwójny: Przełączaj się między stronicowanymi zeszytami do druku a nieskończonym płótnem na mapy myśli i schematy.
+• Nielimitowane foldery: Porządkuj przedmioty i projekty w przejrzystej strukturze folderów.
+• Inteligentny tryb ciemny: Odwracaj kolory notatek, PDF-ów i slajdów dla komfortowej nauki nocą.
 
-Aplikacja jest w pełni otwartoźródłowa (open-source), dzięki czemu każdy może prześledzić jej kod i dokładnie sprawdzić, w jaki sposób działa i jak przetwarza twoje dane. Wiele innych aplikacji do notowania opiera się na zamkniętym, własnościowym kodzie, co sprawia, że ich wewnętrzne mechanizmy funkcjonowania pozostają dla ogółu użytkowników owiane tajemnicą.
+ADNOTACJE PDF I TAŚMA DO NAUKI
+• Import PDF i obrazów: Zaznaczaj podręczniki, arkusze i prezentacje z płynnym przesuwaniem i obracaniem.
+• Taśma do Nauki (Study Tape): Zakrywaj wzory i definicje, a następnie stukaj, aby je odsłonić podczas powtórek.
+• Otwarty eksport: Eksportuj ostre PDF-y, obrazy PNG wysokiej rozdzielczości, SVG lub otwarte pliki .sbn.
 
-Jako osobie uczącej się matematyki, zakreślanie wielolinijkowych równań w innych aplikacjach zawsze było dla mnie prawdziwym utrapieniem, zwłaszcza gdy zakreślacz zmieniał odcień w miejscach, w których jego warstwy na siebie nachodziły. Kolejnym mankamentem, z którym się borykałem, był fakt, że w niektórych programach zakreślacz pojawiał się na wierzchu tekstu, przez co stawał się on wyblakły i bardzo trudny do odczytania.
-Zakreślacz w Saber jest całkowicie wolny od tego typu wad. Wykorzystuje on nakładanie obrazów na płótnie (canvas compositing), aby renderować zakreślenia w sposób, który nie tylko dorównuje, ale wręcz przewyższa tradycyjny papier – perfekcyjnie radzi sobie z nakładaniem na siebie warstw i utrzymuje w pełni jednolitą barwę.
+PRYWATNOŚĆ I SZYFROWANA SYNCHRONIZACJA
+• 100% offline: Twoje notatki zostają na urządzeniu — bez obowiązkowego konta, reklam i śledzenia.
+• Synchronizacja zero-knowledge: Opcjonalna synchronizacja z szyfrowaniem end-to-end przez własny serwer Nextcloud lub WebDAV.
 
-Saber oferuje wszystko, czego potrzebujesz, by utrzymać swoje notatki w idealnym porządku. Twórz foldery w folderach, a w nich kolejne foldery absolutnie do woli, bez jakiegokolwiek limitu zagnieżdżeń. A nawet jeśli jakaś notatka zostanie pogrzebana głęboko w strukturze katalogów, wciąż masz do niej niezwykle łatwy dostęp, ponieważ twoje najświeższe wpisy są zawsze widoczne pod ręką, prosto z ekranu głównego.
+OPENNOTE PRO
+Podstawowe pismo, zeszyty stronicowane, adnotacje PDF, tryb ciemny i pamięć lokalna są darmowe na zawsze. Opennote Pro odblokowuje Nieskończone Płótno, Narzędzia Kreślarskie, Taśmę do Nauki, nielimitowane szablony i eksport wektorowy wysokiej rozdzielczości.
 
-Odkryj zupełnie nowy sposób na przelewanie i organizację swoich myśli z Saber. Niezależnie od tego, czy jesteś uczniem, profesjonalistą, czy po prostu kreatywną duszą, Saber to twój niezawodny kompan do cyfrowego pisania odręcznego. Pobierz go już teraz i pozwól swoim pomysłom swobodnie płynąć!
+• Pro Miesięczny: 4,99 $ / mies.
+• Pro Roczny: 29,99 $ / rok (Oszczędź 50% — 7 dni za darmo)
+• Pro Studencki Roczny: 14,99 $ / rok
+• Pro Dożywotni: 69,99 $ jednorazowo
+
+Subskrypcje odnawiają się automatycznie, chyba że zostaną anulowane co najmniej 24 godziny przed końcem okresu w ustawieniach konta sklepu.
