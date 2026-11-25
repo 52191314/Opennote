@@ -1,6 +1,7 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
 /// 🤖 Modified with Grok 4.7
+/// 🤖 Modified with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'dart:math';
@@ -287,6 +288,7 @@ class _InnerCanvasState extends State<InnerCanvas> {
                           pageSize: Size(widget.width, widget.height),
                           setAsBackground: null,
                           isBackground: true,
+                          isInfiniteCanvas: widget.coreInfo.isInfiniteCanvas,
                           readOnly: true,
                         ),
                       Positioned(
@@ -323,6 +325,7 @@ class _InnerCanvasState extends State<InnerCanvas> {
                           image: page.images[i],
                           pageSize: Size(widget.width, widget.height),
                           setAsBackground: widget.setAsBackground,
+                          isInfiniteCanvas: widget.coreInfo.isInfiniteCanvas,
                           readOnly:
                               widget.coreInfo.readOnly ||
                               !widget.currentToolIsSelect,

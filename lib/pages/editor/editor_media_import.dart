@@ -478,6 +478,10 @@ extension EditorMediaImport on EditorState {
       bytes,
       context: context,
     );
+    if (!context.mounted) return;
+    unawaited(
+      MonetizationCoordinator.instance.recordPdfExportCompleted(context),
+    );
   }
 
   /// Exports the current note as an SBA (Saber Archive) file.

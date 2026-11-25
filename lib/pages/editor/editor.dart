@@ -3,6 +3,7 @@
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
 /// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
 /// 🤖 Modified with Grok 4.7
+/// 🤖 Modified with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'dart:async';
@@ -58,6 +59,7 @@ import 'package:saber/data/editor/zoom_window.dart';
 import 'package:saber/data/extensions/matrix4_extensions.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
 import 'package:saber/data/file_manager/note_paths.dart';
+import 'package:saber/data/monetization/monetization_coordinator.dart';
 import 'package:saber/data/nextcloud/saber_syncer.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/shortcuts/mobile_keybinder.dart';

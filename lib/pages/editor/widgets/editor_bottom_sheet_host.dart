@@ -1,11 +1,14 @@
 /// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:saber/components/editor/presentation_mode.dart';
 import 'package:saber/components/toolbar/editor_bottom_sheet.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/editor_history.dart';
+import 'package:saber/data/monetization/monetization_coordinator.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:sbn/change.dart';
 
@@ -169,6 +172,13 @@ class EditorBottomSheetHost extends StatelessWidget {
       onOpenFlashcards: () =>
           _openPresentation(context, mode: DisplayMode.flashcard),
       onExport: onExport,
+      isPro: MonetizationCoordinator.instance.isPro,
+      onProFeatureRequested: (featureId) => unawaited(
+        MonetizationCoordinator.instance.handleFeatureRequest(
+          context,
+          featureId,
+        ),
+      ),
     );
   }
 

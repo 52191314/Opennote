@@ -1,14 +1,19 @@
 /// 🤖 Generated wholely or partially with Claude Code; Gemini 4 Neon (Medium); Google Antigravity
 library;
 
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:saber/components/home/quick_template_strip.dart';
 import 'package:saber/components/home/sentry_consent_dialog.dart';
+import 'package:saber/components/monetization/paywall_models.dart';
 import 'package:saber/components/navbar/responsive_navbar.dart';
 import 'package:saber/components/onboarding/welcome_onboarding_dialog.dart';
 import 'package:saber/components/settings/update_manager.dart';
 import 'package:saber/components/theming/dynamic_material_app.dart';
+import 'package:saber/data/is_this_a_test.dart';
+import 'package:saber/data/monetization/monetization_coordinator.dart';
 import 'package:saber/pages/home/browse.dart';
 import 'package:saber/pages/home/recent_notes.dart';
 import 'package:saber/pages/home/settings.dart';
@@ -68,7 +73,16 @@ class _HomePageState extends State<HomePage> {
   Future<void> _showDialogs() async {
     await null; // initState must be completed before using context
     if (!mounted) return;
-    await WelcomeOnboardingDialog.showIfNeeded(context);
+    final coordinator = MonetizationCoordinator.instance;
+    final onboardingResult = await WelcomeOnboardingDialog.showIfNeeded(
+      context,
+      onStartTrial: coordinator.startTrialFromOnboarding,
+      onRestorePurchases: () =>
+          coordinator.restorePurchasesWithFeedback(context),
+    );
+    if (onboardingResult != null && mounted) {
+      await coordinator.handleOnboardingCompletion(context, onboardingResult);
+    }
     if (!mounted) return;
     await SentryConsentDialog.showIfNeeded(context);
     if (!mounted) return;
@@ -80,6 +94,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget get body {
+    final coordinator = MonetizationCoordinator.instance;
+    final effectiveProBannerBuilder =
+        widget.proBannerBuilder ??
+        (isThisATest ? null : coordinator.buildHomeProBanner);
+    final effectiveProTemplateTap =
+        widget.onProTemplateTap ??
+        (kind) => unawaited(coordinator.handleProTemplateTap(context, kind));
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
       child: KeyedSubtree(
@@ -88,17 +110,50 @@ class _HomePageState extends State<HomePage> {
           HomePage.browseSubpage => BrowsePage(
             path: widget.path,
             topBanner: widget.topBanner,
-            proBannerBuilder: widget.proBannerBuilder,
+            proBannerBuilder: effectiveProBannerBuilder,
             onCreateTemplate: widget.onCreateTemplate,
-            onProTemplateTap: widget.onProTemplateTap,
+            onProTemplateTap: effectiveProTemplateTap,
           ),
           HomePage.whiteboardSubpage => const Whiteboard(),
-          HomePage.settingsSubpage => const SettingsPage(),
+          HomePage.settingsSubpage => ListenableBuilder(
+            listenable: coordinator.entitlementService,
+            builder: (context, _) => SettingsPage(
+              isPro: coordinator.isPro,
+              planSummary: coordinator.planSummary,
+              onUpgradeTap: () => unawaited(
+                coordinator.isPro
+                    ? coordinator.entitlementService.openManageSubscriptions()
+                    : coordinator.showPaywall(
+                        context,
+                        trigger: PaywallTriggerContext.generalUpgrade,
+                      ),
+              ),
+              onRestorePurchasesTap: () =>
+                  unawaited(coordinator.restorePurchasesWithFeedback(context)),
+              onRateAppTap: () =>
+                  unawaited(coordinator.showReviewPrompt(context, force: true)),
+              onRevisitWelcomeTourTap: () => unawaited(
+                WelcomeOnboardingDialog.showFlow(
+                  context,
+                  onStartTrial: coordinator.startTrialFromOnboarding,
+                  onRestorePurchases: () =>
+                      coordinator.restorePurchasesWithFeedback(context),
+                ).then((result) {
+                  if (result != null && context.mounted) {
+                    return coordinator.handleOnboardingCompletion(
+                      context,
+                      result,
+                    );
+                  }
+                }),
+              ),
+            ),
+          ),
           _ => RecentPage(
             topBanner: widget.topBanner,
-            proBannerBuilder: widget.proBannerBuilder,
+            proBannerBuilder: effectiveProBannerBuilder,
             onCreateTemplate: widget.onCreateTemplate,
-            onProTemplateTap: widget.onProTemplateTap,
+            onProTemplateTap: effectiveProTemplateTap,
           ),
         },
       ),
