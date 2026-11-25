@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'dart:io';
@@ -31,6 +32,8 @@ import 'package:saber/i18n/strings.g.dart';
 import 'package:saber/pages/home/settings/bento_section_card.dart';
 import 'package:saber/pages/home/settings/pressure_curve_setting.dart';
 import 'package:saber/pages/home/settings/settings_stows.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const _cupertinoDirectionIcons = [
   CupertinoIcons.arrow_up_to_line,
@@ -46,19 +49,27 @@ const _materialDirectionIcons = [
   Icons.west,
 ];
 
-/// Builds the Cloud & Storage Bento card.
-Widget buildSyncSettingsCard() {
+/// Builds the (1) Membership & Sync Bento card.
+Widget buildMembershipSyncSettingsCard({
+  required bool isPro,
+  EdgeInsetsGeometry margin = const EdgeInsets.symmetric(
+    horizontal: 16,
+    vertical: 8,
+  ),
+}) {
+  final isConnected = stows.username.value.isNotEmpty;
+  final badge = isConnected
+      ? 'Connected'
+      : (isPro ? 'Pro Ready' : 'Local Only');
+
   return BentoSectionCard(
     icon: Icons.cloud_sync_outlined,
-    title: 'Cloud & Storage',
-    badge: stows.username.value.isNotEmpty ? 'Connected' : 'Local Only',
+    title: 'Membership & Sync',
+    subtitle: 'Cloud Sync (Nextcloud / WebDAV)',
+    badge: badge,
+    margin: margin,
     children: [
       const NextcloudProfile(),
-      if (Platform.isAndroid)
-        SettingsDirectorySelector(
-          title: t.settings.prefLabels.customDataDir,
-          icon: Icons.folder,
-        ),
       SettingsSwitch(
         title: t.settings.prefLabels.allowInsecureConnections,
         subtitle: t.settings.prefDescriptions.allowInsecureConnections,
@@ -69,147 +80,20 @@ Widget buildSyncSettingsCard() {
   );
 }
 
-/// Builds the Studio Appearance Bento card.
-Widget buildAppearanceSettingsCard({
-  required bool cupertino,
-  required bool usesMaterialByDefault,
-  required bool usesCupertinoByDefault,
-  required VoidCallback onStateChanged,
-}) {
-  const materialIcon = Icons.android;
-
-  return BentoSectionCard(
-    icon: Icons.palette_outlined,
-    title: t.settings.prefCategories.general,
-    children: [
-      SettingsDropdown(
-        title: t.settings.prefLabels.locale,
-        icon: cupertino ? CupertinoIcons.globe : Icons.language,
-        pref: stows.locale,
-        options: [
-          ToggleButtonsOption('', Text(t.settings.systemLanguage)),
-          ...AppLocaleUtils.supportedLocales.map((locale) {
-            final localeCode = locale.toLanguageTag();
-            final localeName = localeNames[localeCode];
-            assert(localeName != null, 'Missing locale name for $localeCode');
-            return ToggleButtonsOption(
-              localeCode,
-              Text(localeName ?? localeCode),
-            );
-          }),
-        ],
-      ),
-      SettingsSelection(
-        title: t.settings.prefLabels.appTheme,
-        iconBuilder: (i) {
-          if (i == ThemeMode.system.index) return Icons.brightness_auto;
-          if (i == ThemeMode.light.index) return Icons.light_mode;
-          if (i == ThemeMode.dark.index) return Icons.dark_mode;
-          return null;
-        },
-        pref: SettingsStows.appTheme,
-        optionsWidth: 60,
-        options: [
-          ToggleButtonsOption(
-            ThemeMode.system.index,
-            Icon(
-              Icons.brightness_auto,
-              semanticLabel: t.settings.themeModes.system,
-            ),
-          ),
-          ToggleButtonsOption(
-            ThemeMode.light.index,
-            Icon(Icons.light_mode, semanticLabel: t.settings.themeModes.light),
-          ),
-          ToggleButtonsOption(
-            ThemeMode.dark.index,
-            Icon(Icons.dark_mode, semanticLabel: t.settings.themeModes.dark),
-          ),
-        ],
-      ),
-      SettingsSelection(
-        title: t.settings.prefLabels.platform,
-        iconBuilder: (i) => switch (stows.platform.value) {
-          .iOS || .macOS => Icons.apple,
-          _ => materialIcon,
-        },
-        pref: SettingsStows.platform,
-        optionsWidth: 60,
-        options: [
-          ToggleButtonsOption(() {
-            if (usesMaterialByDefault) return defaultTargetPlatform.index;
-            return TargetPlatform.android.index;
-          }(), const Icon(materialIcon, semanticLabel: 'Material')),
-          ToggleButtonsOption(() {
-            if (kDebugMode && stows.platform.value.isCupertino)
-              return stows.platform.value.index;
-            if (usesCupertinoByDefault) return defaultTargetPlatform.index;
-            return TargetPlatform.iOS.index;
-          }(), const Icon(Icons.apple, semanticLabel: 'Cupertino')),
-        ],
-      ),
-      SettingsSelection(
-        title: t.settings.prefLabels.layoutSize,
-        subtitle: switch (stows.layoutSize.value) {
-          .auto => t.settings.layoutSizes.auto,
-          .phone => t.settings.layoutSizes.phone,
-          .tablet => t.settings.layoutSizes.tablet,
-        },
-        afterChange: (_) => onStateChanged(),
-        iconBuilder: (i) => switch (LayoutSize.values[i]) {
-          .auto => Icons.aspect_ratio,
-          .phone => Icons.smartphone,
-          .tablet => Icons.tablet,
-        },
-        pref: SettingsStows.layoutSize,
-        optionsWidth: 60,
-        options: [
-          ToggleButtonsOption(
-            LayoutSize.auto.index,
-            Icon(
-              Icons.aspect_ratio,
-              semanticLabel: t.settings.layoutSizes.auto,
-            ),
-          ),
-          ToggleButtonsOption(
-            LayoutSize.phone.index,
-            Icon(Icons.smartphone, semanticLabel: t.settings.layoutSizes.phone),
-          ),
-          ToggleButtonsOption(
-            LayoutSize.tablet.index,
-            Icon(Icons.tablet, semanticLabel: t.settings.layoutSizes.tablet),
-          ),
-        ],
-      ),
-      SettingsColor(
-        title: t.settings.prefLabels.customAccentColor,
-        icon: Icons.colorize,
-        pref: stows.accentColor,
-      ),
-      SettingsSwitch(
-        title: t.settings.prefLabels.hyperlegibleFont,
-        subtitle: t.settings.prefDescriptions.hyperlegibleFont,
-        iconBuilder: (b) {
-          if (b)
-            return cupertino ? CupertinoIcons.textformat : Icons.font_download;
-          return cupertino
-              ? CupertinoIcons.textformat_alt
-              : Icons.font_download_off;
-        },
-        pref: stows.hyperlegibleFont,
-      ),
-    ],
-  );
-}
-
-/// Builds the Editor & Pen Studio Bento card.
-Widget buildEditorSettingsCard({
+/// Builds the (2) Stylus & Canvas Experience Bento card.
+Widget buildStylusCanvasSettingsCard({
   required bool cupertino,
   required VoidCallback onStateChanged,
+  EdgeInsetsGeometry margin = const EdgeInsets.symmetric(
+    horizontal: 16,
+    vertical: 8,
+  ),
 }) {
   return BentoSectionCard(
-    icon: Icons.edit_note_rounded,
-    title: t.settings.prefCategories.editor,
+    icon: Icons.draw_rounded,
+    title: 'Stylus & Canvas Experience',
+    subtitle: 'Pen physics, smart gestures & workspace tools',
+    margin: margin,
     children: [
       SettingsSwitch(
         title: 'Opennote Studio UI',
@@ -217,6 +101,12 @@ Widget buildEditorSettingsCard({
             'Dual-tier contextual toolbar, document header bar, and 3D notebook covers',
         icon: Icons.auto_stories_rounded,
         pref: stows.opennoteUiMode,
+      ),
+      SettingsSwitch(
+        title: t.settings.prefLabels.defaultInfiniteCanvas,
+        subtitle: t.settings.prefDescriptions.defaultInfiniteCanvas,
+        icon: Icons.all_inclusive_rounded,
+        pref: stows.defaultInfiniteCanvas,
       ),
       SettingsSelection(
         title: t.settings.prefLabels.editorToolbarAlignment,
@@ -257,105 +147,16 @@ Widget buildEditorSettingsCard({
         pref: stows.editorAutoInvert,
       ),
       SettingsSwitch(
-        title: t.settings.prefLabels.defaultInfiniteCanvas,
-        subtitle: t.settings.prefDescriptions.defaultInfiniteCanvas,
-        icon: Icons.all_inclusive_rounded,
-        pref: stows.defaultInfiniteCanvas,
-      ),
-      SettingsSwitch(
-        title: t.settings.prefLabels.editorPromptRename,
-        subtitle: t.settings.prefDescriptions.editorPromptRename,
-        iconBuilder: (b) {
-          if (b) return cupertino ? CupertinoIcons.keyboard : Icons.keyboard;
-          return cupertino
-              ? CupertinoIcons.keyboard_chevron_compact_down
-              : Icons.keyboard_hide;
-        },
-        pref: stows.editorPromptRename,
-      ),
-      SettingsSwitch(
-        title: t.settings.prefLabels.recentColorsDontSavePresets,
-        icon: Icons.palette,
-        pref: stows.recentColorsDontSavePresets,
-      ),
-      SettingsSelection(
-        title: t.settings.prefLabels.recentColorsLength,
-        icon: Icons.history,
-        pref: stows.recentColorsLength,
-        options: const [
-          ToggleButtonsOption(5, Text('5')),
-          ToggleButtonsOption(10, Text('10')),
-        ],
-      ),
-      SettingsSwitch(
-        title: t.settings.prefLabels.printPageIndicators,
-        subtitle: t.settings.prefDescriptions.printPageIndicators,
-        icon: Icons.numbers,
-        pref: stows.printPageIndicators,
-      ),
-      SettingsSelection(
-        title: t.settings.prefLabels.maxImageSize,
-        subtitle: t.settings.prefDescriptions.maxImageSize,
-        icon: Icons.photo_size_select_large,
-        pref: stows.maxImageSize,
-        options: const <ToggleButtonsOption<double>>[
-          ToggleButtonsOption(500, Text('500')),
-          ToggleButtonsOption(1000, Text('1000')),
-          ToggleButtonsOption(2000, Text('2000')),
-        ],
-      ),
-      SettingsSelection(
-        title: t.settings.prefLabels.autosave,
-        subtitle: t.settings.prefDescriptions.autosave,
-        icon: Icons.save,
-        pref: stows.autosaveDelay,
-        options: [
-          const ToggleButtonsOption(5000, Text('5s')),
-          const ToggleButtonsOption(10000, Text('10s')),
-          ToggleButtonsOption(-1, Text(t.settings.autosaveDisabled)),
-        ],
-      ),
-      SettingsSwitch(
-        title: t.settings.prefLabels.simplifiedHomeLayout,
-        subtitle: t.settings.prefDescriptions.simplifiedHomeLayout,
-        iconBuilder: (simplified) =>
-            simplified ? Icons.grid_view : Icons.dashboard_rounded,
-        pref: stows.simplifiedHomeLayout,
-      ),
-    ],
-  );
-}
-
-/// Builds the Smart Gestures & Stylus Bento card.
-Widget buildGesturesSettingsCard() {
-  return BentoSectionCard(
-    icon: Icons.gesture_rounded,
-    title: t.settings.prefCategories.writing,
-    children: [
-      SettingsSwitch(
-        title: t.settings.prefLabels.preferGreyscale,
-        subtitle: t.settings.prefDescriptions.preferGreyscale,
-        iconBuilder: (b) =>
-            b ? Icons.monochrome_photos : Icons.enhance_photo_translate,
-        pref: stows.preferGreyscale,
-      ),
-      SettingsSwitch(
-        title: t.settings.prefLabels.autoClearWhiteboardOnExit,
-        subtitle: t.settings.prefDescriptions.autoClearWhiteboardOnExit,
-        icon: Icons.cleaning_services,
-        pref: stows.autoClearWhiteboardOnExit,
-      ),
-      SettingsSwitch(
-        title: t.settings.prefLabels.disableEraserAfterUse,
-        subtitle: t.settings.prefDescriptions.disableEraserAfterUse,
-        icon: Icons.auto_fix_normal_rounded,
-        pref: stows.disableEraserAfterUse,
-      ),
-      SettingsSwitch(
         title: t.settings.prefLabels.scribbleToErase,
         subtitle: t.settings.prefDescriptions.scribbleToErase,
         icon: Icons.auto_fix_normal_rounded,
         pref: stows.scribbleToErase,
+      ),
+      SettingsSwitch(
+        title: t.settings.prefLabels.disableEraserAfterUse,
+        subtitle: t.settings.prefDescriptions.disableEraserAfterUse,
+        icon: Icons.cleaning_services_outlined,
+        pref: stows.disableEraserAfterUse,
       ),
       ValueListenableBuilder(
         valueListenable: stows.hideFingerDrawingToggle,
@@ -417,6 +218,33 @@ Widget buildGesturesSettingsCard() {
         icon: Icons.straighten,
         pref: stows.autoStraightenLines,
       ),
+      SettingsSwitch(
+        title: t.settings.prefLabels.preferGreyscale,
+        subtitle: t.settings.prefDescriptions.preferGreyscale,
+        iconBuilder: (b) =>
+            b ? Icons.monochrome_photos : Icons.enhance_photo_translate,
+        pref: stows.preferGreyscale,
+      ),
+      SettingsSwitch(
+        title: t.settings.prefLabels.autoClearWhiteboardOnExit,
+        subtitle: t.settings.prefDescriptions.autoClearWhiteboardOnExit,
+        icon: Icons.cleaning_services,
+        pref: stows.autoClearWhiteboardOnExit,
+      ),
+      SettingsSwitch(
+        title: t.settings.prefLabels.recentColorsDontSavePresets,
+        icon: Icons.palette,
+        pref: stows.recentColorsDontSavePresets,
+      ),
+      SettingsSelection(
+        title: t.settings.prefLabels.recentColorsLength,
+        icon: Icons.history,
+        pref: stows.recentColorsLength,
+        options: const [
+          ToggleButtonsOption(5, Text('5')),
+          ToggleButtonsOption(10, Text('10')),
+        ],
+      ),
       const PressureCurveSetting(),
       const Divider(),
       const WritingPostureSelector(),
@@ -424,17 +252,289 @@ Widget buildGesturesSettingsCard() {
   );
 }
 
-/// Builds the About & Diagnostics Bento card.
-Widget buildAboutSettingsCard({
-  required BuildContext context,
-  required bool requiresManualUpdates,
+/// Builds the (3) Appearance & Theme Bento card.
+Widget buildAppearanceSettingsCard({
+  required bool cupertino,
+  required bool usesMaterialByDefault,
+  required bool usesCupertinoByDefault,
   required VoidCallback onStateChanged,
+  EdgeInsetsGeometry margin = const EdgeInsets.symmetric(
+    horizontal: 16,
+    vertical: 8,
+  ),
+}) {
+  const materialIcon = Icons.android;
+
+  return BentoSectionCard(
+    icon: Icons.palette_outlined,
+    title: 'Appearance & Theme',
+    subtitle: 'Colors, typography, language & density',
+    margin: margin,
+    children: [
+      SettingsSelection(
+        title: t.settings.prefLabels.appTheme,
+        iconBuilder: (i) {
+          if (i == ThemeMode.system.index) return Icons.brightness_auto;
+          if (i == ThemeMode.light.index) return Icons.light_mode;
+          if (i == ThemeMode.dark.index) return Icons.dark_mode;
+          return null;
+        },
+        pref: SettingsStows.appTheme,
+        optionsWidth: 60,
+        options: [
+          ToggleButtonsOption(
+            ThemeMode.system.index,
+            Icon(
+              Icons.brightness_auto,
+              semanticLabel: t.settings.themeModes.system,
+            ),
+          ),
+          ToggleButtonsOption(
+            ThemeMode.light.index,
+            Icon(Icons.light_mode, semanticLabel: t.settings.themeModes.light),
+          ),
+          ToggleButtonsOption(
+            ThemeMode.dark.index,
+            Icon(Icons.dark_mode, semanticLabel: t.settings.themeModes.dark),
+          ),
+        ],
+      ),
+      SettingsColor(
+        title: t.settings.prefLabels.customAccentColor,
+        icon: Icons.colorize,
+        pref: stows.accentColor,
+      ),
+      SettingsDropdown(
+        title: t.settings.prefLabels.locale,
+        icon: cupertino ? CupertinoIcons.globe : Icons.language,
+        pref: stows.locale,
+        options: [
+          ToggleButtonsOption('', Text(t.settings.systemLanguage)),
+          ...AppLocaleUtils.supportedLocales.map((locale) {
+            final localeCode = locale.toLanguageTag();
+            final localeName = localeNames[localeCode];
+            assert(localeName != null, 'Missing locale name for $localeCode');
+            return ToggleButtonsOption(
+              localeCode,
+              Text(localeName ?? localeCode),
+            );
+          }),
+        ],
+      ),
+      SettingsSelection(
+        title: t.settings.prefLabels.platform,
+        iconBuilder: (i) => switch (stows.platform.value) {
+          .iOS || .macOS => Icons.apple,
+          _ => materialIcon,
+        },
+        pref: SettingsStows.platform,
+        optionsWidth: 60,
+        options: [
+          ToggleButtonsOption(() {
+            if (usesMaterialByDefault) return defaultTargetPlatform.index;
+            return TargetPlatform.android.index;
+          }(), const Icon(materialIcon, semanticLabel: 'Material')),
+          ToggleButtonsOption(() {
+            if (kDebugMode && stows.platform.value.isCupertino) {
+              return stows.platform.value.index;
+            }
+            if (usesCupertinoByDefault) return defaultTargetPlatform.index;
+            return TargetPlatform.iOS.index;
+          }(), const Icon(Icons.apple, semanticLabel: 'Cupertino')),
+        ],
+      ),
+      SettingsSelection(
+        title: t.settings.prefLabels.layoutSize,
+        subtitle: switch (stows.layoutSize.value) {
+          .auto => t.settings.layoutSizes.auto,
+          .phone => t.settings.layoutSizes.phone,
+          .tablet => t.settings.layoutSizes.tablet,
+        },
+        afterChange: (_) => onStateChanged(),
+        iconBuilder: (i) => switch (LayoutSize.values[i]) {
+          .auto => Icons.aspect_ratio,
+          .phone => Icons.smartphone,
+          .tablet => Icons.tablet,
+        },
+        pref: SettingsStows.layoutSize,
+        optionsWidth: 60,
+        options: [
+          ToggleButtonsOption(
+            LayoutSize.auto.index,
+            Icon(
+              Icons.aspect_ratio,
+              semanticLabel: t.settings.layoutSizes.auto,
+            ),
+          ),
+          ToggleButtonsOption(
+            LayoutSize.phone.index,
+            Icon(Icons.smartphone, semanticLabel: t.settings.layoutSizes.phone),
+          ),
+          ToggleButtonsOption(
+            LayoutSize.tablet.index,
+            Icon(Icons.tablet, semanticLabel: t.settings.layoutSizes.tablet),
+          ),
+        ],
+      ),
+      SettingsSwitch(
+        title: t.settings.prefLabels.hyperlegibleFont,
+        subtitle: t.settings.prefDescriptions.hyperlegibleFont,
+        iconBuilder: (b) {
+          if (b) {
+            return cupertino ? CupertinoIcons.textformat : Icons.font_download;
+          }
+          return cupertino
+              ? CupertinoIcons.textformat_alt
+              : Icons.font_download_off;
+        },
+        pref: stows.hyperlegibleFont,
+      ),
+      SettingsSwitch(
+        title: t.settings.prefLabels.simplifiedHomeLayout,
+        subtitle: t.settings.prefDescriptions.simplifiedHomeLayout,
+        iconBuilder: (simplified) =>
+            simplified ? Icons.grid_view : Icons.dashboard_rounded,
+        pref: stows.simplifiedHomeLayout,
+      ),
+    ],
+  );
+}
+
+/// Builds the (4) Export & Backup Bento card.
+Widget buildExportBackupSettingsCard({
+  required bool cupertino,
+  EdgeInsetsGeometry margin = const EdgeInsets.symmetric(
+    horizontal: 16,
+    vertical: 8,
+  ),
 }) {
   return BentoSectionCard(
-    icon: Icons.info_outline_rounded,
-    title: 'About & Diagnostics',
+    icon: Icons.save_alt_rounded,
+    title: 'Export & Backup',
+    subtitle: 'Autosave cadence, image quality & local storage',
+    margin: margin,
     children: [
-      const Padding(padding: EdgeInsets.all(8), child: AppInfo()),
+      SettingsSelection(
+        title: t.settings.prefLabels.autosave,
+        subtitle: t.settings.prefDescriptions.autosave,
+        icon: Icons.save,
+        pref: stows.autosaveDelay,
+        options: [
+          const ToggleButtonsOption(5000, Text('5s')),
+          const ToggleButtonsOption(10000, Text('10s')),
+          ToggleButtonsOption(-1, Text(t.settings.autosaveDisabled)),
+        ],
+      ),
+      SettingsSelection(
+        title: t.settings.prefLabels.maxImageSize,
+        subtitle: t.settings.prefDescriptions.maxImageSize,
+        icon: Icons.photo_size_select_large,
+        pref: stows.maxImageSize,
+        options: const <ToggleButtonsOption<double>>[
+          ToggleButtonsOption(500, Text('500')),
+          ToggleButtonsOption(1000, Text('1000')),
+          ToggleButtonsOption(2000, Text('2000')),
+        ],
+      ),
+      SettingsSwitch(
+        title: t.settings.prefLabels.printPageIndicators,
+        subtitle: t.settings.prefDescriptions.printPageIndicators,
+        icon: Icons.numbers,
+        pref: stows.printPageIndicators,
+      ),
+      SettingsSwitch(
+        title: t.settings.prefLabels.editorPromptRename,
+        subtitle: t.settings.prefDescriptions.editorPromptRename,
+        iconBuilder: (b) {
+          if (b) return cupertino ? CupertinoIcons.keyboard : Icons.keyboard;
+          return cupertino
+              ? CupertinoIcons.keyboard_chevron_compact_down
+              : Icons.keyboard_hide;
+        },
+        pref: stows.editorPromptRename,
+      ),
+      if (Platform.isAndroid)
+        SettingsDirectorySelector(
+          title: t.settings.prefLabels.customDataDir,
+          icon: Icons.folder,
+        ),
+    ],
+  );
+}
+
+/// Builds the (5) Support & Community Bento card.
+Widget buildSupportCommunitySettingsCard({
+  required BuildContext context,
+  required bool cupertino,
+  required bool requiresManualUpdates,
+  required VoidCallback onStateChanged,
+  VoidCallback? onRateAppTap,
+  VoidCallback? onShareAppTap,
+  VoidCallback? onRestorePurchasesTap,
+  VoidCallback? onRevisitWelcomeTourTap,
+  EdgeInsetsGeometry margin = const EdgeInsets.symmetric(
+    horizontal: 16,
+    vertical: 8,
+  ),
+}) {
+  final rateTitle = cupertino
+      ? 'Rate Opennote on App Store'
+      : 'Rate Opennote on Play Store';
+
+  return BentoSectionCard(
+    icon: Icons.favorite_outline_rounded,
+    title: 'Support & Community',
+    subtitle: 'Reviews, sharing, onboarding & diagnostics',
+    margin: margin,
+    children: [
+      SettingsButton(
+        key: const ValueKey('settings-rate-opennote'),
+        title: rateTitle,
+        subtitle:
+            'Enjoying Opennote? A quick rating helps independent builders',
+        icon: Icons.star_outline_rounded,
+        onPressed:
+            onRateAppTap ??
+            () => launchUrl(
+              cupertino ? AppInfo.appStoreUrl : AppInfo.playStoreUrl,
+            ),
+      ),
+      SettingsButton(
+        key: const ValueKey('settings-share-opennote'),
+        title: 'Share Opennote',
+        subtitle: 'Invite friends, classmates, or teammates to try Opennote',
+        icon: cupertino ? CupertinoIcons.share : Icons.share_outlined,
+        onPressed:
+            onShareAppTap ??
+            () =>
+                SharePlus.instance.share(ShareParams(text: AppInfo.shareText)),
+      ),
+      SettingsButton(
+        key: const ValueKey('settings-restore-purchases'),
+        title: 'Restore Purchases',
+        subtitle: 'Sync your Opennote Pro entitlement on this device',
+        icon: Icons.restore_rounded,
+        onPressed:
+            onRestorePurchasesTap ??
+            () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Checking store receipts for Opennote Pro…'),
+                ),
+              );
+            },
+      ),
+      SettingsButton(
+        key: const ValueKey('settings-revisit-welcome-tour'),
+        title: 'Revisit Welcome Tour',
+        subtitle: 'Replay the Opennote studio quick-start walkthrough',
+        icon: Icons.school_outlined,
+        onPressed:
+            onRevisitWelcomeTourTap ??
+            () => WelcomeOnboardingDialog.show(context),
+      ),
+      const Divider(height: 16),
+      const AppInfo(),
       if (isSentryAvailable) const SettingsSentryConsent(),
       if (requiresManualUpdates ||
           stows.shouldCheckForUpdates.value !=
@@ -456,12 +556,6 @@ Widget buildAboutSettingsCard({
           ),
         ),
       ],
-      SettingsButton(
-        title: t.settings.prefLabels.welcomeGuide,
-        subtitle: t.settings.prefDescriptions.welcomeGuide,
-        icon: Icons.school_outlined,
-        onPressed: () => WelcomeOnboardingDialog.show(context),
-      ),
       SettingsButton(
         title: t.logs.viewLogs,
         subtitle: t.logs.debuggingInfo,

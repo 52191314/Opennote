@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'package:flutter/cupertino.dart';
@@ -11,13 +12,46 @@ import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/is_this_a_test.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/i18n/strings.g.dart';
+import 'package:saber/pages/home/settings/pro_membership_card.dart';
 import 'package:saber/pages/home/settings/settings_category.dart';
 import 'package:saber/pages/home/settings/settings_layouts.dart';
 import 'package:saber/pages/home/settings/settings_sections.dart';
 import 'package:stow/stow.dart';
 
+/// Opennote's Bento Settings page with a top Opennote Pro Membership card and
+/// responsive mobile/tablet layouts.
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key});
+  const SettingsPage({
+    super.key,
+    this.isPro = false,
+    this.planSummary,
+    this.onUpgradeTap,
+    this.onRestorePurchasesTap,
+    this.onRateAppTap,
+    this.onShareAppTap,
+    this.onRevisitWelcomeTourTap,
+  });
+
+  /// Whether the user currently has an active Opennote Pro entitlement.
+  final bool isPro;
+
+  /// Optional plan status summary displayed on the top membership card.
+  final String? planSummary;
+
+  /// Called when the user taps the upgrade CTA or manage subscription button.
+  final VoidCallback? onUpgradeTap;
+
+  /// Called when the user taps "Restore Purchases".
+  final VoidCallback? onRestorePurchasesTap;
+
+  /// Optional override for the "Rate Opennote" row action.
+  final VoidCallback? onRateAppTap;
+
+  /// Optional override for the "Share Opennote" row action.
+  final VoidCallback? onShareAppTap;
+
+  /// Optional override for the "Revisit Welcome Tour" row action.
+  final VoidCallback? onRevisitWelcomeTourTap;
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -107,27 +141,56 @@ class _SettingsPageState extends State<SettingsPage> {
     final cupertino = platform.isCupertino;
     final isWide = MediaQuery.sizeOf(context).width >= 760;
     final requiresManualUpdates = FlavorConfig.appStore.isEmpty;
+    final cardMargin = isWide
+        ? EdgeInsets.zero
+        : const EdgeInsets.symmetric(horizontal: 16, vertical: 8);
+
+    final showMembershipHero = _matches(SettingsCategory.membershipSync);
+    final membershipHero = showMembershipHero
+        ? ProMembershipCard(
+            isPro: widget.isPro,
+            planSummary: widget.planSummary,
+            onUpgradeTap: widget.onUpgradeTap,
+            onRestorePurchasesTap: widget.onRestorePurchasesTap,
+            margin: isWide
+                ? const EdgeInsets.fromLTRB(16, 16, 16, 8)
+                : const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          )
+        : null;
 
     final cards = [
-      if (_matches(SettingsCategory.syncStorage)) buildSyncSettingsCard(),
+      if (_matches(SettingsCategory.membershipSync))
+        buildMembershipSyncSettingsCard(
+          isPro: widget.isPro,
+          margin: cardMargin,
+        ),
+      if (_matches(SettingsCategory.stylusCanvas))
+        buildStylusCanvasSettingsCard(
+          cupertino: cupertino,
+          onStateChanged: onChanged,
+          margin: cardMargin,
+        ),
       if (_matches(SettingsCategory.appearance))
         buildAppearanceSettingsCard(
           cupertino: cupertino,
           usesMaterialByDefault: usesMaterialByDefault,
           usesCupertinoByDefault: usesCupertinoByDefault,
           onStateChanged: onChanged,
+          margin: cardMargin,
         ),
-      if (_matches(SettingsCategory.editor))
-        buildEditorSettingsCard(
-          cupertino: cupertino,
-          onStateChanged: onChanged,
-        ),
-      if (_matches(SettingsCategory.gestures)) buildGesturesSettingsCard(),
-      if (_matches(SettingsCategory.about))
-        buildAboutSettingsCard(
+      if (_matches(SettingsCategory.exportBackup))
+        buildExportBackupSettingsCard(cupertino: cupertino, margin: cardMargin),
+      if (_matches(SettingsCategory.supportCommunity))
+        buildSupportCommunitySettingsCard(
           context: context,
+          cupertino: cupertino,
           requiresManualUpdates: requiresManualUpdates,
           onStateChanged: onChanged,
+          onRateAppTap: widget.onRateAppTap,
+          onShareAppTap: widget.onShareAppTap,
+          onRestorePurchasesTap: widget.onRestorePurchasesTap,
+          onRevisitWelcomeTourTap: widget.onRevisitWelcomeTourTap,
+          margin: cardMargin,
         ),
     ];
 
@@ -139,6 +202,7 @@ class _SettingsPageState extends State<SettingsPage> {
         onSearchChanged: _onSearchChanged,
         onSearchCleared: _onSearchCleared,
         onCategorySelected: _onCategorySelected,
+        headerCard: membershipHero,
         cards: cards,
       );
     }
@@ -150,6 +214,7 @@ class _SettingsPageState extends State<SettingsPage> {
       onSearchChanged: _onSearchChanged,
       onSearchCleared: _onSearchCleared,
       onCategorySelected: _onCategorySelected,
+      headerCard: membershipHero,
       cards: cards,
     );
   }

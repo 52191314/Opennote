@@ -1,14 +1,26 @@
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
 import 'package:saber/components/home/sentry_consent_dialog.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/sentry/sentry_init.dart';
 import 'package:saber/i18n/strings.g.dart';
 
+/// Settings row for inspecting and changing Sentry crash-reporting consent.
 class SettingsSentryConsent extends StatelessWidget {
   const SettingsSentryConsent({super.key});
 
+  bool _isSentryCurrentlyActive() {
+    try {
+      return isSentryEnabled;
+    } catch (_) {
+      return false;
+    }
+  }
+
   String _getSubtitle() {
-    final isActive = isSentryEnabled;
+    final isActive = _isSentryCurrentlyActive();
     if (isActive) {
       final willStayActive = stows.sentryConsent.value == .granted;
       return willStayActive

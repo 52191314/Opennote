@@ -1,5 +1,9 @@
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
 
+/// Action row used inside settings cards for navigation and quick actions.
 class SettingsButton extends StatelessWidget {
   const SettingsButton({
     super.key,
@@ -7,12 +11,14 @@ class SettingsButton extends StatelessWidget {
     this.subtitle,
     required this.icon,
     required this.onPressed,
+    this.trailing,
   });
 
   final String title;
   final String? subtitle;
   final IconData icon;
   final VoidCallback? onPressed;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +31,10 @@ class SettingsButton extends StatelessWidget {
           child: Icon(icon, key: ValueKey(icon)),
         ),
         title: Text(title, style: const TextStyle(fontSize: 18)),
-        subtitle: Text(subtitle ?? '', style: const TextStyle(fontSize: 13)),
+        subtitle: subtitle != null
+            ? Text(subtitle!, style: const TextStyle(fontSize: 13))
+            : null,
+        trailing: trailing ?? const Icon(Icons.chevron_right_rounded),
       ),
     );
   }
