@@ -1,9 +1,14 @@
+/// 🤖 Modified with Gemini 4 Neon (Medium); Google Antigravity
+library;
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
+/// Scrubs user credentials, file paths, and server identifiers from Sentry
+/// telemetry events before transmission.
 abstract class SentryFilter {
   /// Patterns to redact in Sentry events.
   ///
@@ -47,38 +52,84 @@ abstract class SentryFilter {
 
   static final _previousSecrets = <String>{};
 
+  /// Redacts known sensitive patterns and user credentials from [input].
+  @visibleForTesting
+  static String scrubString(String input) {
+    var result = input;
+    for (final entry in replacements.entries) {
+      if (result.contains(entry.key)) {
+        result = result.replaceAll(entry.key, entry.value);
+      }
+    }
+    for (final secret in getSecrets()) {
+      if (secret.isEmpty) continue;
+      if (result.contains(secret)) {
+        result = result.replaceAll(secret, '[redacted]');
+      }
+    }
+    return result;
+  }
+
+  static Map<String, dynamic>? _scrubDataMap(Map<String, dynamic>? data) {
+    if (data == null || data.isEmpty) return data;
+    var changed = false;
+    final scrubbed = <String, dynamic>{};
+    for (final entry in data.entries) {
+      final value = entry.value;
+      if (value is String) {
+        final next = scrubString(value);
+        if (next != value) changed = true;
+        scrubbed[entry.key] = next;
+      } else {
+        scrubbed[entry.key] = value;
+      }
+    }
+    return changed ? scrubbed : data;
+  }
+
+  /// Scrubs sensitive data from [event] messages, exceptions, and breadcrumbs.
   static FutureOr<SentryEvent?> beforeSend(SentryEvent event, Hint hint) async {
     if (stows.sentryConsent.value != .granted) {
-      // The user revoked consent but hasn't restarted the app yet.
-      // Return null to discard (not send) this event.
       return null;
     }
 
     if (event.message != null) {
-      var message = event.message!.formatted;
-      var messageChanged = false;
-
-      // Redact known patterns
-      for (final entry in replacements.entries) {
-        if (message.contains(entry.key)) {
-          message = message.replaceAll(entry.key, entry.value);
-          messageChanged = true;
-        }
-      }
-
-      // Redact user credentials
-      for (final secret in getSecrets()) {
-        if (secret.isEmpty) continue;
-        if (message.contains(secret)) {
-          message = message.replaceAll(secret, '[redacted]');
-          messageChanged = true;
-        }
-      }
-
-      if (messageChanged) {
-        event.message = SentryMessage(message);
+      final original = event.message!.formatted;
+      final scrubbed = scrubString(original);
+      if (scrubbed != original) {
+        event.message = SentryMessage(scrubbed);
       }
     }
+
+    final exceptions = event.exceptions;
+    if (exceptions != null && exceptions.isNotEmpty) {
+      for (final exception in exceptions) {
+        final value = exception.value;
+        if (value == null) continue;
+        final scrubbed = scrubString(value);
+        if (scrubbed != value) {
+          exception.value = scrubbed;
+        }
+      }
+    }
+
+    final breadcrumbs = event.breadcrumbs;
+    if (breadcrumbs != null && breadcrumbs.isNotEmpty) {
+      for (final breadcrumb in breadcrumbs) {
+        final message = breadcrumb.message;
+        if (message != null) {
+          final scrubbed = scrubString(message);
+          if (scrubbed != message) {
+            breadcrumb.message = scrubbed;
+          }
+        }
+        final scrubbedData = _scrubDataMap(breadcrumb.data);
+        if (!identical(scrubbedData, breadcrumb.data)) {
+          breadcrumb.data = scrubbedData;
+        }
+      }
+    }
+
     return event;
   }
 }

@@ -25,7 +25,6 @@
         android:localeConfig="@xml/locales_config"
         android:allowBackup="false"
         android:fullBackupContent="false"
-        android:launchMode="singleTask"
         android:enableOnBackInvokedCallback="true"
         tools:targetApi="donut"
         tools:replace="android:label,android:allowBackup">
@@ -100,7 +99,7 @@
                 <data android:scheme="content" />
                 <data android:scheme="file" />
                 <data android:host="*" />
-                <data android:pathPattern=".*\\.pdf"/>
+                <data android:pathPattern=".*\.pdf"/>
 
                 <data android:mimeType="application/pdf" />
             </intent-filter>
