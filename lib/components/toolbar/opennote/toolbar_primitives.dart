@@ -1,12 +1,13 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Modified with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'package:flutter/material.dart';
 
 /// Standard padding shared by primary dock icon buttons.
 const opennoteToolbarButtonPadding = EdgeInsets.symmetric(
-  horizontal: 5,
-  vertical: 4,
+  horizontal: 4,
+  vertical: 3,
 );
 
 /// Vertical divider separating logical tool groups inside the toolbar capsules.
@@ -18,10 +19,13 @@ class ToolbarGroupDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 5),
       width: 1,
       height: 18,
-      color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+      decoration: BoxDecoration(
+        color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(1),
+      ),
     );
   }
 }
@@ -45,15 +49,16 @@ class EraserQuickSizeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.of(context);
     return InkWell(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(999),
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
         decoration: BoxDecoration(
           color: selected
               ? colorScheme.primaryContainer
               : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: selected ? colorScheme.primary : Colors.transparent,
             width: 1,
@@ -63,7 +68,7 @@ class EraserQuickSizeButton extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: 11,
-            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             color: selected
                 ? colorScheme.onPrimaryContainer
                 : colorScheme.onSurface,

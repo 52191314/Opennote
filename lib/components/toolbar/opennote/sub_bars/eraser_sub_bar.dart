@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Modified with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'package:flutter/material.dart';
@@ -54,7 +55,7 @@ class OpennoteEraserSubBar extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 44, minHeight: 40),
+        constraints: const BoxConstraints(minWidth: 42, minHeight: 36),
         child: Center(
           child: EraserQuickSizeButton(
             label: label,
@@ -81,7 +82,7 @@ class OpennoteEraserSubBar extends StatelessWidget {
         _quickSizeTarget(label: t.editor.tools.broad, size: 60.0),
         ToolbarGroupDivider(colorScheme: colorScheme),
         FilterChip(
-          visualDensity: VisualDensity.standard,
+          visualDensity: VisualDensity.compact,
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           label: Text(
             t.editor.eraser.highlighterOnlyShort,
@@ -96,7 +97,7 @@ class OpennoteEraserSubBar extends StatelessWidget {
         ),
         const SizedBox(width: 4),
         FilterChip(
-          visualDensity: VisualDensity.standard,
+          visualDensity: VisualDensity.compact,
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           label: Text(
             t.editor.eraser.entireStroke,
@@ -112,7 +113,7 @@ class OpennoteEraserSubBar extends StatelessWidget {
         if (onClearPage != null) ...[
           ToolbarGroupDivider(colorScheme: colorScheme),
           ActionChip(
-            visualDensity: VisualDensity.standard,
+            visualDensity: VisualDensity.compact,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             avatar: const Icon(Icons.delete_sweep_rounded, size: 14),
             label: Text(

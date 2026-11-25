@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Modified with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'package:flutter/material.dart';
@@ -44,6 +45,8 @@ class OpennoteContextualSubBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.of(context);
+    final viewportWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = viewportWidth < 430;
 
     final isEraser = actions.currentTool is Eraser;
     final isLasso = actions.currentTool is Select;
@@ -60,13 +63,16 @@ class OpennoteContextualSubBar extends StatelessWidget {
 
     return Center(
       child: Container(
-        height: 40,
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        height: isCompact ? 38 : 42,
+        margin: EdgeInsets.symmetric(
+          horizontal: isCompact ? 6 : 12,
+          vertical: 2,
+        ),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerLow.withValues(alpha: 0.94),
+          color: colorScheme.surfaceContainerLow.withValues(alpha: 0.96),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.45),
             width: 1.0,
           ),
           boxShadow: [
@@ -82,7 +88,7 @@ class OpennoteContextualSubBar extends StatelessWidget {
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             physics: scrollPhysics,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+            padding: EdgeInsets.symmetric(horizontal: isCompact ? 8 : 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
@@ -126,17 +132,15 @@ class OpennoteContextualSubBar extends StatelessWidget {
                           ),
                         );
                       }
-                      return Expanded(
-                        child: QuillSimpleToolbar(
-                          controller: quill.controller,
-                          config: const QuillSimpleToolbarConfig(
-                            axis: Axis.horizontal,
-                            showUndo: false,
-                            showRedo: false,
-                            showFontSize: false,
-                            showFontFamily: false,
-                            showClearFormat: false,
-                          ),
+                      return QuillSimpleToolbar(
+                        controller: quill.controller,
+                        config: const QuillSimpleToolbarConfig(
+                          axis: Axis.horizontal,
+                          showUndo: false,
+                          showRedo: false,
+                          showFontSize: false,
+                          showFontFamily: false,
+                          showClearFormat: false,
                         ),
                       );
                     },
@@ -147,7 +151,7 @@ class OpennoteContextualSubBar extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11.5,
                       color: colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.8,
+                        alpha: 0.85,
                       ),
                       fontWeight: FontWeight.w500,
                     ),
