@@ -1,24 +1,23 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'dart:math';
 
 import 'package:collection/collection.dart';
-import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:one_dollar_unistroke_recognizer/one_dollar_unistroke_recognizer.dart';
-import 'package:path_drawing/path_drawing.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
-import 'package:saber/components/canvas/_arrow_stroke.dart';
-import 'package:saber/components/canvas/_circle_stroke.dart';
-import 'package:saber/components/canvas/_dimension_stroke.dart';
-import 'package:saber/components/canvas/_polygon_stroke.dart';
-import 'package:saber/components/canvas/_rectangle_stroke.dart';
-import 'package:saber/components/canvas/_tape_stroke.dart';
+import 'package:saber/components/canvas/stroke/stroke_geometry.dart';
+import 'package:saber/components/canvas/stroke/stroke_path_builder.dart'
+    as path_builder;
+import 'package:saber/components/canvas/stroke/stroke_serialization.dart';
+import 'package:saber/components/canvas/stroke/stroke_simplifier.dart';
+import 'package:saber/components/canvas/stroke/stroke_snapping.dart'
+    as snapping;
 import 'package:saber/data/extensions/list_extensions.dart';
-import 'package:saber/data/extensions/point_extensions.dart';
 import 'package:sbn/has_size.dart';
 import 'package:sbn/tool_id.dart';
 
@@ -31,6 +30,7 @@ enum LineStyle {
   static const defaultStyle = LineStyle.solid;
 }
 
+/// A freehand or geometric ink stroke belonging to a canvas page.
 class Stroke {
   static final log = Logger('Stroke');
 
@@ -55,94 +55,16 @@ class Stroke {
   Path? _centerlinePath;
 
   /// Returns a cached path along the center line of the stroke points.
-  Path get centerlinePath {
-    if (_centerlinePath != null) return _centerlinePath!;
-    final path = Path();
-    if (points.isNotEmpty) {
-      path.moveTo(points.first.x, points.first.y);
-      for (int i = 1; i < points.length; i++) {
-        path.lineTo(points[i].x, points[i].y);
-      }
-    }
-    return _centerlinePath = path;
-  }
+  Path get centerlinePath =>
+      _centerlinePath ??= path_builder.buildCenterlinePath(points);
 
   Rect? _boundingBox;
 
   /// Returns the axis-aligned bounding box of this stroke in page coordinates.
   Rect get boundingBox {
-    if (this case final CircleStroke circle) {
-      return Rect.fromCircle(center: circle.center, radius: circle.radius);
-    }
-    if (this case final RectangleStroke rectangle) {
-      return rectangle.rect;
-    }
-    if (this case final TapeStroke tape) {
-      return tape.rect;
-    }
-    if (this case final ArrowStroke arrow) {
-      return Rect.fromPoints(arrow.start, arrow.end).inflate(arrow.headLength);
-    }
-    if (this case final DimensionStroke dim) {
-      final (_, perp) = dim.computeVectors();
-      final dimOffset = perp * dim.offset;
-      final dimStart = dim.start + dimOffset;
-      final dimEnd = dim.end + dimOffset;
-      final minX = min(
-        min(dim.start.dx, dim.end.dx),
-        min(dimStart.dx, dimEnd.dx),
-      );
-      final minY = min(
-        min(dim.start.dy, dim.end.dy),
-        min(dimStart.dy, dimEnd.dy),
-      );
-      final maxX = max(
-        max(dim.start.dx, dim.end.dx),
-        max(dimStart.dx, dimEnd.dx),
-      );
-      final maxY = max(
-        max(dim.start.dy, dim.end.dy),
-        max(dimStart.dy, dimEnd.dy),
-      );
-      return Rect.fromLTRB(minX, minY, maxX, maxY).inflate(dim.headLength + 60);
-    }
-    if (this case final PolygonStroke polygon) {
-      if (polygon.vertices.isEmpty) return Rect.zero;
-      var minX = polygon.vertices.first.dx;
-      var maxX = minX;
-      var minY = polygon.vertices.first.dy;
-      var maxY = minY;
-      for (int i = 1; i < polygon.vertices.length; i++) {
-        final v = polygon.vertices[i];
-        if (v.dx < minX) minX = v.dx;
-        if (v.dx > maxX) maxX = v.dx;
-        if (v.dy < minY) minY = v.dy;
-        if (v.dy > maxY) maxY = v.dy;
-      }
-      return Rect.fromLTRB(minX, minY, maxX, maxY);
-    }
-
-    if (_boundingBox != null) return _boundingBox!;
-    if (points.isEmpty) return _boundingBox = Rect.zero;
-
-    var minX = points.first.x;
-    var maxX = minX;
-    var minY = points.first.y;
-    var maxY = minY;
-    for (int i = 1; i < points.length; i++) {
-      final p = points[i];
-      if (p.x < minX) minX = p.x;
-      if (p.x > maxX) maxX = p.x;
-      if (p.y < minY) minY = p.y;
-      if (p.y > maxY) maxY = p.y;
-    }
-    final halfSize = options.size * 0.5;
-    return _boundingBox = Rect.fromLTRB(
-      minX - halfSize,
-      minY - halfSize,
-      maxX + halfSize,
-      maxY + halfSize,
-    );
+    final shapeBounds = computeShapeBoundingBox(this);
+    if (shapeBounds != null) return shapeBounds;
+    return _boundingBox ??= computePointsBoundingBox(points, options.size);
   }
 
   int pageIndex;
@@ -169,35 +91,8 @@ class Stroke {
   int get geometryRevision => _geometryRevision;
 
   /// Fast state fingerprint covering in-place mutations to this stroke.
-  int get renderSignature {
-    var h = identityHashCode(this) ^ (_geometryRevision * 0x9E3779B9);
-    h ^= color.toARGB32();
-    h ^= (lineStyle.index << 16) ^ options.size.hashCode;
-    if (fillColor != null) h ^= fillColor!.toARGB32() << 1;
-    if (this case final TapeStroke tape) {
-      h ^=
-          (tape.isConcealed ? 0x5555 : 0xAAAA) ^
-          (tape.pattern.index << 8) ^
-          tape.rect.hashCode;
-    } else if (this case final DimensionStroke dim) {
-      h ^=
-          dim.start.hashCode ^
-          dim.end.hashCode ^
-          dim.offset.hashCode ^
-          dim.text.hashCode;
-    } else if (this case final ArrowStroke arrow) {
-      h ^=
-          arrow.start.hashCode ^
-          arrow.end.hashCode ^
-          (arrow.arrowheadStyle.index << 4) ^
-          (arrow.connectorStyle.index << 8);
-    } else if (this case final CircleStroke circle) {
-      h ^= circle.center.hashCode ^ circle.radius.hashCode;
-    } else if (this case final RectangleStroke rectStroke) {
-      h ^= rectStroke.rect.hashCode;
-    }
-    return h & 0x1fffffff;
-  }
+  int get renderSignature =>
+      computeStrokeRenderSignature(this, _geometryRevision);
 
   List<Offset>? _lowQualityPolygon, _highQualityPolygon;
   List<Offset> get lowQualityPolygon =>
@@ -231,14 +126,16 @@ class Stroke {
         _styledPathSize == safeSize) {
       return _styledPath!;
     }
-    final dashArray = lineStyle == LineStyle.dotted
-        ? CircularIntervalList<double>([1.0, safeSize * 1.8])
-        : CircularIntervalList<double>([safeSize * 3.0, safeSize * 1.8]);
     _styledPathLineStyle = lineStyle;
     _styledPathSize = safeSize;
-    return _styledPath = dashPath(centerlinePath, dashArray: dashArray);
+    return _styledPath = path_builder.buildStyledPath(
+      centerlinePath,
+      lineStyle,
+      safeSize,
+    );
   }
 
+  /// Translates all points and cached geometry by [offset].
   void shift(Offset offset) {
     if (offset == .zero) return;
 
@@ -264,43 +161,14 @@ class Stroke {
     if (angleRadians == 0) return;
 
     _geometryRevision++;
-    final cosA = cos(angleRadians);
-    final sinA = sin(angleRadians);
-
-    Offset transformPoint(Offset point) {
-      final dx = point.dx - center.dx;
-      final dy = point.dy - center.dy;
-      return Offset(
-        center.dx + dx * cosA - dy * sinA,
-        center.dy + dx * sinA + dy * cosA,
-      );
-    }
-
-    // Rotate raw points
-    for (int i = 0; i < points.length; i++) {
-      final p = points[i];
-      final dx = p.x - center.dx;
-      final dy = p.y - center.dy;
-      points[i] = PointVector(
-        center.dx + dx * cosA - dy * sinA,
-        center.dy + dx * sinA + dy * cosA,
-        p.pressure,
-      );
-    }
-
-    // Rotate cached polygons
+    rotatePointVectors(points, angleRadians, center);
     if (_lowQualityPolygon != null) {
-      for (int i = 0; i < _lowQualityPolygon!.length; i++) {
-        _lowQualityPolygon![i] = transformPoint(_lowQualityPolygon![i]);
-      }
+      rotateOffsets(_lowQualityPolygon!, angleRadians, center);
     }
     if (_highQualityPolygon != null) {
-      for (int i = 0; i < _highQualityPolygon!.length; i++) {
-        _highQualityPolygon![i] = transformPoint(_highQualityPolygon![i]);
-      }
+      rotateOffsets(_highQualityPolygon!, angleRadians, center);
     }
 
-    // Rebuild paths from rotated polygons
     _lowQualityPath = _lowQualityPolygon != null
         ? getPath(_lowQualityPolygon!, smooth: true)
         : null;
@@ -317,35 +185,14 @@ class Stroke {
     if (scaleX == 1 && scaleY == 1) return;
 
     _geometryRevision++;
-    Offset transformPoint(Offset point) {
-      final newX = pivot.dx + (point.dx - pivot.dx) * scaleX;
-      final newY = pivot.dy + (point.dy - pivot.dy) * scaleY;
-      return Offset(newX, newY);
-    }
-
-    // Scale raw points
-    for (int i = 0; i < points.length; i++) {
-      final p = points[i];
-      points[i] = PointVector(
-        pivot.dx + (p.x - pivot.dx) * scaleX,
-        pivot.dy + (p.y - pivot.dy) * scaleY,
-        p.pressure,
-      );
-    }
-
-    // Scale cached polygons
+    scalePointVectors(points, scaleX, scaleY, pivot);
     if (_lowQualityPolygon != null) {
-      for (int i = 0; i < _lowQualityPolygon!.length; i++) {
-        _lowQualityPolygon![i] = transformPoint(_lowQualityPolygon![i]);
-      }
+      scaleOffsets(_lowQualityPolygon!, scaleX, scaleY, pivot);
     }
     if (_highQualityPolygon != null) {
-      for (int i = 0; i < _highQualityPolygon!.length; i++) {
-        _highQualityPolygon![i] = transformPoint(_highQualityPolygon![i]);
-      }
+      scaleOffsets(_highQualityPolygon!, scaleX, scaleY, pivot);
     }
 
-    // Rebuild paths
     _lowQualityPath = _lowQualityPolygon != null
         ? getPath(_lowQualityPolygon!, smooth: false)
         : null;
@@ -357,6 +204,7 @@ class Stroke {
     _boundingBox = null;
   }
 
+  /// Invalidates all cached polygons, paths, and bounds.
   void markPolygonNeedsUpdating() {
     _geometryRevision++;
     _lowQualityPolygon = null;
@@ -384,143 +232,18 @@ class Stroke {
     required int fileVersion,
     required int pageIndex,
     required HasSize page,
-  }) {
-    assert(json['i'] == pageIndex || json['i'] == null);
-    switch (json['shape'] as String?) {
-      case null:
-        break;
-      case 'circle':
-        return CircleStroke.fromJson(
-          json,
-          fileVersion: fileVersion,
-          pageIndex: pageIndex,
-          page: page,
-        );
-      case 'rect':
-        return RectangleStroke.fromJson(
-          json,
-          fileVersion: fileVersion,
-          pageIndex: pageIndex,
-          page: page,
-        );
-      case 'arrow':
-        return ArrowStroke.fromJson(
-          json,
-          fileVersion: fileVersion,
-          pageIndex: pageIndex,
-          page: page,
-        );
-      case 'dimension':
-        return DimensionStroke.fromJson(
-          json,
-          fileVersion: fileVersion,
-          pageIndex: pageIndex,
-          page: page,
-        );
-      case 'polygon':
-        return PolygonStroke.fromJson(
-          json,
-          fileVersion: fileVersion,
-          pageIndex: pageIndex,
-          page: page,
-        );
-      case 'tape':
-        return TapeStroke.fromJson(
-          json,
-          fileVersion: fileVersion,
-          pageIndex: pageIndex,
-          page: page,
-        );
-      default:
-        log.severe('Unknown shape: ${json['shape']}');
-    }
+  }) => parseStrokeFromJson(
+    json,
+    fileVersion: fileVersion,
+    pageIndex: pageIndex,
+    page: page,
+    log: log,
+  );
 
-    final ToolId toolId = .parsePenType(json['ty'], fallback: .fountainPen);
+  /// Serializes this stroke into a JSON/BSON map.
+  Map<String, dynamic> toJson() => serializeStrokeToJson(this);
 
-    final options = StrokeOptions.fromJson(json);
-    final pressureEnabled = json['pe'] ?? defaultPressureEnabled;
-    if (toolId == .shapePen) {
-      // Set smoothing and streamline to 0 for ShapePen
-      // to mitigate https://github.com/saber-notes/saber/issues/1587
-      options.smoothing = 0;
-      options.streamline = 0;
-    }
-
-    final Color color;
-    switch (json['c']) {
-      case (final int value):
-        color = Color(value);
-      case (final Int64 value):
-        color = Color(value.toInt());
-      case null:
-        color = defaultColor;
-      default:
-        throw Exception(
-          'Invalid color value: (${json['c'].runtimeType}) ${json['c']}',
-        );
-    }
-
-    final Color? fillColor;
-    switch (json['fc']) {
-      case (final int value):
-        fillColor = Color(value);
-      case (final Int64 value):
-        fillColor = Color(value.toInt());
-      default:
-        fillColor = null;
-    }
-
-    final lineStyle = switch (json['ls'] as String?) {
-      'dashed' => LineStyle.dashed,
-      'dotted' => LineStyle.dotted,
-      _ => LineStyle.solid,
-    };
-
-    final offset = Offset(json['ox'] ?? 0, json['oy'] ?? 0);
-    final pointsJson = json['p'] as List<dynamic>;
-    final Iterable<PointVector> points;
-    if (fileVersion >= 13) {
-      points = pointsJson.map(
-        (point) => PointExtensions.fromBsonBinary(json: point, offset: offset),
-      );
-    } else {
-      points = pointsJson.map(
-        // ignore: deprecated_member_use_from_same_package
-        (point) => PointExtensions.fromJson(
-          json: Map<String, dynamic>.from(point),
-          offset: offset,
-        ),
-      );
-    }
-
-    return Stroke(
-      color: color,
-      pressureEnabled: pressureEnabled,
-      options: options,
-      pageIndex: pageIndex,
-      page: page,
-      toolId: toolId,
-      fillColor: fillColor,
-      lineStyle: lineStyle,
-    )..points.addAll(points);
-  }
-  Map<String, dynamic> toJson() {
-    // these json keys should not be the same as the ones in [StrokeOptions.toJson]
-    return {
-      'shape': null,
-      'p': points
-          .where((point) => point.isFinite)
-          .map((PointVector point) => point.toBsonBinary())
-          .toList(),
-      'i': pageIndex,
-      'ty': toolId.id,
-      'pe': pressureEnabled,
-      'c': color.toARGB32(),
-      if (fillColor != null) 'fc': fillColor!.toARGB32(),
-      if (lineStyle != LineStyle.solid) 'ls': lineStyle.name,
-    }..addAll(options.toJson());
-  }
-
+  /// Appends [point] with optional [pressure] and invalidates cached geometry.
   void addPoint(Offset point, [double? pressure]) {
     if (!pressureEnabled) {
       pressure = null;
@@ -532,86 +255,40 @@ class Stroke {
     markPolygonNeedsUpdating();
   }
 
+  /// Appends all [points] to this stroke.
   void addPoints(List<Offset> points) {
     for (final point in points) {
       addPoint(point);
     }
   }
 
+  /// Removes the first point of this stroke and invalidates cached geometry.
   void popFirstPoint() {
     points.removeAt(0);
     markPolygonNeedsUpdating();
   }
 
-  /// Points that are closer than this
-  /// threshold multiplied by the stroke's size
-  /// will be counted as duplicates.
-  static const _optimisePointsThreshold = 0.1;
-
-  /// Removes points that are too close together. See [_optimisePointsThreshold].
+  /// Removes points that are too close together.
   ///
-  /// This function is idempotent, so running it multiple times
-  /// will not change the result.
-  ///
-  /// This function does not change [_polygonNeedsUpdating].
-  void optimisePoints({double thresholdMultiplier = _optimisePointsThreshold}) {
-    if (points.length <= 3) return;
-
-    final minDistance = options.size * thresholdMultiplier;
-
-    // Remove points with null pressure because they were duplicates
-    points.removeWhere((point) => point.pressure == null);
-
-    for (int i = 1; i < points.length - 1; i++) {
-      final point = points[i];
-      final prev = points[i - 1];
-      final next = points[i + 1];
-
-      if (prev.distanceSquaredTo(point) < minDistance * minDistance &&
-          point.distanceSquaredTo(next) < minDistance * minDistance) {
-        points.removeAt(i);
-        i--;
-      }
-    }
-  }
+  /// This function is idempotent and does not invalidate cached polygons.
+  void optimisePoints({
+    double thresholdMultiplier = defaultOptimisePointsThreshold,
+  }) => optimiseStrokePoints(
+    points,
+    options.size,
+    thresholdMultiplier: thresholdMultiplier,
+  );
 
   @protected
-  List<Offset> getPolygon({required StrokeQuality quality}) {
-    if (!pressureEnabled) {
-      options.simulatePressure = false;
-    }
-    final rememberSimulatedPressure =
-        quality == .high && options.simulatePressure && options.isComplete;
-
-    final polygon = getStroke(
-      switch (quality) {
-        .low => simplifyPoints(
-          points,
-          lowQualityTolerance,
-          pressureScale: pressureEnabled ? options.size / 2 : 0,
-        ),
-        .high => points,
-      },
-      options: switch (quality) {
-        .low => options.copyWith(
-          simulatePressure: false,
-          smoothing: options.smoothing * 0.5,
-          streamline: options.streamline * 0.5,
-        ),
-        .high => options,
-      },
-      rememberSimulatedPressure: rememberSimulatedPressure,
-    );
-
-    if (rememberSimulatedPressure) {
-      // Ensure we don't simulate pressure again
-      options.simulatePressure = false;
-      // Remove points that are too close together
-      optimisePoints();
-    }
-
-    return polygon;
-  }
+  List<Offset> getPolygon({required StrokeQuality quality}) =>
+      path_builder.buildStrokePolygon(
+        points: points,
+        options: options,
+        quality: quality,
+        pressureEnabled: pressureEnabled,
+        lowQualityTolerance: lowQualityTolerance,
+        onSimulatedPressureApplied: optimisePoints,
+      );
 
   /// Returns a [Path] that represents the stroke.
   ///
@@ -621,20 +298,10 @@ class Stroke {
   /// Otherwise, the path will use straight lines between each point
   /// in [polygon] for performance.
   @protected
-  Path getPath(List<Offset> polygon, {bool smooth = true}) {
-    if (smooth && polygon.length >= 3) {
-      return smoothPathFromPolygon(polygon);
-    }
+  Path getPath(List<Offset> polygon, {bool smooth = true}) =>
+      path_builder.buildPathFromPolygon(polygon, smooth: smooth);
 
-    return Path()..addPolygon(polygon, true);
-  }
-
-  /// How far from the stroke's points the low quality polygon may stray,
-  /// as a fraction of the pen size.
   static const _lowQualityToleranceRatio = 0.1;
-
-  /// The smallest [lowQualityTolerance], so that thin pens still drop
-  /// points that are invisible when zoomed out.
   static const _lowQualityMinTolerance = 1.0;
 
   /// The maximum distance that [simplifyPoints] may move this stroke
@@ -644,151 +311,37 @@ class Stroke {
 
   /// Returns a subset of [points] that stays within [tolerance] of every
   /// dropped point (the Ramer–Douglas–Peucker algorithm).
-  ///
-  /// Unlike keeping every Nth point, this never drops the points that give
-  /// a stroke its shape, such as corners and the peaks of curves.
-  ///
-  /// If [pressureScale] is not 0, a point's pressure differing from the
-  /// pressure interpolated between its neighbours by 1 counts as a
-  /// deviation of [pressureScale], so changes in stroke width survive too.
   static List<PointVector> simplifyPoints(
     List<PointVector> points,
     double tolerance, {
     double pressureScale = 0,
-  }) {
-    if (points.length <= 2) return points;
+  }) => simplifyStrokePoints(points, tolerance, pressureScale: pressureScale);
 
-    final keep = List.filled(points.length, false);
-    keep[0] = true;
-    keep[points.length - 1] = true;
+  /// Builds a smooth closed quadratic-bezier [Path] from [polygon].
+  static Path smoothPathFromPolygon(List<Offset> polygon) =>
+      path_builder.smoothPathFromPolygon(polygon);
 
-    final ranges = <(int start, int end)>[(0, points.length - 1)];
-    while (ranges.isNotEmpty) {
-      final (start, end) = ranges.removeLast();
-      var farthest = -1;
-      var farthestDistance = tolerance;
-      for (int i = start + 1; i < end; i++) {
-        final distance = _deviation(
-          points[i],
-          points[start],
-          points[end],
-          pressureScale,
-        );
-        if (distance <= farthestDistance) continue;
-        farthest = i;
-        farthestDistance = distance;
-      }
-      if (farthest == -1) continue;
+  /// Converts [highQualityPolygon] to an SVG path string.
+  String toSvgPath() =>
+      path_builder.strokePolygonToSvgPath(highQualityPolygon, page.size.height);
 
-      keep[farthest] = true;
-      ranges.add((start, farthest));
-      ranges.add((farthest, end));
-    }
+  /// The maximum Y coordinate among raw points, or 0 if empty.
+  double get maxY =>
+      points.isEmpty ? 0 : points.map((point) => point.y).reduce(max);
 
-    return [
-      for (int i = 0; i < points.length; i++)
-        if (keep[i]) points[i],
-    ];
-  }
+  /// Recognizes a unistroke shape from this stroke's points.
+  RecognizedUnistroke? detectShape() => detectStrokeShape(points);
 
-  static double _deviation(
-    PointVector point,
-    PointVector start,
-    PointVector end,
-    double pressureScale,
-  ) {
-    final dx = end.x - start.x;
-    final dy = end.y - start.y;
-    final lengthSquared = dx * dx + dy * dy;
-    final t = lengthSquared == 0
-        ? 0.0
-        : (((point.x - start.x) * dx + (point.y - start.y) * dy) /
-                  lengthSquared)
-              .clamp(0.0, 1.0);
-    final distance = sqrt(
-      pow(point.x - (start.x + t * dx), 2) +
-          pow(point.y - (start.y + t * dy), 2),
-    );
+  /// Uses the one_dollar_unistroke_recognizer package to recognize straight
+  /// lines sufficiently long relative to [options.size].
+  bool isStraightLine([int minLength = 5]) =>
+      isStrokeStraightLine(points, options.size, minLength);
 
-    final pressure = point.pressure;
-    final startPressure = start.pressure;
-    final endPressure = end.pressure;
-    if (pressureScale == 0 ||
-        pressure == null ||
-        startPressure == null ||
-        endPressure == null) {
-      return distance;
-    }
-    final expected = startPressure + t * (endPressure - startPressure);
-    return max(distance, (pressure - expected).abs() * pressureScale);
-  }
-
-  static Path smoothPathFromPolygon(List<Offset> polygon) {
-    final path = Path();
-    path.moveTo(polygon.first.dx, polygon.first.dy);
-    for (int i = 1; i < polygon.length - 1; i++) {
-      final p1 = polygon[i];
-      final p2 = polygon[i + 1];
-      final mid = (p1 + p2) / 2;
-      path.quadraticBezierTo(p1.dx, p1.dy, mid.dx, mid.dy);
-    }
-    return path..close();
-  }
-
-  String toSvgPath() {
-    String toSvgPoint(Offset point) {
-      return '${point.dx} '
-          '${page.size.height - point.dy}';
-    }
-
-    // Remove NaN points, and convert to SVG coordinates
-    final svgPoints = highQualityPolygon
-        .where((offset) => offset.isFinite)
-        .map(toSvgPoint);
-
-    return svgPoints.isNotEmpty ? 'M${svgPoints.join('L')}' : '';
-  }
-
-  double get maxY {
-    return points.isEmpty ? 0 : points.map((point) => point.y).reduce(max);
-  }
-
-  RecognizedUnistroke? detectShape() {
-    if (points.length < 3) return null;
-    return recognizeUnistroke(points);
-  }
-
-  /// Uses the one_dollar_unistroke_recognizer package
-  /// only to recognize straight lines.
-  ///
-  /// In addition, the line must be sufficiently long
-  /// relative to [options.size].
-  bool isStraightLine([int minLength = 5]) {
-    if (points.length < 3) return false;
-
-    final recognized = recognizeUnistroke(
-      points,
-      overrideReferenceUnistrokes: default$1Unistrokes
-          .where((unistroke) => unistroke.name == DefaultUnistrokeNames.line)
-          .toList(),
-    );
-    if (recognized == null) return false;
-    assert(recognized.name == DefaultUnistrokeNames.line);
-    if (recognized.score < 0.7) return false;
-
-    final sqrLength = points.first.distanceSquaredTo(points.last);
-    final sqrMinLength = minLength * minLength * options.size * options.size;
-    return sqrLength >= sqrMinLength;
-  }
-
-  /// Replaces the points in this stroke with a straight line.
-  ///
-  /// If the resulting line is close to horizontal or vertical,
-  /// it will be snapped to be exactly horizontal or vertical.
+  /// Replaces the points in this stroke with a straight line, snapping close
+  /// horizontal or vertical lines to the exact axis.
   void convertToLine() {
     assert(points.length >= 2);
 
-    // Use the average pressure
     final pressure = points.map((point) => point.pressure ?? 0.5).average;
     var firstPoint = PointVector.fromOffset(
       offset: points.first,
@@ -799,13 +352,13 @@ class Stroke {
       pressure: pressure,
     );
 
-    // Snap to the horizontal or vertical axis
     (firstPoint, lastPoint) = snapLine(firstPoint, lastPoint);
 
-    points.clear();
-    points.add(firstPoint);
-    points.add(lastPoint);
-    points.add(lastPoint);
+    points
+      ..clear()
+      ..add(firstPoint)
+      ..add(lastPoint)
+      ..add(lastPoint);
     options.isComplete = true;
     options.start.taperEnabled = false;
     options.end.taperEnabled = false;
@@ -814,146 +367,48 @@ class Stroke {
 
   /// Sets this stroke to a straight line segment from [start] to [end].
   void setStraightLine(Offset start, Offset end) {
-    points.clear();
-    points.add(PointVector(start.dx, start.dy, 0.5));
-    points.add(PointVector(end.dx, end.dy, 0.5));
-    points.add(PointVector(end.dx, end.dy, 0.5));
+    points
+      ..clear()
+      ..add(PointVector(start.dx, start.dy, 0.5))
+      ..add(PointVector(end.dx, end.dy, 0.5))
+      ..add(PointVector(end.dx, end.dy, 0.5));
     markPolygonNeedsUpdating();
   }
 
-  /// Applies Laplacian smoothing to the raw points of this stroke to beautify handwriting.
+  /// Applies Laplacian smoothing to the raw points of this stroke to beautify
+  /// handwriting.
   void smoothen({int iterations = 2}) {
     if (points.length < 4) return;
-    for (int iter = 0; iter < iterations; iter++) {
-      final smoothed = <PointVector>[points.first];
-      for (int i = 1; i < points.length - 1; i++) {
-        final prev = points[i - 1];
-        final curr = points[i];
-        final next = points[i + 1];
-        final nx = 0.25 * prev.x + 0.5 * curr.x + 0.25 * next.x;
-        final ny = 0.25 * prev.y + 0.5 * curr.y + 0.25 * next.y;
-        final np = curr.pressure != null
-            ? 0.25 * (prev.pressure ?? curr.pressure!) +
-                  0.5 * curr.pressure! +
-                  0.25 * (next.pressure ?? curr.pressure!)
-            : null;
-        smoothed.add(PointVector(nx, ny, np));
-      }
-      smoothed.add(points.last);
-      points.clear();
-      points.addAll(smoothed);
-    }
+    smoothenStrokePoints(points, iterations: iterations);
     markPolygonNeedsUpdating();
   }
 
-  /// Snaps a [point] to the nearest Cartesian grid intersection
-  /// with the given [gridSize].
-  static Offset snapPointToGrid(Offset point, double gridSize) {
-    if (gridSize <= 0) return point;
-    final gridX = (point.dx / gridSize).round() * gridSize;
-    final gridY = (point.dy / gridSize).round() * gridSize;
-    return Offset(gridX, gridY);
-  }
+  /// Snaps a [point] to the nearest Cartesian grid intersection with [gridSize].
+  static Offset snapPointToGrid(Offset point, double gridSize) =>
+      snapping.snapPointToGrid(point, gridSize);
 
   /// Snaps a [point] to the nearest vertex on an isometric triangular grid
   /// with vertical spacing [lineHeight].
-  ///
-  /// Uses an O(1) 4-candidate nearest vertex algorithm across the bounding
-  /// columns.
-  static Offset snapPointToIsometricGrid(Offset point, double lineHeight) {
-    if (lineHeight <= 0) return point;
-    final l = lineHeight;
-    final dx = l * (sqrt(3) / 2);
-
-    final col0 = (point.dx / dx).floor();
-    final col1 = col0 + 1;
-
-    Offset? bestVertex;
-    double minDistanceSq = double.infinity;
-
-    for (final col in [col0, col1]) {
-      final x = col * dx;
-      final yShift = (col % 2 != 0) ? 0.5 * l : 0.0;
-      final rowCenter = (point.dy - yShift) / l;
-      final rowA = rowCenter.floor();
-      final rowB = rowCenter.ceil();
-
-      for (final row in [rowA, rowB]) {
-        final y = row * l + yShift;
-        final dX = point.dx - x;
-        final dY = point.dy - y;
-        final distSq = dX * dX + dY * dY;
-        if (distSq < minDistanceSq) {
-          minDistanceSq = distSq;
-          bestVertex = Offset(x, y);
-        }
-      }
-    }
-
-    return bestVertex ?? point;
-  }
+  static Offset snapPointToIsometricGrid(Offset point, double lineHeight) =>
+      snapping.snapPointToIsometricGrid(point, lineHeight);
 
   /// The 6 isometric grid directions (±30°, ±90°, ±150°) in radians.
-  static const List<double> isometricAnglesRad = [
-    pi / 6, // 30°
-    pi / 2, // 90°
-    5 * pi / 6, // 150°
-    -pi / 6, // -30°
-    -pi / 2, // -90°
-    -5 * pi / 6, // -150°
-  ];
+  static const List<double> isometricAnglesRad = snapping.isometricAnglesRad;
 
-  /// Snaps a line to either horizontal or vertical
-  /// if the angle is close enough.
-  ///
-  /// If [angleStepDegrees] is provided (and > 0), the line snaps to the
-  /// nearest angle that is a multiple of [angleStepDegrees].
+  /// Snaps a line to horizontal/vertical, [angleStepDegrees], or isometric axes.
   static (PointVector firstPoint, PointVector lastPoint) snapLine(
     PointVector firstPoint,
     PointVector lastPoint, {
     double? angleStepDegrees,
     bool isIsometric = false,
-  }) {
-    final dx = lastPoint.dx - firstPoint.dx;
-    final dy = lastPoint.dy - firstPoint.dy;
-
-    if (isIsometric ||
-        (angleStepDegrees != null &&
-            (angleStepDegrees > 0 || angleStepDegrees == -30))) {
-      return snapLineToAngle(
-        firstPoint,
-        lastPoint,
-        angleStepDegrees ?? 30.0,
-        isIsometric: isIsometric,
-      );
-    }
-
-    // Original H/V snapping behavior
-    final absDx = dx.abs();
-    final absDy = dy.abs();
-    final angle = atan2(absDy, absDx);
-
-    const snapAngle = 5 * pi / 180; // 5 degrees
-    if (angle < snapAngle) {
-      // snap to horizontal
-      return (
-        firstPoint,
-        PointVector(lastPoint.dx, firstPoint.dy, lastPoint.pressure),
-      );
-    } else if (angle > pi / 2 - snapAngle) {
-      // snap to vertical
-      return (
-        firstPoint,
-        PointVector(firstPoint.dx, lastPoint.dy, lastPoint.pressure),
-      );
-    } else {
-      return (firstPoint, lastPoint);
-    }
-  }
+  }) => snapping.snapStrokeLine(
+    firstPoint,
+    lastPoint,
+    angleStepDegrees: angleStepDegrees,
+    isIsometric: isIsometric,
+  );
 
   /// Applies angle snap to the existing points in this line stroke.
-  /// The stroke must have exactly 2 points (start and end of a line).
-  /// The start point stays in place; the end point is adjusted.
   void snapToAngle(double stepDegrees, {bool isIsometric = false}) {
     if (points.length < 2) return;
     final first = points.first;
@@ -964,62 +419,28 @@ class Stroke {
       stepDegrees,
       isIsometric: isIsometric,
     );
-    points.clear();
-    points.add(first);
-    points.add(snappedLast);
-    // Ensure 3 points (a line segment requires 3 points for getPolygon)
-    points.add(snappedLast);
+    points
+      ..clear()
+      ..add(first)
+      ..add(snappedLast)
+      ..add(snappedLast);
     markPolygonNeedsUpdating();
   }
 
-  /// Snaps a line to the nearest angle that is a multiple of [stepDegrees]
-  /// or to the 3-axis isometric directions if [isIsometric] is true
-  /// (or [stepDegrees] is -30).
-  /// The line's length is preserved; only its direction is adjusted.
+  /// Snaps a line to the nearest multiple of [stepDegrees] or isometric axes.
   static (PointVector firstPoint, PointVector lastPoint) snapLineToAngle(
     PointVector firstPoint,
     PointVector lastPoint,
     double stepDegrees, {
     bool isIsometric = false,
-  }) {
-    final dx = lastPoint.dx - firstPoint.dx;
-    final dy = lastPoint.dy - firstPoint.dy;
-    final length = sqrt(dx * dx + dy * dy);
-    if (length < 0.001) return (firstPoint, lastPoint);
+  }) => snapping.snapStrokeLineToAngle(
+    firstPoint,
+    lastPoint,
+    stepDegrees,
+    isIsometric: isIsometric,
+  );
 
-    var angleRad = atan2(dy, dx);
-
-    if (isIsometric || stepDegrees == -30) {
-      double minDiff = double.infinity;
-      double bestAngle = isometricAnglesRad.first;
-      for (final target in isometricAnglesRad) {
-        var diff = (angleRad - target) % (2 * pi);
-        if (diff > pi) diff -= 2 * pi;
-        if (diff < -pi) diff += 2 * pi;
-        final absDiff = diff.abs();
-        if (absDiff < minDiff) {
-          minDiff = absDiff;
-          bestAngle = target;
-        }
-      }
-      angleRad = bestAngle;
-    } else {
-      if (stepDegrees <= 0) return (firstPoint, lastPoint);
-      final stepRad = stepDegrees * pi / 180;
-      // Snap to nearest multiple of stepRad
-      angleRad = (angleRad / stepRad).round() * stepRad;
-    }
-
-    return (
-      firstPoint,
-      PointVector(
-        firstPoint.dx + length * cos(angleRad),
-        firstPoint.dy + length * sin(angleRad),
-        lastPoint.pressure,
-      ),
-    );
-  }
-
+  /// Returns a deep copy of this stroke.
   Stroke copy() => Stroke(
     color: color,
     pressureEnabled: pressureEnabled,
@@ -1032,6 +453,7 @@ class Stroke {
   )..points.addAll(points);
 }
 
+/// Quality level used when generating stroke outline polygons.
 enum StrokeQuality {
   low(4),
   high(1);
