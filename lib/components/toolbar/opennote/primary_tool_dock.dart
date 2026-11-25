@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
+import 'package:saber/components/theming/dynamic_material_app.dart';
 import 'package:saber/components/theming/uni_icon.dart';
 import 'package:saber/components/toolbar/editor_toolbar_actions.dart';
 import 'package:saber/components/toolbar/opennote/toolbar_primitives.dart';
@@ -32,6 +33,7 @@ class OpennotePrimaryToolDock extends StatelessWidget {
     required this.actions,
     required this.zoomWindowOpen,
     required this.onToggleZoomWindow,
+    this.onToggleFullscreen,
     required this.onShowPenSettings,
     required this.onShowEraserSettings,
     required this.onShowDraftingTools,
@@ -43,6 +45,7 @@ class OpennotePrimaryToolDock extends StatelessWidget {
   final EditorToolbarActions actions;
   final bool zoomWindowOpen;
   final VoidCallback? onToggleZoomWindow;
+  final VoidCallback? onToggleFullscreen;
   final void Function(Tool Function() getTool) onShowPenSettings;
   final VoidCallback onShowEraserSettings;
   final VoidCallback onShowDraftingTools;
@@ -350,8 +353,31 @@ class OpennotePrimaryToolDock extends StatelessWidget {
                   isCompact: isCompact,
                 ),
 
-                // Quick Dock Position Toggle (Top <-> Bottom)
+                // Fullscreen & Dock Position Toggles
                 ToolbarGroupDivider(colorScheme: colorScheme),
+                if (onToggleFullscreen != null)
+                  _dockButton(
+                    ToolbarIconButton(
+                      key: const ValueKey('opennote_fullscreen_toggle'),
+                      tooltip: t.editor.toolbar.fullscreen,
+                      selected: DynamicMaterialApp.isFullscreen,
+                      enabled: !actions.readOnly,
+                      onPressed: () {
+                        HapticFeedback.selectionClick();
+                        onToggleFullscreen!();
+                      },
+                      padding: buttonPadding,
+                      child: AdaptiveIcon(
+                        icon: DynamicMaterialApp.isFullscreen
+                            ? Icons.fullscreen_exit
+                            : Icons.fullscreen,
+                        cupertinoIcon: DynamicMaterialApp.isFullscreen
+                            ? CupertinoIcons.fullscreen_exit
+                            : CupertinoIcons.fullscreen,
+                      ),
+                    ),
+                    isCompact: isCompact,
+                  ),
                 ValueListenableBuilder<AxisDirection>(
                   valueListenable: stows.editorToolbarAlignment,
                   builder: (context, alignment, _) {

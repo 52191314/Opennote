@@ -5,12 +5,16 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:saber/components/theming/dynamic_material_app.dart';
 import 'package:saber/components/toolbar/editor_toolbar_actions.dart';
 import 'package:saber/components/toolbar/opennote/contextual_sub_bar.dart';
 import 'package:saber/components/toolbar/opennote/primary_tool_dock.dart';
 import 'package:saber/components/toolbar/widgets/toolbar_dialogs.dart';
+import 'package:saber/components/toolbar/widgets/toolbar_keybindings.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/_tool.dart';
+import 'package:saber/data/tools/eraser.dart';
+import 'package:saber/data/tools/pen.dart';
 import 'package:saber/i18n/strings.g.dart';
 
 /// A comprehensive Opennote Studio Dual-Tier Writing Toolbar.
@@ -30,6 +34,11 @@ class OpennoteToolbar extends StatefulWidget {
     this.onClearPage,
     this.zoomWindowOpen = false,
     this.onToggleZoomWindow,
+    this.toggleFingerDrawing,
+    this.onToggleExportBar,
+    this.exportAsSba,
+    this.exportAsPdf,
+    this.exportAsPng,
   });
 
   /// The editor state to show and the actions the tools trigger.
@@ -44,12 +53,84 @@ class OpennoteToolbar extends StatefulWidget {
   /// Opens or dismisses the zoom window.
   final VoidCallback? onToggleZoomWindow;
 
+  /// Toggles finger drawing mode (bound to Ctrl+F).
+  final VoidCallback? toggleFingerDrawing;
+
+  /// Optional custom export handler (bound to Ctrl+Shift+S).
+  final VoidCallback? onToggleExportBar;
+
+  final Future Function(BuildContext)? exportAsSba;
+  final Future Function(BuildContext)? exportAsPdf;
+  final Future Function(BuildContext)? exportAsPng;
+
   @override
   State<OpennoteToolbar> createState() => _OpennoteToolbarState();
 }
 
 class _OpennoteToolbarState extends State<OpennoteToolbar> {
-  void _refresh() => setState(() {});
+  late final ToolbarKeybindings _keybindings;
+
+  @override
+  void initState() {
+    super.initState();
+    _keybindings = ToolbarKeybindings(
+      onToggleFingerDrawing: _toggleFingerDrawing,
+      onToggleEraser: _toggleEraser,
+      onToggleColorOptions: _toggleColorOptions,
+      onToggleExportBar: _toggleExportBar,
+      onToggleFullscreen: _toggleFullscreen,
+      onPaste: widget.actions.paste,
+    )..register();
+    DynamicMaterialApp.addFullscreenListener(_refresh);
+  }
+
+  void _refresh() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  void _toggleFingerDrawing() {
+    if (widget.toggleFingerDrawing != null) {
+      widget.toggleFingerDrawing!();
+      return;
+    }
+    stows.editorFingerDrawing.value = !stows.editorFingerDrawing.value;
+    _refresh();
+  }
+
+  void _toggleEraser() {
+    if (widget.actions.readOnly) return;
+    if (widget.actions.currentTool is Eraser) {
+      widget.actions.setTool(Pen.currentPen);
+    } else {
+      widget.actions.setTool(Eraser(size: stows.eraserSize.value));
+    }
+  }
+
+  void _toggleExportBar() {
+    if (widget.onToggleExportBar != null) {
+      widget.onToggleExportBar!();
+      return;
+    }
+    if (widget.exportAsSba == null &&
+        widget.exportAsPdf == null &&
+        widget.exportAsPng == null) {
+      return;
+    }
+    ToolbarDialogs.showExportBar(
+      context,
+      exportAsSba: widget.exportAsSba,
+      exportAsPdf: widget.exportAsPdf,
+      exportAsPng: widget.exportAsPng,
+    );
+  }
+
+  void _toggleFullscreen() {
+    DynamicMaterialApp.setFullscreen(
+      !DynamicMaterialApp.isFullscreen,
+      updateSystem: true,
+    );
+  }
 
   void _showPenSettings(Tool Function() getTool) {
     ToolbarDialogs.showPenSettings(
@@ -124,6 +205,7 @@ class _OpennoteToolbarState extends State<OpennoteToolbar> {
                 actions: widget.actions,
                 zoomWindowOpen: widget.zoomWindowOpen,
                 onToggleZoomWindow: widget.onToggleZoomWindow,
+                onToggleFullscreen: _toggleFullscreen,
                 onShowPenSettings: _showPenSettings,
                 onShowEraserSettings: _showEraserSettings,
                 onShowDraftingTools: _showDraftingTools,
@@ -146,5 +228,13 @@ class _OpennoteToolbarState extends State<OpennoteToolbar> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    DynamicMaterialApp.removeFullscreenListener(_refresh);
+    DynamicMaterialApp.setFullscreen(false, updateSystem: true);
+    _keybindings.dispose();
+    super.dispose();
   }
 }

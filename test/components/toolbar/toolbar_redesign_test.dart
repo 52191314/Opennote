@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saber/components/toolbar/editor_bottom_sheet.dart';
 import 'package:saber/components/toolbar/editor_toolbar_actions.dart';
+import 'package:saber/components/toolbar/export_bar.dart';
 import 'package:saber/components/toolbar/opennote_toolbar.dart';
 import 'package:saber/components/toolbar/toolbar.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
@@ -412,5 +413,43 @@ void main() {
         },
       );
     }
+
+    testWidgets(
+      'OpennoteToolbar exposes fullscreen toggle and ExportBar uses Archive (.sba) label',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Column(
+                children: [
+                  OpennoteToolbar(
+                    actions: buildActions(
+                      currentTool: Pen.currentPen,
+                      onSetTool: (_) {},
+                      onSetColor: (_) {},
+                    ),
+                  ),
+                  ExportBar(
+                    axis: Axis.horizontal,
+                    toggleExportBar: () {},
+                    exportAsSba: (_) async {},
+                    exportAsPdf: (_) async {},
+                    exportAsPng: (_) async {},
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const ValueKey('opennote_fullscreen_toggle')),
+          findsOneWidget,
+        );
+        expect(find.text('Archive (.sba)'), findsOneWidget);
+        expect(find.text('SBA'), findsNothing);
+      },
+    );
   });
 }
