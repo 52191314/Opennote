@@ -1,0 +1,163 @@
+{
+  "schemaVersion": "1.0.0",
+  "appName": "Opennote",
+  "entitlementIdentifier": "opennote_pro",
+  "subscriptionGroup": {
+    "id": "com.opennote.pro.group",
+    "appStoreConnectGroupName": "Opennote Pro",
+    "appStoreConnectGroupId": "21584001",
+    "googlePlaySubscriptionId": "opennote_pro",
+    "gracePeriodDays": 16,
+    "billingRetryEnabled": true,
+    "familySharingDefault": true
+  },
+  "freeTierPolicy": {
+    "freeNotebookLimit": 5,
+    "enforcementMode": "soft_prompt_default",
+    "includedCoreFeatures": [
+      "Core handwriting pens, highlighter, eraser, and scribble-to-erase",
+      "Up to 5 notebooks with standard ruled, grid, and dot backgrounds",
+      "Single-page PDF/PNG export and local offline storage",
+      "Standard light and dark app themes"
+    ]
+  },
+  "products": [
+    {
+      "skuId": "com.opennote.pro.annual",
+      "tier": "pro_annual",
+      "type": "auto_renewable_subscription",
+      "displayName": "Opennote Pro Annual",
+      "recommended": true,
+      "badgeText": "BEST VALUE · SAVE 50%",
+      "billingPeriod": "P1Y",
+      "priceUsd": 29.99,
+      "monthlyEquivalentUsd": 2.50,
+      "savingsPercentVsMonthly": 50,
+      "introductoryOffer": {
+        "type": "free_trial",
+        "durationIso8601": "P7D",
+        "trialDays": 7,
+        "eligibility": "new_subscribers_once_per_store_account"
+      },
+      "appStoreConnect": {
+        "productId": "com.opennote.pro.annual",
+        "subscriptionGroupLevel": 1,
+        "familyShareable": true,
+        "reviewNotes": "Unlocks all Opennote Pro engineering templates, drafting tools, vector SVG/batch PDF export, and unlimited encrypted sync after a 7-day free trial."
+      },
+      "googlePlayConsole": {
+        "subscriptionId": "opennote_pro",
+        "basePlanId": "pro-annual",
+        "offerId": "pro-annual-7d-trial",
+        "autoRenewing": true,
+        "resubscribeEnabled": true,
+        "prorationMode": "IMMEDIATE_WITH_TIME_PRORATION"
+      }
+    },
+    {
+      "skuId": "com.opennote.pro.monthly",
+      "tier": "pro_monthly",
+      "type": "auto_renewable_subscription",
+      "displayName": "Opennote Pro Monthly",
+      "recommended": false,
+      "badgeText": null,
+      "billingPeriod": "P1M",
+      "priceUsd": 4.99,
+      "monthlyEquivalentUsd": 4.99,
+      "savingsPercentVsMonthly": 0,
+      "introductoryOffer": null,
+      "appStoreConnect": {
+        "productId": "com.opennote.pro.monthly",
+        "subscriptionGroupLevel": 3,
+        "familyShareable": true,
+        "reviewNotes": "Month-to-month access to all Opennote Pro capabilities."
+      },
+      "googlePlayConsole": {
+        "subscriptionId": "opennote_pro",
+        "basePlanId": "pro-monthly",
+        "offerId": null,
+        "autoRenewing": true,
+        "resubscribeEnabled": true,
+        "prorationMode": "IMMEDIATE_WITH_TIME_PRORATION"
+      }
+    },
+    {
+      "skuId": "com.opennote.pro.student.annual",
+      "tier": "pro_student_annual",
+      "type": "auto_renewable_subscription",
+      "displayName": "Opennote Pro Student Annual",
+      "recommended": false,
+      "badgeText": "STUDENT · SAVE 75%",
+      "billingPeriod": "P1Y",
+      "priceUsd": 14.99,
+      "monthlyEquivalentUsd": 1.25,
+      "savingsPercentVsMonthly": 75,
+      "introductoryOffer": {
+        "type": "free_trial",
+        "durationIso8601": "P7D",
+        "trialDays": 7,
+        "eligibility": "verified_academic_or_student_offer"
+      },
+      "appStoreConnect": {
+        "productId": "com.opennote.pro.student.annual",
+        "subscriptionGroupLevel": 2,
+        "familyShareable": false,
+        "reviewNotes": "Discounted annual subscription for verified students and educators."
+      },
+      "googlePlayConsole": {
+        "subscriptionId": "opennote_pro",
+        "basePlanId": "pro-student-annual",
+        "offerId": "pro-student-7d-trial",
+        "autoRenewing": true,
+        "resubscribeEnabled": true,
+        "prorationMode": "IMMEDIATE_WITH_TIME_PRORATION"
+      }
+    },
+    {
+      "skuId": "com.opennote.pro.lifetime",
+      "tier": "pro_lifetime",
+      "type": "non_consumable_iap",
+      "displayName": "Opennote Pro Lifetime",
+      "recommended": false,
+      "badgeText": "PAY ONCE",
+      "billingPeriod": "LIFETIME",
+      "priceUsd": 69.99,
+      "monthlyEquivalentUsd": null,
+      "savingsPercentVsMonthly": 0,
+      "introductoryOffer": null,
+      "appStoreConnect": {
+        "productId": "com.opennote.pro.lifetime",
+        "familyShareable": true,
+        "reviewNotes": "One-time non-consumable purchase permanently unlocking Opennote Pro."
+      },
+      "googlePlayConsole": {
+        "productId": "com.opennote.pro.lifetime",
+        "purchaseType": "ONE_TIME_NON_CONSUMABLE",
+        "acknowledgeRequired": true
+      }
+    }
+  ],
+  "proFeaturesUnlocked": [
+    "unlimitedNotebooks",
+    "proEngineeringTemplates",
+    "precisionDraftingPack",
+    "studyTapePro",
+    "vectorSvgExport",
+    "batchPdfExport",
+    "pdfDarkModePro",
+    "unlimitedCloudSync",
+    "customPenPresets",
+    "aiHandwritingTools",
+    "priorityBackup"
+  ],
+  "nativeMethodChannel": {
+    "channelName": "com.opennote.app/monetization",
+    "methods": [
+      "fetchCatalog",
+      "purchase",
+      "restorePurchases",
+      "verifyEntitlement",
+      "openManageSubscriptions"
+    ]
+  }
+}
