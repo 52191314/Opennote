@@ -1,6 +1,7 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
 /// 🤖 Modified with Grok 4.7
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'dart:async';
@@ -21,38 +22,36 @@ import 'package:saber/data/tools/laser_pointer.dart';
 import 'package:sbn/canvas_background_pattern.dart';
 import 'package:sbn/has_size.dart';
 
-typedef CanvasKey = GlobalKey<State<InnerCanvas>>;
+part 'page/page_config.dart';
+part 'page/page_models.dart';
+part 'page/page_mutations.dart';
+part 'page/page_serialization.dart';
 
-/// Where a page's text sits relative to its default position.
-typedef TextPlacement = ({Offset offset, double rotation, double scale});
-
-/// Key identifying the visual state of static committed strokes cached on [EditorPage].
-typedef StrokePictureCacheKey = ({
-  int strokesDigest,
-  bool invert,
-  int primaryColorValue,
-  bool isLowQuality,
-  int pencilShaderMask,
-  int selectionIdentity,
-  bool isInfiniteCanvas,
-  Size canvasSize,
-  Rect recordedCullRect,
-});
-
-class EditorPage extends ChangeNotifier implements HasSize {
+/// Represents a single editable page inside a note, holding its layers,
+/// images, rich text, paper configuration, and transient rendering caches.
+class EditorPage extends ChangeNotifier
+    with _EditorPageConfig, _EditorPageMutations
+    implements HasSize {
+  /// Default logical width of a new page.
   static const double defaultWidth = 1000;
+
+  /// Default logical height of a new page.
   static const double defaultHeight = defaultWidth * 1.4;
+
+  /// Default logical [Size] of a new page.
   static const defaultSize = Size(defaultWidth, defaultHeight);
 
   @override
   Size size;
 
+  /// Global key for this page's [InnerCanvas].
   late final CanvasKey innerCanvasKey = CanvasKey();
   RenderBox? _renderBox;
+
+  /// Cached [RenderBox] for this page's canvas, re-queried if detached.
   RenderBox? get renderBox {
-    if (_renderBox != null && _renderBox!.attached) {
-      return _renderBox;
-    }
+    if (_renderBox != null && _renderBox!.attached) return _renderBox;
+
     final renderObject = innerCanvasKey.currentState?.context
         .findRenderObject();
     if (renderObject is RenderBox && renderObject.attached) {
@@ -68,21 +67,29 @@ class EditorPage extends ChangeNotifier implements HasSize {
   }
 
   var _isRendered = false;
+
+  /// Whether this page is currently rendered in the active viewport.
   bool get isRendered => _isRendered;
   set isRendered(bool isRendered) {
     if (isRendered == _isRendered) return;
     _isRendered = isRendered;
-
-    // reset renderBox as renderObject has changed
     _renderBox = null;
   }
 
+  /// Lazily initialized fragment shader for pencil strokes on this page.
   FragmentShader get pencilShader => _pencilShader ??= PencilShader.create();
   FragmentShader? _pencilShader;
 
+  /// Ordered drawing layers on this page.
   final List<Layer> layers;
+
+  /// Transient laser-pointer strokes currently fading on this page.
   final List<LaserStroke> laserStrokes;
+
+  /// Foreground images placed on this page.
   final List<EditorImage> images;
+
+  /// Rich-text controller and focus node for this page.
   final QuillStruct quill;
 
   /// Monotonically increasing version counter incremented whenever strokes or
@@ -98,158 +105,50 @@ class EditorPage extends ChangeNotifier implements HasSize {
   /// Cache key matching [cachedHighlighterPicture] and [cachedNonHighlighterPicture].
   StrokePictureCacheKey? strokePictureCacheKey;
 
-  /// Disposes and clears any cached static stroke [Picture]s on this page.
-  ///
-  /// When called mid-frame (e.g. inside `CustomPainter.paint`), disposal is
-  /// deferred until after the frame completes so in-flight GPU display lists
-  /// remain valid on the raster thread.
-  void invalidateStrokePictureCache({bool immediate = false}) {
-    final oldHl = cachedHighlighterPicture;
-    final oldNonHl = cachedNonHighlighterPicture;
-    cachedHighlighterPicture = null;
-    cachedNonHighlighterPicture = null;
-    strokePictureCacheKey = null;
-
-    if (oldHl == null && oldNonHl == null) return;
-
-    if (!immediate) {
-      try {
-        final scheduler = SchedulerBinding.instance;
-        if (scheduler.schedulerPhase != SchedulerPhase.idle) {
-          scheduler.addPostFrameCallback((_) {
-            oldHl?.dispose();
-            oldNonHl?.dispose();
-          });
-          return;
-        }
-      } on Object {
-        // Binding not initialized in pure unit tests; dispose immediately.
-      }
-    }
-    oldHl?.dispose();
-    oldNonHl?.dispose();
-  }
-
-  /// All strokes from all visible layers, flattened for rendering.
-  List<Stroke> get strokes {
-    if (layers.length == 1) {
-      return layers.first.visible ? layers.first.strokes : const [];
-    }
-    return [
-      for (final layer in layers)
-        if (layer.visible) ...layer.strokes,
-    ];
-  }
-
-  /// Strokes in the currently active layer (for mutation).
-  List<Stroke> get activeLayerStrokes => activeLayer.strokes;
-
-  /// The currently active layer instance.
-  Layer get activeLayer {
-    if (layers.isEmpty) {
-      layers.add(Layer(name: 'Default'));
-    }
-    return layers[activeLayerIndex.clamp(0, layers.length - 1)];
-  }
-
-  /// The index of the currently active layer for drawing operations.
+  /// Index of the currently active layer for drawing operations.
   int activeLayerIndex;
 
   /// Optional position of the laser pointer spotlight dot (in page-local coordinates).
   Offset? laserSpotlightPosition;
 
   /// Position of the eraser cursor on this page (in page-local coordinates).
-  /// When non-null, a semi-transparent circle is painted at this position.
   Offset? eraserCursorPosition;
 
   /// Radius of the eraser cursor circle.
   double? eraserCursorRadius;
 
   /// Hit-test rect for the delete button on the selection bounding box.
-  /// Set by [CanvasPainter._drawSelection] on each frame where a selection exists.
   Rect? selectionDeleteButtonRect;
 
   /// Center of the rotation handle (above the selection bounding box).
-  /// Set by [CanvasPainter._drawSelection] on each frame where a selection exists.
   Offset? selectionRotationHandleCenter;
 
   /// Positions of the 8 resize handles around the selection bounding box.
-  /// Order: topLeft, topCenter, topRight, middleRight,
-  ///        bottomRight, bottomCenter, bottomLeft, middleLeft.
   List<Offset>? selectionResizeHandles;
 
   /// Whether this page is bookmarked/favorited by the user.
   var bookmarked = false;
 
-  /// Paper drawn on this page. Null uses the notebook's paper.
+  /// Paper pattern drawn on this page. `null` uses the notebook's paper.
   CanvasBackgroundPattern? paperPattern;
 
-  /// Paper color for this page. Null uses the notebook's color.
+  /// Paper color for this page. `null` uses the notebook's color.
   Color? paperColor;
 
-  /// Line spacing for this page. Null uses the notebook's line height.
+  /// Line spacing for this page. `null` uses the notebook's line height.
   int? paperLineHeight;
 
-  /// Line thickness for this page. Null uses the notebook's line thickness.
+  /// Line thickness for this page. `null` uses the notebook's line thickness.
   int? paperLineThickness;
-
-  /// The pattern [build] should paint: this page's paper, or [notebookPattern].
-  CanvasBackgroundPattern paperPatternOr(
-    CanvasBackgroundPattern notebookPattern,
-  ) {
-    return paperPattern ?? notebookPattern;
-  }
-
-  /// The color [build] should paint: this page's paper, or [notebookColor].
-  Color? paperColorOr(Color? notebookColor) => paperColor ?? notebookColor;
-
-  /// Line spacing [build] should use: this page's paper, or [notebookLineHeight].
-  int paperLineHeightOr(int notebookLineHeight) =>
-      paperLineHeight ?? notebookLineHeight;
-
-  /// Line thickness [build] should use: this page's paper, or [notebookLineThickness].
-  int paperLineThicknessOr(int notebookLineThickness) =>
-      paperLineThickness ?? notebookLineThickness;
 
   /// Offset applied to the text content from its default position.
   Offset textContentOffset = Offset.zero;
 
-  /// Returns the bounding rect of the text content, computing it from
-  /// [quill] document length and the given [lineHeight].
-  Rect computeTextContentRect(double lineHeight) {
-    final isEmpty = quill.controller.document.isEmpty();
-    if (isEmpty) return Rect.zero;
-    final plainText = quill.controller.document.toPlainText();
-    if (plainText.trim().isEmpty) return Rect.zero;
-    final lines = plainText.trimRight().split('\n').length;
-    final estimatedHeight = lines * lineHeight * textContentScale;
-    final left = lineHeight * 0.5 * textContentScale;
-    final top = lineHeight * 1.2 * textContentScale;
-    return Rect.fromLTWH(
-      left + textContentOffset.dx,
-      top + textContentOffset.dy,
-      (size.width - lineHeight) * textContentScale,
-      estimatedHeight,
-    );
-  }
-
   /// Rotation angle (in radians) applied to the text content.
   double textContentRotation = 0;
 
-  /// Scale factor applied to the text content (default 1.0).
+  /// Scale factor applied to the text content (default `1.0`).
   var textContentScale = 1.0;
-
-  /// [textContentOffset], [textContentRotation], and [textContentScale] together.
-  TextPlacement get textPlacement => (
-    offset: textContentOffset,
-    rotation: textContentRotation,
-    scale: textContentScale,
-  );
-  set textPlacement(TextPlacement placement) {
-    textContentOffset = placement.offset;
-    textContentRotation = placement.rotation;
-    textContentScale = placement.scale;
-  }
 
   /// Position for the pen preview circle (shown when hovering/ready to draw).
   Offset? penPreviewPosition;
@@ -260,57 +159,10 @@ class EditorPage extends ChangeNotifier implements HasSize {
   /// Color of the pen preview circle.
   Color? penPreviewColor;
 
+  /// Optional full-page background image (e.g. imported PDF page).
   EditorImage? backgroundImage;
 
-  bool get isEmpty =>
-      strokes.isEmpty &&
-      images.isEmpty &&
-      quill.controller.document.isEmpty() &&
-      backgroundImage == null;
-  bool get isNotEmpty => !isEmpty;
-
-  /// The height of the canvas cropped to the content.
-  double previewHeight({required int lineHeight}) {
-    // avoid dividing by zero (this should never happen)
-    assert(size.height != 0);
-    assert(size.width != 0);
-    if (size.height == 0 || size.width == 0) {
-      return 0;
-    }
-
-    // if we have a background image, show full height
-    if (backgroundImage != null) {
-      return size.height;
-    }
-
-    /// The maximum y value of any stroke, image, or text.
-    double maxY = 0;
-    for (final stroke in strokes) {
-      maxY = max(maxY, stroke.maxY);
-    }
-    for (final image in images) {
-      maxY = max(maxY, image.dstRect.bottom);
-    }
-    if (!quill.controller.document.isEmpty()) {
-      // this does not account for text that wraps to the next line
-      final int linesOfText = quill.controller.document
-          .toPlainText()
-          .split('\n')
-          .length;
-      maxY = max(maxY, linesOfText * lineHeight * 1.5); // ×1.5 fudge factor
-    }
-
-    /// The uncropped height of the page.
-    /// In lots of cases, this is [Editor.defaultHeight].
-    final fullHeight = size.height;
-
-    /// The height of the canvas (cropped),
-    /// adjusted to be between 10% and 100% of the full height.
-    final croppedHeight = min(fullHeight, max(maxY, 0) + (0.1 * fullHeight));
-
-    return croppedHeight;
-  }
-
+  /// Creates an [EditorPage] with optional geometry, content, and paper settings.
   EditorPage({
     Size? size,
     double? width,
@@ -348,6 +200,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
              focusNode: FocusNode(debugLabel: 'Quill Focus Node'),
            );
 
+  /// Deserializes an [EditorPage] from JSON.
   factory EditorPage.fromJson(
     Map<String, dynamic> json, {
     required List<Uint8List>? inlineAssets,
@@ -355,237 +208,39 @@ class EditorPage extends ChangeNotifier implements HasSize {
     required int fileVersion,
     required String sbnPath,
     required AssetCache assetCache,
-  }) {
-    final size = Size(json['w'] ?? defaultWidth, json['h'] ?? defaultHeight);
-    final hasisPage = HasSize(size);
-    final textContentOffset = _parseOffset(json['to']);
-    final textContentRotation = (json['tr'] as num?)?.toDouble() ?? 0;
-    final textContentScale = (json['ts'] as num?)?.toDouble() ?? 1.0;
-    final paperPattern = json.containsKey('pp')
-        ? CanvasBackgroundPattern.fromName(json['pp'] as String?)
-        : null;
-    final rawPaperColor = json['pc'];
-    final paperColor = rawPaperColor is int ? Color(rawPaperColor) : null;
-    final paperLineHeight = (json['plh'] as num?)?.toInt();
-    final paperLineThickness = (json['plt'] as num?)?.toInt();
+  }) => EditorPageSerialization.fromJson(
+    json,
+    inlineAssets: inlineAssets,
+    readOnly: readOnly,
+    fileVersion: fileVersion,
+    sbnPath: sbnPath,
+    assetCache: assetCache,
+  );
 
-    // New format: layers stored in 'l' key
-    if (json['l'] != null) {
-      final layersList = json['l'] as List;
-      return EditorPage(
-        size: size,
-        bookmarked: json['bm'] as bool? ?? false,
-        paperPattern: paperPattern,
-        paperColor: paperColor,
-        paperLineHeight: paperLineHeight,
-        paperLineThickness: paperLineThickness,
-        textContentOffset: textContentOffset,
-        textContentRotation: textContentRotation,
-        textContentScale: textContentScale,
-        layers: layersList
-            .map(
-              (layerJson) => Layer.fromJson(
-                layerJson as Map<String, dynamic>,
-                fileVersion: fileVersion,
-                pageIndex: 0,
-                page: hasisPage,
-              ),
-            )
-            .toList(),
-        images: parseImagesJson(
-          json['i'] as List?,
-          inlineAssets: inlineAssets,
-          isThumbnail: readOnly,
-          onlyFirstPage: false,
-          sbnPath: sbnPath,
-          assetCache: assetCache,
-        ),
-        quill: QuillStruct(
-          controller: json['q'] != null
-              ? QuillController(
-                  document: Document.fromJson(json['q'] as List),
-                  selection: const TextSelection.collapsed(offset: 0),
-                )
-              : QuillController.basic(),
-          focusNode: FocusNode(debugLabel: 'Quill Focus Node'),
-        ),
-        backgroundImage: json['b'] != null
-            ? parseImageJson(
-                json['b'],
-                inlineAssets: inlineAssets,
-                isThumbnail: false,
-                sbnPath: sbnPath,
-                assetCache: assetCache,
-              )
-            : null,
-      );
-    }
+  /// Serializes this page into a JSON map.
+  Map<String, dynamic> toJson(OrderedAssetCache assets) =>
+      EditorPageSerialization.toJson(this, assets);
 
-    // Legacy format: strokes stored in 's' key
-    return EditorPage(
-      size: size,
-      bookmarked: json['bm'] as bool? ?? false,
-      paperPattern: paperPattern,
-      paperColor: paperColor,
-      paperLineHeight: paperLineHeight,
-      paperLineThickness: paperLineThickness,
-      textContentOffset: textContentOffset,
-      textContentRotation: textContentRotation,
-      textContentScale: textContentScale,
-      strokes: parseStrokesJson(
-        json['s'] as List?,
-        page: hasisPage,
-        onlyFirstPage: false,
-        fileVersion: fileVersion,
-      ),
-      images: parseImagesJson(
-        json['i'] as List?,
-        inlineAssets: inlineAssets,
-        isThumbnail: readOnly,
-        onlyFirstPage: false,
-        sbnPath: sbnPath,
-        assetCache: assetCache,
-      ),
-      quill: QuillStruct(
-        controller: json['q'] != null
-            ? QuillController(
-                document: Document.fromJson(json['q'] as List),
-                selection: const TextSelection.collapsed(offset: 0),
-              )
-            : QuillController.basic(),
-        focusNode: FocusNode(debugLabel: 'Quill Focus Node'),
-      ),
-      backgroundImage: json['b'] != null
-          ? parseImageJson(
-              json['b'],
-              inlineAssets: inlineAssets,
-              isThumbnail: false,
-              sbnPath: sbnPath,
-              assetCache: assetCache,
-            )
-          : null,
-    );
-  }
-
-  /// Reads an offset saved as `[dx, dy]`, or [Offset.zero] if there is none.
-  static Offset _parseOffset(Object? json) {
-    if (json is! List || json.length != 2) return Offset.zero;
-    return Offset((json[0] as num).toDouble(), (json[1] as num).toDouble());
-  }
-
-  Map<String, dynamic> toJson(OrderedAssetCache assets) => {
-    'w': size.width,
-    'h': size.height,
-    if (bookmarked) 'bm': bookmarked,
-    if (paperPattern != null) 'pp': paperPattern!.name,
-    if (paperColor != null) 'pc': paperColor!.toARGB32(),
-    if (paperLineHeight != null) 'plh': paperLineHeight,
-    if (paperLineThickness != null) 'plt': paperLineThickness,
-    if (textContentOffset != Offset.zero)
-      'to': [textContentOffset.dx, textContentOffset.dy],
-    if (textContentRotation != 0) 'tr': textContentRotation,
-    if (textContentScale != 1.0) 'ts': textContentScale,
-    if (layers.isNotEmpty) 'l': layers.map((layer) => layer.toJson()).toList(),
-    if (images.isNotEmpty)
-      'i': images.map((image) => image.toJson(assets)).toList(),
-    if (!quill.controller.document.isEmpty())
-      'q': quill.controller.document.toDelta().toJson(),
-    if (backgroundImage != null) 'b': backgroundImage?.toJson(assets),
-  };
-
-  /// Removes a stroke from whichever layer contains it.
-  /// Returns true if the stroke was found and removed.
-  bool removeStroke(Stroke stroke) {
-    for (final layer in layers) {
-      if (layer.locked) continue;
-      if (layer.strokes.remove(stroke)) {
-        strokesVersion++;
-        invalidateStrokePictureCache();
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /// Swaps [oldStroke] for [newStroke],
-  /// keeping its layer and its place in the stacking order.
-  /// Returns false if [oldStroke] isn't on this page.
-  bool replaceStroke(Stroke oldStroke, Stroke newStroke) {
-    for (final layer in layers) {
-      final index = layer.strokes.indexOf(oldStroke);
-      if (index == -1) continue;
-      layer.strokes[index] = newStroke;
-      strokesVersion++;
-      invalidateStrokePictureCache();
-      return true;
-    }
-    return false;
-  }
-
-  /// Inserts a stroke into the active layer,
-  /// keeping the strokes sorted by pen type and color.
-  void insertStroke(Stroke newStroke) {
-    if (layers.isEmpty) {
-      layers.add(Layer(name: 'Default'));
-    }
-    final activeLayer = layers[activeLayerIndex.clamp(0, layers.length - 1)];
-    if (activeLayer.locked) return;
-    final int newStrokeColor = newStroke.color.toARGB32();
-
-    int index = 0;
-    for (final stroke in activeLayer.strokes) {
-      final penTypeComparison = stroke.toolId.id.compareTo(newStroke.toolId.id);
-      final color = stroke.color.toARGB32();
-      if (penTypeComparison > 0) {
-        break; // this stroke's pen type comes after the new stroke's pen type
-      } else if (stroke.toolId == .highlighter &&
-          penTypeComparison == 0 &&
-          color > newStrokeColor) {
-        break; // this highlighter color comes after the new highlighter color
-      }
-      index++;
-    }
-
-    activeLayer.strokes.insert(index, newStroke);
+  /// Triggers a redraw of the strokes.
+  void redrawStrokes() {
     strokesVersion++;
-    invalidateStrokePictureCache();
+    notifyListeners();
   }
 
-  /// Sorts the strokes in each layer by pen type and color.
-  void sortStrokes() {
-    for (final layer in layers) {
-      layer.strokes.sort((Stroke a, Stroke b) {
-        final penTypeComparison = a.toolId.id.compareTo(b.toolId.id);
-        if (penTypeComparison != 0) return penTypeComparison;
-        if (a.toolId != .highlighter) return 0;
-        return a.color.toARGB32().compareTo(b.color.toARGB32());
-      });
-    }
-    strokesVersion++;
-    invalidateStrokePictureCache();
-  }
-
+  /// Deserializes a list of stroke JSON maps into [Stroke] instances.
   static List<Stroke> parseStrokesJson(
     List<dynamic>? strokes, {
     required HasSize page,
     required bool onlyFirstPage,
     required int fileVersion,
-  }) => (strokes ?? [])
-      .map((dynamic stroke) {
-        final map = stroke as Map<String, dynamic>;
-        final pageIndex = map['i'] ?? 0;
-        if (onlyFirstPage && pageIndex > 0) return null;
-        return Stroke.fromJson(
-          map,
-          fileVersion: fileVersion,
-          pageIndex: pageIndex,
-          page: page,
-        );
-      })
-      .where((element) => element != null)
-      .cast<Stroke>()
-      .toList();
+  }) => EditorPageSerialization.parseStrokesJson(
+    strokes,
+    page: page,
+    onlyFirstPage: onlyFirstPage,
+    fileVersion: fileVersion,
+  );
 
+  /// Deserializes a list of image JSON maps into [EditorImage] instances.
   static List<EditorImage> parseImagesJson(
     List<dynamic>? images, {
     required List<Uint8List>? inlineAssets,
@@ -593,54 +248,29 @@ class EditorPage extends ChangeNotifier implements HasSize {
     required bool onlyFirstPage,
     required String sbnPath,
     required AssetCache assetCache,
-  }) =>
-      images
-          ?.cast<Map<String, dynamic>>()
-          .map((Map<String, dynamic> image) {
-            if (onlyFirstPage && image['i'] > 0) return null;
-            return parseImageJson(
-              image,
-              inlineAssets: inlineAssets,
-              isThumbnail: isThumbnail,
-              sbnPath: sbnPath,
-              assetCache: assetCache,
-            );
-          })
-          .where((element) => element != null)
-          .cast<EditorImage>()
-          .toList() ??
-      [];
+  }) => EditorPageSerialization.parseImagesJson(
+    images,
+    inlineAssets: inlineAssets,
+    isThumbnail: isThumbnail,
+    onlyFirstPage: onlyFirstPage,
+    sbnPath: sbnPath,
+    assetCache: assetCache,
+  );
 
+  /// Deserializes a single image JSON map into an [EditorImage].
   static EditorImage parseImageJson(
     Map<String, dynamic> json, {
     required List<Uint8List>? inlineAssets,
     required bool isThumbnail,
     required String sbnPath,
     required AssetCache assetCache,
-  }) => EditorImage.fromJson(
+  }) => EditorPageSerialization.parseImageJson(
     json,
     inlineAssets: inlineAssets,
     isThumbnail: isThumbnail,
     sbnPath: sbnPath,
     assetCache: assetCache,
   );
-
-  /// Triggers a redraw of the strokes. If you need to redraw images,
-  /// call [setState] instead.
-  void redrawStrokes() {
-    strokesVersion++;
-    notifyListeners();
-  }
-
-  /// Updates the `pageIndex` fields of this page's strokes/images.
-  void updatePageIndex(int pageIndex) {
-    for (final layer in layers) {
-      for (final stroke in layer.strokes) stroke.pageIndex = pageIndex;
-    }
-    for (final stroke in laserStrokes) stroke.pageIndex = pageIndex;
-    for (final image in images) image.pageIndex = pageIndex;
-    backgroundImage?.pageIndex = pageIndex;
-  }
 
   @override
   void dispose() {
@@ -655,12 +285,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
     super.dispose();
   }
 
-  /// [cloneForRasterization] creates some new resources that need to be
-  /// disposed, but it also contains some resources from the original page
-  /// that should not be disposed since they are still in use.
-  ///
-  /// Call this method instead of [dispose] to dispose only the resources
-  /// exclusive to the cloned page.
+  /// Disposes only the resources exclusive to a [cloneForRasterization] copy.
   void disposeClonedData() {
     invalidateStrokePictureCache(immediate: true);
     quill.dispose();
@@ -668,129 +293,4 @@ class EditorPage extends ChangeNotifier implements HasSize {
     isRendered = false;
     super.dispose();
   }
-
-  EditorPage copyWith({
-    Size? size,
-    List<Stroke>? strokes,
-    List<Layer>? layers,
-    List<EditorImage>? images,
-    QuillStruct? quill,
-    EditorImage? backgroundImage,
-    int? activeLayerIndex,
-    bool? bookmarked,
-    CanvasBackgroundPattern? paperPattern,
-    Color? paperColor,
-    int? paperLineHeight,
-    int? paperLineThickness,
-    Offset? textContentOffset,
-    double? textContentRotation,
-    double? textContentScale,
-  }) => EditorPage(
-    size: size ?? this.size,
-    strokes: strokes,
-    layers: layers ?? this.layers,
-    images: images ?? this.images,
-    quill: quill ?? this.quill,
-    backgroundImage: backgroundImage ?? this.backgroundImage,
-    activeLayerIndex: activeLayerIndex ?? this.activeLayerIndex,
-    bookmarked: bookmarked ?? this.bookmarked,
-    paperPattern: paperPattern ?? this.paperPattern,
-    paperColor: paperColor ?? this.paperColor,
-    paperLineHeight: paperLineHeight ?? this.paperLineHeight,
-    paperLineThickness: paperLineThickness ?? this.paperLineThickness,
-    textContentOffset: textContentOffset ?? this.textContentOffset,
-    textContentRotation: textContentRotation ?? this.textContentRotation,
-    textContentScale: textContentScale ?? this.textContentScale,
-  );
-
-  /// Clones this page for use in a screenshot.
-  ///
-  /// Avoids bugs caused by the quill editor being attached to multiple
-  /// contexts, and filters out strokes that shouldn't be rasterized.
-  ///
-  /// Make sure to call [disposeClonedData] on the returned page when
-  /// you're done with it.
-  EditorPage cloneForRasterization({bool rasterizeAllStrokes = false}) {
-    return copyWith(
-      layers: layers
-          .map(
-            (layer) => Layer(
-              name: layer.name,
-              visible: layer.visible,
-              locked: layer.locked,
-              strokes: rasterizeAllStrokes
-                  ? layer.strokes
-                  : layer.strokes
-                        .where(EditorExporter.shouldRasterizeStroke)
-                        .toList(),
-            ),
-          )
-          .toList(),
-      quill: quill.cloneForScreenshot(),
-    );
-  }
-}
-
-/// A single layer within a page, containing a set of strokes.
-///
-/// Each page can have multiple layers that can be independently
-/// hidden, reordered, and locked.
-class Layer {
-  String name;
-  bool visible;
-  bool locked;
-  final List<Stroke> strokes;
-
-  Layer({
-    this.name = 'Default',
-    this.visible = true,
-    this.locked = false,
-    List<Stroke>? strokes,
-  }) : strokes = strokes ?? [];
-
-  Map<String, dynamic> toJson() => {
-    'n': name,
-    'v': visible,
-    'l': locked,
-    's': strokes.map((s) => s.toJson()).toList(),
-  };
-
-  factory Layer.fromJson(
-    Map<String, dynamic> json, {
-    required int fileVersion,
-    required int pageIndex,
-    required HasSize page,
-  }) => Layer(
-    name: json['n'] as String? ?? 'Default',
-    visible: json['v'] as bool? ?? true,
-    locked: json['l'] as bool? ?? false,
-    strokes: EditorPage.parseStrokesJson(
-      json['s'] as List?,
-      page: page,
-      onlyFirstPage: false,
-      fileVersion: fileVersion,
-    ),
-  );
-}
-
-class QuillStruct {
-  final QuillController controller;
-  late final FocusNode focusNode;
-  StreamSubscription? changeSubscription;
-
-  QuillStruct({required this.controller, required this.focusNode});
-
-  void dispose() {
-    changeSubscription?.cancel();
-    focusNode.dispose();
-    controller.dispose();
-  }
-
-  QuillStruct cloneForScreenshot() => QuillStruct(
-    controller: QuillController(
-      document: Document.fromDelta(controller.document.toDelta()),
-      selection: const TextSelection.collapsed(offset: 0),
-    ),
-    focusNode: FocusNode(debugLabel: 'Screenshot Quill Focus Node'),
-  );
 }
