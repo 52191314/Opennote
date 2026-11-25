@@ -1,30 +1,107 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:saber/components/onboarding/onboarding_models.dart';
+import 'package:saber/components/onboarding/opennote_onboarding_flow.dart';
 import 'package:saber/data/is_this_a_test.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/routes.dart';
 import 'package:saber/i18n/strings.g.dart';
 
-/// Interactive onboarding modal introducing users to gestures, study tape,
-/// smooth inking, and elements.
-class WelcomeOnboardingDialog extends StatefulWidget {
-  const WelcomeOnboardingDialog({super.key});
+export 'package:saber/components/onboarding/onboarding_models.dart';
+export 'package:saber/components/onboarding/opennote_onboarding_flow.dart';
 
-  /// Shows the onboarding dialog if the user has not seen it yet.
-  static Future<void> showIfNeeded(BuildContext context) async {
-    if (isThisATest) return;
-    if (stows.hasSeenOnboarding.value) return;
+/// Interactive onboarding modal for Opennote.
+///
+/// First-run launches via [showIfNeeded] present the personalized 4-step
+/// [OpennoteOnboardingFlow]. Direct [show] calls remain backward compatible
+/// with existing callers while supporting [personalized] mode.
+class WelcomeOnboardingDialog extends StatefulWidget {
+  /// Creates a welcome onboarding dialog.
+  ///
+  /// Set [usePersonalizedFlow] to `true` to embed [OpennoteOnboardingFlow].
+  const WelcomeOnboardingDialog({
+    super.key,
+    this.usePersonalizedFlow = false,
+    this.onCompleted,
+    this.onStartTrial,
+    this.onRestorePurchases,
+  });
+
+  /// Whether this dialog wraps [OpennoteOnboardingFlow] instead of the legacy
+  /// feature carousel.
+  final bool usePersonalizedFlow;
+
+  /// Optional callback receiving the [OnboardingCompletionResult] when
+  /// [usePersonalizedFlow] is `true`.
+  final ValueChanged<OnboardingCompletionResult>? onCompleted;
+
+  /// Optional trial purchase handler forwarded to [OpennoteOnboardingFlow].
+  final OnboardingTrialStarter? onStartTrial;
+
+  /// Optional restore-purchases handler forwarded to [OpennoteOnboardingFlow].
+  final OnboardingPurchaseRestorer? onRestorePurchases;
+
+  /// Shows the personalized 4-step onboarding flow if the user has not seen it.
+  static Future<OnboardingCompletionResult?> showIfNeeded(
+    BuildContext context, {
+    OnboardingTrialStarter? onStartTrial,
+    OnboardingPurchaseRestorer? onRestorePurchases,
+  }) async {
+    if (isThisATest) return null;
+    if (stows.hasSeenOnboarding.value) return null;
     stows.hasSeenOnboarding.value = true;
-    await show(context);
+    return showFlow(
+      context,
+      onStartTrial: onStartTrial,
+      onRestorePurchases: onRestorePurchases,
+    );
+  }
+
+  /// Opens the personalized 4-step [OpennoteOnboardingFlow] directly.
+  static Future<OnboardingCompletionResult?> showFlow(
+    BuildContext context, {
+    OnboardingPersona initialPersona = OnboardingPersona.engineeringDiagrams,
+    OnboardingTrialStarter? onStartTrial,
+    OnboardingPurchaseRestorer? onRestorePurchases,
+    VoidCallback? onOpenTerms,
+    VoidCallback? onOpenPrivacy,
+  }) async {
+    final result = await OpennoteOnboardingFlow.show(
+      context,
+      initialPersona: initialPersona,
+      onStartTrial: onStartTrial,
+      onRestorePurchases: onRestorePurchases,
+      onOpenTerms: onOpenTerms,
+      onOpenPrivacy: onOpenPrivacy,
+    );
+    stows.hasSeenOnboarding.value = true;
+    return result;
   }
 
   /// Opens the onboarding dialog explicitly (e.g. from Settings).
-  static Future<void> show(BuildContext context) {
-    return showDialog(
+  ///
+  /// Pass `personalized: true` to present the new 4-step onboarding-to-trial
+  /// flow; defaults to `false` to preserve compatibility with existing callers.
+  static Future<OnboardingCompletionResult?> show(
+    BuildContext context, {
+    bool personalized = false,
+    OnboardingTrialStarter? onStartTrial,
+    OnboardingPurchaseRestorer? onRestorePurchases,
+  }) {
+    if (personalized) {
+      return showFlow(
+        context,
+        onStartTrial: onStartTrial,
+        onRestorePurchases: onRestorePurchases,
+      );
+    }
+
+    return showDialog<OnboardingCompletionResult>(
       context: context,
       barrierDismissible: true,
       builder: (context) => const WelcomeOnboardingDialog(),
@@ -103,6 +180,27 @@ class _WelcomeOnboardingDialogState extends State<WelcomeOnboardingDialog> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.usePersonalizedFlow) {
+      return Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 680, maxHeight: 760),
+          child: OpennoteOnboardingFlow(
+            onStartTrial: widget.onStartTrial,
+            onRestorePurchases: widget.onRestorePurchases,
+            onCompleted: (result) {
+              stows.hasSeenOnboarding.value = true;
+              widget.onCompleted?.call(result);
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop(result);
+              }
+            },
+          ),
+        ),
+      );
+    }
+
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isLastPage = _currentPage == _pages.length - 1;
@@ -114,25 +212,26 @@ class _WelcomeOnboardingDialogState extends State<WelcomeOnboardingDialog> {
         constraints: const BoxConstraints(maxWidth: 520, maxHeight: 620),
         child: Column(
           children: [
-            // Top bar with branding and Skip button
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 12, 0),
               child: Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
+                  DecoratedBox(
                     decoration: BoxDecoration(
                       color: colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(
-                      t.onboarding.title,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.w600,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      child: Text(
+                        t.onboarding.title,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
@@ -146,8 +245,6 @@ class _WelcomeOnboardingDialogState extends State<WelcomeOnboardingDialog> {
                 ],
               ),
             ),
-
-            // Carousel
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
@@ -165,7 +262,6 @@ class _WelcomeOnboardingDialogState extends State<WelcomeOnboardingDialog> {
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Icon circle with soft gradient ring
                           Container(
                             width: 72,
                             height: 72,
@@ -186,8 +282,6 @@ class _WelcomeOnboardingDialogState extends State<WelcomeOnboardingDialog> {
                             ),
                           ),
                           const SizedBox(height: 16),
-
-                          // Title
                           Text(
                             data.title,
                             textAlign: TextAlign.center,
@@ -197,8 +291,6 @@ class _WelcomeOnboardingDialogState extends State<WelcomeOnboardingDialog> {
                             ),
                           ),
                           const SizedBox(height: 8),
-
-                          // Description
                           Text(
                             data.description,
                             textAlign: TextAlign.center,
@@ -208,27 +300,27 @@ class _WelcomeOnboardingDialogState extends State<WelcomeOnboardingDialog> {
                             ),
                           ),
                           const SizedBox(height: 16),
-
-                          // Feature tags
                           Wrap(
                             spacing: 8,
                             runSpacing: 8,
                             alignment: WrapAlignment.center,
                             children: data.tags.map((tag) {
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
+                              return DecoratedBox(
                                 decoration: BoxDecoration(
                                   color: colorScheme.surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(16),
                                 ),
-                                child: Text(
-                                  tag,
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                    fontWeight: FontWeight.w500,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  child: Text(
+                                    tag,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ),
                               );
@@ -241,14 +333,11 @@ class _WelcomeOnboardingDialogState extends State<WelcomeOnboardingDialog> {
                 },
               ),
             ),
-
-            // Indicator dots and Navigation Buttons
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Dot indicators
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(_pages.length, (index) {
@@ -268,8 +357,6 @@ class _WelcomeOnboardingDialogState extends State<WelcomeOnboardingDialog> {
                     }),
                   ),
                   const SizedBox(height: 20),
-
-                  // Action Buttons
                   if (!isLastPage) ...[
                     Row(
                       children: [
