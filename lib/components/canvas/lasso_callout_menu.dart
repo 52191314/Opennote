@@ -1,5 +1,6 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'package:flutter/material.dart';
@@ -313,6 +314,12 @@ class _LassoCalloutMenuState extends State<LassoCalloutMenu> {
                     icon: Icons.copy_rounded,
                     label: t.editor.actions.copy,
                     onTap: widget.onCopy,
+                  ),
+                  divider,
+                  _CalloutButton(
+                    icon: Icons.control_point_duplicate_rounded,
+                    label: 'Duplicate',
+                    onTap: widget.onDuplicate,
                   ),
                   divider,
                   _CalloutButton(

@@ -1,12 +1,13 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'dart:math';
 
-import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_stroke.dart';
+import 'package:saber/components/canvas/stroke/stroke_serialization.dart';
 import 'package:sbn/has_size.dart';
 
 /// A dimension line for engineering drawings.
@@ -88,19 +89,7 @@ class DimensionStroke extends Stroke {
   }) {
     assert(json['shape'] == 'dimension');
 
-    final Color color;
-    switch (json['c']) {
-      case (final int value):
-        color = Color(value);
-      case (final Int64 value):
-        color = Color(value.toInt());
-      case null:
-        color = Stroke.defaultColor;
-      default:
-        throw Exception(
-          'Invalid color value: (${json['c'].runtimeType}) ${json['c']}',
-        );
-    }
+    final color = parseStrokeColor(json['c'], fallback: Stroke.defaultColor);
 
     final strokeOptionsJson = Map<String, dynamic>.from(json);
     if (strokeOptionsJson['t'] is String) {
@@ -128,6 +117,8 @@ class DimensionStroke extends Stroke {
           (json['t'] is String ? json['t'] as String : ''),
       headLength: (json['hl'] as num?)?.toDouble() ?? 10.0,
       headAngle: (json['ha'] as num?)?.toDouble() ?? 0.4,
+      fillColor: parseOptionalStrokeColor(json['fc']),
+      lineStyle: parseLineStyle(json['ls'] as String?),
     );
   }
 

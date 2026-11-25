@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'dart:math';
@@ -23,6 +24,7 @@ class CanvasImage extends StatefulHookWidget {
     this.isBackground = false,
     this.readOnly = false,
     this.selected = false,
+    this.isInfiniteCanvas = false,
   }) : super(key: Key('CanvasImage$filePath/${image.id}'));
 
   /// The path to the note that this image is in.
@@ -34,6 +36,10 @@ class CanvasImage extends StatefulHookWidget {
   final bool isBackground;
   final bool readOnly;
   final bool selected;
+
+  /// Whether this image sits on an unbounded infinite canvas where dragging
+  /// should not be clamped to [pageSize].
+  final bool isInfiniteCanvas;
 
   /// When notified, all [CanvasImages] will have their [active] property set to false.
   static var activeListener = ChangeNotifier();
@@ -149,6 +155,13 @@ class _CanvasImageState extends State<CanvasImage> {
               onPanUpdate: active
                   ? (details) {
                       setState(() {
+                        if (widget.isInfiniteCanvas ||
+                            !widget.pageSize.isFinite) {
+                          widget.image.dstRect = widget.image.dstRect.shift(
+                            details.delta,
+                          );
+                          return;
+                        }
                         final fivePercent = min(
                           widget.pageSize.width * 0.05,
                           widget.pageSize.height * 0.05,
@@ -491,6 +504,7 @@ class _CanvasImageResizeHandle extends StatelessWidget {
                     if (cropMode) {
                       if (parent.panStartSrcRect == image.srcRect) return;
                       parent.panStartSrcRect = .zero;
+                      image.onMiscChange?.call();
                     } else {
                       if (parent.panStartRect == image.dstRect) return;
                       image.onMoveImage?.call(
