@@ -1,151 +1,87 @@
-# 🎓 Opennote — Engineering Diagram Notebook
+# Opennote — 120Hz Handwriting, PDF Annotation & Precision Drafting
 
-> **Fork of [Saber](https://github.com/saber-notes/saber)** with engineering-focused features:
-> isometric grid, arrow/dimension tools, ruler, snap-to-grid, layers, protractor, shape library.
+**Opennote** is a fast, local-first digital notebook built for natural 120Hz handwriting, PDF annotation, infinite canvas brainstorming, and precision engineering diagrams—available across iOS, iPadOS, Android, macOS, Windows, and Linux.
+
+> Open-source under **GNU GPLv3** • Built on top of the upstream [Saber](https://github.com/saber-notes/saber) project with expanded engineering drafting tools, infinite canvas workflows, Study Tape active recall, and a refreshed cross-platform UI.
+
+[Product Landing Page](https://52191314.github.io/Opennote/) · [Pricing & Opennote Pro](./pricing.md) · [Privacy Policy](./docs/privacy-policy.html) · [Releases](https://github.com/52191314/Opennote/releases)
+
+---
+
+## Why Opennote?
+
+- **120Hz Vector Ink & Natural Gestures**: Smooth fountain pen, ballpoint, shader pencil, and true-compositing highlighter that never washes out text or darkens on overlap—paired with Scribble-to-Erase and Circle-to-Select gestures.
+- **Precision Drafting Suite**: Ruler, protractor, automatic shape recognition, snap-to-grid, and technical templates (isometric, millimeter graph, hex, Cornell, blueprint, and music staves).
+- **Infinite Canvas + Paginated Notebooks**: Switch between structured pages for printing/homework and an unbounded infinite canvas for mind maps, schematics, and whiteboarding.
+- **Smart PDF Annotation & Study Tape**: Import textbooks, slides, and worksheets; invert notes and PDFs in Dark Mode for comfortable night study; cover formulas and terms with **Study Tape** for tap-to-reveal active recall.
+- **Local-First Privacy & Zero-Knowledge Sync**: Works 100% offline with zero ads or tracking. Optionally sync across all devices using any **Nextcloud** or **WebDAV** server with client-side AES encryption.
+
+---
+
+## Opennote Free & Opennote Pro
+
+Core handwriting, paginated notebooks, PDF annotation, dark mode inversion, local storage, and self-hosted encrypted sync are **free forever**.
+
+| Plan | Price | Highlights |
+|---|---|---|
+| **Opennote Free** | **$0** | Everyday handwriting, paginated notebooks, PDF annotation, dark mode, local-first storage |
+| **Opennote Pro Annual** | **$29.99 / year** | Save 50% + **7-day free trial** — Infinite Canvas, Drafting Suite, Study Tape, High-Res Vector Export |
+| **Opennote Pro Monthly** | **$4.99 / month** | Full Pro toolkit, cancel anytime |
+| **Opennote Pro Student** | **$14.99 / year** | 50% off Annual for verified students |
+| **Opennote Pro Lifetime** | **$69.99** one-time | Own Opennote Pro forever, no recurring subscription |
+
+See [pricing.md](./pricing.md) ([čeština](./pricing-cs.md)) for the full feature comparison and FAQ.
+
+---
 
 ## Installation
 
 ### Android
-[Download the latest APK](https://github.com/YOUR_USER/opennote/releases) or build from source.
+Download the latest APK from [GitHub Releases](https://github.com/52191314/Opennote/releases) or build from source.
 
-### iOS (SideStore / AltStore / LiveContainer)
-Build via GitHub Actions (see `.github/workflows/build.yml`):
-
-1. Push → Actions → "Build Opennote" → Run workflow
+### iOS / iPadOS (SideStore / AltStore / LiveContainer)
+Build via GitHub Actions (see `.github/workflows/`):
+1. Push → Actions → **"Build iOS"** → Run workflow
 2. Download the unsigned `.ipa` artifact
-3. Open in SideStore → My Apps → + → select `.ipa`
-4. SideStore re-signs with your free Apple ID — no paid developer account needed
+3. Open in SideStore → My Apps → `+` → select `.ipa`
+4. SideStore re-signs with your Apple ID
 
-[English](https://github.com/saber-notes/saber/blob/main/README.md) |
-[čeština](https://github.com/saber-notes/saber/blob/main/README-cs.md) |
-[Deutsch](https://github.com/saber-notes/saber/blob/main/README-de.md) |
-[中文 (简体中文, 中国)](https://github.com/saber-notes/saber/blob/main/README-zh-CN.md) |
-[中文 (繁體, 台灣)](https://github.com/saber-notes/saber/blob/main/README-zh-TW.md) |
-[العربية](https://github.com/saber-notes/saber/blob/main/README-ar.md) |
-[Tiếng Việt](https://github.com/saber-notes/saber/blob/main/README-vi.md)
+### Build from Source
+Opennote pins its Flutter SDK in `submodules/flutter`. After cloning with submodules:
 
-Saber is the notes app built for handwriting.
-
-It's designed to be as simple and intuitive as possible, while still delivering unique features that you'll actually use. Additionally, Saber is available across all your devices, large and small, and syncs between them seamlessly.
-
-Notably, it can invert your notes when you're in dark mode. This allows you to write with white ink on a black background, which is much easier on the eyes in low-light environments like when the teacher turns off the lights in class.
-Images and PDFs are also inverted, so you can still use a digital printout or a textbook without the fuss.
-
-Saber uses a dual-password system to protect your notes from anyone but you, even if they have complete control over the server. You can safely store your notes on the official Saber server, another server, or even host your own!
-
-The app is completely open-source so that anyone can view the source code and see exactly what it's doing and how it handles your data. Many other note-taking apps are closed-source and proprietary, meaning that their inner workings are a mystery to the public.
-
-As someone who studies maths, highlighting multi-line equations was always a hassle with other apps, where the highlighter would change color when it overlapped with itself. Another problem I had was that in some apps, the highlighter would render on top of the text, fading it out and making it hard to read.
-Saber's highlighter has no such issues. It utilizes canvas compositing to render the highlighter in a way that is consistent with/better than traditional paper, where it handles overlaps and maintains color consistency.
-
-Saber has everything you need to keep your notes organized. Create folders inside folders inside folders to your heart's content with no limit on the number of nested folders. And even though a note may be buried deep within a nested folder, you can still access it easily with your most recent notes always available on the home screen.
-
-Discover a whole new way to capture and organize your thoughts with Saber. Whether you're a student, professional, or creative mind, Saber is your trusted companion for digital handwriting. Download now and let your ideas flow freely!
-
-[![Latest release](https://img.shields.io/github/v/release/saber-notes/saber)](https://github.com/saber-notes/saber/releases/latest)
-[![Flathub](https://img.shields.io/flathub/v/com.adilhanney.saber)](https://flathub.org/apps/details/com.adilhanney.saber)
-[![F-Droid](https://img.shields.io/f-droid/v/com.adilhanney.saber)](https://f-droid.org/en/packages/com.adilhanney.saber/)
-[![GitHub downloads](https://img.shields.io/github/downloads/saber-notes/saber/total?label=GitHub%20downloads)](https://github.com/saber-notes/saber/releases)
-[![Flathub downloads](https://img.shields.io/flathub/downloads/com.adilhanney.saber?label=Flathub%20downloads)](https://flathub.org/apps/details/com.adilhanney.saber)
-[![GitHub Sponsors](https://img.shields.io/github/sponsors/adil192)](https://github.com/sponsors/adil192)
-[![License](https://img.shields.io/github/license/saber-notes/saber)](https://github.com/saber-notes/saber/blob/main/LICENSE.md)
-[![Translation status](https://hosted.weblate.org/widget/saber-notes/saber/svg-badge.svg)](https://hosted.weblate.org/engage/saber-notes/)
-[![Codecov](https://codecov.io/gh/saber-notes/saber/branch/main/graph/badge.svg?token=EGQSN0THW2)](https://codecov.io/gh/saber-notes/saber)
-
-<details open>
-<summary>Tap to show/hide screenshots</summary>
-
-<div>
-<img src="https://github.com/saber-notes/saber/raw/main/metadata/en-US/images/phoneScreenshots/1_home.png" width="180">
-<img src="https://github.com/saber-notes/saber/raw/main/metadata/en-US/images/phoneScreenshots/2_editor.png" width="180">
-<img src="https://github.com/saber-notes/saber/raw/main/metadata/en-US/images/phoneScreenshots/3_login.png" width="180">
-<img src="https://github.com/saber-notes/saber/raw/main/metadata/en-US/images/phoneScreenshots/4_settings.png" width="180">
-</div>
-</details>
-
-## Features
-
-Please see [#1 Saber progress][progress].
-
-## Install
-
-Please see
-[Install Saber](https://github.com/saber-notes/saber/wiki/install)
-on the wiki.
-
-## Build from source
-
-Please see
-[Build Saber](https://github.com/saber-notes/saber/wiki/build)
-on the wiki.
-
-## Links
-
-- [Nextcloud server][nextcloud]
-- [Privacy policy][privacy]
-- [License][license]
-- [Releases][releases]
-
-## Translating
-
-All translations are thanks to our community of contributors.
-
-If you'd like to help out translating Saber, head to [Weblate](https://hosted.weblate.org/engage/saber-notes/)!
-
-[![Translation status](https://hosted.weblate.org/widget/saber-notes/multi-auto.svg)](https://hosted.weblate.org/engage/saber-notes/)
-
-Note: To avoid falling back to English, any gaps in the translations are filled
-in by machine translation until a human can contribute.
-
-## Supporting Saber
-
-If you like Saber, please consider supporting it by:
-- Spreading the word!
-- Starring the project on GitHub
-- Sponsoring me on [GitHub Sponsors](https://github.com/sponsors/adil192)
-- Donating via [PayPal](https://paypal.me/adilhanney)
-- Buying more storage on the Nextcloud server: see [Pricing](pricing.md)
-
-## Project structure
-
+```bash
+flutter pub get
+flutter test
+flutter run
 ```
+
+See [AGENTS.md](./AGENTS.md) for architecture invariants and development guidelines.
+
+---
+
+## Project Structure
+
+```text
 Opennote/
 ├── lib/                 # Flutter app: components/, data/ (incl. tools/), i18n/, pages/, main.dart
 ├── test/                # Unit and widget tests
 ├── packages/            # Local packages (onyxsdk_pen, sbn)
 ├── submodules/flutter   # Pinned Flutter SDK submodule (stable)
-├── patches/             # pre/ and post/ patches applied before/after `flutter pub get` (see patches/README.md)
+├── patches/             # pre/ and post/ patches applied before/after `flutter pub get`
 ├── assets/ assets_raw/ shaders/   # Runtime assets; raw badge/icon sources; pencil.frag
 ├── android/ ios/ linux/ macos/ windows/   # Platform runners
 ├── flatpak/ snap/ installers/     # Linux and Windows packaging
-├── metadata/            # Store listings, screenshots and translations (fastlane layout)
+├── metadata/            # App Store & Google Play listings, screenshots, localized ASO metadata
+├── docs/                # Product landing page (index.html) and Privacy Policy
 ├── scripts/             # Version bump, icons, screenshots, PDFium and font helpers
 ├── .github/ codemagic.yaml        # CI / release pipelines
 └── AGENTS.md / CLAUDE.md / GEMINI.md   # AI agent guidance (.agents/ holds skills)
 ```
 
-## Development notes
+---
 
-Please see
-[Maintainer notes](https://github.com/saber-notes/saber/wiki/Maintainer-notes)
-on the wiki.
+## Upstream Attribution & License
 
+Opennote is forked from and respectfully builds upon [Saber](https://github.com/saber-notes/saber) by Adil Hanney and the Saber open-source contributors.
 
-[f-droid]: https://f-droid.org/packages/com.adilhanney.saber/
-[flathub]: https://flathub.org/apps/details/com.adilhanney.saber
-[google_play]: https://play.google.com/store/apps/details?id=com.adilhanney.saber
-[snap]: https://snapcraft.io/saber
-[app_store]: https://apps.apple.com/us/app/saber/id1671523739
-[download_windows]: https://github.com/saber-notes/saber/releases/download/v1.34.3/SaberInstaller_v1.34.3.exe
-[download_appimage]: https://github.com/saber-notes/saber/releases/download/v1.34.3/Saber-1.34.3-x86_64.AppImage
-
-[nextcloud]: https://nc.saber.adil.hanney.org/
-
-[privacy]: https://github.com/saber-notes/saber/blob/main/privacy_policy.md
-[license]: https://github.com/saber-notes/saber/blob/main/LICENSE.md
-
-[releases]: https://github.com/saber-notes/saber/releases
-[issues]: https://github.com/saber-notes/saber/issues
-[progress]: https://github.com/saber-notes/saber/discussions/1
-
-[f-droid-manifest]: https://gitlab.com/fdroid/fdroiddata/-/blob/master/metadata/com.adilhanney.saber.yml
+Licensed under the **GNU General Public License v3.0 (GPLv3)** — see [LICENSE.md](./LICENSE.md).

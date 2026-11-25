@@ -1,17 +1,33 @@
-Saber es la aplicación de notas hecha para tomar notas a mano.
+Escribe de forma natural, anota archivos PDF y diseña diagramas precisos en un lienzo vectorial fluido de 120Hz. Opennote combina escritura a mano digital, lienzo infinito y estudio activo en una app local, privada y sin anuncios.
 
-Está diseñada para ser lo mas simple e intuitiva posible, y de igual manera tener funciones únicas que podrás realmente usar. Además, Saber es accesible a través de todos tus dispositivo, chicos y grandes, y se sincroniza entre ellos de forma fluida.
+Ya sea para apuntes universitarios, libros de texto, bocetos técnicos o ecuaciones, Opennote convierte tu tablet o teléfono en un cuaderno digital sin distracciones.
 
-Notablemente, puede invertir tus notas cuando estás en modo oscuro. Esto te permite escribir en tinta blanca en fondo negro, que es mucho más agradable al ojo en ambientes de baja luz, como cuando el profesor apaga las luces de la clase.
+ESCRITURA 120HZ Y DIBUJO TÉCNICO
+• Tinta vectorial ultrarrápida: Pluma estilográfica, bolígrafo, lápiz con textura y resaltador real que nunca opaca el texto.
+• Gestos intuitivos: Tacha para borrar y rodea con un círculo para seleccionar al instante.
+• Suite de precisión: Regla, transportador, reconocimiento de formas, ajuste a cuadrícula y plantillas isométricas, milimetradas, hexagonales y Cornell.
+• Ventana de zoom: Escribe fórmulas pequeñas y detalles finos con total comodidad.
 
-Saber usa un sistema dual-password para protejer tus notas de todos menos de ti, incluso si tienen control completo del servidor. Podés guardar tus notas de forma segura en el servidor oficial de Saber, otro servidor, o incluso un servidor hosteado por tu mismo.
+LIENZO INFINITO Y CUADERNOS PAGINADOS
+• Modo dual: Alterna entre cuadernos paginados listos para imprimir y un lienzo infinito para mapas mentales y esquemas.
+• Carpetas ilimitadas: Organiza asignaturas y proyectos en carpetas anidadas con acceso rápido a notas recientes.
+• Modo oscuro inteligente: Invierte notas, PDFs y diapositivas para estudiar de noche sin fatiga visual.
 
-Esta aplicación es completamente de código abierto para que cualquiera pueda ver el código fuente y ver exactamente qué está haciendo y como maneja tu data. Muchas otras aplicaciones de notas son de código cerrado y propietario, lo cual significa que el cómo funcionan es un misterio para el público.
+ANOTACIÓN PDF Y CINTA DE ESTUDIO
+• Importación de PDF e imágenes: Anota diapositivas, guías y ejercicios con total precisión.
+• Cinta de Estudio (Study Tape): Oculta definiciones y fórmulas y toca para revelarlas mientras repasas para exámenes.
+• Exportación flexible: Comparte PDFs nítidos, PNGs en alta resolución, SVGs o archivos abiertos .sbn.
 
-Como alguien que estudia matemática, resaltar ecuaciones multi-renglón siempre fue un problema en otras aplicaciones donde el resaltador cambia de color cuando se solapa sobre sí mismo. Otro problema que tenía en otras aplicaciones es que el resaltador se renderiza por encima del texto, desvaneciéndolo y haciéndolo más dificil de leer.
-El resaltador de Saber no tiene esos problemas. Utiliza "canvas compositing" para renderizar el resaltador de una forma que es más consistente con el papel tradicional, el cual maneja solapamientos y mantiene la consistencia del color.
+PRIVACIDAD LOCAL Y SINCRONIZACIÓN CIFRADA
+• 100 % sin conexión: Tus notas viven en tu dispositivo, sin cuenta obligatoria, sin anuncios y sin rastreadores.
+• Sincronización de conocimiento cero: Sincronización opcional cifrada de extremo a extremo mediante tu propio servidor Nextcloud o WebDAV.
 
-Saber tiene todo lo que necesitas para mantener tus notas organizadas. Creá carpetas dentro de carpetas dentro de carpetas hasta saciar tu corazón, sin límite en la cantidad de carpetas anidadas. Y aunque una nota esté muy undida en una carpeta anidada, igual la podes acceder facilmente dentro de tus notas recientes las cuales están siempre disponibles el la página de inicio.
+OPENNOTE PRO
+La escritura esencial, cuadernos paginados, anotación PDF, modo oscuro y almacenamiento local son gratis para siempre. Actualiza a Opennote Pro para desbloquear Lienzo Infinito, Herramientas de Precisión, Cinta de Estudio, plantillas ilimitadas y exportación vectorial en alta resolución.
 
-Descubrí una nueva forma de capturar y organizar tus pensamientos con Saber. Ya sea si sos un estudiante, profesional, o una mente creativa, Saber es tu compañero de confianza para notas digitales a mano.
-Descargala ahora y dejá que tus ideas fluyan libremente!
+• Pro Mensual: $4.99 / mes
+• Pro Anual: $29.99 / año (Ahorra 50 % — incluye 7 días de prueba gratis)
+• Pro Estudiante Anual: $14.99 / año
+• Pro Vitalicio: $69.99 pago único
+
+Las suscripciones se renuevan automáticamente salvo cancelación al menos 24 horas antes del fin del período en la configuración de tu tienda.

@@ -1,0 +1,5 @@
+• Giao diện Opennote v2 mới với mực vector 120Hz mượt hơn
+• Nâng cấp vẽ kỹ thuật: thước kẻ, thước đo góc, lưới isometric & bắt điểm
+• Băng Học Tập (Study Tape) che và chạm để hiện công thức ôn thi
+• Tối ưu hiển thị bảng vô cực và chú thích PDF
+• Ra mắt Opennote Pro với 7 ngày dùng thử miễn phí cho gói Năm

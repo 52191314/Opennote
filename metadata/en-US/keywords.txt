@@ -1,0 +1,1 @@
+annotator,stylus,pencil,infinite,whiteboard,drafting,diagram,math,grid,notebook,planner,tablet,ocr
