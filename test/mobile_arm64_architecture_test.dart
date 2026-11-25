@@ -232,8 +232,9 @@ void main() {
       );
       expect(
         activeXcconfig,
-        matches(RegExp(r'(?:Oz|GCC_OPTIMIZATION_LEVEL\s*=\s*z\b)')),
-        reason: 'Release.xcconfig must enforce Clang Oz size optimization',
+        matches(RegExp(r'GCC_OPTIMIZATION_LEVEL\s*=\s*z\b')),
+        reason:
+            'Release.xcconfig must enforce Clang -Oz (GCC_OPTIMIZATION_LEVEL = z)',
       );
       expect(
         activeXcconfig,

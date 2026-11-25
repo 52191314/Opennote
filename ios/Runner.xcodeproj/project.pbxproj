@@ -475,7 +475,7 @@
 				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "i386 x86_64";
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = Oz;
+				GCC_OPTIMIZATION_LEVEL = z;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -509,7 +509,7 @@
 				DEVELOPMENT_TEAM = 3DB8QX4Z23;
 				ENABLE_BITCODE = NO;
 				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "i386 x86_64";
-				GCC_OPTIMIZATION_LEVEL = Oz;
+				GCC_OPTIMIZATION_LEVEL = z;
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Opennote;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
@@ -678,7 +678,7 @@
 				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "i386 x86_64";
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = Oz;
+				GCC_OPTIMIZATION_LEVEL = z;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -737,7 +737,7 @@
 				DEVELOPMENT_TEAM = 3DB8QX4Z23;
 				ENABLE_BITCODE = NO;
 				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "i386 x86_64";
-				GCC_OPTIMIZATION_LEVEL = Oz;
+				GCC_OPTIMIZATION_LEVEL = z;
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Opennote;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
