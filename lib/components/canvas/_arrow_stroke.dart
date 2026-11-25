@@ -1,12 +1,13 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'dart:math';
 
-import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_stroke.dart';
+import 'package:saber/components/canvas/stroke/stroke_serialization.dart';
 import 'package:sbn/has_size.dart';
 
 /// The style of arrowhead on one end of an [ArrowStroke].
@@ -66,19 +67,7 @@ class ArrowStroke extends Stroke {
   }) {
     assert(json['shape'] == 'arrow');
 
-    final Color color;
-    switch (json['c']) {
-      case (final int value):
-        color = Color(value);
-      case (final Int64 value):
-        color = Color(value.toInt());
-      case null:
-        color = Stroke.defaultColor;
-      default:
-        throw Exception(
-          'Invalid color value: (${json['c'].runtimeType}) ${json['c']}',
-        );
-    }
+    final color = parseStrokeColor(json['c'], fallback: Stroke.defaultColor);
 
     return ArrowStroke(
       color: color,
@@ -107,6 +96,8 @@ class ArrowStroke extends Stroke {
       },
       headLength: (json['hl'] as num?)?.toDouble() ?? 12.0,
       headAngle: (json['ha'] as num?)?.toDouble() ?? 0.5,
+      fillColor: parseOptionalStrokeColor(json['fc']),
+      lineStyle: parseLineStyle(json['ls'] as String?),
     );
   }
 

@@ -1,10 +1,13 @@
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
+library;
+
 import 'dart:math';
 
-import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart';
 import 'package:one_dollar_unistroke_recognizer/one_dollar_unistroke_recognizer.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_stroke.dart';
+import 'package:saber/components/canvas/stroke/stroke_serialization.dart';
 import 'package:sbn/has_size.dart';
 
 class CircleStroke extends Stroke {
@@ -35,19 +38,7 @@ class CircleStroke extends Stroke {
     assert(json['shape'] == 'circle');
     assert(json['i'] == pageIndex || json['i'] == null);
 
-    final Color color;
-    switch (json['c']) {
-      case (final int value):
-        color = Color(value);
-      case (final Int64 value):
-        color = Color(value.toInt());
-      case null:
-        color = Stroke.defaultColor;
-      default:
-        throw Exception(
-          'Invalid color value: (${json['c'].runtimeType}) ${json['c']}',
-        );
-    }
+    final color = parseStrokeColor(json['c'], fallback: Stroke.defaultColor);
 
     return CircleStroke(
       color: color,
@@ -58,6 +49,8 @@ class CircleStroke extends Stroke {
       toolId: .parsePenType(json['ty'], fallback: .shapePen),
       center: Offset(json['cx'] ?? 0, json['cy'] ?? 0),
       radius: json['r'] ?? 0,
+      fillColor: parseOptionalStrokeColor(json['fc']),
+      lineStyle: parseLineStyle(json['ls'] as String?),
     );
   }
   @override
@@ -65,11 +58,14 @@ class CircleStroke extends Stroke {
     return {
       'shape': 'circle',
       'i': pageIndex,
+      'ty': toolId.id,
       'cx': center.dx,
       'cy': center.dy,
       'r': radius,
       'pe': pressureEnabled,
       'c': color.toARGB32(),
+      if (fillColor != null) 'fc': fillColor!.toARGB32(),
+      if (lineStyle != LineStyle.solid) 'ls': lineStyle.name,
     }..addAll(options.toJson());
   }
 
@@ -113,7 +109,8 @@ class CircleStroke extends Stroke {
 
   @override
   String toSvgPath() {
-    return 'M${center.dx},${center.dy} m${-radius},0 a$radius,$radius 0 1,0 ${radius * 2},0 a$radius,$radius 0 1,0 ${-radius * 2},0';
+    final svgY = page.size.height - center.dy;
+    return 'M${center.dx},$svgY m${-radius},0 a$radius,$radius 0 1,0 ${radius * 2},0 a$radius,$radius 0 1,0 ${-radius * 2},0';
   }
 
   @override

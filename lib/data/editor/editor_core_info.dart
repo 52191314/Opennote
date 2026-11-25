@@ -1,5 +1,6 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'dart:async';
@@ -555,6 +556,7 @@ class EditorCoreInfo {
     int? lineHeight,
     int? lineThickness,
     List<EditorPage>? pages,
+    bool? isInfiniteCanvas,
   }) {
     return EditorCoreInfo._(
       filePath: filePath ?? this.filePath,
@@ -567,6 +569,7 @@ class EditorCoreInfo {
       pages: pages ?? this.pages,
       initialPageIndex: initialPageIndex,
       assetCache: assetCache,
+      isInfiniteCanvas: isInfiniteCanvas ?? this.isInfiniteCanvas,
     );
   }
 }

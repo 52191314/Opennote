@@ -1,5 +1,6 @@
 /// 🤖 Generated wholely or partially with Claude Code (Claude Opus 5.5)
 /// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'dart:ui';
@@ -47,6 +48,7 @@ class PenGesture implements ToolGesture {
   bool start(GesturePointer pointer) {
     final pen = _host.currentTool;
     if (pen is! Pen) return true;
+    if (pointer.page.activeLayer.locked) return true;
 
     _showPreview(pointer, pen);
     if (stows.scribbleToErase.value) _scribble.start(pointer.position);
@@ -64,13 +66,16 @@ class PenGesture implements ToolGesture {
   void update(GesturePointer pointer) {
     final pen = _host.currentTool;
     if (pen is! Pen) return;
+    if (pointer.page.activeLayer.locked) return;
 
     _showPreview(pointer, pen);
     if (!_eraseScribble(pointer, pen)) {
       pen.onDragUpdate(pointer.position, pointer.pressure);
     }
     pointer.page.redrawStrokes();
-    if (stows.circleToSelect.value) _circleToSelect.update(pointer.position);
+    if (stows.circleToSelect.value) {
+      _circleToSelect.update(pointer.position, scale: _host.currentScale);
+    }
   }
 
   @override
@@ -86,6 +91,7 @@ class PenGesture implements ToolGesture {
     final stroke = pen.onDragEnd();
     if (stroke == null || stroke.isEmpty) return true;
     if (_toggleTappedTape(pointer.page, stroke)) return true;
+    if (pointer.page.activeLayer.locked) return true;
     if (_shouldStraighten(pen, stroke)) stroke.convertToLine();
 
     _host.createPage(stroke.pageIndex);

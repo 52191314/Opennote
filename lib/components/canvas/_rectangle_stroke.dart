@@ -1,15 +1,16 @@
 /// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'dart:math';
 
-import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart';
 import 'package:one_dollar_unistroke_recognizer/one_dollar_unistroke_recognizer.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_rect_rotation.dart';
 import 'package:saber/components/canvas/_stroke.dart';
+import 'package:saber/components/canvas/stroke/stroke_serialization.dart';
 import 'package:sbn/has_size.dart';
 
 class RectangleStroke extends Stroke {
@@ -40,19 +41,7 @@ class RectangleStroke extends Stroke {
     assert(json['shape'] == 'rect');
     assert(json['i'] == pageIndex || json['i'] == null);
 
-    final Color color;
-    switch (json['c']) {
-      case (final int value):
-        color = Color(value);
-      case (final Int64 value):
-        color = Color(value.toInt());
-      case null:
-        color = Stroke.defaultColor;
-      default:
-        throw Exception(
-          'Invalid color value: (${json['c'].runtimeType}) ${json['c']}',
-        );
-    }
+    final color = parseStrokeColor(json['c'], fallback: Stroke.defaultColor);
 
     return RectangleStroke(
       color: color,
@@ -67,6 +56,8 @@ class RectangleStroke extends Stroke {
         json['rw'] ?? 0,
         json['rh'] ?? 0,
       ),
+      fillColor: parseOptionalStrokeColor(json['fc']),
+      lineStyle: parseLineStyle(json['ls'] as String?),
     );
   }
   @override
@@ -74,12 +65,15 @@ class RectangleStroke extends Stroke {
     return {
       'shape': 'rect',
       'i': pageIndex,
+      'ty': toolId.id,
       'rl': rect.left,
       'rt': rect.top,
       'rw': rect.width,
       'rh': rect.height,
       'pe': pressureEnabled,
       'c': color.toARGB32(),
+      if (fillColor != null) 'fc': fillColor!.toARGB32(),
+      if (lineStyle != LineStyle.solid) 'ls': lineStyle.name,
     }..addAll(options.toJson());
   }
 
@@ -130,10 +124,12 @@ class RectangleStroke extends Stroke {
 
   @override
   String toSvgPath() {
-    return 'M${rect.left},${rect.top} '
-        'L${rect.right},${rect.top} '
-        'L${rect.right},${rect.bottom} '
-        'L${rect.left},${rect.bottom} '
+    final svgTop = page.size.height - rect.top;
+    final svgBottom = page.size.height - rect.bottom;
+    return 'M${rect.left},$svgTop '
+        'L${rect.right},$svgTop '
+        'L${rect.right},$svgBottom '
+        'L${rect.left},$svgBottom '
         'Z';
   }
 

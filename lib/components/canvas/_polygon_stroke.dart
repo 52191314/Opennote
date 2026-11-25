@@ -1,9 +1,12 @@
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
+library;
+
 import 'dart:math';
 
-import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 import 'package:saber/components/canvas/_stroke.dart';
+import 'package:saber/components/canvas/stroke/stroke_serialization.dart';
 import 'package:sbn/has_size.dart';
 
 /// A stroke representing an arbitrary polygon with N vertices.
@@ -37,19 +40,7 @@ class PolygonStroke extends Stroke {
   }) {
     assert(json['shape'] == 'polygon');
 
-    final Color color;
-    switch (json['c']) {
-      case (final int value):
-        color = Color(value);
-      case (final Int64 value):
-        color = Color(value.toInt());
-      case null:
-        color = Stroke.defaultColor;
-      default:
-        throw Exception(
-          'Invalid color value: (${json['c'].runtimeType}) ${json['c']}',
-        );
-    }
+    final color = parseStrokeColor(json['c'], fallback: Stroke.defaultColor);
 
     final verticesJson = json['v'] as List<dynamic>? ?? [];
     final vertices = verticesJson.map((v) {
@@ -69,6 +60,8 @@ class PolygonStroke extends Stroke {
       toolId: .parsePenType(json['ty'], fallback: .shapePen),
       vertices: vertices,
       closed: json['cl'] as bool? ?? true,
+      fillColor: parseOptionalStrokeColor(json['fc']),
+      lineStyle: parseLineStyle(json['ls'] as String?),
     );
   }
 
@@ -107,9 +100,9 @@ class PolygonStroke extends Stroke {
   String toSvgPath() {
     if (vertices.isEmpty) return '';
     final buf = StringBuffer();
-    buf.write('M${vertices.first.dx},${vertices.first.dy}');
+    buf.write('M${vertices.first.dx},${page.size.height - vertices.first.dy}');
     for (int i = 1; i < vertices.length; i++) {
-      buf.write(' L${vertices[i].dx},${vertices[i].dy}');
+      buf.write(' L${vertices[i].dx},${page.size.height - vertices[i].dy}');
     }
     if (closed) buf.write(' Z');
     return buf.toString();
