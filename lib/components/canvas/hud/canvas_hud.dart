@@ -108,214 +108,247 @@ class CanvasHud extends HookWidget {
         : (safePadding.top + 4.0);
     final topOffset = setShowProtractor != null ? 168.0 : 128.0;
     final railHeight = topOffset + 114.0;
+    final ignoreHud = effectiveOpacity < 0.5;
+    const hudFadeDuration = Duration(milliseconds: 200);
 
-    return IgnorePointer(
-      ignoring: effectiveOpacity < 0.5,
-      child: AnimatedOpacity(
-        opacity: effectiveOpacity,
-        duration: const Duration(milliseconds: 200),
-        child: Stack(
-          children: [
-            // Sleek vertical floating Studio HUD pill backdrop
-            Positioned(
-              top: baseTop,
-              left: leftInset + 4,
-              child: IgnorePointer(
-                child: Container(
-                  width: 42,
-                  height: railHeight,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerLow.withValues(
-                      alpha: 0.72,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.45),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: baseTop + 4,
-              left: leftInset + 8,
-              child: CanvasGestureLockBtn(
-                lock: zoomLock,
-                setLock: setZoomLock,
-                icon: zoomLock ? Icons.lock : Icons.lock_open,
-                tooltip: zoomLock
-                    ? t.editor.hud.unlockZoom
-                    : t.editor.hud.lockZoom,
-              ),
-            ),
-            Positioned(
-              top: baseTop + 44,
-              left: leftInset + 8,
-              child: CanvasGestureLockBtn(
-                lock: singleFingerPanLock,
-                setLock: setSingleFingerPanLock,
-                icon: singleFingerPanLock ? Icons.pinch : Icons.swipe_up,
-                tooltip: singleFingerPanLock
-                    ? t.editor.hud.unlockSingleFingerPan
-                    : t.editor.hud.lockSingleFingerPan,
-              ),
-            ),
-            Positioned(
-              top: baseTop + 84,
-              left: leftInset + 8,
-              child: CanvasGestureLockBtn(
-                lock: axisAlignedPanLock,
-                setLock: setAxisAlignedPanLock,
-                tooltip: axisAlignedPanLock
-                    ? t.editor.hud.unlockAxisAlignedPan
-                    : t.editor.hud.lockAxisAlignedPan,
-                child: AnimatedRotation(
-                  duration: const Duration(milliseconds: 200),
-                  turns: axisAlignedPanLock ? 0 : 1 / 8,
-                  child: const Icon(Icons.open_with_rounded),
-                ),
-              ),
-            ),
-            if (setShowProtractor != null)
-              Positioned(
-                top: baseTop + 124,
-                left: leftInset + 8,
-                child: CanvasGestureLockBtn(
-                  lock: showProtractor,
-                  setLock: setShowProtractor!,
-                  icon: showProtractor ? Icons.straighten : Icons.straighten,
-                  tooltip: showProtractor
-                      ? t.editor.canvasHud.hideProtractor
-                      : t.editor.canvasHud.showProtractor,
-                ),
-              ),
-            Positioned(
-              top: baseTop + topOffset,
-              left: leftInset + 8,
-              child: CanvasGestureLockBtn(
-                lock: snapGrid,
-                setLock: (val) => stows.snapToGrid.value = val,
-                icon: snapGrid ? Icons.grid_on : Icons.grid_off,
-                tooltip: snapGrid
-                    ? t.editor.canvasHud.disableSnapToGrid
-                    : t.editor.canvasHud.enableSnapToGrid,
-              ),
-            ),
-            Positioned(
-              top: baseTop + topOffset + 40,
-              left: leftInset + 8,
-              child: CanvasGestureLockBtn(
-                lock: snapAngle,
-                setLock: (val) => stows.snapToAngle.value = val,
-                icon: snapAngle
-                    ? Icons.square_foot
-                    : Icons.square_foot_outlined,
-                tooltip: snapAngle
-                    ? t.editor.canvasHud.disableSnapToAngle
-                    : t.editor.canvasHud.enableSnapToAngle,
-              ),
-            ),
-            Positioned(
-              top: baseTop + topOffset + 80,
-              left: leftInset + 8,
-              child: GestureDetector(
-                onTap: () {
-                  final cur = angleStep;
-                  if (cur == 15) {
-                    stows.snapAngleStep.value = 30;
-                  } else if (cur == 30) {
-                    stows.snapAngleStep.value = 45;
-                  } else if (cur == 45) {
-                    stows.snapAngleStep.value = Stows.snapAngleStepIso30;
-                  } else {
-                    stows.snapAngleStep.value = 15;
-                  }
-                },
-                child: Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: snapAngle
-                        ? colorScheme.primaryContainer.withValues(alpha: 0.92)
-                        : colorScheme.surface.withValues(alpha: 0.85),
-                    borderRadius: const BorderRadius.all(Radius.circular(12)),
-                    border: Border.all(
-                      color: snapAngle
-                          ? colorScheme.primary.withValues(alpha: 0.6)
-                          : colorScheme.outlineVariant.withValues(alpha: 0.55),
-                      width: 1,
-                    ),
-                  ),
-                  child: Tooltip(
-                    message: t.editor.canvasHud.angleStep(
-                      step: angleStep == Stows.snapAngleStepIso30
-                          ? t.editor.canvasHud.iso30
-                          : '$angleStep°',
-                    ),
-                    child: Center(
-                      child: Text(
-                        angleStep == Stows.snapAngleStepIso30
-                            ? t.editor.canvasHud.iso
-                            : '$angleStep°',
-                        style: TextStyle(
-                          color: snapAngle
-                              ? colorScheme.onPrimaryContainer
-                              : colorScheme.onSurface,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+    return Stack(
+      children: [
+        Positioned(
+          top: baseTop,
+          left: leftInset + 4,
+          width: 42,
+          height: railHeight,
+          child: IgnorePointer(
+            ignoring: ignoreHud,
+            child: AnimatedOpacity(
+              opacity: effectiveOpacity,
+              duration: hudFadeDuration,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerLow.withValues(
+                            alpha: 0.72,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: colorScheme.outlineVariant.withValues(
+                              alpha: 0.45,
+                            ),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
-                ),
+                  Positioned(
+                    top: 4,
+                    left: 4,
+                    child: CanvasGestureLockBtn(
+                      lock: zoomLock,
+                      setLock: setZoomLock,
+                      icon: zoomLock ? Icons.lock : Icons.lock_open,
+                      tooltip: zoomLock
+                          ? t.editor.hud.unlockZoom
+                          : t.editor.hud.lockZoom,
+                    ),
+                  ),
+                  Positioned(
+                    top: 44,
+                    left: 4,
+                    child: CanvasGestureLockBtn(
+                      lock: singleFingerPanLock,
+                      setLock: setSingleFingerPanLock,
+                      icon: singleFingerPanLock ? Icons.pinch : Icons.swipe_up,
+                      tooltip: singleFingerPanLock
+                          ? t.editor.hud.unlockSingleFingerPan
+                          : t.editor.hud.lockSingleFingerPan,
+                    ),
+                  ),
+                  Positioned(
+                    top: 84,
+                    left: 4,
+                    child: CanvasGestureLockBtn(
+                      lock: axisAlignedPanLock,
+                      setLock: setAxisAlignedPanLock,
+                      tooltip: axisAlignedPanLock
+                          ? t.editor.hud.unlockAxisAlignedPan
+                          : t.editor.hud.lockAxisAlignedPan,
+                      child: AnimatedRotation(
+                        duration: const Duration(milliseconds: 200),
+                        turns: axisAlignedPanLock ? 0 : 1 / 8,
+                        child: const Icon(Icons.open_with_rounded),
+                      ),
+                    ),
+                  ),
+                  if (setShowProtractor != null)
+                    Positioned(
+                      top: 124,
+                      left: 4,
+                      child: CanvasGestureLockBtn(
+                        lock: showProtractor,
+                        setLock: setShowProtractor!,
+                        icon: showProtractor
+                            ? Icons.straighten
+                            : Icons.straighten,
+                        tooltip: showProtractor
+                            ? t.editor.canvasHud.hideProtractor
+                            : t.editor.canvasHud.showProtractor,
+                      ),
+                    ),
+                  Positioned(
+                    top: topOffset,
+                    left: 4,
+                    child: CanvasGestureLockBtn(
+                      lock: snapGrid,
+                      setLock: (val) => stows.snapToGrid.value = val,
+                      icon: snapGrid ? Icons.grid_on : Icons.grid_off,
+                      tooltip: snapGrid
+                          ? t.editor.canvasHud.disableSnapToGrid
+                          : t.editor.canvasHud.enableSnapToGrid,
+                    ),
+                  ),
+                  Positioned(
+                    top: topOffset + 40,
+                    left: 4,
+                    child: CanvasGestureLockBtn(
+                      lock: snapAngle,
+                      setLock: (val) => stows.snapToAngle.value = val,
+                      icon: snapAngle
+                          ? Icons.square_foot
+                          : Icons.square_foot_outlined,
+                      tooltip: snapAngle
+                          ? t.editor.canvasHud.disableSnapToAngle
+                          : t.editor.canvasHud.enableSnapToAngle,
+                    ),
+                  ),
+                  Positioned(
+                    top: topOffset + 80,
+                    left: 4,
+                    child: GestureDetector(
+                      onTap: () {
+                        final cur = angleStep;
+                        if (cur == 15) {
+                          stows.snapAngleStep.value = 30;
+                        } else if (cur == 30) {
+                          stows.snapAngleStep.value = 45;
+                        } else if (cur == 45) {
+                          stows.snapAngleStep.value = Stows.snapAngleStepIso30;
+                        } else {
+                          stows.snapAngleStep.value = 15;
+                        }
+                      },
+                      child: Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: snapAngle
+                              ? colorScheme.primaryContainer.withValues(
+                                  alpha: 0.92,
+                                )
+                              : colorScheme.surface.withValues(alpha: 0.85),
+                          borderRadius: const BorderRadius.all(
+                            Radius.circular(12),
+                          ),
+                          border: Border.all(
+                            color: snapAngle
+                                ? colorScheme.primary.withValues(alpha: 0.6)
+                                : colorScheme.outlineVariant.withValues(
+                                    alpha: 0.55,
+                                  ),
+                            width: 1,
+                          ),
+                        ),
+                        child: Tooltip(
+                          message: t.editor.canvasHud.angleStep(
+                            step: angleStep == Stows.snapAngleStepIso30
+                                ? t.editor.canvasHud.iso30
+                                : '$angleStep°',
+                          ),
+                          child: Center(
+                            child: Text(
+                              angleStep == Stows.snapAngleStepIso30
+                                  ? t.editor.canvasHud.iso
+                                  : '$angleStep°',
+                              style: TextStyle(
+                                color: snapAngle
+                                    ? colorScheme.onPrimaryContainer
+                                    : colorScheme.onSurface,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            if (onToggleBookmarked != null)
-              Positioned(
-                top: baseTop + 4,
-                right: rightInset + 60,
-                child: CanvasGestureLockBtn(
-                  lock: bookmarked,
-                  setLock: (_) => onToggleBookmarked!(),
-                  icon: bookmarked ? Icons.star : Icons.star_border,
-                  tooltip: bookmarked
-                      ? t.editor.bookmark.remove
-                      : t.editor.bookmark.add,
-                ),
-              ),
-            if (isInfiniteCanvas && onFitContent != null)
-              Positioned(
-                top: baseTop + 4,
-                right: rightInset + (onToggleBookmarked != null ? 102 : 60),
-                child: CanvasGestureLockBtn(
-                  lock: false,
-                  setLock: (_) => onFitContent!(),
-                  icon: Icons.fit_screen_rounded,
-                  tooltip: t.editor.canvasHud.fitContent,
-                ),
-              ),
-            Positioned(
-              top: baseTop + 4,
-              right: rightInset + 8,
-              child: RepaintBoundary(
-                child: _FilteredZoomIndicator(
-                  transformationController: transformationController,
-                  resetZoom: resetZoom,
-                ),
+          ),
+        ),
+        Positioned(
+          top: baseTop + 4,
+          right: rightInset + 8,
+          child: IgnorePointer(
+            ignoring: ignoreHud,
+            child: AnimatedOpacity(
+              opacity: effectiveOpacity,
+              duration: hudFadeDuration,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isInfiniteCanvas && onFitContent != null) ...[
+                    CanvasGestureLockBtn(
+                      lock: false,
+                      setLock: (_) => onFitContent!(),
+                      icon: Icons.fit_screen_rounded,
+                      tooltip: t.editor.canvasHud.fitContent,
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (onToggleBookmarked != null) ...[
+                    CanvasGestureLockBtn(
+                      lock: bookmarked,
+                      setLock: (_) => onToggleBookmarked!(),
+                      icon: bookmarked ? Icons.star : Icons.star_border,
+                      tooltip: bookmarked
+                          ? t.editor.bookmark.remove
+                          : t.editor.bookmark.add,
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  RepaintBoundary(
+                    child: _FilteredZoomIndicator(
+                      transformationController: transformationController,
+                      resetZoom: resetZoom,
+                    ),
+                  ),
+                ],
               ),
             ),
-            if (hasTape && onRevealAllTape != null && onConcealAllTape != null)
-              Positioned(
-                bottom: bottomInset + 24,
-                right: rightInset + 16,
+          ),
+        ),
+        if (hasTape && onRevealAllTape != null && onConcealAllTape != null)
+          Positioned(
+            bottom: bottomInset + 24,
+            right: rightInset + 16,
+            child: IgnorePointer(
+              ignoring: ignoreHud,
+              child: AnimatedOpacity(
+                opacity: effectiveOpacity,
+                duration: hudFadeDuration,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 6,
@@ -357,9 +390,9 @@ class CanvasHud extends HookWidget {
                   ),
                 ),
               ),
-          ],
-        ),
-      ),
+            ),
+          ),
+      ],
     );
   }
 }

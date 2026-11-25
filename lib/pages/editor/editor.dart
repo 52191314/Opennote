@@ -183,6 +183,9 @@ class EditorState extends State<Editor>
   @override
   double get currentScale => _transformationController.value.maxScale2D;
 
+  bool get _isCanvasInteracting =>
+      _canvasGestureDetectorKey.currentState?.isGestureActive ?? false;
+
   late bool needsNaming = widget.needsNaming && stows.editorPromptRename.value;
 
   late Tool _currentTool = () {

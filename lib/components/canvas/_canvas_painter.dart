@@ -97,8 +97,7 @@ class CanvasPainter extends CustomPainter {
   /// keeping the cull window tight at extreme magnification.
   static Rect? quantizedHighZoomViewport(Rect? rect, double scale) {
     if (scale <= 1.5 || rect == null || !_isValidCullRect(rect)) return null;
-    final scaleBucket = scale >= 6.0 ? 8.0 : (scale >= 3.0 ? 4.0 : 2.0);
-    final step = (128.0 / scaleBucket).clamp(16.0, 64.0);
+    final step = scale >= 5.0 ? 128.0 : 256.0;
     final inflated = rect.inflate(step);
     return Rect.fromLTRB(
       (inflated.left / step).floorToDouble() * step,
@@ -108,10 +107,14 @@ class CanvasPainter extends CustomPainter {
     );
   }
 
+  bool get _shouldDrawPageIndicator =>
+      !isInfiniteCanvas &&
+      ((currentScale >= 0.2 && currentScale <= 1.5) || currentScale < 0.0005);
+
   @override
   void paint(Canvas canvas, Size size) {
     if (viewportRect != null && viewportRect!.isEmpty) {
-      if (!isInfiniteCanvas && (currentScale >= 0.2 || currentScale < 0.0005)) {
+      if (_shouldDrawPageIndicator) {
         _drawPageIndicator(canvas, size);
       }
       return;
@@ -119,13 +122,20 @@ class CanvasPainter extends CustomPainter {
 
     final canvasRect = isInfiniteCanvas ? null : (Offset.zero & size);
     final canvasCull = _tryGetCullRect(canvas);
-    final highZoomCull = quantizedHighZoomViewport(viewportRect, currentScale);
+    final Rect? viewportCull;
+    if (currentScale > 1.5) {
+      viewportCull = quantizedHighZoomViewport(viewportRect, currentScale);
+    } else if (viewportRect != null && _isValidCullRect(viewportRect!)) {
+      viewportCull = viewportRect!.inflate(128.0);
+    } else {
+      viewportCull = null;
+    }
     final Rect? cullRect;
-    if (canvasCull != null && highZoomCull != null) {
-      final intersected = canvasCull.intersect(highZoomCull);
+    if (canvasCull != null && viewportCull != null) {
+      final intersected = canvasCull.intersect(viewportCull);
       cullRect = intersected.isEmpty ? Rect.zero : intersected;
     } else {
-      cullRect = highZoomCull ?? canvasCull;
+      cullRect = viewportCull ?? canvasCull;
     }
 
     if (cullRect != Rect.zero) {
@@ -159,7 +169,7 @@ class CanvasPainter extends CustomPainter {
     _drawSelection(canvas);
     _drawEraserCursor(canvas);
     _drawLaserSpotlight(canvas);
-    if (!isInfiniteCanvas && (currentScale >= 0.2 || currentScale < 0.0005)) {
+    if (_shouldDrawPageIndicator) {
       _drawPageIndicator(canvas, size);
     }
   }
@@ -231,13 +241,6 @@ class CanvasPainter extends CustomPainter {
     }
     return true;
   }
-
-  static MaskFilter? _getPencilMaskFilter(
-    double size, [
-    double currentScale = 1.0,
-  ]) => currentScale > 1.5
-      ? null
-      : MaskFilter.blur(BlurStyle.normal, min(size * 0.2, 3));
 
   bool shouldUsePencilShader(double strokeSize) =>
       currentScale >= _zoomThreshold && (strokeSize * currentScale) >= 3;

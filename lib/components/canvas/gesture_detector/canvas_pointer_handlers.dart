@@ -1,7 +1,11 @@
 /// 🤖 Generated wholely or partially with Claude Code; Gemini; Google Antigravity
 part of '../canvas_gesture_detector.dart';
 
+final _rawTouchDowns = Expando<Set<int>>('rawTouchDowns');
+
 extension _CanvasGesturePointerHandlers on CanvasGestureDetectorState {
+  Set<int> get _activeRawTouchDowns => _rawTouchDowns[this] ??= <int>{};
+
   void _trackPointerForTapGestures(PointerEvent event) {
     if (event is PointerDownEvent) {
       _pointerPositions[event.pointer] = event.position;
@@ -47,16 +51,45 @@ extension _CanvasGesturePointerHandlers on CanvasGestureDetectorState {
     final isStylus =
         event.kind == PointerDeviceKind.stylus ||
         event.kind == PointerDeviceKind.invertedStylus;
+    final isTouch = event.kind == PointerDeviceKind.touch;
+    final rawDowns = _activeRawTouchDowns;
+
+    if (isStylus && event is PointerDownEvent) {
+      rawDowns.clear();
+    } else if (event is PointerDownEvent &&
+        isTouch &&
+        !_palmEngine.isStylusDown &&
+        event.radiusMajor < 48.0 &&
+        event.radiusMinor < 48.0 &&
+        event.size < 0.42) {
+      rawDowns.add(event.pointer);
+    }
+
+    final isMultiTouchDown =
+        event is PointerDownEvent &&
+        isTouch &&
+        rawDowns.length >= 2 &&
+        rawDowns.contains(event.pointer) &&
+        !_palmEngine.isStylusDown;
+    if (isMultiTouchDown) {
+      for (final pointer in rawDowns) {
+        if (pointer != event.pointer) {
+          _palmEngine.forgiveRejectedPointer(pointer);
+        }
+      }
+    }
 
     final isActiveTwoFingerPinch =
         event is! PointerDownEvent &&
-        _pointerPositions.length >= 2 &&
-        _pointerPositions.containsKey(event.pointer) &&
+        ((_pointerPositions.length >= 2 &&
+                _pointerPositions.containsKey(event.pointer)) ||
+            (rawDowns.length >= 2 && rawDowns.contains(event.pointer))) &&
         !_palmEngine.isStylusDown;
 
     if (isStylus) {
       _palmEngine.notifyStylusEvent(event);
-    } else if (!isActiveTwoFingerPinch && _palmEngine.isPalm(event)) {
+    } else if (!isActiveTwoFingerPinch &&
+        _palmEngine.isPalm(event, isMultiTouch: isMultiTouchDown)) {
       return;
     }
 
@@ -115,6 +148,7 @@ extension _CanvasGesturePointerHandlers on CanvasGestureDetectorState {
   }
 
   void _listenerPointerUpEvent(PointerEvent event) {
+    _activeRawTouchDowns.remove(event.pointer);
     _palmEngine.onPointerUpOrCancel(event);
     _trackPointerForTapGestures(event);
     widget.updatePointerData(event.kind, null);
@@ -126,10 +160,6 @@ extension _CanvasGesturePointerHandlers on CanvasGestureDetectorState {
 }
 
 double _inverseLerp(num value, {required num min, required num max}) {
-  assert(max >= min, 'Max ($max) must be >= min ($min)');
-  assert(
-    value >= min && value <= max,
-    'Value ($value) must be between $min and $max',
-  );
-  return (value - min) / (max - min);
+  if (max <= min) return 0.0;
+  return ((value - min) / (max - min)).clamp(0.0, 1.0).toDouble();
 }

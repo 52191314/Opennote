@@ -62,7 +62,8 @@ class CanvasGestureDetector extends StatefulWidget {
     this.isInfiniteCanvas = false,
     this.onFitContent,
     TransformationController? transformationController,
-  }) : _transformationController =
+  }) : _ownsTransformationController = transformationController == null,
+       _transformationController =
            transformationController ?? TransformationController();
 
   final String filePath;
@@ -111,6 +112,7 @@ class CanvasGestureDetector extends StatefulWidget {
   final bool isInfiniteCanvas;
   final VoidCallback? onFitContent;
 
+  final bool _ownsTransformationController;
   late final TransformationController _transformationController;
 
   @override
@@ -221,8 +223,12 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
 
   Timer? _snapZoomTimer;
   var _isGestureActive = false;
+  var _needsHighZoomRefresh = false;
 
   final Map<int, Offset> _pointerPositions = {};
+
+  /// Whether a touch or scale/pan gesture is currently in progress.
+  bool get isGestureActive => _isGestureActive || _pointerPositions.isNotEmpty;
   DateTime? _multiPointerDownTime;
   var _maxPointerCountDuringGesture = 0;
   var _multiPointerMoved = false;
@@ -340,7 +346,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
 
   void _scheduleSnapZoomIfNeeded() {
     _snapZoomTimer?.cancel();
-    if (_isGestureActive) return;
+    if (_isGestureActive || _pointerPositions.isNotEmpty) return;
     final scale = widget._transformationController.value.maxScale2D;
     if (!scale.isFinite || scale <= 0) return;
 
@@ -428,10 +434,12 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
 
     if (CanvasPainter.visualScaleBucket(oldScale) !=
         CanvasPainter.visualScaleBucket(newScale)) {
+      _needsHighZoomRefresh = false;
       return true;
     }
     if (CanvasBackgroundPainter.quantizedScaleForInfinite(oldScale) !=
         CanvasBackgroundPainter.quantizedScaleForInfinite(newScale)) {
+      _needsHighZoomRefresh = false;
       return true;
     }
 
@@ -446,31 +454,37 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
     if (widget.isInfiniteCanvas) {
       if (CanvasBackgroundPainter.quantizedInfiniteRect(oldBounds, oldScale) !=
           CanvasBackgroundPainter.quantizedInfiniteRect(newBounds, newScale)) {
+        _needsHighZoomRefresh = false;
         return true;
       }
-      if ((oldScale > 1.5 || newScale > 1.5) &&
-          CanvasPainter.quantizedHighZoomViewport(oldBounds, oldScale) !=
-              CanvasPainter.quantizedHighZoomViewport(newBounds, newScale)) {
-        return true;
+      if (oldScale > 1.5 || newScale > 1.5) {
+        if (_isGestureActive) {
+          _needsHighZoomRefresh = true;
+        } else if (CanvasPainter.quantizedHighZoomViewport(
+              oldBounds,
+              oldScale,
+            ) !=
+            CanvasPainter.quantizedHighZoomViewport(newBounds, newScale)) {
+          _needsHighZoomRefresh = false;
+          return true;
+        }
       }
       return false;
+    }
+
+    final oldChrome = oldScale > 2.0;
+    final newChrome = newScale > 2.0;
+    if (oldChrome != newChrome) {
+      _needsHighZoomRefresh = false;
+      return true;
     }
 
     final containerWidth =
         containerBounds.hasBoundedWidth && containerBounds.maxWidth > 0
         ? containerBounds.maxWidth
         : viewportSize.width;
-    final firstPageWidth = widget.pages.isNotEmpty
-        ? widget.pages.first.size.width
-        : 1000.0;
-    final fittedRatio = firstPageWidth > 0
-        ? min(firstPageWidth, containerWidth) / firstPageWidth
-        : min(containerWidth / 1000.0, 1.0);
-    final oldChrome = oldScale * fittedRatio < 0.35 || oldScale > 1.8;
-    final newChrome = newScale * fittedRatio < 0.35 || newScale > 1.8;
-    if (oldChrome != newChrome) return true;
-
-    final checkHighZoom = oldScale > 1.5 || newScale > 1.5;
+    final isHighZoom = oldScale > 1.5 || newScale > 1.5;
+    final checkHighZoom = !_isGestureActive && isHighZoom;
     double topOfPage = Editor.gapBetweenPages * 2;
     for (int pageIndex = 0; pageIndex < widget.pages.length; pageIndex++) {
       final page = widget.pages[pageIndex];
@@ -482,7 +496,10 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
           oldBounds.bottom >= topOfPage && oldBounds.top <= bottomOfPage;
       final isInViewport =
           newBounds.bottom >= topOfPage && newBounds.top <= bottomOfPage;
-      if (wasInViewport != isInViewport) return true;
+      if (wasInViewport != isInViewport) {
+        _needsHighZoomRefresh = false;
+        return true;
+      }
 
       if (checkHighZoom && isInViewport) {
         final oldPageLocal = _computePageLocalViewport(
@@ -501,6 +518,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
         );
         if (CanvasPainter.quantizedHighZoomViewport(oldPageLocal, oldScale) !=
             CanvasPainter.quantizedHighZoomViewport(newPageLocal, newScale)) {
+          _needsHighZoomRefresh = false;
           return true;
         }
       }
@@ -508,6 +526,9 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
       topOfPage = bottomOfPage + Editor.gapBetweenPages;
     }
 
+    if (_isGestureActive && isHighZoom) {
+      _needsHighZoomRefresh = true;
+    }
     return false;
   }
 
@@ -558,6 +579,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
 
               return InteractiveCanvasViewer.builder(
                 palmEngine: _palmEngine,
+                expandWidth: widget.isInfiniteCanvas,
                 minScale: zoomLockedValue ?? effectiveMinScale,
                 maxScale: zoomLockedValue ?? CanvasGestureDetector.kMaxScale,
                 panEnabled: !singleFingerPanLock,
@@ -580,6 +602,14 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
                 onInteractionEnd: (details) {
                   _isGestureActive = false;
                   _scheduleSnapZoomIfNeeded();
+                  if (_needsHighZoomRefresh && mounted) {
+                    _needsHighZoomRefresh = false;
+                    final scale =
+                        widget._transformationController.value.maxScale2D;
+                    if (scale.isFinite && scale > 1.5) {
+                      setState(() {});
+                    }
+                  }
                   widget.onInteractionEnd?.call(details);
                 },
                 constrainMatrix: _constrainTransformMatrix,
@@ -670,7 +700,9 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
       widget._transformationController.value,
     );
     widget._transformationController.removeListener(onTransformChanged);
-    widget._transformationController.dispose();
+    if (widget._ownsTransformationController) {
+      widget._transformationController.dispose();
+    }
     _removeKeybindings();
     super.dispose();
   }

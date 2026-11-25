@@ -1,3 +1,6 @@
+/// 🤖 Modified with Google Antigravity
+library;
+
 import 'package:flutter/material.dart';
 import 'package:saber/components/canvas/inner_canvas.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
@@ -34,7 +37,8 @@ class CanvasPreview extends StatelessWidget implements PreferredSizeWidget {
       currentStrokeDetectedShape: null,
       currentSelection: null,
       currentToolIsSelect: false,
-      currentScale: double.maxFinite,
+      currentScale: 1.0,
+      viewportRect: Offset.zero & preferredSize,
     );
   }
 }

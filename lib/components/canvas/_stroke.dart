@@ -218,21 +218,24 @@ class Stroke {
   LineStyle? _styledPathLineStyle;
   double? _styledPathSize;
 
+  double get _safeStyledStrokeWidth =>
+      options.size > 0 && options.size.isFinite ? options.size : 1.0;
+
   /// Returns a cached dashed or dotted [Path] for [lineStyle], or
   /// [highQualityPath] when [lineStyle] is [LineStyle.solid].
   Path get styledPath {
     if (lineStyle == LineStyle.solid) return highQualityPath;
+    final safeSize = _safeStyledStrokeWidth;
     if (_styledPath != null &&
         _styledPathLineStyle == lineStyle &&
-        _styledPathSize == options.size) {
+        _styledPathSize == safeSize) {
       return _styledPath!;
     }
-    final strokeWidth = options.size;
     final dashArray = lineStyle == LineStyle.dotted
-        ? CircularIntervalList<double>([1.0, strokeWidth * 1.8])
-        : CircularIntervalList<double>([strokeWidth * 3.0, strokeWidth * 1.8]);
+        ? CircularIntervalList<double>([1.0, safeSize * 1.8])
+        : CircularIntervalList<double>([safeSize * 3.0, safeSize * 1.8]);
     _styledPathLineStyle = lineStyle;
-    _styledPathSize = strokeWidth;
+    _styledPathSize = safeSize;
     return _styledPath = dashPath(centerlinePath, dashArray: dashArray);
   }
 
@@ -248,7 +251,7 @@ class Stroke {
     _centerlinePath = _centerlinePath?.shift(offset);
     if (_styledPath != null &&
         _styledPathLineStyle == lineStyle &&
-        _styledPathSize == options.size) {
+        _styledPathSize == _safeStyledStrokeWidth) {
       _styledPath = _styledPath!.shift(offset);
     } else {
       _styledPath = null;

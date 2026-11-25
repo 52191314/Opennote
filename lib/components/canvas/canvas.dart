@@ -171,16 +171,6 @@ class Canvas extends StatelessWidget {
           : Center(child: FittedBox(child: box));
     }
 
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final fittedRatio =
-        (!coreInfo.isInfiniteCanvas &&
-            screenWidth.isFinite &&
-            screenWidth > 0 &&
-            page.size.width > 0)
-        ? (screenWidth < page.size.width ? screenWidth / page.size.width : 1.0)
-        : 1.0;
-    final effectiveScale = currentScale * fittedRatio;
-
     final inner = InnerCanvas(
       key: page.innerCanvasKey,
       pageIndex: pageIndex,
@@ -230,14 +220,12 @@ class Canvas extends StatelessWidget {
       child: _withForeground(_wrapOnyxArea(inner)),
     );
 
-    final showPageChrome =
-        !(effectiveScale >= 0.0005 && effectiveScale < 0.35) &&
-        currentScale <= 1.8;
+    final showShadow = currentScale <= 2.0;
 
     return Center(
       child: FittedBox(
         child: DecoratedBox(
-          decoration: showPageChrome
+          decoration: showShadow
               ? BoxDecoration(
                   borderRadius: BorderRadius.circular(6),
                   boxShadow: [
@@ -251,10 +239,8 @@ class Canvas extends StatelessWidget {
                 )
               : const BoxDecoration(),
           child: ClipRRect(
-            borderRadius: showPageChrome
-                ? BorderRadius.circular(6)
-                : BorderRadius.zero,
-            clipBehavior: showPageChrome ? Clip.antiAlias : Clip.none,
+            borderRadius: BorderRadius.circular(6),
+            clipBehavior: Clip.hardEdge,
             child: pageContent,
           ),
         ),

@@ -274,10 +274,6 @@ extension _StrokePainter on CanvasPainter {
             ..setFloat(0, color.r)
             ..setFloat(1, color.g)
             ..setFloat(2, color.b);
-          paint.maskFilter = CanvasPainter._getPencilMaskFilter(
-            stroke.options.size,
-            currentScale,
-          );
         } else {
           // Fast imitation of pencil when zoomed out
           final background = invert ? Colors.black : Colors.white;
@@ -355,10 +351,6 @@ extension _StrokePainter on CanvasPainter {
         ..setFloat(0, color.r)
         ..setFloat(1, color.g)
         ..setFloat(2, color.b);
-      paint.maskFilter = CanvasPainter._getPencilMaskFilter(
-        currentStroke!.options.size,
-        currentScale,
-      );
     }
 
     if (currentStroke is ArrowStroke || currentStroke is DimensionStroke) {

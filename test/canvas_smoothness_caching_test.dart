@@ -17,6 +17,7 @@ import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/_tape_stroke.dart';
 import 'package:saber/components/canvas/canvas.dart' as saber_canvas;
 import 'package:saber/components/canvas/canvas_gesture_detector.dart';
+import 'package:saber/components/canvas/canvas_preview.dart';
 import 'package:saber/components/canvas/hud/canvas_hud.dart';
 import 'package:saber/components/canvas/hud/canvas_zoom_indicator.dart';
 import 'package:saber/components/canvas/inner_canvas.dart';
@@ -1450,6 +1451,300 @@ void main() {
           ..scaleByDouble(2.5, 2.5, 1.0, 1.0);
         await tester.pump();
         expect(find.text('2.5x'), findsOneWidget);
+      },
+    );
+  });
+
+  group('9. Inertia Stack-Overflow, Post-Stylus Pinch Recovery & Impeller Safety', () {
+    testWidgets(
+      'pan fling followed by 3 consecutive two-finger pinches never triggers StackOverflow or locks zoom',
+      (tester) async {
+        final controller = TransformationController();
+        addTearDown(controller.dispose);
+        final palmEngine = PalmRejectionEngine(
+          writingPosture: WritingPosture.rightBelow,
+          sensitivity: PalmRejectionSensitivity.medium,
+        );
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: SizedBox(
+              width: 393,
+              height: 852,
+              child: InteractiveCanvasViewer.builder(
+                palmEngine: palmEngine,
+                minScale: CanvasGestureDetector.kPagedMinScale,
+                maxScale: CanvasGestureDetector.kMaxScale,
+                interactionEndFrictionCoefficient: 0.3,
+                boundaryMargin: const EdgeInsets.all(double.infinity),
+                transformationController: controller,
+                builder: (context, viewport) =>
+                    const SizedBox(width: 393, height: 1400),
+              ),
+            ),
+          ),
+        );
+
+        // 1. Fast 1-finger pan fling to trigger FrictionSimulation & inertia listener.
+        await tester.fling(
+          find.byType(InteractiveCanvasViewer),
+          const Offset(0, -250),
+          1200,
+        );
+        await tester.pump(const Duration(milliseconds: 40));
+
+        // 2. Immediately perform 3 consecutive 2-finger pinch-in gestures.
+        var nextPointer = 500;
+        var baseTimeMs = 100;
+        for (var burst = 0; burst < 3; burst++) {
+          final scaleBefore = controller.value.maxScale2D;
+          final p1 = nextPointer++;
+          final p2 = nextPointer++;
+
+          await tester.sendEventToBinding(
+            PointerAddedEvent(
+              pointer: p1,
+              timeStamp: Duration(milliseconds: baseTimeMs),
+              position: const Offset(150, 400),
+              kind: PointerDeviceKind.touch,
+            ),
+          );
+          await tester.sendEventToBinding(
+            PointerAddedEvent(
+              pointer: p2,
+              timeStamp: Duration(milliseconds: baseTimeMs),
+              position: const Offset(250, 400),
+              kind: PointerDeviceKind.touch,
+            ),
+          );
+          await tester.sendEventToBinding(
+            PointerDownEvent(
+              pointer: p1,
+              timeStamp: Duration(milliseconds: baseTimeMs),
+              position: const Offset(150, 400),
+              kind: PointerDeviceKind.touch,
+              radiusMajor: 14.0,
+            ),
+          );
+          await tester.sendEventToBinding(
+            PointerDownEvent(
+              pointer: p2,
+              timeStamp: Duration(milliseconds: baseTimeMs),
+              position: const Offset(250, 400),
+              kind: PointerDeviceKind.touch,
+              radiusMajor: 14.0,
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 8));
+
+          for (var i = 1; i <= 5; i++) {
+            final ts = Duration(milliseconds: baseTimeMs + i * 8);
+            await tester.sendEventToBinding(
+              PointerMoveEvent(
+                pointer: p1,
+                timeStamp: ts,
+                position: Offset(150.0 - i * 12, 400),
+                kind: PointerDeviceKind.touch,
+                radiusMajor: 14.0,
+              ),
+            );
+            await tester.sendEventToBinding(
+              PointerMoveEvent(
+                pointer: p2,
+                timeStamp: ts,
+                position: Offset(250.0 + i * 12, 400),
+                kind: PointerDeviceKind.touch,
+                radiusMajor: 14.0,
+              ),
+            );
+            await tester.pump(const Duration(milliseconds: 8));
+          }
+
+          expect(
+            controller.value.maxScale2D,
+            greaterThan(scaleBefore * 1.1),
+            reason: 'Pinch burst $burst must scale smoothly without freezing',
+          );
+
+          final upTs = Duration(milliseconds: baseTimeMs + 56);
+          await tester.sendEventToBinding(
+            PointerUpEvent(
+              pointer: p1,
+              timeStamp: upTs,
+              position: const Offset(90, 400),
+              kind: PointerDeviceKind.touch,
+            ),
+          );
+          await tester.sendEventToBinding(
+            PointerUpEvent(
+              pointer: p2,
+              timeStamp: upTs,
+              position: const Offset(310, 400),
+              kind: PointerDeviceKind.touch,
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 16));
+          baseTimeMs += 120;
+        }
+
+        expect(tester.takeException(), isNull);
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'post-stylus staggered two-finger pinch inside posture zone or with thumb pad recovers and zooms smoothly',
+      (tester) async {
+        final controller = TransformationController();
+        addTearDown(controller.dispose);
+        final palmEngine = PalmRejectionEngine(
+          writingPosture: WritingPosture.rightBelow,
+          sensitivity: PalmRejectionSensitivity.medium,
+        );
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: SizedBox(
+              width: 393,
+              height: 852,
+              child: InteractiveCanvasViewer.builder(
+                palmEngine: palmEngine,
+                minScale: CanvasGestureDetector.kPagedMinScale,
+                maxScale: CanvasGestureDetector.kMaxScale,
+                interactionEndFrictionCoefficient: 0.3,
+                boundaryMargin: const EdgeInsets.all(double.infinity),
+                transformationController: controller,
+                builder: (context, viewport) =>
+                    const SizedBox(width: 393, height: 1400),
+              ),
+            ),
+          ),
+        );
+
+        // Simulate recent stylus lift at (120, 200) -> posture zone covers x in [60..400], y in [190..580].
+        palmEngine.notifyStylusEvent(
+          const PointerDownEvent(
+            pointer: 600,
+            position: Offset(120, 200),
+            kind: PointerDeviceKind.stylus,
+          ),
+        );
+        palmEngine.onPointerUpOrCancel(
+          const PointerUpEvent(
+            pointer: 600,
+            position: Offset(120, 200),
+            kind: PointerDeviceKind.stylus,
+          ),
+        );
+
+        // 16ms later: Finger 1 lands INSIDE posture zone with 24pt thumb pad,
+        // Finger 2 lands 16ms later ALSO inside posture zone >= 30pt away.
+        await tester.sendEventToBinding(
+          const PointerAddedEvent(
+            pointer: 601,
+            position: Offset(160, 280),
+            kind: PointerDeviceKind.touch,
+          ),
+        );
+        await tester.sendEventToBinding(
+          const PointerDownEvent(
+            pointer: 601,
+            timeStamp: Duration(milliseconds: 16),
+            position: Offset(160, 280),
+            kind: PointerDeviceKind.touch,
+            radiusMajor: 24.0,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 16));
+
+        await tester.sendEventToBinding(
+          const PointerAddedEvent(
+            pointer: 602,
+            position: Offset(260, 320),
+            kind: PointerDeviceKind.touch,
+          ),
+        );
+        await tester.sendEventToBinding(
+          const PointerDownEvent(
+            pointer: 602,
+            timeStamp: Duration(milliseconds: 32),
+            position: Offset(260, 320),
+            kind: PointerDeviceKind.touch,
+            radiusMajor: 24.0,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 8));
+
+        for (var i = 1; i <= 6; i++) {
+          final ts = Duration(milliseconds: 32 + i * 8);
+          await tester.sendEventToBinding(
+            PointerMoveEvent(
+              pointer: 601,
+              timeStamp: ts,
+              position: Offset(160.0 - i * 14, 280),
+              kind: PointerDeviceKind.touch,
+              radiusMajor: 24.0,
+            ),
+          );
+          await tester.sendEventToBinding(
+            PointerMoveEvent(
+              pointer: 602,
+              timeStamp: ts,
+              position: Offset(260.0 + i * 14, 320),
+              kind: PointerDeviceKind.touch,
+              radiusMajor: 24.0,
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 8));
+        }
+
+        expect(
+          controller.value.maxScale2D,
+          greaterThan(1.4),
+          reason:
+              'Post-stylus staggered 2-finger pinch inside posture zone must recover and zoom',
+        );
+
+        await tester.sendEventToBinding(
+          const PointerUpEvent(
+            pointer: 601,
+            timeStamp: Duration(milliseconds: 90),
+            position: Offset(76, 280),
+            kind: PointerDeviceKind.touch,
+          ),
+        );
+        await tester.sendEventToBinding(
+          const PointerUpEvent(
+            pointer: 602,
+            timeStamp: Duration(milliseconds: 90),
+            position: Offset(344, 320),
+            kind: PointerDeviceKind.touch,
+          ),
+        );
+        await tester.pumpAndSettle();
+      },
+    );
+
+    test(
+      'CanvasPreview uses bounded 1.0x viewport and zero-size dashed Stroke never hangs',
+      () {
+        final coreInfo = EditorCoreInfo(filePath: '/preview_safety');
+        final page = EditorPage(size: const Size(1000, 1400));
+        addTearDown(page.dispose);
+        coreInfo.pages = [page];
+
+        final preview = CanvasPreview(height: 600, coreInfo: coreInfo);
+        expect(preview.preferredSize, equals(const Size(1000, 600)));
+
+        final zeroSizeDashed = _createStyledStroke(
+          page,
+          lineStyle: LineStyle.dashed,
+          size: 0.0,
+          points: const [Offset(10, 10), Offset(100, 100)],
+        );
+        expect(zeroSizeDashed.styledPath, isNotNull);
       },
     );
   });

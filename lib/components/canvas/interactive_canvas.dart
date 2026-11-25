@@ -40,6 +40,7 @@ class InteractiveCanvasViewer extends StatefulWidget {
     this.panAxis = PanAxis.free,
     this.boundaryMargin = .zero,
     this.constrained = true,
+    this.expandWidth = false,
     this.maxScale = 2.5,
     this.minScale = 0.8,
     this.palmEngine,
@@ -81,6 +82,7 @@ class InteractiveCanvasViewer extends StatefulWidget {
     this.clipBehavior = Clip.hardEdge,
     this.panAxis = PanAxis.free,
     this.boundaryMargin = .zero,
+    this.expandWidth = false,
     this.maxScale = 2.5,
     this.minScale = 0.8,
     this.palmEngine,
@@ -137,6 +139,9 @@ class InteractiveCanvasViewer extends StatefulWidget {
 
   /// Whether the normal size constraints at this point in the widget tree are applied to the child.
   final bool constrained;
+
+  /// Whether an unconstrained child may expand horizontally beyond the viewer's width.
+  final bool expandWidth;
 
   /// If false, the user will be prevented from panning.
   final bool panEnabled;
@@ -243,9 +248,54 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
   final bool _rotateEnabled = false;
 
   bool isCurrentGestureADrawGesture = false;
+  var _isResettingController = false;
+  DateTime? _lastMultiTouchEndTime;
   Matrix4? _lastBuilderMatrix;
   Size? _lastViewportSize;
   Widget? _cachedBuiltChild;
+
+  bool get _hasInfiniteBoundaryMargin =>
+      widget.boundaryMargin.horizontal.isInfinite &&
+      widget.boundaryMargin.vertical.isInfinite;
+
+  Offset _toScene(Offset viewportPoint) {
+    final det = _transformer.value.determinant();
+    if (!det.isFinite || det.abs() < 1e-12) return viewportPoint;
+    final result = _transformer.toScene(viewportPoint);
+    return result.isFinite ? result : viewportPoint;
+  }
+
+  void _stopInertiaAnimation() {
+    _animation?.removeListener(_handleInertiaAnimation);
+    _animation = null;
+    if (_isResettingController) return;
+    _isResettingController = true;
+    try {
+      if (_controller.isAnimating) _controller.stop();
+      if (_controller.value != 0.0) _controller.reset();
+    } finally {
+      _isResettingController = false;
+    }
+  }
+
+  void _handleInertiaAnimation() {
+    if (!_controller.isAnimating || _animation == null) {
+      _currentAxis = null;
+      _stopInertiaAnimation();
+      return;
+    }
+    final Vector3 translationVector = _transformer.value.getTranslation();
+    final Offset translation = Offset(translationVector.x, translationVector.y);
+    final Matrix4 constrained = _constrain(
+      _matrixTranslate(
+        _transformer.value,
+        _toScene(_animation!.value) - _toScene(translation),
+      ),
+    );
+    if (constrained != _transformer.value) {
+      _transformer.value = constrained;
+    }
+  }
 
   // The _boundaryRect is calculated by adding the boundaryMargin to the size of
   // the child.
@@ -336,6 +386,8 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
 
   @override
   void dispose() {
+    _animation?.removeListener(_handleInertiaAnimation);
+    _animation = null;
     _controller.dispose();
     _transformer.removeListener(_handleTransformation);
     if (widget.transformationController == null) {
@@ -352,6 +404,7 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
         childKey: _childKey,
         clipBehavior: widget.clipBehavior,
         constrained: widget.constrained,
+        expandWidth: widget.expandWidth,
         transformationListenable: _transformer,
         alignment: widget.alignment,
         child: widget.child!,
@@ -378,6 +431,7 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
             childKey: _childKey,
             clipBehavior: widget.clipBehavior,
             constrained: widget.constrained,
+            expandWidth: widget.expandWidth,
             alignment: widget.alignment,
             transformationListenable: _transformer,
             child: _cachedBuiltChild!,
@@ -434,6 +488,7 @@ class _InteractiveCanvasViewerBuilt extends StatelessWidget {
     required this.childKey,
     required this.clipBehavior,
     required this.constrained,
+    this.expandWidth = false,
     required this.transformationListenable,
     required this.alignment,
   });
@@ -442,6 +497,7 @@ class _InteractiveCanvasViewerBuilt extends StatelessWidget {
   final GlobalKey childKey;
   final Clip clipBehavior;
   final bool constrained;
+  final bool expandWidth;
   final ValueListenable<Matrix4> transformationListenable;
   final Alignment? alignment;
 
@@ -460,7 +516,7 @@ class _InteractiveCanvasViewerBuilt extends StatelessWidget {
         alignment: .topLeft,
         minWidth: 0,
         minHeight: 0,
-        // maxWidth: double.infinity,
+        maxWidth: expandWidth ? double.infinity : null,
         maxHeight: double.infinity,
         child: child,
       );

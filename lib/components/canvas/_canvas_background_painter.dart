@@ -97,13 +97,21 @@ class CanvasBackgroundPainter extends CustomPainter {
   }
 
   /// Quantizes [rect] outward to octave-quantized multiples of
-  /// [_infiniteQuantizeStep] so small pan and zoom deltas reuse the cached
-  /// background across both normal and deep zoom-out viewports.
+  /// [_infiniteQuantizeStep] for scales `<= 1.5` and a tighter 256px grid above
+  /// `1.5x` so small pan and zoom deltas reuse the cached background without
+  /// high-zoom overdraw.
   static Rect? quantizedInfiniteRect(Rect? rect, [double scale = 1.0]) {
     if (rect == null || !_isValidViewport(rect)) return null;
-    final bucketScale = quantizedScaleForInfinite(scale);
-    final step = _infiniteQuantizeStep / bucketScale;
-    final inflateAmount = (_infiniteQuantizeStep * 0.75) / bucketScale;
+    final double step;
+    final double inflateAmount;
+    if (scale > 1.5) {
+      step = 256.0;
+      inflateAmount = 192.0;
+    } else {
+      final bucketScale = quantizedScaleForInfinite(scale);
+      step = _infiniteQuantizeStep / bucketScale;
+      inflateAmount = (_infiniteQuantizeStep * 0.75) / bucketScale;
+    }
     final inflated = rect.inflate(inflateAmount);
     final left = (inflated.left / step).floorToDouble() * step;
     final top = (inflated.top / step).floorToDouble() * step;
@@ -116,7 +124,7 @@ class CanvasBackgroundPainter extends CustomPainter {
     if (scale <= 1.5 || rect == null) return null;
     if (rect.isEmpty) return Rect.zero;
     if (!_isValidViewport(rect)) return null;
-    const step = 64.0;
+    const step = 256.0;
     final inflated = rect.inflate(step);
     return Rect.fromLTRB(
       (inflated.left / step).floorToDouble() * step,

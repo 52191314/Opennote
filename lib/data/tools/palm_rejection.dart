@@ -178,6 +178,16 @@ class PalmRejectionEngine {
     }
   }
 
+  /// Removes [pointer] from the rejected set when a second finger arrives
+  /// shortly after, confirming an intentional two-finger pinch gesture.
+  void forgiveRejectedPointer(int pointer) {
+    _rejectedPointers.remove(pointer);
+  }
+
+  /// Returns whether [pointer] is still tracked as an active touch contact.
+  bool isTouchPointerDown(int pointer) =>
+      _initialTouchRadii.containsKey(pointer);
+
   /// Cleans up pointer tracking when a pointer is lifted or cancelled.
   void onPointerUpOrCancel(PointerEvent event) {
     _rejectedPointers.remove(event.pointer);

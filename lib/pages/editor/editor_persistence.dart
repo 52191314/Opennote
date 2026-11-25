@@ -131,7 +131,9 @@ extension EditorPersistence on EditorState {
   }
 
   void _autosaveNow() {
-    if (Pen.currentStroke != null) return _startAutosaveTimer();
+    if (Pen.currentStroke != null || _isCanvasInteracting) {
+      return _startAutosaveTimer();
+    }
     saveToFile();
   }
 
@@ -204,7 +206,7 @@ extension EditorPersistence on EditorState {
       return;
     }
 
-    if (!mounted) return;
+    if (!mounted || _isCanvasInteracting) return;
     final page = coreInfo.pages.first;
     final previewHeight = page.previewHeight(lineHeight: coreInfo.lineHeight);
     final thumbnailSize = Size(720, 720 * previewHeight / page.size.width);
