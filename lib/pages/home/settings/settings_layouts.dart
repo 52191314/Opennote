@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'package:flutter/material.dart';
@@ -67,7 +68,8 @@ class SettingsSearchField extends StatelessWidget {
   }
 }
 
-/// Two-pane wide settings layout with a left category rail and detail view.
+/// Two-pane wide settings layout with a left category rail and responsive
+/// Bento detail grid (2 columns on wide tablets/desktops, 1 column otherwise).
 class SettingsWideLayout extends StatelessWidget {
   const SettingsWideLayout({
     super.key,
@@ -78,6 +80,7 @@ class SettingsWideLayout extends StatelessWidget {
     required this.onSearchCleared,
     required this.onCategorySelected,
     required this.cards,
+    this.headerCard,
   });
 
   final SettingsCategory selectedCategory;
@@ -87,6 +90,7 @@ class SettingsWideLayout extends StatelessWidget {
   final VoidCallback onSearchCleared;
   final ValueChanged<SettingsCategory> onCategorySelected;
   final List<Widget> cards;
+  final Widget? headerCard;
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +100,7 @@ class SettingsWideLayout extends StatelessWidget {
       body: Row(
         children: [
           SizedBox(
-            width: 220,
+            width: 232,
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerLow.withValues(alpha: 0.5),
@@ -178,15 +182,85 @@ class SettingsWideLayout extends StatelessWidget {
                   ),
                   actions: const [_UpdateStatusAction()],
                 ),
+                if (headerCard != null) SliverToBoxAdapter(child: headerCard!),
                 SliverPadding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  sliver: SliverList.list(children: cards),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  sliver: SliverToBoxAdapter(
+                    child: _ResponsiveBentoGrid(cards: cards),
+                  ),
                 ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ResponsiveBentoGrid extends StatelessWidget {
+  const _ResponsiveBentoGrid({required this.cards});
+
+  final List<Widget> cards;
+
+  @override
+  Widget build(BuildContext context) {
+    if (cards.isEmpty) return const SizedBox.shrink();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useTwoColumns = constraints.maxWidth >= 720 && cards.length > 1;
+        if (!useTwoColumns) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (int i = 0; i < cards.length; i++) ...[
+                if (i > 0) const SizedBox(height: 14),
+                cards[i],
+              ],
+            ],
+          );
+        }
+
+        final leftColumn = <Widget>[];
+        final rightColumn = <Widget>[];
+        for (int i = 0; i < cards.length; i++) {
+          if (i.isEven) {
+            leftColumn.add(cards[i]);
+          } else {
+            rightColumn.add(cards[i]);
+          }
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (int i = 0; i < leftColumn.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 16),
+                    leftColumn[i],
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (int i = 0; i < rightColumn.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 16),
+                    rightColumn[i],
+                  ],
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -202,6 +276,7 @@ class SettingsCompactLayout extends StatelessWidget {
     required this.onSearchCleared,
     required this.onCategorySelected,
     required this.cards,
+    this.headerCard,
   });
 
   final SettingsCategory selectedCategory;
@@ -211,6 +286,7 @@ class SettingsCompactLayout extends StatelessWidget {
   final VoidCallback onSearchCleared;
   final ValueChanged<SettingsCategory> onCategorySelected;
   final List<Widget> cards;
+  final Widget? headerCard;
 
   @override
   Widget build(BuildContext context) {
@@ -286,6 +362,7 @@ class SettingsCompactLayout extends StatelessWidget {
               ),
             ),
           ),
+          if (headerCard != null) SliverToBoxAdapter(child: headerCard!),
           SliverSafeArea(top: false, sliver: SliverList.list(children: cards)),
         ],
       ),

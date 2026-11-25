@@ -1,4 +1,5 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'package:flutter/material.dart';
@@ -9,8 +10,8 @@ import 'package:saber/components/nextcloud/nc_login_step.dart';
 import 'package:saber/components/theming/adaptive_circular_progress_indicator.dart';
 import 'package:saber/components/theming/adaptive_linear_progress_indicator.dart';
 import 'package:saber/data/prefs.dart';
-import 'package:saber/i18n/strings.g.dart';
 
+/// Account setup and Cloud Sync (Nextcloud / WebDAV) login flow for Opennote.
 class NcLoginPage extends StatefulWidget {
   const NcLoginPage({
     super.key,
@@ -18,15 +19,14 @@ class NcLoginPage extends StatefulWidget {
     @visibleForTesting this.forceCurrentStep,
   });
 
-  /// Whether to force the AppBar to have a leading back button
+  /// Whether to force the AppBar to have a leading back button.
   final bool forceAppBarLeading;
 
-  /// If provided, forces the current step to this value (for testing)
+  /// If provided, forces the current step to this value (for testing).
   final LoginStep? forceCurrentStep;
 
-  static final Uri signupUrl = Uri.parse(
-    'https://nc.saber.adil.hanney.org/index.php/apps/registration/',
-  );
+  /// External registration URL for creating a Nextcloud account.
+  static final Uri signupUrl = Uri.parse('https://nextcloud.com/sign-up/');
 
   @override
   State<NcLoginPage> createState() => _NcLoginPageState();
@@ -77,7 +77,7 @@ class _NcLoginPageState extends State<NcLoginPage> {
         !stows.ncPassword.loaded ||
         !stows.encPassword.loaded ||
         !stows.key.loaded ||
-        !stows.iv.loaded)
+        !stows.iv.loaded) {
       await Future.wait([
         stows.url.waitUntilRead(),
         stows.username.waitUntilRead(),
@@ -86,6 +86,7 @@ class _NcLoginPageState extends State<NcLoginPage> {
         stows.key.waitUntilRead(),
         stows.iv.waitUntilRead(),
       ]);
+    }
 
     recheckCurrentStep();
   }
@@ -99,19 +100,28 @@ class _NcLoginPageState extends State<NcLoginPage> {
     final prevStep = step;
     step = NcLoginPage.getCurrentStep();
 
-    if (prevStep != step) if (mounted) setState(() {});
+    if (prevStep != step && mounted) setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = ColorScheme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: kToolbarHeight,
-        title: Text(switch (step) {
-          .waitingForPrefs => '',
-          .done => t.profile.title,
-          _ => t.login.title,
-        }),
+        title: Text(
+          switch (step) {
+            .waitingForPrefs => '',
+            .done => 'Cloud Sync Account',
+            _ => 'Cloud Sync (Nextcloud / WebDAV)',
+          },
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.3,
+            color: colorScheme.onSurface,
+          ),
+        ),
         leading: widget.forceAppBarLeading
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -139,20 +149,20 @@ class _NcLoginPageState extends State<NcLoginPage> {
 }
 
 enum LoginStep {
-  /// We're waiting for the Prefs to be loaded
+  /// We're waiting for the Prefs to be loaded.
   waitingForPrefs(0),
 
-  /// The user needs to authenticate with the Nextcloud server
+  /// The user needs to authenticate with the Nextcloud / WebDAV server.
   nc(0.2),
 
-  /// The user needs to provide their encryption password
+  /// The user needs to provide their encryption password.
   enc(0.6),
 
-  /// The user is fully logged in
+  /// The user is fully logged in.
   done(1);
 
   const LoginStep(this.progress) : assert(progress >= 0 && progress <= 1);
 
-  /// The value used for the LinearProgressIndicator on this step
+  /// The value used for the LinearProgressIndicator on this step.
   final double progress;
 }

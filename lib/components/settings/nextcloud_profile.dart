@@ -1,3 +1,6 @@
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
+library;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -16,6 +19,7 @@ import 'package:saber/pages/user/login.dart';
 
 typedef Quota = UserDetailsQuota;
 
+/// Account and storage sync status tile for Cloud Sync (Nextcloud / WebDAV).
 class NextcloudProfile extends HookWidget {
   const NextcloudProfile({super.key});
 
@@ -37,14 +41,14 @@ class NextcloudProfile extends HookWidget {
     final loginStep = forceLoginStep ?? NcLoginPage.getCurrentStep();
     final heading = switch (loginStep) {
       .waitingForPrefs => '',
-      .nc => t.login.status.loggedOut,
+      .nc => 'Cloud Sync (Nextcloud / WebDAV)',
       .enc || .done => t.login.status.hi(u: stows.username.value),
     };
     final subheading = switch (loginStep) {
       .waitingForPrefs => '',
-      .nc => t.login.status.tapToLogin,
+      .nc => 'Connect Nextcloud or WebDAV to sync notebooks across devices',
       .enc => t.login.status.almostDone,
-      .done => t.login.status.loggedIn,
+      .done => 'Cloud Sync connected · Nextcloud / WebDAV',
     };
     const pfpSize = 48.0;
 
@@ -54,7 +58,7 @@ class NextcloudProfile extends HookWidget {
       leading: ClipRSuperellipse(
         borderRadius: const .all(.circular(18)),
         child: pfp == null
-            ? const _UnknownPfp(size: pfpSize)
+            ? _UnknownPfp(size: pfpSize, isLoggedOut: loginStep == .nc)
             : Image.memory(pfp, width: pfpSize, height: pfpSize),
       ),
       title: Text(heading),
@@ -84,7 +88,7 @@ class NextcloudProfile extends HookWidget {
                 ),
               ],
             )
-          : null,
+          : const Icon(Icons.chevron_right_rounded),
     );
   }
 
@@ -100,9 +104,10 @@ class NextcloudProfile extends HookWidget {
 }
 
 class _UnknownPfp extends StatelessWidget {
-  const _UnknownPfp({required this.size});
+  const _UnknownPfp({required this.size, required this.isLoggedOut});
 
   final double size;
+  final bool isLoggedOut;
 
   @override
   Widget build(BuildContext context) {
@@ -113,9 +118,9 @@ class _UnknownPfp extends StatelessWidget {
       child: ColoredBox(
         color: colorScheme.primaryContainer,
         child: Icon(
-          Icons.person,
+          isLoggedOut ? Icons.cloud_sync_rounded : Icons.person,
           color: colorScheme.onPrimaryContainer,
-          size: size * 0.7,
+          size: size * 0.58,
         ),
       ),
     );
