@@ -1,5 +1,6 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
 /// 🤖 Generated wholely or partially with Grok 4.7
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'package:flutter/material.dart';
@@ -204,16 +205,13 @@ class NotebookShelf extends StatelessWidget {
                                 }
                               },
                               itemBuilder: (context) => [
-                                PopupMenuItem(
+                                const PopupMenuItem(
                                   value: 'open',
                                   child: Row(
                                     children: [
-                                      const Icon(
-                                        Icons.folder_open_rounded,
-                                        size: 18,
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Text(t.home.tabs.browse),
+                                      Icon(Icons.folder_open_rounded, size: 18),
+                                      SizedBox(width: 10),
+                                      Text('Open Folder'),
                                     ],
                                   ),
                                 ),
@@ -488,13 +486,13 @@ class _NotebookCover extends StatelessWidget {
                     }
                   },
                   itemBuilder: (context) => [
-                    PopupMenuItem(
+                    const PopupMenuItem(
                       value: 'open',
                       child: Row(
                         children: [
-                          const Icon(Icons.launch_rounded, size: 18),
-                          const SizedBox(width: 10),
-                          Text(t.home.tabs.home),
+                          Icon(Icons.launch_rounded, size: 18),
+                          SizedBox(width: 10),
+                          Text('Open Notebook'),
                         ],
                       ),
                     ),

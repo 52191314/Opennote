@@ -1,13 +1,15 @@
-/// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:saber/components/design_system/opennote_tokens.dart';
 import 'package:saber/components/navbar/responsive_navbar.dart';
 import 'package:saber/components/theming/saber_theme.dart';
 
+/// Floating frosted bottom navigation bar used on compact/mobile viewports.
 class HorizontalNavbar extends StatelessWidget {
   const HorizontalNavbar({
     super.key,
@@ -26,11 +28,11 @@ class HorizontalNavbar extends StatelessWidget {
     if (ResponsiveNavbar.isLargeScreen) return 0;
     final platform = Theme.of(context).platform;
     MediaQuery.sizeOf(context); // ensure context is listening to size changes
-    return _heightForPlatform(platform) + 16 + 16 - 8; // -8 for toolbar padding
+    return _heightForPlatform(platform) + 16 + 16 - 8;
   }
 
   static double _heightForPlatform(TargetPlatform platform) {
-    return platform.isCupertino ? 56.0 : 64.0;
+    return platform.isCupertino ? 58.0 : 62.0;
   }
 
   @override
@@ -39,19 +41,19 @@ class HorizontalNavbar extends StatelessWidget {
 
     return SafeArea(
       child: Padding(
-        padding: const .all(16),
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
         child: Align(
           alignment: Alignment.bottomCenter,
           child: GlassyContainer(
             child: Padding(
-              padding: platform.isCupertino ? const .all(4) : const .all(8),
+              padding: const EdgeInsets.all(5),
               child: Semantics(
                 role: SemanticsRole.tabBar,
                 explicitChildNodes: true,
                 container: true,
                 child: Row(
-                  mainAxisSize: .min,
-                  spacing: platform.isCupertino ? 0 : 4,
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: platform.isCupertino ? 2 : 4,
                   children: [
                     for (int i = 0; i < destinations.length; i++)
                       MergeSemantics(
@@ -61,9 +63,7 @@ class HorizontalNavbar extends StatelessWidget {
                           child: _ToolbarButton(
                             destination: destinations[i],
                             selected: i == selectedIndex,
-                            select: () {
-                              onDestinationSelected?.call(i);
-                            },
+                            select: () => onDestinationSelected?.call(i),
                           ),
                         ),
                       ),
@@ -78,6 +78,8 @@ class HorizontalNavbar extends StatelessWidget {
   }
 }
 
+/// Floating frosted capsule container used by [HorizontalNavbar] and the
+/// floating new-note action button.
 class GlassyContainer extends StatelessWidget {
   const GlassyContainer({
     super.key,
@@ -85,22 +87,22 @@ class GlassyContainer extends StatelessWidget {
     this.height,
     this.borderRadius,
   });
+
   final Widget child;
   final double? height;
   final BorderRadius? borderRadius;
+
   @override
   Widget build(BuildContext context) {
     final platform = Theme.of(context).platform;
     final colorScheme = ColorScheme.of(context);
+    final isDark = colorScheme.brightness == Brightness.dark;
     final height = this.height ?? HorizontalNavbar._heightForPlatform(platform);
-    final borderRadius = this.borderRadius ?? .circular(height / 2);
+    final borderRadius = this.borderRadius ?? BorderRadius.circular(height / 2);
 
-    final Color background;
-    if (platform.isCupertino) {
-      background = colorScheme.surfaceContainer.withValues(alpha: 0.7);
-    } else {
-      background = colorScheme.primaryContainer;
-    }
+    final background =
+        (isDark ? colorScheme.surfaceContainerHigh : colorScheme.surface)
+            .withValues(alpha: platform.isCupertino ? 0.78 : 0.90);
 
     return SizedBox(
       height: height,
@@ -108,36 +110,31 @@ class GlassyContainer extends StatelessWidget {
         decoration: BoxDecoration(
           color: background,
           borderRadius: borderRadius,
-          boxShadow: [
-            BoxShadow(
-              color: colorScheme.shadow.withValues(alpha: 0.5),
-              spreadRadius: -1,
-              blurRadius: platform.isCupertino ? 2 : 4,
-              offset: const Offset(0, 1),
-              blurStyle: platform.isCupertino
-                  ? BlurStyle.outer
-                  : BlurStyle.normal,
-            ),
-          ],
+          boxShadow: OpennoteTokens.floatingShadow(colorScheme.brightness),
         ),
         child: ClipRRect(
-          clipBehavior: platform.isCupertino ? Clip.antiAlias : Clip.none,
+          clipBehavior: Clip.antiAlias,
           borderRadius: borderRadius,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              border: (platform.isCupertino && colorScheme.brightness == .dark)
-                  ? _GlintBorder(width: 1)
-                  : null,
-              borderRadius: borderRadius,
+          child: BackdropFilter(
+            filter: ImageFilter.blur(
+              sigmaX: platform.isCupertino ? 14 : 10,
+              sigmaY: platform.isCupertino ? 14 : 10,
             ),
-            child: BackdropFilter(
-              enabled: platform.isCupertino,
-              filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                border: (platform.isCupertino && isDark)
+                    ? _GlintBorder(width: 1)
+                    : Border.all(
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: isDark ? 0.35 : 0.45,
+                        ),
+                        width: 1,
+                      ),
+                borderRadius: borderRadius,
+              ),
               child: Material(
                 type: MaterialType.transparency,
                 color: Colors.transparent,
-                elevation: 3,
-                shadowColor: Colors.white,
                 borderRadius: borderRadius,
                 child: child,
               ),
@@ -164,60 +161,56 @@ class _ToolbarButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.of(context);
     final platform = Theme.of(context).platform;
-    const borderRadius = BorderRadius.all(.circular(32));
-    final selectedBgColor = platform.isCupertino
-        ? colorScheme.onPrimaryContainer.withValues(alpha: 0.15)
-        : (platform == .linux && colorScheme.brightness == .light
-              ? colorScheme.shadow.withValues(alpha: 0.15)
-              : colorScheme.surface);
-    final bgColor = selected ? selectedBgColor : Colors.transparent;
+    final isDark = colorScheme.brightness == Brightness.dark;
+    const borderRadius = BorderRadius.all(Radius.circular(28));
+
+    final selectedBgColor = colorScheme.primary.withValues(
+      alpha: isDark ? 0.24 : 0.13,
+    );
     final fgColor = selected
-        ? (platform.isCupertino
-              ? Color.lerp(
-                  CupertinoColors.systemBlue,
-                  colorScheme.onSurface,
-                  0.4,
-                )
-              : colorScheme.onSurface)
-        : colorScheme.onPrimaryContainer;
+        ? colorScheme.primary
+        : colorScheme.onSurfaceVariant;
+
     return AspectRatio(
-      aspectRatio: platform.isCupertino ? 1.5 : 1.4,
-      child: DecoratedBox(
-        decoration: BoxDecoration(color: bgColor, borderRadius: borderRadius),
+      aspectRatio: platform.isCupertino ? 1.48 : 1.42,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        decoration: BoxDecoration(
+          color: selected ? selectedBgColor : Colors.transparent,
+          borderRadius: borderRadius,
+        ),
         child: InkWell(
           borderRadius: borderRadius,
           onTap: select,
-          hoverColor: selectedBgColor.withValues(
-            alpha: selectedBgColor.a * 0.5,
-          ),
-          focusColor: selectedBgColor.withValues(
-            alpha: selectedBgColor.a * 0.7,
-          ),
+          hoverColor: colorScheme.primary.withValues(alpha: 0.08),
+          focusColor: colorScheme.primary.withValues(alpha: 0.12),
           splashColor: platform.isCupertino
-              ? CupertinoColors.systemBlue.withValues(alpha: 0.5)
-              : colorScheme.primary.withValues(alpha: 0.5),
+              ? CupertinoColors.systemBlue.withValues(alpha: 0.25)
+              : colorScheme.primary.withValues(alpha: 0.2),
           child: Column(
-            mainAxisAlignment: .center,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Flexible(
                 flex: 7,
                 child: IconTheme.merge(
-                  data: IconThemeData(color: fgColor),
+                  data: IconThemeData(color: fgColor, size: 21),
                   child: destination.icon,
                 ),
               ),
+              const SizedBox(height: 1),
               Flexible(
                 flex: 3,
                 child: Text(
                   destination.label,
                   style: TextStyle(
                     fontSize: 10,
-                    fontWeight: .w500,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     height: 1,
-                    overflow: .clip,
+                    overflow: TextOverflow.clip,
                     color: fgColor,
                   ),
-                  textAlign: .center,
+                  textAlign: TextAlign.center,
                   maxLines: 1,
                 ),
               ),
@@ -249,8 +242,6 @@ class _GlintBorder extends Border {
     end: Alignment(0.5, 1.5),
   );
 
-  /// Copied from [BoxBorder._paintUniformBorderWithRadius] but with a
-  /// gradient shader instead of a solid color.
   @override
   void paint(
     Canvas canvas,

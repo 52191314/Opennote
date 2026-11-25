@@ -1,24 +1,21 @@
-/// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'dart:async';
 
-import 'package:collapsible/collapsible.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as p;
-import 'package:saber/components/design_system/opennote_tokens.dart';
-import 'package:saber/components/home/delete_note_button.dart';
-import 'package:saber/components/home/export_note_button.dart';
+import 'package:saber/components/home/floating_selection_dock.dart';
 import 'package:saber/components/home/grid_folders.dart';
 import 'package:saber/components/home/masonry_files.dart';
-import 'package:saber/components/home/move_note_button.dart';
 import 'package:saber/components/home/new_note_button.dart';
 import 'package:saber/components/home/no_files.dart';
 import 'package:saber/components/home/notebook_shelf.dart';
 import 'package:saber/components/home/path_components.dart';
-import 'package:saber/components/home/rename_note_button.dart';
+import 'package:saber/components/home/quick_template_strip.dart';
 import 'package:saber/components/home/search_dialog.dart';
+import 'package:saber/components/home/studio_filter_bar.dart';
 import 'package:saber/components/home/syncing_button.dart';
 import 'package:saber/components/home/trash_drop_zone.dart';
 import 'package:saber/components/theming/saber_theme.dart';
@@ -27,10 +24,30 @@ import 'package:saber/data/prefs.dart';
 import 'package:saber/data/routes.dart';
 import 'package:saber/i18n/strings.g.dart';
 
+/// Library / Browse studio surface for navigating folders and notebooks.
 class BrowsePage extends StatefulWidget {
-  const BrowsePage({super.key, String? path}) : initialPath = path;
+  const BrowsePage({
+    super.key,
+    String? path,
+    this.topBanner,
+    this.proBannerBuilder,
+    this.onCreateTemplate,
+    this.onProTemplateTap,
+  }) : initialPath = path;
 
   final String? initialPath;
+
+  /// Optional widget displayed at the top of the Browse scroll view.
+  final Widget? topBanner;
+
+  /// Optional builder for a contextual Pro upgrade banner.
+  final WidgetBuilder? proBannerBuilder;
+
+  /// Optional callback invoked when a free quick-start template is tapped.
+  final ValueChanged<QuickTemplateKind>? onCreateTemplate;
+
+  /// Optional callback invoked when a Pro-badged template is tapped.
+  final ValueChanged<QuickTemplateKind>? onProTemplateTap;
 
   @visibleForTesting
   static DirectoryChildren? overrideChildren;
@@ -41,8 +58,9 @@ class BrowsePage extends StatefulWidget {
 
 class _BrowsePageState extends State<BrowsePage> {
   DirectoryChildren? children;
-
   String? path;
+  LibraryFilter _activeFilter = LibraryFilter.folders;
+  LibrarySortOrder _sortOrder = LibrarySortOrder.name;
 
   final ValueNotifier<List<String>> selectedFiles = ValueNotifier([]);
 
@@ -83,7 +101,6 @@ class _BrowsePageState extends State<BrowsePage> {
     if (!mounted) return;
 
     if (fromFileListener) {
-      // don't refresh if we're not on the home page
       final location = GoRouterState.of(context).uri.toString();
       if (!location.startsWith(RoutePaths.prefixOfHome)) return;
     }
@@ -123,12 +140,39 @@ class _BrowsePageState extends State<BrowsePage> {
     findChildrenOfPath();
   }
 
+  void _onFilterChanged(LibraryFilter filter) {
+    if (filter == LibraryFilter.recent) {
+      final router = GoRouter.maybeOf(context);
+      if (router != null) {
+        router.go(HomeRoutes.getRoute(0));
+        return;
+      }
+    }
+    setState(() => _activeFilter = filter);
+  }
+
+  List<String> _sortedFiles(Iterable<String> rawFiles) {
+    final list = rawFiles.toList();
+    if (_sortOrder == LibrarySortOrder.name) {
+      list.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    }
+    return list;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.of(context);
     final platform = Theme.of(context).platform;
     final crossAxisCount = MediaQuery.sizeOf(context).width ~/ 300 + 1;
     final isStudioMode = stows.opennoteUiMode.value;
+    final resolvedBanner =
+        widget.topBanner ?? widget.proBannerBuilder?.call(context);
+
+    final folderNames = _sortedFiles(children?.directories ?? const []);
+    final fileNames = _sortedFiles(children?.files ?? const []);
+    final fullFilePaths = [
+      for (final filePath in fileNames) "${path ?? ""}/$filePath",
+    ];
 
     return Scaffold(
       body: Stack(
@@ -143,7 +187,7 @@ class _BrowsePageState extends State<BrowsePage> {
                 slivers: [
                   SliverAppBar(
                     collapsedHeight: 56,
-                    expandedHeight: 88,
+                    expandedHeight: 84,
                     pinned: true,
                     scrolledUnderElevation: 0.5,
                     surfaceTintColor: Colors.transparent,
@@ -170,37 +214,40 @@ class _BrowsePageState extends State<BrowsePage> {
                         bottom: 12,
                       ),
                     ),
-                    actions: [
-                      IconButton(
-                        icon: const Icon(Icons.search),
-                        tooltip: t.home.search.hint,
-                        onPressed: () => SearchDialog.show(context),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          isStudioMode
-                              ? Icons.auto_stories_rounded
-                              : Icons.grid_view_rounded,
-                        ),
-                        tooltip: isStudioMode
-                            ? 'Notebook Shelf View'
-                            : 'Grid View',
-                        onPressed: () {
-                          stows.opennoteUiMode.value =
-                              !stows.opennoteUiMode.value;
-                        },
-                      ),
-                      const SyncingButton(),
-                      const SizedBox(width: 4),
-                    ],
+                    actions: const [SyncingButton(), SizedBox(width: 6)],
                   ),
-                  // Workspace Omnibar & Bento Hero Action Strip
+                  if (resolvedBanner != null)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 2),
+                        child: resolvedBanner,
+                      ),
+                    ),
                   SliverToBoxAdapter(
-                    child: _WorkspaceHeroStrip(
+                    child: StudioFilterBar(
+                      activeFilter: _activeFilter,
+                      onFilterChanged: _onFilterChanged,
+                      sortOrder: _sortOrder,
+                      onSortChanged: (order) =>
+                          setState(() => _sortOrder = order),
                       isStudioMode: isStudioMode,
-                      createPath: path,
+                      onToggleViewMode: () {
+                        stows.opennoteUiMode.value =
+                            !stows.opennoteUiMode.value;
+                      },
+                      onSearchTap: () => SearchDialog.show(context),
                     ),
                   ),
+                  SliverToBoxAdapter(
+                    child: QuickTemplateStrip(
+                      createPath: path,
+                      compact: true,
+                      showHeader: false,
+                      onCreateTemplate: widget.onCreateTemplate,
+                      onProTemplateTap: widget.onProTemplateTap,
+                    ),
+                  ),
+                  const SliverPadding(padding: EdgeInsets.only(top: 6)),
                   SliverToBoxAdapter(
                     child: PathComponents(
                       path,
@@ -208,7 +255,7 @@ class _BrowsePageState extends State<BrowsePage> {
                       onItemMoved: (item, target) => findChildrenOfPath(),
                     ),
                   ),
-                  const SliverPadding(padding: .only(bottom: 8)),
+                  const SliverPadding(padding: EdgeInsets.only(bottom: 8)),
                   GridFolders(
                     isAtRoot: path?.isEmpty ?? true,
                     currentPath: path,
@@ -227,21 +274,16 @@ class _BrowsePageState extends State<BrowsePage> {
                     },
                     isFolderEmpty: (String folderName) async {
                       final folderPath = '${path ?? ''}/$folderName';
-                      final children = await FileManager.getChildrenOfDirectory(
-                        folderPath,
-                      );
-                      return children?.isEmpty ?? true;
+                      final dirChildren =
+                          await FileManager.getChildrenOfDirectory(folderPath);
+                      return dirChildren?.isEmpty ?? true;
                     },
                     deleteFolder: (String folderName) async {
                       final folderPath = '${path ?? ''}/$folderName';
                       await FileManager.deleteDirectory(folderPath);
                       findChildrenOfPath();
                     },
-                    folders: [
-                      for (final directoryPath
-                          in children?.directories ?? const [])
-                        directoryPath,
-                    ],
+                    folders: folderNames,
                   ),
                   if (children == null) ...[
                     // loading
@@ -250,8 +292,7 @@ class _BrowsePageState extends State<BrowsePage> {
                       child: NotebookShelf(
                         directory: path,
                         notes: {
-                          for (final filePath in children?.files ?? const [])
-                            "${path ?? ""}/$filePath",
+                          ...fullFilePaths,
                           ..._pendingNotes.where(
                             (note) => path == null
                                 ? !note.substring(1).contains('/')
@@ -279,13 +320,10 @@ class _BrowsePageState extends State<BrowsePage> {
                   ] else ...[
                     SliverSafeArea(
                       top: false,
-                      minimum: const .only(top: 8, bottom: 70),
+                      minimum: const EdgeInsets.only(top: 8, bottom: 70),
                       sliver: MasonryFiles(
                         crossAxisCount: crossAxisCount,
-                        files: [
-                          for (final filePath in children?.files ?? const [])
-                            "${path ?? ""}/$filePath",
-                        ],
+                        files: fullFilePaths,
                         selectedFiles: selectedFiles,
                       ),
                     ),
@@ -312,277 +350,10 @@ class _BrowsePageState extends State<BrowsePage> {
       ),
       bottomNavigationBar: selectedFiles.value.isEmpty
           ? null
-          : _FloatingSelectionDock(
+          : FloatingSelectionDock(
               selectedFiles: selectedFiles.value,
               unselectNotes: () => selectedFiles.value = [],
             ),
-    );
-  }
-}
-
-class _WorkspaceHeroStrip extends StatelessWidget {
-  const _WorkspaceHeroStrip({required this.isStudioMode, this.createPath});
-
-  final bool isStudioMode;
-  final String? createPath;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = ColorScheme.of(context);
-    final width = MediaQuery.sizeOf(context).width;
-    final isCompact = width < 680;
-
-    final cards = [
-      _HeroCardData(
-        icon: Icons.edit_document,
-        title: 'Quick Note',
-        subtitle: 'Blank Canvas',
-        color: colorScheme.primary,
-        onTap: () {
-          if (createPath != null && createPath!.isNotEmpty) {
-            context.push(RoutePaths.editFilePath('$createPath/Untitled'));
-          } else {
-            context.push(RoutePaths.edit);
-          }
-        },
-      ),
-      _HeroCardData(
-        icon: Icons.all_inclusive_rounded,
-        title: 'Infinite Board',
-        subtitle: 'Freeform Canvas',
-        color: const Color(0xFF6750A4),
-        onTap: () => context.go(HomeRoutes.getRoute(2)),
-      ),
-      _HeroCardData(
-        icon: isStudioMode
-            ? Icons.auto_stories_rounded
-            : Icons.grid_view_rounded,
-        title: isStudioMode ? 'Shelf View' : 'Grid View',
-        subtitle: isStudioMode ? 'Notebook Covers' : 'Card Grid',
-        color: const Color(0xFF1B6B76),
-        onTap: () {
-          stows.opennoteUiMode.value = !stows.opennoteUiMode.value;
-        },
-      ),
-      _HeroCardData(
-        icon: Icons.manage_search_rounded,
-        title: 'Search Notes',
-        subtitle: 'Quick Find',
-        color: const Color(0xFF8D5B2C),
-        onTap: () => SearchDialog.show(context),
-      ),
-    ];
-
-    if (isCompact) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-        child: SizedBox(
-          height: 82,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: cards.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 10),
-            itemBuilder: (context, index) {
-              final card = cards[index];
-              return SizedBox(width: 160, child: _HeroActionCard(data: card));
-            },
-          ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Row(
-        children: [
-          for (int i = 0; i < cards.length; i++) ...[
-            if (i > 0) const SizedBox(width: 12),
-            Expanded(child: _HeroActionCard(data: cards[i])),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _HeroCardData {
-  const _HeroCardData({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.color,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color color;
-  final VoidCallback onTap;
-}
-
-class _HeroActionCard extends StatelessWidget {
-  const _HeroActionCard({required this.data});
-
-  final _HeroCardData data;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = ColorScheme.of(context);
-    final isDark = colorScheme.brightness == Brightness.dark;
-
-    return Material(
-      color: isDark
-          ? OpennoteTokens.cardDarkSurface
-          : OpennoteTokens.cardLightSurface,
-      borderRadius: BorderRadius.circular(OpennoteTokens.radiusMd),
-      child: InkWell(
-        onTap: data.onTap,
-        borderRadius: BorderRadius.circular(OpennoteTokens.radiusMd),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(OpennoteTokens.radiusMd),
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.38),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: data.color.withValues(alpha: isDark ? 0.22 : 0.12),
-                  borderRadius: BorderRadius.circular(OpennoteTokens.radiusSm),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Icon(data.icon, size: 20, color: data.color),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      data.title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        letterSpacing: -0.2,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 1),
-                    Text(
-                      data.subtitle,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FloatingSelectionDock extends StatelessWidget {
-  const _FloatingSelectionDock({
-    required this.selectedFiles,
-    required this.unselectNotes,
-  });
-
-  final List<String> selectedFiles;
-  final VoidCallback unselectNotes;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = ColorScheme.of(context);
-    final isDark = colorScheme.brightness == Brightness.dark;
-
-    return SafeArea(
-      minimum: const EdgeInsets.only(bottom: 16),
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          decoration: BoxDecoration(
-            color:
-                (isDark
-                        ? colorScheme.surfaceContainerHigh
-                        : colorScheme.surface)
-                    .withValues(alpha: 0.94),
-            borderRadius: BorderRadius.circular(OpennoteTokens.radiusPill),
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
-                blurRadius: 18,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '${selectedFiles.length} selected',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(width: 6),
-              IconButton(
-                icon: const Icon(Icons.close_rounded, size: 18),
-                tooltip: 'Clear selection',
-                onPressed: unselectNotes,
-              ),
-              const SizedBox(width: 4),
-              Collapsible(
-                axis: CollapsibleAxis.horizontal,
-                collapsed: selectedFiles.length != 1,
-                child: RenameNoteButton(
-                  existingPath: selectedFiles.isEmpty
-                      ? ''
-                      : selectedFiles.first,
-                  unselectNotes: unselectNotes,
-                ),
-              ),
-              MoveNoteButton(
-                filesToMove: selectedFiles,
-                unselectNotes: unselectNotes,
-              ),
-              DeleteNoteButton(
-                filesToDelete: selectedFiles,
-                unselectNotes: unselectNotes,
-              ),
-              ExportNoteButton(selectedFiles: selectedFiles),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
