@@ -214,6 +214,9 @@ class _InnerCanvasState extends State<InnerCanvas> {
           )
         : null;
 
+    final useRepaintBoundary =
+        !widget.coreInfo.isInfiniteCanvas && widget.currentScale <= 2.0;
+
     final backgroundLayer = CustomPaint(
       painter: CanvasBackgroundPainter(
         invert: invert,
@@ -225,6 +228,7 @@ class _InnerCanvasState extends State<InnerCanvas> {
         secondaryColor: colorScheme.secondary,
         isInfiniteCanvas: widget.coreInfo.isInfiniteCanvas,
         viewportRect: widget.viewportRect,
+        currentScale: widget.currentScale,
       ),
       isComplex: true,
       child: SizedBox(
@@ -355,12 +359,12 @@ class _InnerCanvasState extends State<InnerCanvas> {
       ),
       isComplex: true,
       willChange: true,
-      child: widget.coreInfo.isInfiniteCanvas
-          ? backgroundLayer
-          : RepaintBoundary(child: backgroundLayer),
+      child: useRepaintBoundary
+          ? RepaintBoundary(child: backgroundLayer)
+          : backgroundLayer,
     );
 
-    if (widget.coreInfo.isInfiniteCanvas) {
+    if (!useRepaintBoundary) {
       return customPaint;
     }
     return RepaintBoundary(child: customPaint);

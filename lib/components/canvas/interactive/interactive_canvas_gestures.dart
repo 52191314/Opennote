@@ -112,14 +112,16 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
   // Return a new matrix representing the given matrix after applying the given
   // scale.
   Matrix4 _matrixScale(Matrix4 matrix, double scale) {
-    if (scale == 1.0) {
+    if (!scale.isFinite || scale <= 0.0 || scale == 1.0) {
       return matrix.clone();
     }
-    assert(scale != 0.0);
 
     // Don't allow a scale that results in an overall scale beyond min/max
     // scale.
-    final double currentScale = _transformer.value.getMaxScaleOnAxis();
+    final double currentScale = matrix.getMaxScaleOnAxis();
+    if (!currentScale.isFinite || currentScale <= 0.0) {
+      return matrix.clone();
+    }
     final double minBoundScale = _boundaryRect.isInfinite
         ? 0.0
         : math.max(
@@ -133,6 +135,9 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
       widget.maxScale,
     );
     final double clampedScale = clampedTotalScale / currentScale;
+    if (!clampedScale.isFinite || clampedScale <= 0.0) {
+      return matrix.clone();
+    }
     return matrix.clone()
       ..scaleByDouble(clampedScale, clampedScale, clampedScale, 1);
   }
@@ -184,12 +189,6 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
       _animation?.removeListener(_handleInertiaAnimation);
       _animation = null;
     }
-    if (_scaleController.isAnimating) {
-      _scaleController.stop();
-      _scaleController.reset();
-      _scaleAnimation?.removeListener(_handleScaleAnimation);
-      _scaleAnimation = null;
-    }
 
     _gestureType = null;
     _currentAxis = null;
@@ -207,7 +206,6 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
   // handled with GestureDetector's scale gesture.
   void _onScaleUpdate(ScaleUpdateDetails details) {
     final double scale = _transformer.value.getMaxScaleOnAxis();
-    _scaleAnimationFocalPoint = details.localFocalPoint;
     final Offset focalPointScene = _transformer.toScene(
       details.localFocalPoint,
     );
@@ -240,22 +238,33 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
     switch (_gestureType!) {
       case _GestureType.scale:
         assert(_scaleStart != null);
+        if (!details.scale.isFinite ||
+            details.scale <= 0.0 ||
+            !scale.isFinite ||
+            scale <= 0.0) {
+          return;
+        }
         // details.scale gives us the amount to change the scale as of the
         // start of this gesture, so calculate the amount to scale as of the
         // previous call to _onScaleUpdate.
         final double desiredScale = _scaleStart! * details.scale;
         final double scaleChange = desiredScale / scale;
-        _transformer.value = _matrixScale(_transformer.value, scaleChange);
+        final Matrix4 scaledMatrix = _matrixScale(
+          _transformer.value,
+          scaleChange,
+        );
 
         // While scaling, translate such that the user's two fingers stay on
         // the same places in the scene. That means that the focal point of
         // the scale should be on the same place in the scene before and after
         // the scale.
-        final Offset focalPointSceneScaled = _transformer.toScene(
-          details.localFocalPoint,
+        final Matrix4 scaledInverse = scaledMatrix.clone()..invert();
+        final Vector3 focalVec = scaledInverse.transform3(
+          Vector3(details.localFocalPoint.dx, details.localFocalPoint.dy, 0),
         );
+        final Offset focalPointSceneScaled = Offset(focalVec.x, focalVec.y);
         _transformer.value = _matrixTranslate(
-          _transformer.value,
+          scaledMatrix,
           focalPointSceneScaled - _referenceFocalPoint!,
         );
 
@@ -329,9 +338,7 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
     _referenceFocalPoint = null;
 
     _animation?.removeListener(_handleInertiaAnimation);
-    _scaleAnimation?.removeListener(_handleScaleAnimation);
     _controller.reset();
-    _scaleController.reset();
 
     if (!_gestureIsSupported(_gestureType, details.pointerCount)) {
       _currentAxis = null;
@@ -370,33 +377,8 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
         _controller.duration = Duration(milliseconds: (tFinal * 1000).round());
         _animation!.addListener(_handleInertiaAnimation);
         _controller.forward();
-      case _GestureType.scale:
-        if (details.scaleVelocity.abs() < 0.1) {
-          _currentAxis = null;
-          return;
-        }
-        final double scale = _transformer.value.getMaxScaleOnAxis();
-        final FrictionSimulation frictionSimulation = FrictionSimulation(
-          widget.interactionEndFrictionCoefficient * widget.scaleFactor,
-          scale,
-          details.scaleVelocity / 10,
-        );
-        final double tFinal = canvasGetFinalTime(
-          details.scaleVelocity.abs(),
-          widget.interactionEndFrictionCoefficient,
-          effectivelyMotionless: 0.1,
-        );
-        _scaleAnimation = Tween<double>(
-          begin: scale,
-          end: frictionSimulation.x(tFinal),
-        ).chain(CurveTween(curve: Curves.decelerate)).animate(_scaleController);
-        _scaleController.duration = Duration(
-          milliseconds: (tFinal * 1000).round(),
-        );
-        _scaleAnimation!.addListener(_handleScaleAnimation);
-        _scaleController.forward();
-      case _GestureType.rotate || null:
-        break;
+      case _GestureType.scale || _GestureType.rotate || null:
+        _currentAxis = null;
     }
   }
 
@@ -444,14 +426,17 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
     if (!_gestureIsSupported(_GestureType.scale)) return;
 
     final Offset focalPointScene = _transformer.toScene(local);
-
-    _transformer.value = _matrixScale(_transformer.value, scaleChange);
+    final Matrix4 scaledMatrix = _matrixScale(_transformer.value, scaleChange);
 
     // After scaling, translate such that the event's position is at the
     // same scene point before and after the scale.
-    final Offset focalPointSceneScaled = _transformer.toScene(local);
+    final Matrix4 scaledInverse = scaledMatrix.clone()..invert();
+    final Vector3 focalVec = scaledInverse.transform3(
+      Vector3(local.dx, local.dy, 0),
+    );
+    final Offset focalPointSceneScaled = Offset(focalVec.x, focalVec.y);
     _transformer.value = _matrixTranslate(
-      _transformer.value,
+      scaledMatrix,
       focalPointSceneScaled - focalPointScene,
     );
   }
@@ -472,36 +457,6 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
       _transformer.value,
       _transformer.toScene(_animation!.value) -
           _transformer.toScene(translation),
-    );
-  }
-
-  // Handle inertia scale animation.
-  void _handleScaleAnimation() {
-    if (!_scaleController.isAnimating) {
-      _currentAxis = null;
-      _scaleAnimation?.removeListener(_handleScaleAnimation);
-      _scaleAnimation = null;
-      _scaleController.reset();
-      return;
-    }
-    final double desiredScale = _scaleAnimation!.value;
-    final double scaleChange =
-        desiredScale / _transformer.value.getMaxScaleOnAxis();
-    final Offset referenceFocalPoint = _transformer.toScene(
-      _scaleAnimationFocalPoint,
-    );
-    _transformer.value = _matrixScale(_transformer.value, scaleChange);
-
-    // While scaling, translate such that the user's two fingers stay on
-    // the same places in the scene. That means that the focal point of
-    // the scale should be on the same place in the scene before and after
-    // the scale.
-    final Offset focalPointSceneScaled = _transformer.toScene(
-      _scaleAnimationFocalPoint,
-    );
-    _transformer.value = _matrixTranslate(
-      _transformer.value,
-      focalPointSceneScaled - referenceFocalPoint,
     );
   }
 }

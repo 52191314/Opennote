@@ -49,7 +49,12 @@ class CanvasScaleGestureRecognizer extends ScaleGestureRecognizer {
 
   @override
   void handleEvent(PointerEvent event) {
-    if (palmEngine?.isPalm(event) ?? false) {
+    final isActiveMultiTouchGesture =
+        event is! PointerDownEvent &&
+        _activeTouchPointers.length >= 2 &&
+        _activeTouchPointers.contains(event.pointer) &&
+        !(palmEngine?.isStylusDown ?? false);
+    if (!isActiveMultiTouchGesture && (palmEngine?.isPalm(event) ?? false)) {
       // Forward a cancel/up to ScaleGestureRecognizer if this pointer was tracked,
       // otherwise _pointerLocations/_pointerQueue would retain a ghost pointer.
       if (_activeTouchPointers.remove(event.pointer)) {

@@ -485,6 +485,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
 
   @override
   void dispose() {
+    _snapZoomTimer?.cancel();
     CanvasTransformCache.add(
       widget.filePath,
       widget._transformationController.value,

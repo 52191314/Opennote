@@ -5,6 +5,7 @@ part of '../canvas_gesture_detector.dart';
 extension CanvasGestureNavigationControls on CanvasGestureDetectorState {
   /// Zooms in centered on the current viewport bounds.
   void zoomIn() {
+    if (!mounted) return;
     final oldScale = widget._transformationController.value.approxScale;
     final delta = oldScale < 0.2 ? oldScale * 0.25 : 0.1;
     widget._transformationController.value =
@@ -18,6 +19,7 @@ extension CanvasGestureNavigationControls on CanvasGestureDetectorState {
 
   /// Zooms out centered on the current viewport bounds.
   void zoomOut() {
+    if (!mounted) return;
     final oldScale = widget._transformationController.value.approxScale;
     final delta = oldScale <= 0.15 ? -oldScale * 0.25 : -0.1;
     widget._transformationController.value =
@@ -31,6 +33,7 @@ extension CanvasGestureNavigationControls on CanvasGestureDetectorState {
 
   /// Resets the zoom level to 1.0x.
   void resetZoom() {
+    if (!mounted) return;
     final transformation = widget._transformationController.value;
     final scale = transformation.approxScale;
     if (scale == 1) return;

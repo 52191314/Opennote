@@ -94,8 +94,17 @@ class CanvasPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final canvasRect = isInfiniteCanvas ? null : (Offset.zero & size);
     final cullRect = _tryGetCullRect(canvas);
+    final hasActiveOverlay =
+        currentStroke != null ||
+        laserStrokes.isNotEmpty ||
+        page.eraserCursorPosition != null ||
+        page.laserSpotlightPosition != null ||
+        page.penPreviewPosition != null;
 
-    if (strokes == null && cullRect != null) {
+    if (strokes == null &&
+        cullRect != null &&
+        hasActiveOverlay &&
+        cullRect.longestSide <= 20000) {
       _paintWithPictureCache(canvas, size, canvasRect, cullRect);
     } else {
       final strokes = this.strokes ?? page.strokes;

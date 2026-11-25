@@ -54,6 +54,7 @@ class CanvasBackgroundPainter extends CustomPainter {
     this.preview = false,
     this.isInfiniteCanvas = false,
     this.viewportRect,
+    this.currentScale = 1.0,
   });
 
   final bool invert;
@@ -75,6 +76,9 @@ class CanvasBackgroundPainter extends CustomPainter {
 
   /// The visible viewport bounding box in scene coordinates for infinite canvas.
   final Rect? viewportRect;
+
+  /// Current canvas zoom magnification used for adaptive LOD on infinite canvas.
+  final double currentScale;
 
   static const _infiniteQuantizeStep = 500.0;
 
@@ -140,7 +144,21 @@ class CanvasBackgroundPainter extends CustomPainter {
     }
 
     if (backgroundPattern != .none) {
-      final defaultThickness = lineThickness.toDouble();
+      var effectiveLineHeight = lineHeight;
+      if (isInfiniteCanvas &&
+          effectiveLineHeight > 0 &&
+          currentScale.isFinite &&
+          currentScale > 0) {
+        final minScreenSpacing = backgroundPattern == .dots ? 10.0 : 6.0;
+        while (effectiveLineHeight * currentScale < minScreenSpacing &&
+            effectiveLineHeight < 100000) {
+          effectiveLineHeight *= 2;
+        }
+      }
+
+      final defaultThickness = isInfiniteCanvas && currentScale < 1.0
+          ? lineThickness / currentScale.clamp(0.15, 1.0)
+          : lineThickness.toDouble();
       final effectivePrimary = primaryColor.withValues(
         alpha: preview ? 0.5 : 0.2,
       );
@@ -156,7 +174,7 @@ class CanvasBackgroundPainter extends CustomPainter {
       for (final element in getPatternElements(
         pattern: backgroundPattern,
         size: size,
-        lineHeight: lineHeight,
+        lineHeight: effectiveLineHeight,
         lineThickness: lineThickness,
         bounds: isInfiniteCanvas ? visibleRect : null,
       )) {
@@ -288,6 +306,20 @@ class CanvasBackgroundPainter extends CustomPainter {
     return true;
   }
 
+  static int _lodBucket(
+    int lineHeight,
+    double scale,
+    CanvasBackgroundPattern pattern,
+  ) {
+    if (lineHeight <= 0 || !scale.isFinite || scale <= 0) return lineHeight;
+    var step = lineHeight;
+    final minScreenSpacing = pattern == .dots ? 10.0 : 6.0;
+    while (step * scale < minScreenSpacing && step < 100000) {
+      step *= 2;
+    }
+    return step;
+  }
+
   @override
   bool shouldRepaint(CanvasBackgroundPainter oldDelegate) {
     final viewportChanged =
@@ -295,7 +327,13 @@ class CanvasBackgroundPainter extends CustomPainter {
         (viewportRect == null ||
             oldDelegate.viewportRect == null ||
             _quantizedInfiniteRect(oldDelegate.viewportRect) !=
-                _quantizedInfiniteRect(viewportRect));
+                _quantizedInfiniteRect(viewportRect) ||
+            _lodBucket(
+                  oldDelegate.lineHeight,
+                  oldDelegate.currentScale,
+                  oldDelegate.backgroundPattern,
+                ) !=
+                _lodBucket(lineHeight, currentScale, backgroundPattern));
     return viewportChanged ||
         oldDelegate.invert != invert ||
         oldDelegate.backgroundColor != backgroundColor ||

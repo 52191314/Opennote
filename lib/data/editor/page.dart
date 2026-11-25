@@ -9,6 +9,7 @@ import 'dart:typed_data';
 import 'dart:ui' show FragmentShader, Picture;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:saber/components/canvas/_asset_cache.dart';
 import 'package:saber/components/canvas/_stroke.dart';
@@ -98,12 +99,35 @@ class EditorPage extends ChangeNotifier implements HasSize {
   StrokePictureCacheKey? strokePictureCacheKey;
 
   /// Disposes and clears any cached static stroke [Picture]s on this page.
-  void invalidateStrokePictureCache() {
-    cachedHighlighterPicture?.dispose();
+  ///
+  /// When called mid-frame (e.g. inside `CustomPainter.paint`), disposal is
+  /// deferred until after the frame completes so in-flight GPU display lists
+  /// remain valid on the raster thread.
+  void invalidateStrokePictureCache({bool immediate = false}) {
+    final oldHl = cachedHighlighterPicture;
+    final oldNonHl = cachedNonHighlighterPicture;
     cachedHighlighterPicture = null;
-    cachedNonHighlighterPicture?.dispose();
     cachedNonHighlighterPicture = null;
     strokePictureCacheKey = null;
+
+    if (oldHl == null && oldNonHl == null) return;
+
+    if (!immediate) {
+      try {
+        final scheduler = SchedulerBinding.instance;
+        if (scheduler.schedulerPhase != SchedulerPhase.idle) {
+          scheduler.addPostFrameCallback((_) {
+            oldHl?.dispose();
+            oldNonHl?.dispose();
+          });
+          return;
+        }
+      } on Object {
+        // Binding not initialized in pure unit tests; dispose immediately.
+      }
+    }
+    oldHl?.dispose();
+    oldNonHl?.dispose();
   }
 
   /// All strokes from all visible layers, flattened for rendering.
@@ -620,7 +644,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
 
   @override
   void dispose() {
-    invalidateStrokePictureCache();
+    invalidateStrokePictureCache(immediate: true);
     quill.dispose();
     _pencilShader?.dispose();
     isRendered = false;
@@ -638,7 +662,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
   /// Call this method instead of [dispose] to dispose only the resources
   /// exclusive to the cloned page.
   void disposeClonedData() {
-    invalidateStrokePictureCache();
+    invalidateStrokePictureCache(immediate: true);
     quill.dispose();
     _pencilShader?.dispose();
     isRendered = false;

@@ -210,10 +210,7 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
   final GlobalKey _childKey = GlobalKey();
   final GlobalKey _parentKey = GlobalKey();
   Animation<Offset>? _animation;
-  Animation<double>? _scaleAnimation;
-  late Offset _scaleAnimationFocalPoint;
   late AnimationController _controller;
-  late AnimationController _scaleController;
   Axis? _currentAxis; // Used with panAxis.
   Offset? _referenceFocalPoint; // Point where the current gesture began.
   double? _scaleStart; // Scale value at start of scaling gesture.
@@ -274,7 +271,6 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this);
-    _scaleController = AnimationController(vsync: this);
 
     _transformer.addListener(_handleTransformation);
   }
@@ -299,7 +295,6 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
   @override
   void dispose() {
     _controller.dispose();
-    _scaleController.dispose();
     _transformer.removeListener(_handleTransformation);
     if (widget.transformationController == null) {
       _transformer.dispose();

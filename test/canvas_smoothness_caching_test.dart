@@ -1,19 +1,28 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
 library;
 
+import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
+import 'package:saber/components/canvas/_canvas_background_painter.dart';
 import 'package:saber/components/canvas/_canvas_painter.dart';
 import 'package:saber/components/canvas/_dimension_stroke.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/_tape_stroke.dart';
+import 'package:saber/components/canvas/inner_canvas.dart';
+import 'package:saber/components/canvas/interactive_canvas.dart';
+import 'package:saber/data/editor/editor_core_info.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/tools/highlighter.dart';
+import 'package:saber/data/tools/palm_rejection.dart';
+import 'package:saber/i18n/strings.g.dart';
+import 'package:sbn/canvas_background_pattern.dart';
 import 'package:sbn/tool_id.dart';
 
 const _viewportRect = Rect.fromLTWH(0, 0, 800, 1000);
@@ -477,6 +486,237 @@ void main() {
         page.isRendered = true;
         page.dispose();
         expect(page.isRendered, isFalse);
+      },
+    );
+  });
+
+  group('5. iOS Pinch-Zoom Freeze Prevention & Extreme Scale Invariants', () {
+    test(
+      'main.dart does not enable GestureBinding.instance.resamplingEnabled',
+      () {
+        final mainSource = File('lib/main.dart').readAsStringSync();
+        expect(mainSource.contains('resamplingEnabled'), isFalse);
+      },
+    );
+
+    testWidgets(
+      'InnerCanvas unwraps RepaintBoundary above 2.0x scale to prevent >16384px Metal texture freeze',
+      (tester) async {
+        final coreInfo = EditorCoreInfo(filePath: '/zoom_test');
+        final page = EditorPage(size: const Size(1000, 1400));
+        addTearDown(page.dispose);
+        coreInfo.pages = [page];
+
+        await tester.pumpWidget(
+          TranslationProvider(
+            child: MaterialApp(
+              home: Scaffold(
+                body: InnerCanvas(
+                  pageIndex: 0,
+                  width: 1000,
+                  height: 1400,
+                  coreInfo: coreInfo,
+                  currentStroke: null,
+                  currentStrokeDetectedShape: null,
+                  currentSelection: null,
+                  currentToolIsSelect: false,
+                  currentScale: 1.0,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final boundariesAt1x = find
+            .descendant(
+              of: find.byType(InnerCanvas),
+              matching: find.byType(RepaintBoundary),
+            )
+            .evaluate()
+            .length;
+        expect(boundariesAt1x, greaterThanOrEqualTo(2));
+
+        await tester.pumpWidget(
+          TranslationProvider(
+            child: MaterialApp(
+              home: Scaffold(
+                body: InnerCanvas(
+                  pageIndex: 0,
+                  width: 1000,
+                  height: 1400,
+                  coreInfo: coreInfo,
+                  currentStroke: null,
+                  currentStrokeDetectedShape: null,
+                  currentSelection: null,
+                  currentToolIsSelect: false,
+                  currentScale: 8.0,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final boundariesAt8x = find
+            .descendant(
+              of: find.byType(InnerCanvas),
+              matching: find.byType(RepaintBoundary),
+            )
+            .evaluate()
+            .length;
+        expect(boundariesAt8x, equals(0));
+      },
+    );
+
+    test(
+      'CanvasBackgroundPainter adaptive LOD renders extreme zoom-out infinite canvas rapidly',
+      () {
+        const hugeViewport = Rect.fromLTWH(-20000, -20000, 40000, 40000);
+        for (final pattern in [
+          CanvasBackgroundPattern.dots,
+          CanvasBackgroundPattern.grid,
+          CanvasBackgroundPattern.engineeringGrid,
+          CanvasBackgroundPattern.isometric,
+        ]) {
+          final sw = Stopwatch()..start();
+          final recorder = ui.PictureRecorder();
+          final canvas = Canvas(recorder)..clipRect(hugeViewport);
+          final painter = CanvasBackgroundPainter(
+            invert: false,
+            backgroundColor: Colors.white,
+            backgroundPattern: pattern,
+            lineHeight: 40,
+            lineThickness: 2,
+            isInfiniteCanvas: true,
+            viewportRect: hugeViewport,
+            currentScale: 0.005,
+          );
+          painter.paint(canvas, const Size(1000, 1400));
+          final pic = recorder.endRecording();
+          pic.dispose();
+          sw.stop();
+          expect(
+            sw.elapsedMilliseconds,
+            lessThan(150),
+            reason: '$pattern took too long at 0.005x zoom out',
+          );
+        }
+      },
+    );
+
+    testWidgets(
+      'InteractiveCanvasViewer two-finger pinch zoom-in and zoom-out preserves stable scale without reverse fling or palm abort',
+      (tester) async {
+        final controller = TransformationController();
+        addTearDown(controller.dispose);
+        final palmEngine = PalmRejectionEngine(
+          writingPosture: WritingPosture.rightBelow,
+          sensitivity: PalmRejectionSensitivity.high,
+        );
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: SizedBox(
+              width: 800,
+              height: 600,
+              child: InteractiveCanvasViewer.builder(
+                palmEngine: palmEngine,
+                minScale: 0.001,
+                maxScale: 10.0,
+                interactionEndFrictionCoefficient: 0.3,
+                boundaryMargin: const EdgeInsets.all(double.infinity),
+                transformationController: controller,
+                builder: (context, viewport) =>
+                    const SizedBox(width: 1000, height: 1400),
+              ),
+            ),
+          ),
+        );
+
+        await tester.sendEventToBinding(
+          const PointerAddedEvent(
+            pointer: 201,
+            position: Offset(350, 300),
+            kind: PointerDeviceKind.touch,
+          ),
+        );
+        await tester.sendEventToBinding(
+          const PointerAddedEvent(
+            pointer: 202,
+            position: Offset(450, 300),
+            kind: PointerDeviceKind.touch,
+          ),
+        );
+        await tester.sendEventToBinding(
+          const PointerDownEvent(
+            pointer: 201,
+            position: Offset(350, 300),
+            kind: PointerDeviceKind.touch,
+            radiusMajor: 10.0,
+          ),
+        );
+        await tester.sendEventToBinding(
+          const PointerDownEvent(
+            pointer: 202,
+            position: Offset(450, 300),
+            kind: PointerDeviceKind.touch,
+            radiusMajor: 10.0,
+          ),
+        );
+        await tester.pump();
+
+        // Spread fingers rapidly to zoom in (~2.5x) and simulate thumb contact widening mid-pinch
+        for (var i = 1; i <= 5; i++) {
+          final ts = Duration(milliseconds: i * 8);
+          await tester.sendEventToBinding(
+            PointerMoveEvent(
+              pointer: 201,
+              timeStamp: ts,
+              position: Offset(350.0 - i * 35, 300),
+              delta: const Offset(-35, 0),
+              kind: PointerDeviceKind.touch,
+              radiusMajor: 12.0,
+            ),
+          );
+          await tester.sendEventToBinding(
+            PointerMoveEvent(
+              pointer: 202,
+              timeStamp: ts,
+              position: Offset(450.0 + i * 35, 300),
+              delta: const Offset(35, 0),
+              kind: PointerDeviceKind.touch,
+              radiusMajor: 26.0,
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 8));
+        }
+
+        final scaleBeforeRelease = controller.value.getMaxScaleOnAxis();
+        expect(scaleBeforeRelease, greaterThan(1.5));
+
+        const endTs = Duration(milliseconds: 48);
+        await tester.sendEventToBinding(
+          const PointerUpEvent(
+            pointer: 201,
+            timeStamp: endTs,
+            position: Offset(175, 300),
+            kind: PointerDeviceKind.touch,
+          ),
+        );
+        await tester.sendEventToBinding(
+          const PointerUpEvent(
+            pointer: 202,
+            timeStamp: endTs,
+            position: Offset(625, 300),
+            kind: PointerDeviceKind.touch,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Scale must NOT reverse-bounce or collapse to 0.001x after finger lift!
+        final scaleAfterRelease = controller.value.getMaxScaleOnAxis();
+        expect(scaleAfterRelease.isFinite, isTrue);
+        expect(scaleAfterRelease, closeTo(scaleBeforeRelease, 1e-3));
       },
     );
   });

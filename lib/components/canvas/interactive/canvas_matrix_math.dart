@@ -171,9 +171,10 @@ Offset canvasExceedsBy(Quad boundary, Quad viewport) {
 
 /// Rounds [offset] to 9 decimal places to avoid floating-point precision noise near zero.
 Offset canvasRoundOffset(Offset offset) {
+  if (!offset.dx.isFinite || !offset.dy.isFinite) return offset;
   return Offset(
-    double.parse(offset.dx.toStringAsFixed(9)),
-    double.parse(offset.dy.toStringAsFixed(9)),
+    (offset.dx * 1e9).roundToDouble() / 1e9,
+    (offset.dy * 1e9).roundToDouble() / 1e9,
   );
 }
 
