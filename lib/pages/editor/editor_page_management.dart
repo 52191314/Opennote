@@ -116,12 +116,15 @@ extension EditorPageManagement on EditorState {
       );
 
       if (scrollY < bottomOfLastPage) {
-        _transformationController.value = Matrix4.translationValues(
-          0,
-          // Slight upwards offset so that the page is not flush with the top of the screen
-          topOfLastPage + 50,
-          0,
-        );
+        final currentMatrix = _transformationController.value;
+        final currentScale = currentMatrix.maxScale2D;
+        final safeScale = (currentScale.isFinite && currentScale > 0)
+            ? currentScale
+            : 1.0;
+        final currentTx = currentMatrix.getTranslation().x;
+        _transformationController.value = Matrix4.identity()
+          ..translateByDouble(currentTx, (topOfLastPage + 50) * safeScale, 0, 1)
+          ..scaleByDouble(safeScale, safeScale, 1.0, 1.0);
       }
     }
   }

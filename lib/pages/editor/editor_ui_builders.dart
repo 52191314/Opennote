@@ -910,7 +910,7 @@ extension EditorUiBuilders on EditorState {
             _refreshUi();
           },
           currentTool: currentTool,
-          currentScale: _transformationController.value.approxScale,
+          currentScale: _transformationController.value.maxScale2D,
           foreground: _zoomWindowOpen && pageIndex == _zoomPageIndex
               ? ZoomPageBox(controller: _zoomWindow)
               : null,

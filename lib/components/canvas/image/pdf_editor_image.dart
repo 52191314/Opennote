@@ -1,3 +1,4 @@
+// 🤖 Modified with Google Antigravity
 part of 'editor_image.dart';
 
 class PdfEditorImage extends EditorImage {
@@ -177,6 +178,7 @@ class PdfEditorImage extends EditorImage {
             document: pdfDocument,
             // [PdfPageView.pageNumber] starts at 1 not 0
             pageNumber: pdfPage + 1,
+            maximumDpi: 180,
             decoration: const BoxDecoration(),
           ),
         );

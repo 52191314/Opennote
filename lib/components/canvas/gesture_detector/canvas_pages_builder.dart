@@ -1,6 +1,34 @@
 /// 🤖 Generated wholely or partially with Claude Code; Gemini; Google Antigravity
 part of '../canvas_gesture_detector.dart';
 
+Rect? _computePageLocalViewport({
+  required Size pageSize,
+  required double pageWidth,
+  required double topOfPage,
+  required double containerWidth,
+  required Rect boundingBox,
+}) {
+  final fitRatio = pageWidth > 0 && pageSize.width > 0
+      ? pageWidth / pageSize.width
+      : 1.0;
+  if (fitRatio <= 0 || !boundingBox.isFinite || boundingBox.isEmpty) {
+    return null;
+  }
+  final pageLeftInColumn = (containerWidth - pageWidth) * 0.5;
+  return Rect.fromLTRB(
+    ((boundingBox.left - pageLeftInColumn) / fitRatio).clamp(
+      0.0,
+      pageSize.width,
+    ),
+    ((boundingBox.top - topOfPage) / fitRatio).clamp(0.0, pageSize.height),
+    ((boundingBox.right - pageLeftInColumn) / fitRatio).clamp(
+      0.0,
+      pageSize.width,
+    ),
+    ((boundingBox.bottom - topOfPage) / fitRatio).clamp(0.0, pageSize.height),
+  );
+}
+
 class _PagesBuilder extends StatelessWidget {
   const _PagesBuilder({
     // ignore: unused_element_parameter
@@ -56,31 +84,15 @@ class _PagesBuilder extends StatelessWidget {
 
       page.isRendered = shouldRender;
       if (shouldRender) {
-        final fitRatio = pageWidth > 0 && page.size.width > 0
-            ? pageWidth / page.size.width
-            : 1.0;
-        final pageLeftInColumn = (containerWidth - pageWidth) * 0.5;
-        final Rect? pageLocalViewport =
-            (fitRatio > 0 && boundingBox.isFinite && !boundingBox.isEmpty)
-            ? Rect.fromLTRB(
-                ((boundingBox.left - pageLeftInColumn) / fitRatio).clamp(
-                  0.0,
-                  page.size.width,
-                ),
-                ((boundingBox.top - topOfPage) / fitRatio).clamp(
-                  0.0,
-                  page.size.height,
-                ),
-                ((boundingBox.right - pageLeftInColumn) / fitRatio).clamp(
-                  0.0,
-                  page.size.width,
-                ),
-                ((boundingBox.bottom - topOfPage) / fitRatio).clamp(
-                  0.0,
-                  page.size.height,
-                ),
-              )
-            : null;
+        final Rect? pageLocalViewport = !isInViewport
+            ? Rect.zero
+            : _computePageLocalViewport(
+                pageSize: page.size,
+                pageWidth: pageWidth,
+                topOfPage: topOfPage,
+                containerWidth: containerWidth,
+                boundingBox: boundingBox,
+              );
         children.add(pageBuilder(context, pageIndex, pageLocalViewport));
       } else {
         children.add(placeholderPageBuilder(context, pageIndex));

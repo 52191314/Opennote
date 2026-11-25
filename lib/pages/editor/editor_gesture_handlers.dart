@@ -55,13 +55,14 @@ extension EditorGestureHandlers on EditorState {
         lastSeenPointerCount = 0;
         return false;
       } else if (details.pointerCount >= 2) {
-        // is a zoom gesture, remove accidental stroke
         if (lastSeenPointerCount == 1 &&
+            _recordedDrawInCurrentTouch &&
             stows.editorFingerDrawing.value &&
             (currentTool is Pen || currentTool is Eraser)) {
           final item = history.removeAccidentalStroke();
           if (item != null) undo(item);
         }
+        _recordedDrawInCurrentTouch = false;
         lastSeenPointerCount = details.pointerCount;
         return false;
       } else {
@@ -88,6 +89,7 @@ extension EditorGestureHandlers on EditorState {
   }
 
   void onDrawStart(ScaleStartDetails details) {
+    _recordedDrawInCurrentTouch = false;
     if (dragPageIndex == null || dragPageIndex! >= coreInfo.pages.length)
       return;
     final page = coreInfo.pages[dragPageIndex!];
@@ -147,6 +149,7 @@ extension EditorGestureHandlers on EditorState {
     final page = coreInfo.pages[dragPageIndex!];
     if (_isLockedForDrawing(page)) return _abandonDraw(page);
 
+    final prevUndo = history.canUndo ? history.peekUndo() : null;
     final previousStrokeCount = page.strokes.length;
     final willSnapShape = _willSnapCurrentStroke();
     var shouldSave = true;
@@ -154,6 +157,10 @@ extension EditorGestureHandlers on EditorState {
       shouldSave = _gesture?.end(_pointerAt(page, previousPosition)) ?? true;
       _activeStrokeNotifier.value = null;
     });
+    _recordedDrawInCurrentTouch =
+        history.canUndo &&
+        !identical(history.peekUndo(), prevUndo) &&
+        history.peekUndo().type == .draw;
     if (willSnapShape && page.strokes.length > previousStrokeCount) {
       HapticFeedback.mediumImpact();
     }
@@ -233,10 +240,10 @@ extension EditorGestureHandlers on EditorState {
   }
 
   void onInteractionEnd(ScaleEndDetails details) {
-    // reset after 1ms to keep track of the same gesture only
     _lastSeenPointerCountTimer?.cancel();
-    _lastSeenPointerCountTimer = Timer(const Duration(milliseconds: 10), () {
+    _lastSeenPointerCountTimer = Timer(const Duration(milliseconds: 40), () {
       lastSeenPointerCount = 0;
+      _recordedDrawInCurrentTouch = false;
     });
   }
 

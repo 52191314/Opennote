@@ -92,10 +92,14 @@ class CanvasPainter extends CustomPainter {
   static const double _pageIndicatorPadding = 5;
   static const _zoomThreshold = 0.5;
 
-  static Rect? _quantizedHighZoomViewport(Rect? rect, double scale) {
+  /// Quantizes [rect] outward to a scale-proportional grid at high zoom
+  /// (`scale > 1.5`) so small pan and zoom deltas reuse painted strokes while
+  /// keeping the cull window tight at extreme magnification.
+  static Rect? quantizedHighZoomViewport(Rect? rect, double scale) {
     if (scale <= 1.5 || rect == null || !_isValidCullRect(rect)) return null;
-    const step = 128.0;
-    final inflated = rect.inflate(128.0);
+    final scaleBucket = scale >= 6.0 ? 8.0 : (scale >= 3.0 ? 4.0 : 2.0);
+    final step = (128.0 / scaleBucket).clamp(16.0, 64.0);
+    final inflated = rect.inflate(step);
     return Rect.fromLTRB(
       (inflated.left / step).floorToDouble() * step,
       (inflated.top / step).floorToDouble() * step,
@@ -106,31 +110,47 @@ class CanvasPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final canvasRect = isInfiniteCanvas ? null : (Offset.zero & size);
-    final cullRect =
-        _tryGetCullRect(canvas) ??
-        _quantizedHighZoomViewport(viewportRect, currentScale);
-    final hasActiveOverlay =
-        currentStroke != null ||
-        laserStrokes.isNotEmpty ||
-        page.eraserCursorPosition != null ||
-        page.laserSpotlightPosition != null ||
-        page.penPreviewPosition != null;
+    if (viewportRect != null && viewportRect!.isEmpty) {
+      if (!isInfiniteCanvas && (currentScale >= 0.2 || currentScale < 0.0005)) {
+        _drawPageIndicator(canvas, size);
+      }
+      return;
+    }
 
-    if (strokes == null &&
-        cullRect != null &&
-        hasActiveOverlay &&
-        cullRect.longestSide <= 20000) {
-      _paintWithPictureCache(canvas, size, canvasRect, cullRect);
+    final canvasRect = isInfiniteCanvas ? null : (Offset.zero & size);
+    final canvasCull = _tryGetCullRect(canvas);
+    final highZoomCull = quantizedHighZoomViewport(viewportRect, currentScale);
+    final Rect? cullRect;
+    if (canvasCull != null && highZoomCull != null) {
+      final intersected = canvasCull.intersect(highZoomCull);
+      cullRect = intersected.isEmpty ? Rect.zero : intersected;
     } else {
-      final strokes = this.strokes ?? page.strokes;
-      _drawHighlighterStrokes(canvas, canvasRect, cullRect, strokes);
-      if (currentStroke?.toolId == .highlighter) {
-        _drawCurrentStroke(canvas);
-        _drawNonHighlighterStrokes(canvas, cullRect, strokes);
+      cullRect = highZoomCull ?? canvasCull;
+    }
+
+    if (cullRect != Rect.zero) {
+      final hasActiveOverlay =
+          currentStroke != null ||
+          laserStrokes.isNotEmpty ||
+          page.eraserCursorPosition != null ||
+          page.laserSpotlightPosition != null ||
+          page.penPreviewPosition != null;
+
+      if (strokes == null &&
+          cullRect != null &&
+          hasActiveOverlay &&
+          cullRect.longestSide <= 20000) {
+        _paintWithPictureCache(canvas, size, canvasRect, cullRect);
       } else {
-        _drawNonHighlighterStrokes(canvas, cullRect, strokes);
-        _drawCurrentStroke(canvas);
+        final strokes = this.strokes ?? page.strokes;
+        _drawHighlighterStrokes(canvas, canvasRect, cullRect, strokes);
+        if (currentStroke?.toolId == .highlighter) {
+          _drawCurrentStroke(canvas);
+          _drawNonHighlighterStrokes(canvas, cullRect, strokes);
+        } else {
+          _drawNonHighlighterStrokes(canvas, cullRect, strokes);
+          _drawCurrentStroke(canvas);
+        }
       }
     }
     for (final stroke in laserStrokes) _drawLaserStroke(canvas, stroke);
@@ -146,32 +166,32 @@ class CanvasPainter extends CustomPainter {
 
   /// Maps [scale] into coarse visual quality buckets so continuous pinch-zoom
   /// up to `10.0x` or across `0.5x -> 0.4x` does not trigger redundant repaints.
-  static int _visualScaleBucket(double scale) {
+  static int visualScaleBucket(double scale) {
     if (!scale.isFinite || scale <= 0) return 0;
     if (scale < 0.08) return 1;
     if (scale < 0.2) return 2;
-    if (scale <= 3.0) return 3;
+    if (scale <= 1.5) return 3;
     return 4;
   }
 
   @override
   bool shouldRepaint(CanvasPainter oldDelegate) {
+    final offscreenVisibilityChanged =
+        (viewportRect?.isEmpty ?? false) !=
+        (oldDelegate.viewportRect?.isEmpty ?? false);
     final highZoomCullChanged =
         (currentScale > 1.5 || oldDelegate.currentScale > 1.5) &&
-        _quantizedHighZoomViewport(viewportRect, currentScale) !=
-            _quantizedHighZoomViewport(
+        quantizedHighZoomViewport(viewportRect, currentScale) !=
+            quantizedHighZoomViewport(
               oldDelegate.viewportRect,
               oldDelegate.currentScale,
             );
-    return highZoomCullChanged ||
-        // Current stroke is being drawn, so always repaint if present
+    return offscreenVisibilityChanged ||
+        highZoomCullChanged ||
         (currentStroke != null || oldDelegate.currentStroke != null) ||
-        // Laser strokes are always fading out, so always repaint if present
         (laserStrokes.isNotEmpty || oldDelegate.laserStrokes.isNotEmpty) ||
-        // Laser spotlight active
         (page.laserSpotlightPosition !=
             oldDelegate.page.laserSpotlightPosition) ||
-        // Check for any other changes
         invert != oldDelegate.invert ||
         (strokes == null
             ? strokesVersion != oldDelegate.strokesVersion
@@ -183,8 +203,8 @@ class CanvasPainter extends CustomPainter {
         showPageIndicator != oldDelegate.showPageIndicator ||
         pageIndex != oldDelegate.pageIndex ||
         totalPages != oldDelegate.totalPages ||
-        _visualScaleBucket(currentScale) !=
-            _visualScaleBucket(oldDelegate.currentScale) ||
+        visualScaleBucket(currentScale) !=
+            visualScaleBucket(oldDelegate.currentScale) ||
         isInfiniteCanvas != oldDelegate.isInfiniteCanvas;
   }
 
@@ -215,7 +235,7 @@ class CanvasPainter extends CustomPainter {
   static MaskFilter? _getPencilMaskFilter(
     double size, [
     double currentScale = 1.0,
-  ]) => currentScale > 3.0
+  ]) => currentScale > 1.5
       ? null
       : MaskFilter.blur(BlurStyle.normal, min(size * 0.2, 3));
 

@@ -357,6 +357,7 @@ extension _StrokePainter on CanvasPainter {
         ..setFloat(2, color.b);
       paint.maskFilter = CanvasPainter._getPencilMaskFilter(
         currentStroke!.options.size,
+        currentScale,
       );
     }
 
@@ -365,7 +366,6 @@ extension _StrokePainter on CanvasPainter {
       paint.strokeWidth = currentStroke!.options.size;
     }
 
-    // Current stroke always uses high quality
     if (currentStroke!.lineStyle != LineStyle.solid) {
       _drawStyledStroke(canvas, currentStroke!, paint);
     } else {
@@ -378,14 +378,15 @@ extension _StrokePainter on CanvasPainter {
   }
 
   void _drawLaserStroke(Canvas canvas, LaserStroke stroke) {
+    final safeScale = currentScale.isFinite
+        ? currentScale.clamp(1.0, 10.0)
+        : 1.0;
+    final blurSigma = (stroke.options.size * 0.4 / safeScale).clamp(0.5, 6.0);
     canvas.drawPath(
       _selectPath(stroke),
       Paint()
         ..color = stroke.color.withInversion(invert)
-        ..maskFilter = MaskFilter.blur(
-          BlurStyle.solid,
-          stroke.options.size * 0.4,
-        ),
+        ..maskFilter = MaskFilter.blur(BlurStyle.solid, blurSigma),
     );
     canvas.drawPath(stroke.innerPath, Paint()..color = const Color(0xDDffffff));
   }

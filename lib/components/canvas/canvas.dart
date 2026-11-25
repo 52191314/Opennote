@@ -230,31 +230,31 @@ class Canvas extends StatelessWidget {
       child: _withForeground(_wrapOnyxArea(inner)),
     );
 
-    // Skip expensive Gaussian shadow blur and rounded-rect clip when zoomed far
-    // out (< 0.35 effective scale, e.g. <= 0.8x on phone) or zoomed far in (> 2.5x)
-    if ((effectiveScale >= 0.0005 && effectiveScale < 0.35) ||
-        currentScale > 2.5) {
-      return Center(child: FittedBox(child: pageContent));
-    }
+    final showPageChrome =
+        !(effectiveScale >= 0.0005 && effectiveScale < 0.35) &&
+        currentScale <= 1.8;
 
     return Center(
       child: FittedBox(
         child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(6),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(
-                  alpha: 0.12,
-                ), // dark regardless of theme
-                blurRadius: 18,
-                spreadRadius: 1,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+          decoration: showPageChrome
+              ? BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 18,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                )
+              : const BoxDecoration(),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: showPageChrome
+                ? BorderRadius.circular(6)
+                : BorderRadius.zero,
+            clipBehavior: showPageChrome ? Clip.antiAlias : Clip.none,
             child: pageContent,
           ),
         ),

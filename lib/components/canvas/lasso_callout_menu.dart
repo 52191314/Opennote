@@ -84,7 +84,15 @@ class _LassoCalloutMenuState extends State<LassoCalloutMenu> {
   @override
   void didUpdateWidget(covariant LassoCalloutMenu oldWidget) {
     super.didUpdateWidget(oldWidget);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _updateScrollButtons());
+    if (oldWidget.cropPossible != widget.cropPossible ||
+        oldWidget.isResizeActive != widget.isResizeActive ||
+        oldWidget.onToggleResize != widget.onToggleResize ||
+        oldWidget.onReduceTextSize != widget.onReduceTextSize ||
+        oldWidget.onEnlargeTextSize != widget.onEnlargeTextSize) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _updateScrollButtons(),
+      );
+    }
   }
 
   @override

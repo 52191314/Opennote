@@ -90,10 +90,19 @@ class PalmRejectionEngine {
   final _initialTouchRadii = <int, double>{};
 
   /// Whether a stylus is currently in contact with the display.
-  bool get isStylusDown => activeStylusPointerId != null;
+  bool get isStylusDown {
+    if (activeStylusPointerId == null) return false;
+    final stylusTime = lastStylusTime;
+    if (stylusTime != null &&
+        DateTime.now().difference(stylusTime).inSeconds >= 5) {
+      activeStylusPointerId = null;
+      return false;
+    }
+    return true;
+  }
 
   /// Returns true if [event] corresponds to a resting palm or wrist.
-  bool isPalm(PointerEvent event) {
+  bool isPalm(PointerEvent event, {bool isMultiTouch = false}) {
     if (sensitivity == PalmRejectionSensitivity.disabled) return false;
 
     if (event.kind == PointerDeviceKind.stylus ||
@@ -104,6 +113,12 @@ class PalmRejectionEngine {
 
     if (event.kind != PointerDeviceKind.touch) return false;
 
+    if (event is PointerUpEvent || event is PointerCancelEvent) {
+      final wasRejected = _rejectedPointers.remove(event.pointer);
+      _initialTouchRadii.remove(event.pointer);
+      return wasRejected;
+    }
+
     if (event is PointerDownEvent) {
       _initialTouchRadii[event.pointer] = max(
         event.radiusMajor,
@@ -112,16 +127,21 @@ class PalmRejectionEngine {
     }
 
     if (_rejectedPointers.contains(event.pointer)) {
-      if (event is PointerUpEvent || event is PointerCancelEvent) {
-        _rejectedPointers.remove(event.pointer);
-        _initialTouchRadii.remove(event.pointer);
-      }
       return true;
     }
 
     if (isStylusDown) {
       _rejectedPointers.add(event.pointer);
       return true;
+    }
+
+    if (isMultiTouch) {
+      final radius = max(event.radiusMajor, event.radiusMinor);
+      if (radius >= 52.0 || event.size >= 0.50) {
+        _rejectedPointers.add(event.pointer);
+        return true;
+      }
+      return false;
     }
 
     if (_isLargeContact(event)) {
@@ -149,6 +169,8 @@ class PalmRejectionEngine {
 
     if (event is PointerDownEvent) {
       activeStylusPointerId = event.pointer;
+    } else if (event is PointerHoverEvent && !event.synthesized) {
+      activeStylusPointerId = null;
     } else if (event is PointerUpEvent || event is PointerCancelEvent) {
       if (activeStylusPointerId == event.pointer) {
         activeStylusPointerId = null;
@@ -186,10 +208,6 @@ class PalmRejectionEngine {
       PalmRejectionSensitivity.disabled => (double.infinity, double.infinity),
     };
 
-    // When no stylus is active or recently seen, keep wider thumb-pad tolerance
-    // across both PointerDownEvent and 120Hz PointerMoveEvents (while waiting
-    // for the 2nd finger of a pinch to land), unless a small contact (< 12pt)
-    // flattened into a large resting palm (+12pt growth).
     final hasRecentStylus =
         isStylusDown ||
         (lastStylusTime != null &&
@@ -198,11 +216,11 @@ class PalmRejectionEngine {
       final initialRadius = _initialTouchRadii[event.pointer] ?? radius;
       final flattenedIntoPalm =
           initialRadius < 12.0 &&
-          radius >= baseThresholdRadius &&
-          (radius - initialRadius) >= 12.0;
+          radius >= max(baseThresholdRadius, 34.0) &&
+          (radius - initialRadius) >= 20.0;
       if (!flattenedIntoPalm) {
-        return radius >= max(baseThresholdRadius, 38.0) ||
-            event.size >= max(thresholdSize, 0.35);
+        return radius >= max(baseThresholdRadius, 48.0) ||
+            event.size >= max(thresholdSize, 0.42);
       }
     }
 

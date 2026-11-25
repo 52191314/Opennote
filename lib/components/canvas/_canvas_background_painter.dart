@@ -82,16 +82,28 @@ class CanvasBackgroundPainter extends CustomPainter {
 
   static const _infiniteQuantizeStep = 500.0;
 
-  /// Quantizes [rect] outward to scale-proportional multiples of
-  /// [_infiniteQuantizeStep] so small pan deltas reuse the cached background
-  /// across both normal and deep zoom-out viewports.
-  static Rect? _quantizedInfiniteRect(Rect? rect, [double scale = 1.0]) {
+  /// Quantizes [scale] downward to a power-of-2 octave in `(0, 1]` so
+  /// continuous pinch-zoom frames within each octave keep an identical
+  /// infinite-canvas background rect.
+  static double quantizedScaleForInfinite(double scale) {
+    if (!scale.isFinite || scale <= 0) return 1.0;
+    if (scale >= 1.0) return 1.0;
+    final clamped = scale.clamp(0.001, 1.0);
+    var bucket = 1.0;
+    while (bucket > clamped && bucket > 0.001953125) {
+      bucket *= 0.5;
+    }
+    return bucket;
+  }
+
+  /// Quantizes [rect] outward to octave-quantized multiples of
+  /// [_infiniteQuantizeStep] so small pan and zoom deltas reuse the cached
+  /// background across both normal and deep zoom-out viewports.
+  static Rect? quantizedInfiniteRect(Rect? rect, [double scale = 1.0]) {
     if (rect == null || !_isValidViewport(rect)) return null;
-    final safeScale = (scale.isFinite && scale > 0)
-        ? scale.clamp(0.001, 1.0)
-        : 1.0;
-    final step = _infiniteQuantizeStep / safeScale;
-    final inflateAmount = 1000.0 / safeScale;
+    final bucketScale = quantizedScaleForInfinite(scale);
+    final step = _infiniteQuantizeStep / bucketScale;
+    final inflateAmount = (_infiniteQuantizeStep * 0.75) / bucketScale;
     final inflated = rect.inflate(inflateAmount);
     final left = (inflated.left / step).floorToDouble() * step;
     final top = (inflated.top / step).floorToDouble() * step;
@@ -100,22 +112,33 @@ class CanvasBackgroundPainter extends CustomPainter {
     return Rect.fromLTRB(left, top, right, bottom);
   }
 
+  static Rect? _quantizedNormalHighZoomRect(Rect? rect, double scale) {
+    if (scale <= 1.5 || rect == null) return null;
+    if (rect.isEmpty) return Rect.zero;
+    if (!_isValidViewport(rect)) return null;
+    const step = 64.0;
+    final inflated = rect.inflate(step);
+    return Rect.fromLTRB(
+      (inflated.left / step).floorToDouble() * step,
+      (inflated.top / step).floorToDouble() * step,
+      (inflated.right / step).ceilToDouble() * step,
+      (inflated.bottom / step).ceilToDouble() * step,
+    );
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     final Rect visibleRect;
     if (isInfiniteCanvas) {
-      final quantized = _quantizedInfiniteRect(viewportRect, currentScale);
+      final quantized = quantizedInfiniteRect(viewportRect, currentScale);
       if (quantized != null) {
         visibleRect = quantized;
       } else {
         final clip = canvas.getLocalClipBounds();
         if (_isValidViewport(clip)) {
-          final safeScale = (currentScale.isFinite && currentScale > 0)
-              ? currentScale.clamp(0.001, 1.0)
-              : 1.0;
-          visibleRect = clip.inflate(500.0 / safeScale);
+          final bucketScale = quantizedScaleForInfinite(currentScale);
+          visibleRect = clip.inflate(_infiniteQuantizeStep / bucketScale);
         } else {
-          // Safe bounded canvas region around the page for infinite canvas fallback
           const margin = 5000.0;
           final baseWidth = size.width.isFinite && size.width > 0
               ? size.width
@@ -144,23 +167,50 @@ class CanvasBackgroundPainter extends CustomPainter {
       canvas.clipRect(visibleRect);
     }
 
-    if (backgroundPattern != .none) {
+    final Rect? normalCull;
+    if (!isInfiniteCanvas) {
+      final quantizedNormal = _quantizedNormalHighZoomRect(
+        viewportRect,
+        currentScale,
+      );
+      normalCull = quantizedNormal == null
+          ? null
+          : (quantizedNormal.isEmpty
+                ? Rect.zero
+                : quantizedNormal.intersect(visibleRect));
+    } else {
+      normalCull = null;
+    }
+
+    if (backgroundPattern != .none &&
+        (normalCull == null || !normalCull.isEmpty)) {
       var effectiveLineHeight = lineHeight;
       if ((isInfiniteCanvas ||
               (currentScale >= 0.0005 && currentScale < 0.6)) &&
           effectiveLineHeight > 0 &&
           currentScale.isFinite &&
           currentScale > 0) {
-        final minScreenSpacing = backgroundPattern == .dots ? 10.0 : 6.0;
+        final minScreenSpacing = backgroundPattern == .dots ? 16.0 : 6.0;
         while (effectiveLineHeight * currentScale < minScreenSpacing &&
             effectiveLineHeight < 10000000) {
           effectiveLineHeight *= 2;
         }
       }
+      if (backgroundPattern == .dots &&
+          isInfiniteCanvas &&
+          effectiveLineHeight > 0) {
+        while (((visibleRect.width / effectiveLineHeight) + 1) *
+                    ((visibleRect.height / effectiveLineHeight) + 1) >
+                4000 &&
+            effectiveLineHeight < 10000000) {
+          effectiveLineHeight *= 2;
+        }
+      }
 
-      final defaultThickness = isInfiniteCanvas && currentScale < 1.0
-          ? lineThickness / currentScale.clamp(0.02, 1.0)
-          : lineThickness.toDouble();
+      final infiniteThicknessScale = isInfiniteCanvas && currentScale < 1.0
+          ? 1.0 / currentScale.clamp(0.02, 1.0)
+          : 1.0;
+      final defaultThickness = lineThickness * infiniteThicknessScale;
       final effectivePrimary = primaryColor.withValues(
         alpha: preview ? 0.5 : 0.2,
       );
@@ -180,6 +230,30 @@ class CanvasBackgroundPainter extends CustomPainter {
         lineThickness: lineThickness,
         bounds: isInfiniteCanvas ? visibleRect : null,
       )) {
+        if (normalCull != null) {
+          if (element.isLine) {
+            final minX = min(element.start.dx, element.end.dx);
+            final maxX = max(element.start.dx, element.end.dx);
+            final minY = min(element.start.dy, element.end.dy);
+            final maxY = max(element.start.dy, element.end.dy);
+            if (maxX < normalCull.left ||
+                minX > normalCull.right ||
+                maxY < normalCull.top ||
+                minY > normalCull.bottom) {
+              continue;
+            }
+          } else {
+            final x = element.start.dx;
+            final y = element.start.dy;
+            if (x < normalCull.left ||
+                x > normalCull.right ||
+                y < normalCull.top ||
+                y > normalCull.bottom) {
+              continue;
+            }
+          }
+        }
+
         if (!element.isLine) {
           if (element.secondaryColor || element.thickness != null) {
             secondaryElements ??= <PatternElement>[];
@@ -193,14 +267,18 @@ class CanvasBackgroundPainter extends CustomPainter {
         if (element.secondaryColor) {
           secondaryElements ??= <PatternElement>[];
           secondaryElements.add(element);
-        } else if (element.thickness == null ||
-            element.thickness == defaultThickness) {
+        } else if (element.thickness == null) {
           primaryLines.addSegment(element.start, element.end);
         } else {
-          customPrimaryLines ??= <double, _Float32Buffer>{};
-          (customPrimaryLines[element.thickness!] ??= _Float32Buffer(
-            32,
-          )).addSegment(element.start, element.end);
+          final scaledThickness = element.thickness! * infiniteThicknessScale;
+          if (scaledThickness == defaultThickness) {
+            primaryLines.addSegment(element.start, element.end);
+          } else {
+            customPrimaryLines ??= <double, _Float32Buffer>{};
+            (customPrimaryLines[scaledThickness] ??= _Float32Buffer(
+              32,
+            )).addSegment(element.start, element.end);
+          }
         }
       }
 
@@ -246,7 +324,9 @@ class CanvasBackgroundPainter extends CustomPainter {
 
       if (secondaryElements != null) {
         for (final element in secondaryElements) {
-          final width = element.thickness ?? defaultThickness;
+          final width = element.thickness != null
+              ? element.thickness! * infiniteThicknessScale
+              : defaultThickness;
           paint
             ..strokeWidth = width
             ..color = element.secondaryColor
@@ -315,7 +395,7 @@ class CanvasBackgroundPainter extends CustomPainter {
   ) {
     if (lineHeight <= 0 || !scale.isFinite || scale <= 0) return lineHeight;
     var step = lineHeight;
-    final minScreenSpacing = pattern == .dots ? 10.0 : 6.0;
+    final minScreenSpacing = pattern == .dots ? 16.0 : 6.0;
     while (step * scale < minScreenSpacing && step < 10000000) {
       step *= 2;
     }
@@ -338,13 +418,23 @@ class CanvasBackgroundPainter extends CustomPainter {
         isInfiniteCanvas &&
         (viewportRect == null ||
             oldDelegate.viewportRect == null ||
-            _quantizedInfiniteRect(
+            quantizedInfiniteRect(
                   oldDelegate.viewportRect,
                   oldDelegate.currentScale,
                 ) !=
-                _quantizedInfiniteRect(viewportRect, currentScale));
+                quantizedInfiniteRect(viewportRect, currentScale));
+    final normalHighZoomChanged =
+        !isInfiniteCanvas &&
+        backgroundPattern != .none &&
+        (currentScale > 1.5 || oldDelegate.currentScale > 1.5) &&
+        _quantizedNormalHighZoomRect(
+              oldDelegate.viewportRect,
+              oldDelegate.currentScale,
+            ) !=
+            _quantizedNormalHighZoomRect(viewportRect, currentScale);
     return lodChanged ||
         viewportChanged ||
+        normalHighZoomChanged ||
         oldDelegate.invert != invert ||
         oldDelegate.backgroundColor != backgroundColor ||
         oldDelegate.backgroundPattern != backgroundPattern ||

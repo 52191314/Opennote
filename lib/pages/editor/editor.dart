@@ -181,7 +181,7 @@ class EditorState extends State<Editor>
   int get lineHeight => coreInfo.lineHeight;
 
   @override
-  double get currentScale => _transformationController.value.approxScale;
+  double get currentScale => _transformationController.value.maxScale2D;
 
   late bool needsNaming = widget.needsNaming && stows.editorPromptRename.value;
 
@@ -243,8 +243,8 @@ class EditorState extends State<Editor>
   Timer? _delayedSaveTimer;
   Timer? _watchServerTimer;
 
-  // used to prevent accidentally drawing when pinch zooming
   var lastSeenPointerCount = 0;
+  var _recordedDrawInCurrentTouch = false;
   Timer? _lastSeenPointerCountTimer;
 
   ValueNotifier<QuillStruct?> quillFocus = ValueNotifier(null);

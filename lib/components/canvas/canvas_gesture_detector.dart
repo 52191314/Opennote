@@ -8,10 +8,13 @@ import 'dart:math';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:saber/components/canvas/_canvas_background_painter.dart';
+import 'package:saber/components/canvas/_canvas_painter.dart';
 import 'package:saber/components/canvas/gesture_detector/canvas_transform_cache.dart';
 import 'package:saber/components/canvas/hud/canvas_hud.dart';
 import 'package:saber/components/canvas/hud/floating_layers_overlay.dart';
 import 'package:saber/components/canvas/hud/protractor_overlay.dart';
+import 'package:saber/components/canvas/interactive/canvas_matrix_math.dart';
 import 'package:saber/components/canvas/interactive_canvas.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/extensions/change_notifier_extensions.dart';
@@ -197,7 +200,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
   /// If zooming is locked, this is the zoom level.
   /// Otherwise, this is null.
   late double? zoomLockedValue = stows.lastZoomLock.value
-      ? widget._transformationController.value.approxScale
+      ? widget._transformationController.value.maxScale2D
       : null;
 
   /// Whether single-finger panning is locked.
@@ -217,6 +220,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
   late Keybinding _leftKey, _rightKey, _upKey, _downKey;
 
   Timer? _snapZoomTimer;
+  var _isGestureActive = false;
 
   final Map<int, Offset> _pointerPositions = {};
   DateTime? _multiPointerDownTime;
@@ -231,6 +235,12 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
     required BoxConstraints containerBounds,
     double minScale = CanvasGestureDetector.kMinScale,
   }) {
+    if (!containerBounds.hasBoundedWidth ||
+        !containerBounds.hasBoundedHeight ||
+        containerBounds.maxWidth <= 0 ||
+        containerBounds.maxHeight <= 0) {
+      return null;
+    }
     final oldScale = transformation.maxScale2D;
     if (!oldScale.isFinite || oldScale <= 0) return null;
     double newScale = oldScale + scaleDelta;
@@ -312,7 +322,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
         final transform = cached!.transform;
         widget._transformationController.value = transform;
         if (zoomLockedValue != null) {
-          zoomLockedValue = transform.approxScale;
+          zoomLockedValue = transform.maxScale2D;
         }
       case CanvasOpenScroll.scrollToPage:
         CanvasGestureDetector.scrollToPage(
@@ -328,33 +338,29 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
 
   var _isAdjustingTransform = false;
 
-  /// Corrects the transform if it's out of bounds.
-  /// If the scale is less than 1, centers the pages horizontally.
-  /// Otherwise, prevents the user from scrolling past the edges.
-  void onTransformChanged() {
-    if (_isAdjustingTransform) return;
-    final scale = widget._transformationController.value.maxScale2D;
-    if (scale <= 0 || scale.isNaN || scale.isInfinite) return;
-
-    // snap to 1.0x zoom
+  void _scheduleSnapZoomIfNeeded() {
     _snapZoomTimer?.cancel();
+    if (_isGestureActive) return;
+    final scale = widget._transformationController.value.maxScale2D;
+    if (!scale.isFinite || scale <= 0) return;
+
     final diffFrom1 = (scale - 1).abs();
-    // allow 0.001 leeway for floating point error
     if (diffFrom1 < 0.05 && diffFrom1 > 0.001) {
       _snapZoomTimer = Timer(const Duration(milliseconds: 200), resetZoom);
     }
+  }
 
-    // In infinite canvas mode, allow completely free pan in all 2D directions
-    if (widget.isInfiniteCanvas) return;
+  ({double dx, double dy}) _computeBoundsAdjustment(Matrix4 matrix) {
+    if (widget.isInfiniteCanvas) return (dx: 0.0, dy: 0.0);
+    final scale = matrix.maxScale2D;
+    if (!scale.isFinite || scale <= 0) return (dx: 0.0, dy: 0.0);
 
-    final translation = widget._transformationController.value.getTranslation();
-
+    final translation = matrix.getTranslation();
     double adjustmentX = 0;
     double adjustmentY = 0;
 
     if (scale < 1) {
       if (containerBounds.hasBoundedWidth && containerBounds.maxWidth > 0) {
-        // horizontally center pages if zoomed out
         final center = containerBounds.maxWidth * (1 - scale) / 2;
         adjustmentX = center - translation.x;
       }
@@ -370,7 +376,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
                   : 1000,
             ) *
             scale;
-        final maxY = containerBounds.maxHeight * 0.5;
+        final maxY = (1.0 - scale) * containerBounds.maxHeight * 0.5;
         final minY = min(
           0.0,
           containerBounds.maxHeight * 0.5 - totalContentHeight,
@@ -382,12 +388,13 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
         }
       }
     } else {
-      // if zoomed in, don't allow scrolling past the edges
-      late final minX = containerBounds.maxWidth * (1 - scale);
-      if (translation.x > 0) {
-        adjustmentX = -translation.x;
-      } else if (translation.x < minX) {
-        adjustmentX = minX - translation.x;
+      if (containerBounds.hasBoundedWidth && containerBounds.maxWidth > 0) {
+        final minX = containerBounds.maxWidth * (1 - scale);
+        if (translation.x > 0) {
+          adjustmentX = -translation.x;
+        } else if (translation.x < minX) {
+          adjustmentX = minX - translation.x;
+        }
       }
 
       if (translation.y > 0) {
@@ -395,12 +402,136 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
       }
     }
 
-    if (adjustmentX.abs() > 0.1 || adjustmentY.abs() > 0.1) {
+    return (dx: adjustmentX, dy: adjustmentY);
+  }
+
+  Matrix4 _constrainTransformMatrix(Matrix4 matrix) {
+    final adjustment = _computeBoundsAdjustment(matrix);
+    if (adjustment.dx == 0.0 && adjustment.dy == 0.0) return matrix;
+    return matrix.clone()
+      ..leftTranslateByDouble(adjustment.dx, adjustment.dy, 0, 1);
+  }
+
+  bool _shouldRebuildPages(
+    Matrix4 oldMatrix,
+    Matrix4 newMatrix,
+    Size viewportSize,
+  ) {
+    final oldScale = oldMatrix.maxScale2D;
+    final newScale = newMatrix.maxScale2D;
+    if (!oldScale.isFinite ||
+        oldScale <= 0 ||
+        !newScale.isFinite ||
+        newScale <= 0) {
+      return false;
+    }
+
+    if (CanvasPainter.visualScaleBucket(oldScale) !=
+        CanvasPainter.visualScaleBucket(newScale)) {
+      return true;
+    }
+    if (CanvasBackgroundPainter.quantizedScaleForInfinite(oldScale) !=
+        CanvasBackgroundPainter.quantizedScaleForInfinite(newScale)) {
+      return true;
+    }
+
+    final viewport = Offset.zero & viewportSize;
+    final oldBounds = _axisAlignedBoundingBox(
+      canvasTransformViewport(oldMatrix, viewport),
+    );
+    final newBounds = _axisAlignedBoundingBox(
+      canvasTransformViewport(newMatrix, viewport),
+    );
+
+    if (widget.isInfiniteCanvas) {
+      if (CanvasBackgroundPainter.quantizedInfiniteRect(oldBounds, oldScale) !=
+          CanvasBackgroundPainter.quantizedInfiniteRect(newBounds, newScale)) {
+        return true;
+      }
+      if ((oldScale > 1.5 || newScale > 1.5) &&
+          CanvasPainter.quantizedHighZoomViewport(oldBounds, oldScale) !=
+              CanvasPainter.quantizedHighZoomViewport(newBounds, newScale)) {
+        return true;
+      }
+      return false;
+    }
+
+    final containerWidth =
+        containerBounds.hasBoundedWidth && containerBounds.maxWidth > 0
+        ? containerBounds.maxWidth
+        : viewportSize.width;
+    final firstPageWidth = widget.pages.isNotEmpty
+        ? widget.pages.first.size.width
+        : 1000.0;
+    final fittedRatio = firstPageWidth > 0
+        ? min(firstPageWidth, containerWidth) / firstPageWidth
+        : min(containerWidth / 1000.0, 1.0);
+    final oldChrome = oldScale * fittedRatio < 0.35 || oldScale > 1.8;
+    final newChrome = newScale * fittedRatio < 0.35 || newScale > 1.8;
+    if (oldChrome != newChrome) return true;
+
+    final checkHighZoom = oldScale > 1.5 || newScale > 1.5;
+    double topOfPage = Editor.gapBetweenPages * 2;
+    for (int pageIndex = 0; pageIndex < widget.pages.length; pageIndex++) {
+      final page = widget.pages[pageIndex];
+      final pageWidth = min(page.size.width, containerWidth);
+      final pageHeight = pageWidth / page.size.width * page.size.height;
+      final bottomOfPage = topOfPage + pageHeight;
+
+      final wasInViewport =
+          oldBounds.bottom >= topOfPage && oldBounds.top <= bottomOfPage;
+      final isInViewport =
+          newBounds.bottom >= topOfPage && newBounds.top <= bottomOfPage;
+      if (wasInViewport != isInViewport) return true;
+
+      if (checkHighZoom && isInViewport) {
+        final oldPageLocal = _computePageLocalViewport(
+          pageSize: page.size,
+          pageWidth: pageWidth,
+          topOfPage: topOfPage,
+          containerWidth: containerWidth,
+          boundingBox: oldBounds,
+        );
+        final newPageLocal = _computePageLocalViewport(
+          pageSize: page.size,
+          pageWidth: pageWidth,
+          topOfPage: topOfPage,
+          containerWidth: containerWidth,
+          boundingBox: newBounds,
+        );
+        if (CanvasPainter.quantizedHighZoomViewport(oldPageLocal, oldScale) !=
+            CanvasPainter.quantizedHighZoomViewport(newPageLocal, newScale)) {
+          return true;
+        }
+      }
+
+      topOfPage = bottomOfPage + Editor.gapBetweenPages;
+    }
+
+    return false;
+  }
+
+  /// Corrects the transform if it's out of bounds.
+  /// If the scale is less than 1, centers the pages horizontally.
+  /// Otherwise, prevents the user from scrolling past the edges.
+  void onTransformChanged() {
+    if (_isAdjustingTransform) return;
+    final scale = widget._transformationController.value.maxScale2D;
+    if (!scale.isFinite || scale <= 0) return;
+
+    _scheduleSnapZoomIfNeeded();
+
+    if (widget.isInfiniteCanvas) return;
+
+    final adjustment = _computeBoundsAdjustment(
+      widget._transformationController.value,
+    );
+    if (adjustment.dx.abs() > 0.1 || adjustment.dy.abs() > 0.1) {
       _isAdjustingTransform = true;
       try {
         widget._transformationController.value =
             widget._transformationController.value.clone()
-              ..leftTranslateByDouble(adjustmentX, adjustmentY, 0, 1);
+              ..leftTranslateByDouble(adjustment.dx, adjustment.dy, 0, 1);
       } finally {
         _isAdjustingTransform = false;
       }
@@ -417,50 +548,58 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
           onPointerUp: _listenerPointerUpEvent,
           onPointerCancel: _listenerPointerUpEvent,
           onPointerHover: _listenerPointerHoverEvent,
-          child: GestureDetector(
-            child: LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints containerBounds) {
-                this.containerBounds = containerBounds;
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints containerBounds) {
+              this.containerBounds = containerBounds;
 
-                final effectiveMinScale = CanvasGestureDetector.minScaleFor(
-                  isInfiniteCanvas: widget.isInfiniteCanvas,
-                );
+              final effectiveMinScale = CanvasGestureDetector.minScaleFor(
+                isInfiniteCanvas: widget.isInfiniteCanvas,
+              );
 
-                return InteractiveCanvasViewer.builder(
-                  palmEngine: _palmEngine,
-                  minScale: zoomLockedValue ?? effectiveMinScale,
-                  maxScale: zoomLockedValue ?? CanvasGestureDetector.kMaxScale,
-                  panEnabled: !singleFingerPanLock,
-                  panAxis: axisAlignedPanLock ? PanAxis.aligned : PanAxis.free,
+              return InteractiveCanvasViewer.builder(
+                palmEngine: _palmEngine,
+                minScale: zoomLockedValue ?? effectiveMinScale,
+                maxScale: zoomLockedValue ?? CanvasGestureDetector.kMaxScale,
+                panEnabled: !singleFingerPanLock,
+                panAxis: axisAlignedPanLock ? PanAxis.aligned : PanAxis.free,
 
-                  // Smoother scrolling fling gesture than the default
-                  interactionEndFrictionCoefficient: 0.3,
+                // Smoother scrolling fling gesture than the default
+                interactionEndFrictionCoefficient: 0.3,
 
-                  // we need a non-zero boundary margin so we can zoom out
-                  // past the size of the page (for minScale < 1)
-                  boundaryMargin: const EdgeInsets.all(double.infinity),
+                // we need a non-zero boundary margin so we can zoom out
+                // past the size of the page (for minScale < 1)
+                boundaryMargin: const EdgeInsets.all(double.infinity),
 
-                  transformationController: widget._transformationController,
+                transformationController: widget._transformationController,
 
-                  isDrawGesture: widget.isDrawGesture,
-                  onInteractionEnd: widget.onInteractionEnd,
-                  onDrawStart: widget.onDrawStart,
-                  onDrawUpdate: widget.onDrawUpdate,
-                  onDrawEnd: widget.onDrawEnd,
+                isDrawGesture: widget.isDrawGesture,
+                onInteractionStart: (_) {
+                  _isGestureActive = true;
+                  _snapZoomTimer?.cancel();
+                },
+                onInteractionEnd: (details) {
+                  _isGestureActive = false;
+                  _scheduleSnapZoomIfNeeded();
+                  widget.onInteractionEnd?.call(details);
+                },
+                constrainMatrix: _constrainTransformMatrix,
+                shouldRebuildBuilder: _shouldRebuildPages,
+                onDrawStart: widget.onDrawStart,
+                onDrawUpdate: widget.onDrawUpdate,
+                onDrawEnd: widget.onDrawEnd,
 
-                  builder: (BuildContext context, Quad viewport) {
-                    return _PagesBuilder(
-                      pages: widget.pages,
-                      pageBuilder: widget.pageBuilder,
-                      placeholderPageBuilder: widget.placeholderPageBuilder,
-                      boundingBox: _axisAlignedBoundingBox(viewport),
-                      containerWidth: containerBounds.maxWidth,
-                      isInfiniteCanvas: widget.isInfiniteCanvas,
-                    );
-                  },
-                );
-              },
-            ),
+                builder: (BuildContext context, Quad viewport) {
+                  return _PagesBuilder(
+                    pages: widget.pages,
+                    pageBuilder: widget.pageBuilder,
+                    placeholderPageBuilder: widget.placeholderPageBuilder,
+                    boundingBox: _axisAlignedBoundingBox(viewport),
+                    containerWidth: containerBounds.maxWidth,
+                    isInfiniteCanvas: widget.isInfiniteCanvas,
+                  );
+                },
+              );
+            },
           ),
         ),
         if (showProtractor) const ProtractorOverlay(),
@@ -471,7 +610,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
               zoomLock: zoomLockedValue != null,
               setZoomLock: (bool zoomLock) => setState(() {
                 zoomLockedValue = zoomLock
-                    ? widget._transformationController.value.approxScale
+                    ? widget._transformationController.value.maxScale2D
                     : null;
                 stows.lastZoomLock.value = zoomLock;
               }),

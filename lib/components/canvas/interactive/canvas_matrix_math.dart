@@ -110,6 +110,15 @@ Offset canvasGetMatrixTranslation(Matrix4 matrix) {
 
 /// Transforms the four corners of [viewport] by the inverse of [matrix].
 Quad canvasTransformViewport(Matrix4 matrix, Rect viewport) {
+  final double det = matrix.determinant();
+  if (!det.isFinite || det.abs() < 1e-12) {
+    return Quad.points(
+      Vector3(viewport.topLeft.dx, viewport.topLeft.dy, 0),
+      Vector3(viewport.topRight.dx, viewport.topRight.dy, 0),
+      Vector3(viewport.bottomRight.dx, viewport.bottomRight.dy, 0),
+      Vector3(viewport.bottomLeft.dx, viewport.bottomLeft.dy, 0),
+    );
+  }
   final Matrix4 inverseMatrix = matrix.clone()..invert();
   return Quad.points(
     inverseMatrix.transform3(

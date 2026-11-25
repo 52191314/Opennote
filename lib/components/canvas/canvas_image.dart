@@ -245,15 +245,7 @@ class _CanvasImageState extends State<CanvasImage> {
     );
 
     if (widget.isBackground) {
-      return AnimatedPositioned(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.fastLinearToSlowEaseIn,
-        left: 0,
-        top: 0,
-        right: 0,
-        bottom: 0,
-        child: unpositioned,
-      );
+      return Positioned.fill(child: unpositioned);
     }
     return AnimatedPositioned(
       // no animation if the image is being dragged or it's selected

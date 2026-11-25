@@ -11,7 +11,7 @@ typedef _PageIndicatorCacheKey = (
 );
 
 final Map<_PageIndicatorCacheKey, ui.Paragraph> _pageIndicatorCache = {};
-const _pageIndicatorCacheMaxEntries = 16;
+const _pageIndicatorCacheMaxEntries = 64;
 
 extension _CursorPainter on CanvasPainter {
   void _drawPenPreview(Canvas canvas) {
@@ -98,7 +98,16 @@ extension _CursorPainter on CanvasPainter {
     if (paragraph == null) {
       if (_pageIndicatorCache.length >= _pageIndicatorCacheMaxEntries) {
         final oldestKey = _pageIndicatorCache.keys.first;
-        _pageIndicatorCache.remove(oldestKey)?.dispose();
+        final evicted = _pageIndicatorCache.remove(oldestKey);
+        if (evicted != null) {
+          try {
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => evicted.dispose(),
+            );
+          } on FlutterError {
+            evicted.dispose();
+          }
+        }
       }
       final style = ui.ParagraphStyle(
         textAlign: .end,

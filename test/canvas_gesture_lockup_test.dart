@@ -49,8 +49,8 @@ void main() {
         // 2. End zoom interaction
         editorState.onInteractionEnd(ScaleEndDetails());
 
-        // Wait 15ms so the existing 10ms timer fires
-        await tester.pump(const Duration(milliseconds: 15));
+        // Wait 50ms so the post-pinch trailing-finger guard timer (40ms) fires
+        await tester.pump(const Duration(milliseconds: 50));
 
         // 3. Start a new single-finger draw gesture
         final drawStart = ScaleStartDetails(

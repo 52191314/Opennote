@@ -15,16 +15,20 @@ import 'package:saber/components/canvas/_canvas_painter.dart';
 import 'package:saber/components/canvas/_dimension_stroke.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/_tape_stroke.dart';
+import 'package:saber/components/canvas/canvas.dart' as saber_canvas;
 import 'package:saber/components/canvas/canvas_gesture_detector.dart';
+import 'package:saber/components/canvas/hud/canvas_hud.dart';
 import 'package:saber/components/canvas/hud/canvas_zoom_indicator.dart';
 import 'package:saber/components/canvas/inner_canvas.dart';
 import 'package:saber/components/canvas/interactive_canvas.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
+import 'package:saber/data/editor/editor_history.dart';
 import 'package:saber/data/editor/page.dart';
 import 'package:saber/data/extensions/matrix4_extensions.dart';
 import 'package:saber/data/flavor_config.dart';
 import 'package:saber/data/tools/highlighter.dart';
 import 'package:saber/data/tools/palm_rejection.dart';
+import 'package:saber/data/tools/pen.dart';
 import 'package:saber/i18n/strings.g.dart';
 import 'package:sbn/canvas_background_pattern.dart';
 import 'package:sbn/tool_id.dart';
@@ -567,7 +571,9 @@ void main() {
             )
             .evaluate()
             .length;
-        expect(boundariesAt8x, equals(0));
+        // On Impeller, stable RepaintBoundary layers retain vector DisplayLists
+        // across all zoom levels without mid-pinch RenderObject destruction.
+        expect(boundariesAt8x, equals(boundariesAt1x));
       },
     );
 
@@ -1089,6 +1095,361 @@ void main() {
         await tester.pumpWidget(buildAtScale(0.4));
         final stateAt04x = tester.state(find.byType(DeferredPointerHandler));
         expect(identical(stateAt1x, stateAt04x), isTrue);
+      },
+    );
+  });
+
+  group('8. 120Hz Decoupled Transform, Zero-Repaint & Freeze-Proof Invariants', () {
+    testWidgets(
+      'InteractiveCanvasViewer.builder runs builder once across 30 consecutive 120Hz pinch frames when shouldRebuildBuilder returns false',
+      (tester) async {
+        final controller = TransformationController();
+        addTearDown(controller.dispose);
+        var buildCount = 0;
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: SizedBox(
+              width: 393,
+              height: 852,
+              child: InteractiveCanvasViewer.builder(
+                minScale: 0.2,
+                maxScale: 10.0,
+                boundaryMargin: const EdgeInsets.all(double.infinity),
+                transformationController: controller,
+                shouldRebuildBuilder: (oldM, newM, viewportSize) => false,
+                builder: (context, viewport) {
+                  buildCount++;
+                  return const SizedBox(width: 393, height: 1150);
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(buildCount, equals(1));
+
+        // Simulate 30 consecutive 120Hz zoom matrix updates (1.0x -> 1.9x).
+        for (var i = 1; i <= 30; i++) {
+          final scale = 1.0 + i * 0.03;
+          controller.value = Matrix4.identity()
+            ..scaleByDouble(scale, scale, 1.0, 1.0);
+          await tester.pump(const Duration(milliseconds: 8));
+        }
+
+        // Builder must NOT have been re-invoked during continuous transform updates!
+        expect(buildCount, equals(1));
+        expect(controller.value.maxScale2D, closeTo(1.9, 1e-4));
+      },
+    );
+
+    test(
+      'CanvasGestureDetectorState.setZoom returns null (never NaN) on unbounded pre-layout BoxConstraints',
+      () {
+        final result = CanvasGestureDetectorState.setZoom(
+          scaleDelta: 0.5,
+          transformation: Matrix4.identity(),
+          containerBounds: const BoxConstraints(),
+        );
+        expect(result, isNull);
+      },
+    );
+
+    testWidgets(
+      'Canvas + InnerCanvas keep identical InnerCanvas & DeferredPointerHandler State across 0.2x..10.0x without GlobalKey reparenting',
+      (tester) async {
+        final coreInfo = EditorCoreInfo(filePath: '/stable_tree_test');
+        final page = EditorPage(size: const Size(1000, 1400));
+        addTearDown(page.dispose);
+        coreInfo.pages = [page];
+
+        Widget buildCanvasAtScale(double scale) => TranslationProvider(
+          child: MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 393,
+                height: 852,
+                child: saber_canvas.Canvas(
+                  path: coreInfo.filePath,
+                  page: page,
+                  pageIndex: 0,
+                  textEditing: false,
+                  coreInfo: coreInfo,
+                  currentStroke: null,
+                  currentStrokeDetectedShape: null,
+                  currentSelection: null,
+                  setAsBackground: null,
+                  currentTool: Pen.currentPen,
+                  currentScale: scale,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(buildCanvasAtScale(1.0));
+        final innerState = tester.state(find.byType(InnerCanvas));
+        final deferState = tester.state(find.byType(DeferredPointerHandler));
+
+        for (final scale in [0.2, 0.4, 0.85, 1.5, 2.0, 2.5, 10.0, 0.5, 1.0]) {
+          await tester.pumpWidget(buildCanvasAtScale(scale));
+          expect(
+            identical(innerState, tester.state(find.byType(InnerCanvas))),
+            isTrue,
+            reason: 'InnerCanvas must not remount at scale $scale',
+          );
+          expect(
+            identical(
+              deferState,
+              tester.state(find.byType(DeferredPointerHandler)),
+            ),
+            isTrue,
+            reason: 'DeferredPointerHandler must not remount at scale $scale',
+          );
+        }
+      },
+    );
+
+    test(
+      'CanvasBackgroundPainter.quantizedInfiniteRect stays constant across continuous zoom within an octave and caps dots without vanishing',
+      () {
+        const viewport = Rect.fromLTWH(-200, -300, 1200, 1600);
+        final q1 = CanvasBackgroundPainter.quantizedInfiniteRect(
+          viewport,
+          0.95,
+        );
+        final q2 = CanvasBackgroundPainter.quantizedInfiniteRect(
+          viewport,
+          0.82,
+        );
+        final q3 = CanvasBackgroundPainter.quantizedInfiniteRect(
+          viewport,
+          0.62,
+        );
+        expect(q1, isNotNull);
+        expect(q2, equals(q1));
+        expect(q3, equals(q1));
+
+        const bg1 = CanvasBackgroundPainter(
+          invert: false,
+          backgroundColor: Colors.white,
+          backgroundPattern: CanvasBackgroundPattern.dots,
+          lineHeight: 40,
+          lineThickness: 2,
+          isInfiniteCanvas: true,
+          viewportRect: viewport,
+          currentScale: 0.92,
+        );
+        const bg2 = CanvasBackgroundPainter(
+          invert: false,
+          backgroundColor: Colors.white,
+          backgroundPattern: CanvasBackgroundPattern.dots,
+          lineHeight: 40,
+          lineThickness: 2,
+          isInfiniteCanvas: true,
+          viewportRect: viewport,
+          currentScale: 0.78,
+        );
+        expect(bg2.shouldRepaint(bg1), isFalse);
+
+        // Verify dot background paints quickly across 0.25x..0.5x without hitting 50k vanish cliff.
+        for (final scale in [0.5, 0.35, 0.26, 0.1, 0.02]) {
+          final vp = Rect.fromLTWH(
+            -500 / scale,
+            -700 / scale,
+            1000 / scale,
+            1400 / scale,
+          );
+          final recorder = ui.PictureRecorder();
+          final canvas = Canvas(recorder);
+          CanvasBackgroundPainter(
+            invert: false,
+            backgroundColor: Colors.white,
+            backgroundPattern: CanvasBackgroundPattern.dots,
+            lineHeight: 40,
+            lineThickness: 2,
+            isInfiniteCanvas: true,
+            viewportRect: vp,
+            currentScale: scale,
+          ).paint(canvas, const Size(1000, 1400));
+          final pic = recorder.endRecording();
+          pic.dispose();
+        }
+      },
+    );
+
+    test(
+      'CanvasPainter.quantizedHighZoomViewport tightens padding inversely at 10.0x and skips offscreen Rect.zero pages',
+      () {
+        const tinyViewport = Rect.fromLTWH(200, 300, 100, 200);
+        final qAt2x = CanvasPainter.quantizedHighZoomViewport(
+          tinyViewport,
+          2.0,
+        )!;
+        final qAt10x = CanvasPainter.quantizedHighZoomViewport(
+          tinyViewport,
+          10.0,
+        )!;
+        expect(qAt10x.width, lessThan(qAt2x.width));
+        expect(qAt10x.height, lessThan(qAt2x.height));
+
+        // Offscreen focused page with viewportRect == Rect.zero paints zero stroke paths.
+        final page = EditorPage(size: _pageSize);
+        addTearDown(page.dispose);
+        page.insertStroke(
+          _createStyledStroke(
+            page,
+            lineStyle: LineStyle.solid,
+            points: const [Offset(50, 50), Offset(150, 150)],
+          ),
+        );
+        final recorder = ui.PictureRecorder();
+        final canvas = Canvas(recorder);
+        CanvasPainter(
+          page: page,
+          laserStrokes: const [],
+          currentStroke: null,
+          currentSelection: null,
+          primaryColor: Colors.blue,
+          showPageIndicator: false,
+          pageIndex: 0,
+          totalPages: 1,
+          currentScale: 2.0,
+          defaultTextStyle: const TextStyle(fontSize: 14),
+          viewportRect: Rect.zero,
+        ).paint(canvas, _pageSize);
+        final pic = recorder.endRecording();
+        pic.dispose();
+      },
+    );
+
+    test(
+      'PalmRejectionEngine recovers stuck stylus on hover, allows post-stylus multi-touch pinch, and tolerates 120Hz fingertip flattening',
+      () {
+        final engine = PalmRejectionEngine(
+          writingPosture: WritingPosture.rightBelow,
+          sensitivity: PalmRejectionSensitivity.medium,
+        );
+
+        // 1. Stuck stylus down recovers on real PointerHoverEvent (stylus lifted).
+        engine.notifyStylusEvent(
+          const PointerDownEvent(
+            pointer: 1,
+            position: Offset(200, 200),
+            kind: PointerDeviceKind.stylus,
+          ),
+        );
+        expect(engine.isStylusDown, isTrue);
+
+        engine.notifyStylusEvent(
+          const PointerHoverEvent(
+            position: Offset(200, 200),
+            kind: PointerDeviceKind.stylus,
+          ),
+        );
+        expect(engine.isStylusDown, isFalse);
+
+        // 2. Multi-touch pinch inside posture zone right after stylus lift is allowed.
+        const pinchFinger2 = PointerDownEvent(
+          pointer: 2,
+          position: Offset(260, 300),
+          kind: PointerDeviceKind.touch,
+          radiusMajor: 26.0,
+        );
+        expect(engine.isPalm(pinchFinger2, isMultiTouch: true), isFalse);
+
+        // 3. No-stylus 120Hz fingertip touchdown flattening (9pt -> 26pt) is not rejected.
+        engine.reset();
+        const f1Down = PointerDownEvent(
+          pointer: 3,
+          position: Offset(150, 300),
+          kind: PointerDeviceKind.touch,
+          radiusMajor: 9.0,
+        );
+        const f1Move = PointerMoveEvent(
+          pointer: 3,
+          position: Offset(152, 300),
+          kind: PointerDeviceKind.touch,
+          radiusMajor: 26.0,
+        );
+        expect(engine.isPalm(f1Down), isFalse);
+        expect(engine.isPalm(f1Move), isFalse);
+
+        // 4. PointerUpEvent never leaks a pointer into rejected state.
+        const f1Up = PointerUpEvent(
+          pointer: 3,
+          position: Offset(152, 300),
+          kind: PointerDeviceKind.touch,
+          radiusMajor: 55.0,
+        );
+        expect(engine.isPalm(f1Up), isFalse);
+      },
+    );
+
+    test(
+      'EditorHistory.removeAccidentalStroke safely returns null on non-draw history items without asserting or corrupting history',
+      () {
+        final history = EditorHistory();
+        final page = EditorPage(size: _pageSize);
+        addTearDown(page.dispose);
+
+        history.recordChange(
+          EditorHistoryItem(
+            type: .insertPage,
+            pageIndex: 1,
+            strokes: const [],
+            images: const [],
+            page: page,
+          ),
+        );
+
+        expect(history.removeAccidentalStroke(), isNull);
+        expect(history.canUndo, isTrue);
+        expect(
+          history.peekUndo().type,
+          equals(EditorHistoryItemType.insertPage),
+        );
+      },
+    );
+
+    testWidgets(
+      'CanvasHud filtered zoom indicator updates when formatted zoom text changes and stays stable during pure pan',
+      (tester) async {
+        final controller = TransformationController();
+        addTearDown(controller.dispose);
+
+        await tester.pumpWidget(
+          TranslationProvider(
+            child: MaterialApp(
+              home: Scaffold(
+                body: CanvasHud(
+                  transformationController: controller,
+                  zoomLock: false,
+                  setZoomLock: (_) {},
+                  resetZoom: () {},
+                  singleFingerPanLock: false,
+                  setSingleFingerPanLock: (_) {},
+                  axisAlignedPanLock: false,
+                  setAxisAlignedPanLock: (_) {},
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('1.0x'), findsOneWidget);
+
+        // Pure pan keeps text at 1.0x.
+        controller.value = Matrix4.translationValues(40, -60, 0);
+        await tester.pump();
+        expect(find.text('1.0x'), findsOneWidget);
+
+        // Zoom to 2.5x updates indicator cleanly.
+        controller.value = Matrix4.identity()
+          ..scaleByDouble(2.5, 2.5, 1.0, 1.0);
+        await tester.pump();
+        expect(find.text('2.5x'), findsOneWidget);
       },
     );
   });

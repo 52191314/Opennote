@@ -1,6 +1,48 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
 part of '../_canvas_painter.dart';
 
+typedef _DashPathCacheKey = (
+  int pathIdentity,
+  Rect bounds,
+  double quantizedInvScale,
+  double dashOn,
+  double dashOff,
+);
+
+final Map<_DashPathCacheKey, Path> _dashPathCache = {};
+const _dashPathCacheMaxEntries = 8;
+
+double _quantizeSelectionInvScale(double invScale) =>
+    (invScale * 4).round() / 4.0;
+
+Path _getCachedDashPath({
+  required int pathIdentity,
+  required Rect bounds,
+  required Path Function() buildSourcePath,
+  required double invScale,
+  required double dashOn,
+  required double dashOff,
+}) {
+  final qScale = _quantizeSelectionInvScale(invScale);
+  final key = (pathIdentity, bounds, qScale, dashOn, dashOff);
+  final cached = _dashPathCache[key];
+  if (cached != null) {
+    _dashPathCache.remove(key);
+    _dashPathCache[key] = cached;
+    return cached;
+  }
+
+  if (_dashPathCache.length >= _dashPathCacheMaxEntries) {
+    _dashPathCache.remove(_dashPathCache.keys.first);
+  }
+  final dashed = dashPath(
+    buildSourcePath(),
+    dashArray: CircularIntervalList([dashOn * qScale, dashOff * qScale]),
+  );
+  _dashPathCache[key] = dashed;
+  return dashed;
+}
+
 extension _SelectionPainter on CanvasPainter {
   double get _invSelectionScale =>
       (currentScale.isFinite && currentScale > 0 && currentScale < 1.0)
@@ -19,7 +61,6 @@ extension _SelectionPainter on CanvasPainter {
 
     final invScale = _invSelectionScale;
 
-    // While actively drawing the lasso loop, show only a delicate in-progress contour
     if (!isDoneSelecting) {
       page.selectionDeleteButtonRect = null;
       page.selectionRotationHandleCenter = null;
@@ -61,9 +102,13 @@ extension _SelectionPainter on CanvasPainter {
       );
 
       canvas.drawPath(
-        dashPath(
-          currentSelection!.path,
-          dashArray: CircularIntervalList([6 * invScale, 4 * invScale]),
+        _getCachedDashPath(
+          pathIdentity: identityHashCode(currentSelection!.path),
+          bounds: bounds,
+          buildSourcePath: () => currentSelection!.path,
+          invScale: invScale,
+          dashOn: 6,
+          dashOff: 4,
         ),
         Paint()
           ..color = primaryColor.withValues(alpha: 0.85)
@@ -103,9 +148,13 @@ extension _SelectionPainter on CanvasPainter {
     );
 
     canvas.drawPath(
-      dashPath(
-        Path()..addRRect(rrect),
-        dashArray: CircularIntervalList([6 * invScale, 4 * invScale]),
+      _getCachedDashPath(
+        pathIdentity: 0,
+        bounds: padded,
+        buildSourcePath: () => Path()..addRRect(rrect),
+        invScale: invScale,
+        dashOn: 6,
+        dashOff: 4,
       ),
       Paint()
         ..color = primaryColor.withValues(alpha: 0.75)
@@ -114,9 +163,13 @@ extension _SelectionPainter on CanvasPainter {
     );
 
     canvas.drawPath(
-      dashPath(
-        currentSelection!.path,
-        dashArray: CircularIntervalList([4 * invScale, 4 * invScale]),
+      _getCachedDashPath(
+        pathIdentity: identityHashCode(currentSelection!.path),
+        bounds: bounds,
+        buildSourcePath: () => currentSelection!.path,
+        invScale: invScale,
+        dashOn: 4,
+        dashOff: 4,
       ),
       Paint()
         ..color = primaryColor.withValues(alpha: 0.25)

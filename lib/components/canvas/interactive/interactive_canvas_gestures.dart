@@ -4,6 +4,9 @@ part of '../interactive_canvas.dart';
 // ignore_for_file: omit_obvious_property_types
 
 extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
+  Matrix4 _constrain(Matrix4 matrix) =>
+      widget.constrainMatrix?.call(matrix) ?? matrix;
+
   // Return a new matrix representing the given matrix after applying the given
   // translation.
   Matrix4 _matrixTranslate(Matrix4 matrix, Offset translation) {
@@ -27,15 +30,15 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
     final Matrix4 nextMatrix = matrix.clone()
       ..translateByDouble(alignedTranslation.dx, alignedTranslation.dy, 0, 1);
 
-    // Transform the viewport to determine where its four corners will be after
-    // the child has been transformed.
-    final Quad nextViewport = canvasTransformViewport(nextMatrix, _viewport);
-
     // If the boundaries are infinite, then no need to check if the translation
     // fits within them.
     if (_boundaryRect.isInfinite) {
       return nextMatrix;
     }
+
+    // Transform the viewport to determine where its four corners will be after
+    // the child has been transformed.
+    final Quad nextViewport = canvasTransformViewport(nextMatrix, _viewport);
 
     // Expand the boundaries with rotation. This prevents the problem where a
     // mismatch in orientation between the viewport and boundaries effectively
@@ -184,10 +187,12 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
   void _onScaleStart(ScaleStartDetails details) {
     if (_controller.isAnimating) {
       _controller.stop();
-      _controller.reset();
       _animation?.removeListener(_handleInertiaAnimation);
       _animation = null;
+      _controller.reset();
     }
+
+    widget.onInteractionStart?.call(details);
 
     _gestureType = null;
     _currentAxis = null;
@@ -261,14 +266,20 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
         // the same places in the scene. That means that the focal point of
         // the scale should be on the same place in the scene before and after
         // the scale.
+        final double det = scaledMatrix.determinant();
+        if (!det.isFinite || det.abs() < 1e-12) {
+          return;
+        }
         final Matrix4 scaledInverse = scaledMatrix.clone()..invert();
         final Vector3 focalVec = scaledInverse.transform3(
           Vector3(details.localFocalPoint.dx, details.localFocalPoint.dy, 0),
         );
         final Offset focalPointSceneScaled = Offset(focalVec.x, focalVec.y);
-        _transformer.value = _matrixTranslate(
-          scaledMatrix,
-          focalPointSceneScaled - _referenceFocalPoint!,
+        _transformer.value = _constrain(
+          _matrixTranslate(
+            scaledMatrix,
+            focalPointSceneScaled - _referenceFocalPoint!,
+          ),
         );
 
         // details.localFocalPoint should now be at the same location as the
@@ -289,10 +300,12 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
           return;
         }
         final double desiredRotation = _rotationStart! + details.rotation;
-        _transformer.value = _matrixRotate(
-          _transformer.value,
-          _currentRotation - desiredRotation,
-          details.localFocalPoint,
+        _transformer.value = _constrain(
+          _matrixRotate(
+            _transformer.value,
+            _currentRotation - desiredRotation,
+            details.localFocalPoint,
+          ),
         );
         _currentRotation = desiredRotation;
 
@@ -318,9 +331,8 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
         // focal point before and after the movement.
         final Offset translationChange =
             focalPointScene - _referenceFocalPoint!;
-        _transformer.value = _matrixTranslate(
-          _transformer.value,
-          translationChange,
+        _transformer.value = _constrain(
+          _matrixTranslate(_transformer.value, translationChange),
         );
         _referenceFocalPoint = _transformer.toScene(details.localFocalPoint);
     }
@@ -331,16 +343,16 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
   void _onScaleEnd(ScaleEndDetails details) {
     widget.onInteractionEnd?.call(details);
 
-    if (isCurrentGestureADrawGesture) {
-      isCurrentGestureADrawGesture = false;
-      return widget.onDrawEnd?.call(details);
-    }
-
     final endedGestureType = _gestureType;
     _gestureType = null;
     _scaleStart = null;
     _rotationStart = null;
     _referenceFocalPoint = null;
+
+    if (isCurrentGestureADrawGesture) {
+      isCurrentGestureADrawGesture = false;
+      return widget.onDrawEnd?.call(details);
+    }
 
     _animation?.removeListener(_handleInertiaAnimation);
     _controller.reset();
@@ -410,9 +422,11 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
           local - localDelta,
         );
 
-        _transformer.value = _matrixTranslate(
-          _transformer.value,
-          newFocalPointScene - focalPointScene,
+        _transformer.value = _constrain(
+          _matrixTranslate(
+            _transformer.value,
+            newFocalPointScene - focalPointScene,
+          ),
         );
 
         return;
@@ -435,14 +449,17 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
 
     // After scaling, translate such that the event's position is at the
     // same scene point before and after the scale.
+    final double det = scaledMatrix.determinant();
+    if (!det.isFinite || det.abs() < 1e-12) {
+      return;
+    }
     final Matrix4 scaledInverse = scaledMatrix.clone()..invert();
     final Vector3 focalVec = scaledInverse.transform3(
       Vector3(local.dx, local.dy, 0),
     );
     final Offset focalPointSceneScaled = Offset(focalVec.x, focalVec.y);
-    _transformer.value = _matrixTranslate(
-      scaledMatrix,
-      focalPointSceneScaled - focalPointScene,
+    _transformer.value = _constrain(
+      _matrixTranslate(scaledMatrix, focalPointSceneScaled - focalPointScene),
     );
   }
 
@@ -458,10 +475,12 @@ extension _InteractiveCanvasViewerGestures on _InteractiveCanvasViewerState {
     // Translate such that the resulting translation is _animation.value.
     final Vector3 translationVector = _transformer.value.getTranslation();
     final Offset translation = Offset(translationVector.x, translationVector.y);
-    _transformer.value = _matrixTranslate(
-      _transformer.value,
-      _transformer.toScene(_animation!.value) -
-          _transformer.toScene(translation),
+    _transformer.value = _constrain(
+      _matrixTranslate(
+        _transformer.value,
+        _transformer.toScene(_animation!.value) -
+            _transformer.toScene(translation),
+      ),
     );
   }
 }

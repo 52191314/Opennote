@@ -13,7 +13,7 @@ library;
 
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart' show clampDouble;
+import 'package:flutter/foundation.dart' show ValueListenable, clampDouble;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
@@ -45,7 +45,10 @@ class InteractiveCanvasViewer extends StatefulWidget {
     this.palmEngine,
     this.isDrawGesture,
     this.interactionEndFrictionCoefficient = kDrag,
+    this.onInteractionStart,
     this.onInteractionEnd,
+    this.constrainMatrix,
+    this.shouldRebuildBuilder,
     this.onDrawEnd,
     this.onDrawStart,
     this.onDrawUpdate,
@@ -83,7 +86,10 @@ class InteractiveCanvasViewer extends StatefulWidget {
     this.palmEngine,
     this.isDrawGesture,
     this.interactionEndFrictionCoefficient = kDrag,
+    this.onInteractionStart,
     this.onInteractionEnd,
+    this.constrainMatrix,
+    this.shouldRebuildBuilder,
     this.onDrawEnd,
     this.onDrawStart,
     this.onDrawUpdate,
@@ -168,8 +174,20 @@ class InteractiveCanvasViewer extends StatefulWidget {
   /// A function to distinguish a draw gesture and a pan/zoom gesture.
   final bool Function(ScaleStartDetails scaleDetails)? isDrawGesture;
 
+  /// Called when any gesture starts.
+  final GestureScaleStartCallback? onInteractionStart;
+
   /// Called when any gesture ends.
   final GestureScaleEndCallback? onInteractionEnd;
+
+  /// Optional matrix constraint applied before committing gesture updates to
+  /// [transformationController].
+  final Matrix4 Function(Matrix4 nextMatrix)? constrainMatrix;
+
+  /// Optional predicate deciding whether [builder] must be re-invoked when the
+  /// transformation matrix changes from `oldMatrix` to `newMatrix`.
+  final bool Function(Matrix4 oldMatrix, Matrix4 newMatrix, Size viewportSize)?
+  shouldRebuildBuilder;
 
   /// A [TransformationController] for the transformation performed on the child.
   final TransformationController? transformationController;
@@ -225,6 +243,9 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
   final bool _rotateEnabled = false;
 
   bool isCurrentGestureADrawGesture = false;
+  Matrix4? _lastBuilderMatrix;
+  Size? _lastViewportSize;
+  Widget? _cachedBuiltChild;
 
   // The _boundaryRect is calculated by adding the boundaryMargin to the size of
   // the child.
@@ -265,6 +286,19 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
   }
 
   void _handleTransformation() {
+    if (widget.builder == null) return;
+    if (widget.shouldRebuildBuilder != null &&
+        _lastBuilderMatrix != null &&
+        _lastViewportSize != null &&
+        _cachedBuiltChild != null &&
+        !widget.shouldRebuildBuilder!(
+          _lastBuilderMatrix!,
+          _transformer.value,
+          _lastViewportSize!,
+        )) {
+      return;
+    }
+    _cachedBuiltChild = null;
     setState(() {});
   }
 
@@ -277,8 +311,15 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _cachedBuiltChild = null;
+  }
+
+  @override
   void didUpdateWidget(InteractiveCanvasViewer oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _cachedBuiltChild = null;
 
     final TransformationController? newController =
         widget.transformationController;
@@ -311,7 +352,7 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
         childKey: _childKey,
         clipBehavior: widget.clipBehavior,
         constrained: widget.constrained,
-        matrix: _transformer.value,
+        transformationListenable: _transformer,
         alignment: widget.alignment,
         child: widget.child!,
       );
@@ -320,20 +361,26 @@ class _InteractiveCanvasViewerState extends State<InteractiveCanvasViewer>
       assert(!widget.constrained);
       child = LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          final Matrix4 matrix = _transformer.value;
-          return _InteractiveCanvasViewerBuilt(
-            childKey: _childKey,
-            clipBehavior: widget.clipBehavior,
-            constrained: widget.constrained,
-            alignment: widget.alignment,
-            matrix: matrix,
-            child: widget.builder!(
+          if (constraints.biggest != _lastViewportSize ||
+              _cachedBuiltChild == null) {
+            final Matrix4 matrix = _transformer.value;
+            _lastViewportSize = constraints.biggest;
+            _lastBuilderMatrix = matrix.clone();
+            _cachedBuiltChild = widget.builder!(
               context,
               canvasTransformViewport(
                 matrix,
                 Offset.zero & constraints.biggest,
               ),
-            ),
+            );
+          }
+          return _InteractiveCanvasViewerBuilt(
+            childKey: _childKey,
+            clipBehavior: widget.clipBehavior,
+            constrained: widget.constrained,
+            alignment: widget.alignment,
+            transformationListenable: _transformer,
+            child: _cachedBuiltChild!,
           );
         },
       );
@@ -387,7 +434,7 @@ class _InteractiveCanvasViewerBuilt extends StatelessWidget {
     required this.childKey,
     required this.clipBehavior,
     required this.constrained,
-    required this.matrix,
+    required this.transformationListenable,
     required this.alignment,
   });
 
@@ -395,14 +442,16 @@ class _InteractiveCanvasViewerBuilt extends StatelessWidget {
   final GlobalKey childKey;
   final Clip clipBehavior;
   final bool constrained;
-  final Matrix4 matrix;
+  final ValueListenable<Matrix4> transformationListenable;
   final Alignment? alignment;
 
   @override
   Widget build(BuildContext context) {
-    Widget child = Transform(
-      transform: matrix,
-      alignment: alignment,
+    Widget child = ValueListenableBuilder<Matrix4>(
+      valueListenable: transformationListenable,
+      builder: (BuildContext context, Matrix4 matrix, Widget? child) {
+        return Transform(transform: matrix, alignment: alignment, child: child);
+      },
       child: KeyedSubtree(key: childKey, child: this.child),
     );
 
@@ -417,7 +466,9 @@ class _InteractiveCanvasViewerBuilt extends StatelessWidget {
       );
     }
 
-    return ClipRect(clipBehavior: clipBehavior, child: child);
+    return RepaintBoundary(
+      child: ClipRect(clipBehavior: clipBehavior, child: child),
+    );
   }
 }
 

@@ -3,8 +3,6 @@ part of '../canvas_gesture_detector.dart';
 
 extension _CanvasGesturePointerHandlers on CanvasGestureDetectorState {
   void _trackPointerForTapGestures(PointerEvent event) {
-    if (!stows.twoFingerTapUndo.value) return;
-
     if (event is PointerDownEvent) {
       _pointerPositions[event.pointer] = event.position;
       if (_pointerPositions.length > _maxPointerCountDuringGesture) {
@@ -22,7 +20,9 @@ extension _CanvasGesturePointerHandlers on CanvasGestureDetectorState {
       _pointerPositions.remove(event.pointer);
 
       if (_pointerPositions.isEmpty) {
-        if (!_multiPointerMoved && _multiPointerDownTime != null) {
+        if (stows.twoFingerTapUndo.value &&
+            !_multiPointerMoved &&
+            _multiPointerDownTime != null) {
           final duration = DateTime.now()
               .difference(_multiPointerDownTime!)
               .inMilliseconds;

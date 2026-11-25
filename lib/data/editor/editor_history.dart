@@ -1,5 +1,6 @@
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
 /// 🤖 Modified with Claude Code (Claude Sonnet 5.5)
+/// 🤖 Modified with Google Antigravity
 library;
 
 import 'package:flutter/material.dart';
@@ -129,17 +130,14 @@ class EditorHistory {
   /// Removes the last history item due to a rejected stroke.
   /// This does essentially the opposite of [recordChange].
   EditorHistoryItem? removeAccidentalStroke() {
-    _isRedoPossible = true;
     if (_past.isEmpty) return null;
-    assert(_past.last.type == .draw, 'Accidental stroke is not a draw');
-    assert(
-      _past.last.strokes.length == 1,
-      'Accidental strokes should be single-stroke',
-    );
-    assert(
-      _past.last.images.isEmpty,
-      'Accidental strokes should not contain images',
-    );
+    final last = _past.last;
+    if (last.type != .draw ||
+        last.strokes.length != 1 ||
+        last.images.isNotEmpty) {
+      return null;
+    }
+    _isRedoPossible = true;
     return _past.removeLast();
   }
 

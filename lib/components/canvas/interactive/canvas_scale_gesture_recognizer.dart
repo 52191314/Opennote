@@ -22,13 +22,15 @@ class CanvasScaleGestureRecognizer extends ScaleGestureRecognizer {
 
   @override
   void addAllowedPointer(PointerDownEvent event) {
-    if (palmEngine?.isPalm(event) ?? false) {
+    final isMultiTouch =
+        event.kind == PointerDeviceKind.touch &&
+        _activeTouchPointers.isNotEmpty;
+    if (palmEngine?.isPalm(event, isMultiTouch: isMultiTouch) ?? false) {
       return;
     }
 
     if (event.kind == PointerDeviceKind.stylus ||
         event.kind == PointerDeviceKind.invertedStylus) {
-      // Stylus preemption: clear any prior tracked touch pointers (e.g. wrist touching first)
       final pointersToCancel = _activeTouchPointers.toList(growable: false);
       _activeTouchPointers.clear();
       for (final touchPointer in pointersToCancel) {
@@ -37,7 +39,7 @@ class CanvasScaleGestureRecognizer extends ScaleGestureRecognizer {
             pointer: touchPointer,
             position: event.position,
             timeStamp: event.timeStamp,
-          ),
+          ).transformed(event.transform),
         );
       }
     } else if (event.kind == PointerDeviceKind.touch) {
@@ -49,32 +51,31 @@ class CanvasScaleGestureRecognizer extends ScaleGestureRecognizer {
 
   @override
   void handleEvent(PointerEvent event) {
+    if (event is PointerUpEvent || event is PointerCancelEvent) {
+      _activeTouchPointers.remove(event.pointer);
+      palmEngine?.onPointerUpOrCancel(event);
+      super.handleEvent(event);
+      return;
+    }
+
     final isActiveMultiTouchGesture =
         event is! PointerDownEvent &&
         _activeTouchPointers.length >= 2 &&
         _activeTouchPointers.contains(event.pointer) &&
         !(palmEngine?.isStylusDown ?? false);
     if (!isActiveMultiTouchGesture && (palmEngine?.isPalm(event) ?? false)) {
-      // Forward a cancel/up to ScaleGestureRecognizer if this pointer was tracked,
-      // otherwise _pointerLocations/_pointerQueue would retain a ghost pointer.
       if (_activeTouchPointers.remove(event.pointer)) {
-        final cleanupEvent =
-            (event is PointerUpEvent || event is PointerCancelEvent)
-            ? event
-            : PointerCancelEvent(
-                pointer: event.pointer,
-                position: event.position,
-                timeStamp: event.timeStamp,
-              );
-        super.handleEvent(cleanupEvent);
+        super.handleEvent(
+          PointerCancelEvent(
+            pointer: event.pointer,
+            position: event.position,
+            timeStamp: event.timeStamp,
+          ).transformed(event.transform),
+        );
       } else {
         stopTrackingIfPointerNoLongerDown(event);
       }
       return;
-    }
-
-    if (event is PointerUpEvent || event is PointerCancelEvent) {
-      _activeTouchPointers.remove(event.pointer);
     }
 
     super.handleEvent(event);

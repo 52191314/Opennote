@@ -104,10 +104,12 @@ class InnerCanvas extends StatefulWidget {
 
 class _InnerCanvasState extends State<InnerCanvas> {
   final _quillScrollController = ScrollController();
-  final _contentSubtreeKey = GlobalKey();
 
   /// What [_buildInputs] returned when this was last built.
   Object? _lastBuildInputs;
+
+  (bool, Color, int, bool)? _cachedQuillConfigKey;
+  QuillEditorConfig? _cachedQuillConfig;
 
   @override
   void initState() {
@@ -159,6 +161,37 @@ class _InnerCanvasState extends State<InnerCanvas> {
     );
   }
 
+  QuillEditorConfig _quillConfig({
+    required bool invert,
+    required Color secondaryColor,
+    required int lineHeight,
+  }) {
+    final key = (invert, secondaryColor, lineHeight, widget.textEditing);
+    if (_cachedQuillConfig != null && _cachedQuillConfigKey == key) {
+      return _cachedQuillConfig!;
+    }
+    _cachedQuillConfigKey = key;
+    return _cachedQuillConfig = QuillEditorConfig(
+      customStyles: SaberQuillStyles.get(
+        invert: invert,
+        secondary: secondaryColor,
+        lineHeight: lineHeight,
+      ),
+      scrollable: false,
+      autoFocus: false,
+      expands: true,
+      placeholder: widget.textEditing ? t.editor.quill.typeSomething : null,
+      showCursor: true,
+      keyboardAppearance: invert ? .dark : .light,
+      padding: .only(
+        top: lineHeight * 1.2,
+        left: lineHeight * 0.5,
+        right: lineHeight * 0.5,
+        bottom: lineHeight * 0.5,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     _lastBuildInputs = _buildInputs();
@@ -185,195 +218,177 @@ class _InnerCanvasState extends State<InnerCanvas> {
         ? CanvasBackgroundPattern.none
         : page.paperPatternOr(widget.coreInfo.backgroundPattern);
 
-    final quillEditor = widget.coreInfo.pages.isNotEmpty
-        ? QuillEditor(
-            controller:
-                widget.coreInfo.pages[widget.pageIndex].quill.controller,
-            config: QuillEditorConfig(
-              customStyles: SaberQuillStyles.get(
-                invert: invert,
-                secondary: colorScheme.secondary,
-                lineHeight: lineHeight,
-              ),
-              scrollable: false,
-              autoFocus: false,
-              expands: true,
-              placeholder: widget.textEditing
-                  ? t.editor.quill.typeSomething
-                  : null,
-              showCursor: true,
-              keyboardAppearance: invert ? .dark : .light,
-              padding: .only(
-                top: lineHeight * 1.2,
-                left: lineHeight * 0.5,
-                right: lineHeight * 0.5,
-                bottom: lineHeight * 0.5,
-              ),
-            ),
-            scrollController: _quillScrollController,
-            focusNode: widget.coreInfo.pages[widget.pageIndex].quill.focusNode,
-          )
-        : null;
-
-    final useRepaintBoundary =
-        !widget.coreInfo.isInfiniteCanvas &&
-        widget.currentScale >= 0.5 &&
-        widget.currentScale <= 2.0;
-
-    final backgroundLayer = CustomPaint(
-      painter: CanvasBackgroundPainter(
+    final quillEditor = QuillEditor(
+      controller: page.quill.controller,
+      config: _quillConfig(
         invert: invert,
-        backgroundColor: pageBackground,
-        backgroundPattern: pagePattern,
-        lineHeight: lineHeight,
-        lineThickness: lineThickness,
-        primaryColor: colorScheme.primary,
         secondaryColor: colorScheme.secondary,
-        isInfiniteCanvas: widget.coreInfo.isInfiniteCanvas,
-        viewportRect: widget.viewportRect,
-        currentScale: widget.currentScale,
+        lineHeight: lineHeight,
       ),
-      isComplex: true,
-      child: KeyedSubtree(
-        key: _contentSubtreeKey,
+      scrollController: _quillScrollController,
+      focusNode: page.quill.focusNode,
+    );
+
+    return RepaintBoundary(
+      child: CustomPaint(
+        foregroundPainter: CanvasPainter(
+          repaint: widget.redrawPageListenable,
+          invert: invert,
+          laserStrokes: page.laserStrokes,
+          currentStroke: widget.currentStroke,
+          currentSelection: widget.currentSelection,
+          isDoneSelecting: widget.isDoneSelecting,
+          primaryColor: colorScheme.primary,
+          page: page,
+          showPageIndicator: widget.showPageIndicator,
+          pageIndex: widget.pageIndex,
+          totalPages: widget.coreInfo.pages.length,
+          currentScale: widget.currentScale,
+          defaultTextStyle: theme.textTheme.bodyMedium!,
+          isInfiniteCanvas: widget.coreInfo.isInfiniteCanvas,
+          viewportRect: widget.viewportRect,
+        ),
+        isComplex: true,
+        willChange:
+            widget.currentStroke != null || widget.currentSelection != null,
         child: SizedBox(
           width: widget.width,
           height: widget.height,
-          child: DeferredPointerHandler(
-            child: Stack(
-              children: [
-                if (page.backgroundImage != null)
-                  CanvasImage(
-                    filePath: widget.coreInfo.filePath,
-                    image: page.backgroundImage!,
-                    pageSize: Size(widget.width, widget.height),
-                    setAsBackground: null,
-                    isBackground: true,
-                    readOnly: true,
-                  ),
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  width: widget.width,
-                  height: widget.height,
-                  child: IgnorePointer(
-                    ignoring: widget.coreInfo.readOnly || !widget.textEditing,
-                    child: Transform(
-                      transform: Matrix4.identity()
-                        ..translateByDouble(
-                          page.textContentOffset.dx,
-                          page.textContentOffset.dy,
-                          0,
-                          1,
-                        )
-                        ..rotateZ(page.textContentRotation)
-                        ..scaleByDouble(
-                          page.textContentScale,
-                          page.textContentScale,
-                          1,
-                          1,
-                        ),
-                      alignment: Alignment.topLeft,
-                      child: quillEditor,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(
+                child: RepaintBoundary(
+                  child: CustomPaint(
+                    painter: CanvasBackgroundPainter(
+                      invert: invert,
+                      backgroundColor: pageBackground,
+                      backgroundPattern: pagePattern,
+                      lineHeight: lineHeight,
+                      lineThickness: lineThickness,
+                      primaryColor: colorScheme.primary,
+                      secondaryColor: colorScheme.secondary,
+                      isInfiniteCanvas: widget.coreInfo.isInfiniteCanvas,
+                      viewportRect: widget.viewportRect,
+                      currentScale: widget.currentScale,
                     ),
+                    isComplex: true,
                   ),
                 ),
-                for (int i = 0; i < page.images.length; i++)
-                  CanvasImage(
-                    filePath: widget.coreInfo.filePath,
-                    image: page.images[i],
-                    pageSize: Size(widget.width, widget.height),
-                    setAsBackground: widget.setAsBackground,
-                    readOnly:
-                        widget.coreInfo.readOnly || !widget.currentToolIsSelect,
-                    selected:
-                        widget.currentSelection?.images.contains(
-                          page.images[i],
-                        ) ??
-                        false,
-                  ),
-                if (widget.currentToolIsSelect &&
-                    widget.isDoneSelecting &&
-                    widget.currentSelection != null &&
-                    widget.currentSelection!.isNotEmpty &&
-                    widget.onCopySelection != null &&
-                    widget.onDeleteSelection != null)
-                  () {
-                    final bounds = widget.currentSelection!.path.getBounds();
-                    final double left;
-                    if (widget.coreInfo.isInfiniteCanvas) {
-                      left = bounds.center.dx - 190.0;
-                    } else {
-                      left = (bounds.center.dx - 190.0)
-                          .clamp(12.0, max(12.0, widget.width - 390.0))
-                          .toDouble();
-                    }
-                    final top = bounds.top - 58 > 10
-                        ? bounds.top - 58
-                        : bounds.bottom + 14;
-
-                    return Positioned(
-                      left: left,
-                      top: top,
-                      child: DeferPointer(
-                        child: LassoCalloutMenu(
-                          onCut: widget.onCutSelection!,
-                          onCopy: widget.onCopySelection!,
-                          onDuplicate: widget.onDuplicateSelection ?? () {},
-                          onDelete: widget.onDeleteSelection!,
-                          onSetColor: widget.onSetColor ?? (_) {},
-                          isResizeActive: widget.isResizeActive,
-                          onToggleResize: widget.onToggleResize,
-                          onReduceTextSize: widget.onReduceTextSize,
-                          onEnlargeTextSize: widget.onEnlargeTextSize,
-                          onTakeScreenshot: widget.onTakeScreenshot,
-                          onAddToElements: widget.onAddToElements,
-                          onBringToFront: widget.onBringToFront,
-                          onSendToBack: widget.onSendToBack,
-                          onSmoothen: widget.onSmoothen,
-                          cropPossible: widget.cropPossible,
-                          cropActive: widget.cropActive,
-                          onToggleCrop: widget.onToggleCrop,
-                          currentScale: widget.currentScale,
+              ),
+              Positioned.fill(
+                child: DeferredPointerHandler(
+                  child: Stack(
+                    children: [
+                      if (page.backgroundImage != null)
+                        CanvasImage(
+                          filePath: widget.coreInfo.filePath,
+                          image: page.backgroundImage!,
+                          pageSize: Size(widget.width, widget.height),
+                          setAsBackground: null,
+                          isBackground: true,
+                          readOnly: true,
+                        ),
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        width: widget.width,
+                        height: widget.height,
+                        child: IgnorePointer(
+                          ignoring:
+                              widget.coreInfo.readOnly || !widget.textEditing,
+                          child: Transform(
+                            transform: Matrix4.identity()
+                              ..translateByDouble(
+                                page.textContentOffset.dx,
+                                page.textContentOffset.dy,
+                                0,
+                                1,
+                              )
+                              ..rotateZ(page.textContentRotation)
+                              ..scaleByDouble(
+                                page.textContentScale,
+                                page.textContentScale,
+                                1,
+                                1,
+                              ),
+                            alignment: Alignment.topLeft,
+                            child: quillEditor,
+                          ),
                         ),
                       ),
-                    );
-                  }(),
-              ],
-            ),
+                      for (int i = 0; i < page.images.length; i++)
+                        CanvasImage(
+                          filePath: widget.coreInfo.filePath,
+                          image: page.images[i],
+                          pageSize: Size(widget.width, widget.height),
+                          setAsBackground: widget.setAsBackground,
+                          readOnly:
+                              widget.coreInfo.readOnly ||
+                              !widget.currentToolIsSelect,
+                          selected:
+                              widget.currentSelection?.images.contains(
+                                page.images[i],
+                              ) ??
+                              false,
+                        ),
+                      if (widget.currentToolIsSelect &&
+                          widget.isDoneSelecting &&
+                          widget.currentSelection != null &&
+                          widget.currentSelection!.isNotEmpty &&
+                          widget.onCopySelection != null &&
+                          widget.onDeleteSelection != null)
+                        () {
+                          final bounds = widget.currentSelection!.path
+                              .getBounds();
+                          final double left;
+                          if (widget.coreInfo.isInfiniteCanvas) {
+                            left = bounds.center.dx - 190.0;
+                          } else {
+                            left = (bounds.center.dx - 190.0)
+                                .clamp(12.0, max(12.0, widget.width - 390.0))
+                                .toDouble();
+                          }
+                          final top = bounds.top - 58 > 10
+                              ? bounds.top - 58
+                              : bounds.bottom + 14;
+
+                          return Positioned(
+                            left: left,
+                            top: top,
+                            child: DeferPointer(
+                              child: LassoCalloutMenu(
+                                onCut: widget.onCutSelection!,
+                                onCopy: widget.onCopySelection!,
+                                onDuplicate:
+                                    widget.onDuplicateSelection ?? () {},
+                                onDelete: widget.onDeleteSelection!,
+                                onSetColor: widget.onSetColor ?? (_) {},
+                                isResizeActive: widget.isResizeActive,
+                                onToggleResize: widget.onToggleResize,
+                                onReduceTextSize: widget.onReduceTextSize,
+                                onEnlargeTextSize: widget.onEnlargeTextSize,
+                                onTakeScreenshot: widget.onTakeScreenshot,
+                                onAddToElements: widget.onAddToElements,
+                                onBringToFront: widget.onBringToFront,
+                                onSendToBack: widget.onSendToBack,
+                                onSmoothen: widget.onSmoothen,
+                                cropPossible: widget.cropPossible,
+                                cropActive: widget.cropActive,
+                                onToggleCrop: widget.onToggleCrop,
+                                currentScale: widget.currentScale,
+                              ),
+                            ),
+                          );
+                        }(),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
-
-    final customPaint = CustomPaint(
-      foregroundPainter: CanvasPainter(
-        repaint: widget.redrawPageListenable,
-        invert: invert,
-        laserStrokes: page.laserStrokes,
-        currentStroke: widget.currentStroke,
-        currentSelection: widget.currentSelection,
-        isDoneSelecting: widget.isDoneSelecting,
-        primaryColor: colorScheme.primary,
-        page: page,
-        showPageIndicator: widget.showPageIndicator,
-        pageIndex: widget.pageIndex,
-        totalPages: widget.coreInfo.pages.length,
-        currentScale: widget.currentScale,
-        defaultTextStyle: theme.textTheme.bodyMedium!,
-        isInfiniteCanvas: widget.coreInfo.isInfiniteCanvas,
-        viewportRect: widget.viewportRect,
-      ),
-      isComplex: true,
-      willChange: true,
-      child: useRepaintBoundary
-          ? RepaintBoundary(child: backgroundLayer)
-          : backgroundLayer,
-    );
-
-    if (!useRepaintBoundary) {
-      return customPaint;
-    }
-    return RepaintBoundary(child: customPaint);
   }
 }

@@ -89,8 +89,33 @@ void main() {
     });
 
     test('large contact radius or size is rejected as palm', () {
-      const largeRadiusTouch = PointerDownEvent(
+      // Without recent stylus, huge resting palm contacts are rejected while
+      // normal thumb pads (22-34pt) stay allowed for staggered 2-finger pinch.
+      const hugeNoStylusPalm = PointerDownEvent(
         pointer: 10,
+        position: Offset(100, 100),
+        kind: PointerDeviceKind.touch,
+        radiusMajor: 50.0,
+      );
+      expect(engine.isPalm(hugeNoStylusPalm), isTrue);
+
+      const hugeNoStylusSize = PointerDownEvent(
+        pointer: 11,
+        position: Offset(100, 100),
+        kind: PointerDeviceKind.touch,
+        size: 0.45,
+      );
+      expect(engine.isPalm(hugeNoStylusSize), isTrue);
+
+      // With recent stylus activity, strict medium thresholds (22pt / 0.20) apply.
+      engine.notifyStylusEvent(
+        const PointerHoverEvent(
+          position: Offset(800, 800),
+          kind: PointerDeviceKind.stylus,
+        ),
+      );
+      const largeRadiusTouch = PointerDownEvent(
+        pointer: 13,
         position: Offset(100, 100),
         kind: PointerDeviceKind.touch,
         radiusMajor: 26.0,
@@ -98,7 +123,7 @@ void main() {
       expect(engine.isPalm(largeRadiusTouch), isTrue);
 
       const largeSizeTouch = PointerDownEvent(
-        pointer: 11,
+        pointer: 14,
         position: Offset(100, 100),
         kind: PointerDeviceKind.touch,
         size: 0.25,
