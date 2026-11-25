@@ -1,7 +1,12 @@
+/// 🤖 Modified with Gemini 4 Neon (Medium); Google Antigravity
+library;
+
 import 'package:saber/i18n/strings.g.dart';
 import 'package:sbn/canvas_background_pattern.dart';
 
+/// Localized display names for every [CanvasBackgroundPattern].
 extension CanvasBackgroundPatternLocalized on CanvasBackgroundPattern {
+  /// Returns the user-facing label for this background pattern.
   String get localizedName => switch (this) {
     .none => t.editor.menu.bgPatterns.none,
     .collegeLtr => t.editor.menu.bgPatterns.college,

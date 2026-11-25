@@ -1,5 +1,19 @@
 /// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Modified with Gemini 4 Neon (Medium); Google Antigravity
 part of 'file_manager.dart';
+
+/// Album name used when saving exported note images to the device gallery.
+@visibleForTesting
+const photoExportAlbumName = 'Opennote';
+
+/// Returns whether saving to the Android photo gallery requires requesting
+/// legacy external storage permission.
+///
+/// Android 10+ (API 29+) inserts into MediaStore without runtime storage
+/// permissions, and Android 13+ (API 33+) forbids both legacy storage and the
+/// stripped `READ_MEDIA_IMAGES` permission.
+@visibleForTesting
+bool requiresLegacyAndroidGalleryPermission(int sdkInt) => sdkInt < 29;
 
 Future _fmExportFile(
   String fileName,
@@ -21,7 +35,7 @@ Future _fmExportFile(
       await SaverGallery.saveImage(
         Uint8List.fromList(bytes),
         fileName: fileName,
-        albumPath: 'Saber',
+        albumPath: photoExportAlbumName,
         skipIfExists: true,
       );
     }
@@ -49,18 +63,16 @@ Future _fmExportFile(
 Future<bool> _requestPhotosPermission() async {
   if (Platform.isIOS) {
     return await Permission.photosAddOnly.request().isGranted;
-  } else if (!Platform.isAndroid) {
-    return true;
   }
+  if (!Platform.isAndroid) return true;
 
   final sdkInt = await DeviceInfoPlugin().androidInfo.then(
     (info) => info.version.sdkInt,
   );
-  if (sdkInt > 33) {
-    return await Permission.photos.request().isGranted;
-  } else {
-    return await Permission.storage.request().isGranted;
+  if (!requiresLegacyAndroidGalleryPermission(sdkInt)) {
+    return true;
   }
+  return await Permission.storage.request().isGranted;
 }
 
 Future<String?> _fmImportFile(

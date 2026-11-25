@@ -1,4 +1,5 @@
 /// 🤖 Modified with Claude Code (Claude Opus 5.5)
+/// 🤖 Modified with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'dart:convert';
@@ -175,7 +176,7 @@ class SaberSyncInterface
     if (file.localFile.path.endsWith(NextcloudClientExtension.configFileName)) {
       // Config file changed
       try {
-        _client!.loadEncryptionKey(generateKeyIfMissing: false);
+        await _client!.loadEncryptionKey(generateKeyIfMissing: false);
       } on EncLoginFailure {
         // enc password has changed since the user last logged in, so log out
         stows.encPassword.value = '';
@@ -202,7 +203,7 @@ class SaberSyncInterface
     Uint8List encryptedBytes, {
     @visibleForTesting bool awaitWrite = false,
   }) async {
-    if (file.localFile.path == NextcloudClientExtension.configFileName) {
+    if (file.localFile.path.endsWith(NextcloudClientExtension.configFileName)) {
       // Config file changed, already handled in [downloadRemoteFile]
       return;
     }
