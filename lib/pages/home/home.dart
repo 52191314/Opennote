@@ -1,8 +1,9 @@
-/// 🤖 Generated wholely or partially with Claude Code; Google Antigravity
+/// 🤖 Generated wholely or partially with Claude Code; Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:saber/components/home/quick_template_strip.dart';
 import 'package:saber/components/home/sentry_consent_dialog.dart';
 import 'package:saber/components/navbar/responsive_navbar.dart';
 import 'package:saber/components/onboarding/welcome_onboarding_dialog.dart';
@@ -13,11 +14,33 @@ import 'package:saber/pages/home/recent_notes.dart';
 import 'package:saber/pages/home/settings.dart';
 import 'package:saber/pages/home/whiteboard.dart';
 
+/// Top-level studio shell hosting Recent Notes, Browse, Whiteboard, and
+/// Settings behind [ResponsiveNavbar].
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.subpage, required this.path});
+  const HomePage({
+    super.key,
+    required this.subpage,
+    required this.path,
+    this.topBanner,
+    this.proBannerBuilder,
+    this.onCreateTemplate,
+    this.onProTemplateTap,
+  });
 
   final String subpage;
   final String? path;
+
+  /// Optional banner widget rendered at the top of Recent and Browse pages.
+  final Widget? topBanner;
+
+  /// Optional builder for a contextual Pro upgrade banner on Home/Browse.
+  final WidgetBuilder? proBannerBuilder;
+
+  /// Optional callback invoked when a user taps a free quick-start template.
+  final ValueChanged<QuickTemplateKind>? onCreateTemplate;
+
+  /// Optional callback invoked when a user taps a Pro-badged template.
+  final ValueChanged<QuickTemplateKind>? onProTemplateTap;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -42,12 +65,14 @@ class _HomePageState extends State<HomePage> {
     _showDialogs();
   }
 
-  void _showDialogs() async {
+  Future<void> _showDialogs() async {
     await null; // initState must be completed before using context
     if (!mounted) return;
-    UpdateManager.showUpdateDialog(context);
-    SentryConsentDialog.showIfNeeded(context);
-    WelcomeOnboardingDialog.showIfNeeded(context);
+    await WelcomeOnboardingDialog.showIfNeeded(context);
+    if (!mounted) return;
+    await SentryConsentDialog.showIfNeeded(context);
+    if (!mounted) return;
+    await UpdateManager.showUpdateDialog(context);
   }
 
   void _setState() {
@@ -60,10 +85,21 @@ class _HomePageState extends State<HomePage> {
       child: KeyedSubtree(
         key: ValueKey(widget.subpage),
         child: switch (widget.subpage) {
-          HomePage.browseSubpage => BrowsePage(path: widget.path),
+          HomePage.browseSubpage => BrowsePage(
+            path: widget.path,
+            topBanner: widget.topBanner,
+            proBannerBuilder: widget.proBannerBuilder,
+            onCreateTemplate: widget.onCreateTemplate,
+            onProTemplateTap: widget.onProTemplateTap,
+          ),
           HomePage.whiteboardSubpage => const Whiteboard(),
           HomePage.settingsSubpage => const SettingsPage(),
-          _ => const RecentPage(),
+          _ => RecentPage(
+            topBanner: widget.topBanner,
+            proBannerBuilder: widget.proBannerBuilder,
+            onCreateTemplate: widget.onCreateTemplate,
+            onProTemplateTap: widget.onProTemplateTap,
+          ),
         },
       ),
     );
@@ -86,7 +122,6 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     DynamicMaterialApp.removeFullscreenListener(_setState);
-
     super.dispose();
   }
 }

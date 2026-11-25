@@ -1,4 +1,4 @@
-/// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'package:flutter/cupertino.dart';
@@ -13,6 +13,8 @@ import 'package:saber/components/theming/adaptive_icon.dart';
 import 'package:saber/data/routes.dart';
 import 'package:saber/i18n/strings.g.dart';
 
+/// Compact studio navigation rail for tablet and desktop layouts, expanding
+/// smoothly into a full workspace sidebar on wide viewports.
 class VerticalNavbar extends HookWidget {
   const VerticalNavbar({
     super.key,
@@ -29,24 +31,28 @@ class VerticalNavbar extends HookWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final manualExpanded = useState<bool?>(null);
-    final expanded = manualExpanded.value ?? (screenWidth >= 900);
+    final expanded = manualExpanded.value ?? (screenWidth >= 960);
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDark = colorScheme.brightness == Brightness.dark;
     final backgroundColor = switch (theme.platform) {
       .linux => Colors.transparent,
-      _ => colorScheme.surfaceContainerLow,
+      _ =>
+        isDark
+            ? OpennoteTokens.cardDarkSurface
+            : colorScheme.surfaceContainerLow,
     };
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeInOutCubic,
-      width: expanded ? 260 : 72,
+      width: expanded ? 252 : 74,
       decoration: BoxDecoration(
         color: backgroundColor,
         border: BorderDirectional(
           end: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.32),
             width: 1,
           ),
         ),
@@ -58,7 +64,6 @@ class VerticalNavbar extends HookWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: OpennoteTokens.s2),
-            // Studio Header card
             Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: expanded ? OpennoteTokens.s3 : 8,
@@ -69,7 +74,9 @@ class VerticalNavbar extends HookWidget {
                       children: [
                         DecoratedBox(
                           decoration: BoxDecoration(
-                            color: colorScheme.primary.withValues(alpha: 0.12),
+                            color: colorScheme.primary.withValues(
+                              alpha: isDark ? 0.22 : 0.12,
+                            ),
                             borderRadius: BorderRadius.circular(
                               OpennoteTokens.radiusSm,
                             ),
@@ -78,7 +85,7 @@ class VerticalNavbar extends HookWidget {
                             padding: const EdgeInsets.all(7),
                             child: Icon(
                               Icons.edit_note_rounded,
-                              size: 22,
+                              size: 20,
                               color: colorScheme.primary,
                             ),
                           ),
@@ -90,16 +97,16 @@ class VerticalNavbar extends HookWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Opennote Studio',
+                                'Opennote',
                                 style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w800,
                                   letterSpacing: -0.3,
                                   color: colorScheme.onSurface,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                               Text(
-                                'Workspace',
+                                'Studio',
                                 style: theme.textTheme.labelSmall?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
                                   fontSize: 11,
@@ -110,6 +117,7 @@ class VerticalNavbar extends HookWidget {
                         ),
                         IconButton(
                           tooltip: 'Collapse sidebar',
+                          visualDensity: VisualDensity.compact,
                           onPressed: () => manualExpanded.value = !expanded,
                           icon: const AdaptiveIcon(
                             icon: Icons.chevron_left_rounded,
@@ -129,7 +137,6 @@ class VerticalNavbar extends HookWidget {
                       ),
                     ),
             ),
-            // Quick Search / Command Trigger Bar
             if (expanded)
               Padding(
                 padding: const EdgeInsets.symmetric(
@@ -138,18 +145,20 @@ class VerticalNavbar extends HookWidget {
                 ),
                 child: Material(
                   color: colorScheme.surfaceContainerHigh.withValues(
-                    alpha: 0.7,
+                    alpha: 0.72,
                   ),
-                  borderRadius: BorderRadius.circular(OpennoteTokens.radiusSm),
+                  borderRadius: BorderRadius.circular(
+                    OpennoteTokens.radiusPill,
+                  ),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(
-                      OpennoteTokens.radiusSm,
+                      OpennoteTokens.radiusPill,
                     ),
                     onTap: () => SearchDialog.show(context),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 7,
+                        horizontal: 12,
+                        vertical: 8,
                       ),
                       child: Row(
                         children: [
@@ -202,12 +211,13 @@ class VerticalNavbar extends HookWidget {
                   onPressed: () => SearchDialog.show(context),
                 ),
               ),
-            // Primary + New Note Button
             if (expanded)
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: OpennoteTokens.s3,
-                  vertical: 4,
+                padding: const EdgeInsets.fromLTRB(
+                  OpennoteTokens.s3,
+                  6,
+                  OpennoteTokens.s3,
+                  4,
                 ),
                 child: SizedBox(
                   width: double.infinity,
@@ -232,21 +242,46 @@ class VerticalNavbar extends HookWidget {
               )
             else
               Center(
-                child: IconButton(
+                child: IconButton.filledTonal(
                   tooltip: t.home.create.newNote,
-                  icon: const Icon(Icons.add_rounded, size: 22),
+                  icon: const Icon(Icons.add_rounded, size: 20),
                   onPressed: () => context.push(RoutePaths.edit),
                 ),
               ),
             const SizedBox(height: OpennoteTokens.s1),
-            // Navigation items
             IntrinsicHeight(
               child: NavigationRail(
                 destinations: destinations,
                 selectedIndex: selectedIndex,
                 backgroundColor: Colors.transparent,
                 extended: expanded,
-                minExtendedWidth: 240,
+                minWidth: 72,
+                minExtendedWidth: 236,
+                useIndicator: true,
+                indicatorColor: colorScheme.primary.withValues(
+                  alpha: isDark ? 0.24 : 0.14,
+                ),
+                indicatorShape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(OpennoteTokens.radiusSm),
+                ),
+                selectedIconTheme: IconThemeData(
+                  color: colorScheme.primary,
+                  size: 21,
+                ),
+                unselectedIconTheme: IconThemeData(
+                  color: colorScheme.onSurfaceVariant,
+                  size: 21,
+                ),
+                selectedLabelTextStyle: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.primary,
+                ),
+                unselectedLabelTextStyle: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.onSurfaceVariant,
+                ),
                 onDestinationSelected: onDestinationSelected,
               ),
             ),
@@ -258,13 +293,12 @@ class VerticalNavbar extends HookWidget {
                 ),
                 child: Divider(
                   height: 1,
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.32),
                 ),
               ),
               const Expanded(child: FileTree()),
             ] else
               const Spacer(),
-            // Sync status footer
             Padding(
               padding: EdgeInsets.all(expanded ? OpennoteTokens.s3 : 8),
               child: expanded
