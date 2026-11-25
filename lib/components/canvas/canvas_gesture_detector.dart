@@ -326,11 +326,14 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
     }
   }
 
+  var _isAdjustingTransform = false;
+
   /// Corrects the transform if it's out of bounds.
   /// If the scale is less than 1, centers the pages horizontally.
   /// Otherwise, prevents the user from scrolling past the edges.
   void onTransformChanged() {
-    final scale = widget._transformationController.value.approxScale;
+    if (_isAdjustingTransform) return;
+    final scale = widget._transformationController.value.maxScale2D;
     if (scale <= 0 || scale.isNaN || scale.isInfinite) return;
 
     // snap to 1.0x zoom
@@ -355,6 +358,29 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
         final center = containerBounds.maxWidth * (1 - scale) / 2;
         adjustmentX = center - translation.x;
       }
+      if (containerBounds.hasBoundedHeight &&
+          containerBounds.maxHeight > 0 &&
+          widget.pages.isNotEmpty) {
+        final totalContentHeight =
+            CanvasGestureDetector.getTopOfPage(
+              pageIndex: widget.pages.length,
+              pages: widget.pages,
+              screenWidth: containerBounds.maxWidth > 0
+                  ? containerBounds.maxWidth
+                  : 1000,
+            ) *
+            scale;
+        final maxY = containerBounds.maxHeight * 0.5;
+        final minY = min(
+          0.0,
+          containerBounds.maxHeight * 0.5 - totalContentHeight,
+        );
+        if (translation.y > maxY) {
+          adjustmentY = maxY - translation.y;
+        } else if (translation.y < minY) {
+          adjustmentY = minY - translation.y;
+        }
+      }
     } else {
       // if zoomed in, don't allow scrolling past the edges
       late final minX = containerBounds.maxWidth * (1 - scale);
@@ -370,12 +396,14 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
     }
 
     if (adjustmentX.abs() > 0.1 || adjustmentY.abs() > 0.1) {
-      widget._transformationController.value.leftTranslateByDouble(
-        adjustmentX,
-        adjustmentY,
-        0,
-        1,
-      );
+      _isAdjustingTransform = true;
+      try {
+        widget._transformationController.value =
+            widget._transformationController.value.clone()
+              ..leftTranslateByDouble(adjustmentX, adjustmentY, 0, 1);
+      } finally {
+        _isAdjustingTransform = false;
+      }
     }
   }
 

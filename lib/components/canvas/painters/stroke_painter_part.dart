@@ -276,6 +276,7 @@ extension _StrokePainter on CanvasPainter {
             ..setFloat(2, color.b);
           paint.maskFilter = CanvasPainter._getPencilMaskFilter(
             stroke.options.size,
+            currentScale,
           );
         } else {
           // Fast imitation of pencil when zoomed out

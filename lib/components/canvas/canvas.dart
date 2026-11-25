@@ -164,6 +164,23 @@ class Canvas extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (placeholder) {
+      final box = SizedBox(width: page.size.width, height: page.size.height);
+      return coreInfo.isInfiniteCanvas
+          ? box
+          : Center(child: FittedBox(child: box));
+    }
+
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final fittedRatio =
+        (!coreInfo.isInfiniteCanvas &&
+            screenWidth.isFinite &&
+            screenWidth > 0 &&
+            page.size.width > 0)
+        ? (screenWidth < page.size.width ? screenWidth / page.size.width : 1.0)
+        : 1.0;
+    final effectiveScale = currentScale * fittedRatio;
+
     final inner = InnerCanvas(
       key: page.innerCanvasKey,
       pageIndex: pageIndex,
@@ -196,29 +213,27 @@ class Canvas extends StatelessWidget {
       setAsBackground: setAsBackground,
       currentToolIsSelect: currentTool.toolId == ToolId.select,
       currentScale: currentScale,
-      viewportRect: coreInfo.isInfiniteCanvas ? viewportRect : null,
+      viewportRect: viewportRect,
     );
 
     if (coreInfo.isInfiniteCanvas) {
-      return !placeholder
-          ? SizedBox(
-              width: page.size.width,
-              height: page.size.height,
-              child: _withForeground(_wrapOnyxArea(inner)),
-            )
-          : SizedBox(width: page.size.width, height: page.size.height);
+      return SizedBox(
+        width: page.size.width,
+        height: page.size.height,
+        child: _withForeground(_wrapOnyxArea(inner)),
+      );
     }
 
-    final pageContent = !placeholder
-        ? SizedBox(
-            width: page.size.width,
-            height: page.size.height,
-            child: _withForeground(_wrapOnyxArea(inner)),
-          )
-        : SizedBox(width: page.size.width, height: page.size.height);
+    final pageContent = SizedBox(
+      width: page.size.width,
+      height: page.size.height,
+      child: _withForeground(_wrapOnyxArea(inner)),
+    );
 
-    // Skip expensive Gaussian shadow blur and rounded-rect clip when zoomed far out
-    if (currentScale >= 0.0005 && currentScale < 0.25) {
+    // Skip expensive Gaussian shadow blur and rounded-rect clip when zoomed far
+    // out (< 0.35 effective scale, e.g. <= 0.8x on phone) or zoomed far in (> 2.5x)
+    if ((effectiveScale >= 0.0005 && effectiveScale < 0.35) ||
+        currentScale > 2.5) {
       return Center(child: FittedBox(child: pageContent));
     }
 

@@ -55,11 +55,36 @@ class _PagesBuilder extends StatelessWidget {
       final shouldRender = isFocused || isInViewport;
 
       page.isRendered = shouldRender;
-      children.add(
-        shouldRender
-            ? pageBuilder(context, pageIndex)
-            : placeholderPageBuilder(context, pageIndex),
-      );
+      if (shouldRender) {
+        final fitRatio = pageWidth > 0 && page.size.width > 0
+            ? pageWidth / page.size.width
+            : 1.0;
+        final pageLeftInColumn = (containerWidth - pageWidth) * 0.5;
+        final Rect? pageLocalViewport =
+            (fitRatio > 0 && boundingBox.isFinite && !boundingBox.isEmpty)
+            ? Rect.fromLTRB(
+                ((boundingBox.left - pageLeftInColumn) / fitRatio).clamp(
+                  0.0,
+                  page.size.width,
+                ),
+                ((boundingBox.top - topOfPage) / fitRatio).clamp(
+                  0.0,
+                  page.size.height,
+                ),
+                ((boundingBox.right - pageLeftInColumn) / fitRatio).clamp(
+                  0.0,
+                  page.size.width,
+                ),
+                ((boundingBox.bottom - topOfPage) / fitRatio).clamp(
+                  0.0,
+                  page.size.height,
+                ),
+              )
+            : null;
+        children.add(pageBuilder(context, pageIndex, pageLocalViewport));
+      } else {
+        children.add(placeholderPageBuilder(context, pageIndex));
+      }
 
       children.add(const SizedBox.square(dimension: Editor.gapBetweenPages));
 

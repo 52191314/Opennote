@@ -87,6 +87,7 @@ class PalmRejectionEngine {
   DateTime? lastStylusTime;
 
   final _rejectedPointers = <int>{};
+  final _initialTouchRadii = <int, double>{};
 
   /// Whether a stylus is currently in contact with the display.
   bool get isStylusDown => activeStylusPointerId != null;
@@ -103,9 +104,17 @@ class PalmRejectionEngine {
 
     if (event.kind != PointerDeviceKind.touch) return false;
 
+    if (event is PointerDownEvent) {
+      _initialTouchRadii[event.pointer] = max(
+        event.radiusMajor,
+        event.radiusMinor,
+      );
+    }
+
     if (_rejectedPointers.contains(event.pointer)) {
       if (event is PointerUpEvent || event is PointerCancelEvent) {
         _rejectedPointers.remove(event.pointer);
+        _initialTouchRadii.remove(event.pointer);
       }
       return true;
     }
@@ -150,6 +159,7 @@ class PalmRejectionEngine {
   /// Cleans up pointer tracking when a pointer is lifted or cancelled.
   void onPointerUpOrCancel(PointerEvent event) {
     _rejectedPointers.remove(event.pointer);
+    _initialTouchRadii.remove(event.pointer);
     if (activeStylusPointerId == event.pointer) {
       activeStylusPointerId = null;
     }
@@ -161,6 +171,7 @@ class PalmRejectionEngine {
     lastStylusPosition = null;
     lastStylusTime = null;
     _rejectedPointers.clear();
+    _initialTouchRadii.clear();
   }
 
   bool _isLargeContact(PointerEvent event) {
@@ -175,17 +186,27 @@ class PalmRejectionEngine {
       PalmRejectionSensitivity.disabled => (double.infinity, double.infinity),
     };
 
-    // On initial touch-down when no stylus is active or recently seen, allow
-    // wider thumb pads (< 30pt) so two-finger pinch-in gestures can start.
+    // When no stylus is active or recently seen, keep wider thumb-pad tolerance
+    // across both PointerDownEvent and 120Hz PointerMoveEvents (while waiting
+    // for the 2nd finger of a pinch to land), unless a small contact (< 12pt)
+    // flattened into a large resting palm (+12pt growth).
     final hasRecentStylus =
         isStylusDown ||
         (lastStylusTime != null &&
             DateTime.now().difference(lastStylusTime!).inMilliseconds <= 2500);
-    final thresholdRadius = (event is PointerDownEvent && !hasRecentStylus)
-        ? max(baseThresholdRadius, 30.0)
-        : baseThresholdRadius;
+    if (!hasRecentStylus) {
+      final initialRadius = _initialTouchRadii[event.pointer] ?? radius;
+      final flattenedIntoPalm =
+          initialRadius < 12.0 &&
+          radius >= baseThresholdRadius &&
+          (radius - initialRadius) >= 12.0;
+      if (!flattenedIntoPalm) {
+        return radius >= max(baseThresholdRadius, 38.0) ||
+            event.size >= max(thresholdSize, 0.35);
+      }
+    }
 
-    return radius >= thresholdRadius || event.size >= thresholdSize;
+    return radius >= baseThresholdRadius || event.size >= thresholdSize;
   }
 
   bool _isInPostureRejectionZone(Offset touchPosition) {

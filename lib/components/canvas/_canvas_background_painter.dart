@@ -146,7 +146,8 @@ class CanvasBackgroundPainter extends CustomPainter {
 
     if (backgroundPattern != .none) {
       var effectiveLineHeight = lineHeight;
-      if (isInfiniteCanvas &&
+      if ((isInfiniteCanvas ||
+              (currentScale >= 0.0005 && currentScale < 0.6)) &&
           effectiveLineHeight > 0 &&
           currentScale.isFinite &&
           currentScale > 0) {
@@ -323,6 +324,16 @@ class CanvasBackgroundPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(CanvasBackgroundPainter oldDelegate) {
+    final lodChanged =
+        (isInfiniteCanvas ||
+            currentScale < 0.6 ||
+            oldDelegate.currentScale < 0.6) &&
+        _lodBucket(
+              oldDelegate.lineHeight,
+              oldDelegate.currentScale,
+              oldDelegate.backgroundPattern,
+            ) !=
+            _lodBucket(lineHeight, currentScale, backgroundPattern);
     final viewportChanged =
         isInfiniteCanvas &&
         (viewportRect == null ||
@@ -331,14 +342,9 @@ class CanvasBackgroundPainter extends CustomPainter {
                   oldDelegate.viewportRect,
                   oldDelegate.currentScale,
                 ) !=
-                _quantizedInfiniteRect(viewportRect, currentScale) ||
-            _lodBucket(
-                  oldDelegate.lineHeight,
-                  oldDelegate.currentScale,
-                  oldDelegate.backgroundPattern,
-                ) !=
-                _lodBucket(lineHeight, currentScale, backgroundPattern));
-    return viewportChanged ||
+                _quantizedInfiniteRect(viewportRect, currentScale));
+    return lodChanged ||
+        viewportChanged ||
         oldDelegate.invert != invert ||
         oldDelegate.backgroundColor != backgroundColor ||
         oldDelegate.backgroundPattern != backgroundPattern ||

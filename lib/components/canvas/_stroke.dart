@@ -206,6 +206,10 @@ class Stroke {
       _highQualityPolygon ??= getPolygon(quality: .high);
 
   Path? _lowQualityPath, _highQualityPath;
+
+  /// Whether [highQualityPath] has already been computed and cached.
+  bool get hasCachedHighQualityPath => _highQualityPath != null;
+
   Path get lowQualityPath =>
       _lowQualityPath ??= getPath(lowQualityPolygon, smooth: true);
   Path get highQualityPath => _highQualityPath ??= getPath(highQualityPolygon);

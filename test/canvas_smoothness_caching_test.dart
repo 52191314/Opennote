@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
 
+import 'package:defer_pointer/defer_pointer.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -917,6 +918,177 @@ void main() {
         final p1 = _buildPainter(page, currentScale: 0.35);
         final p2 = _buildPainter(page, currentScale: 0.25);
         expect(p2.shouldRepaint(p1), isFalse);
+      },
+    );
+  });
+
+  group('7. Normal Canvas 10.0x & 0.4x Freeze Regression Tests', () {
+    testWidgets(
+      'staggered 120Hz two-finger re-pinch at 10.0x and 0.4x is never cancelled by palm rejection',
+      (tester) async {
+        final controller = TransformationController(
+          Matrix4.identity()..scaleByDouble(10.0, 10.0, 1.0, 1.0),
+        );
+        addTearDown(controller.dispose);
+        final palmEngine = PalmRejectionEngine(
+          writingPosture: WritingPosture.rightBelow,
+          sensitivity: PalmRejectionSensitivity.high,
+        );
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: SizedBox(
+              width: 393,
+              height: 852,
+              child: InteractiveCanvasViewer.builder(
+                palmEngine: palmEngine,
+                minScale: CanvasGestureDetector.kPagedMinScale,
+                maxScale: CanvasGestureDetector.kMaxScale,
+                interactionEndFrictionCoefficient: 0.3,
+                boundaryMargin: const EdgeInsets.all(double.infinity),
+                transformationController: controller,
+                builder: (context, viewport) =>
+                    const SizedBox(width: 393, height: 1150),
+              ),
+            ),
+          ),
+        );
+
+        // Finger 1 lands FIRST with thumb radiusMajor = 25pt (> high 16pt & medium 22pt),
+        // and emits 120Hz PointerMoveEvent 8ms later BEFORE Finger 2 lands at 16ms!
+        await tester.sendEventToBinding(
+          const PointerAddedEvent(
+            pointer: 401,
+            position: Offset(100, 400),
+            kind: PointerDeviceKind.touch,
+          ),
+        );
+        await tester.sendEventToBinding(
+          const PointerDownEvent(
+            pointer: 401,
+            timeStamp: Duration.zero,
+            position: Offset(100, 400),
+            kind: PointerDeviceKind.touch,
+            radiusMajor: 25.0,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 8));
+        await tester.sendEventToBinding(
+          const PointerMoveEvent(
+            pointer: 401,
+            timeStamp: Duration(milliseconds: 8),
+            position: Offset(102, 400),
+            kind: PointerDeviceKind.touch,
+            radiusMajor: 26.0,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 8));
+
+        // Finger 2 lands 16ms later and both pinch inward to zoom out from 10.0x
+        await tester.sendEventToBinding(
+          const PointerAddedEvent(
+            pointer: 402,
+            position: Offset(300, 400),
+            kind: PointerDeviceKind.touch,
+          ),
+        );
+        await tester.sendEventToBinding(
+          const PointerDownEvent(
+            pointer: 402,
+            timeStamp: Duration(milliseconds: 16),
+            position: Offset(300, 400),
+            kind: PointerDeviceKind.touch,
+            radiusMajor: 25.0,
+          ),
+        );
+        await tester.pump();
+
+        for (var i = 1; i <= 4; i++) {
+          final ts = Duration(milliseconds: 16 + i * 8);
+          await tester.sendEventToBinding(
+            PointerMoveEvent(
+              pointer: 401,
+              timeStamp: ts,
+              position: Offset(102.0 + i * 20, 400),
+              kind: PointerDeviceKind.touch,
+              radiusMajor: 26.0,
+            ),
+          );
+          await tester.sendEventToBinding(
+            PointerMoveEvent(
+              pointer: 402,
+              timeStamp: ts,
+              position: Offset(300.0 - i * 20, 400),
+              kind: PointerDeviceKind.touch,
+              radiusMajor: 26.0,
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 8));
+        }
+
+        // Must smoothly zoom out from 10.0x (never stuck at 10.0x!)
+        expect(controller.value.maxScale2D, lessThan(6.0));
+
+        await tester.sendEventToBinding(
+          const PointerUpEvent(
+            pointer: 401,
+            timeStamp: Duration(milliseconds: 60),
+            position: Offset(182, 400),
+            kind: PointerDeviceKind.touch,
+          ),
+        );
+        await tester.sendEventToBinding(
+          const PointerUpEvent(
+            pointer: 402,
+            timeStamp: Duration(milliseconds: 60),
+            position: Offset(220, 400),
+            kind: PointerDeviceKind.touch,
+          ),
+        );
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'InnerCanvas preserves QuillEditor subtree across 0.4x <-> 1.0x <-> 10.0x scale transitions',
+      (tester) async {
+        final coreInfo = EditorCoreInfo(filePath: '/normal_zoom_test');
+        final page = EditorPage(size: const Size(1000, 1400));
+        addTearDown(page.dispose);
+        page.quill.controller.document.insert(0, 'Hello Opennote');
+        coreInfo.pages = [page];
+
+        Widget buildAtScale(double scale) => TranslationProvider(
+          child: MaterialApp(
+            home: Scaffold(
+              body: InnerCanvas(
+                pageIndex: 0,
+                width: 1000,
+                height: 1400,
+                coreInfo: coreInfo,
+                currentStroke: null,
+                currentStrokeDetectedShape: null,
+                currentSelection: null,
+                currentToolIsSelect: false,
+                currentScale: scale,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(buildAtScale(1.0));
+        final stateAt1x = tester.state(find.byType(DeferredPointerHandler));
+
+        // Transition across 2.0x up to 10.0x: child State must NOT be unmounted!
+        await tester.pumpWidget(buildAtScale(10.0));
+        final stateAt10x = tester.state(find.byType(DeferredPointerHandler));
+        expect(identical(stateAt1x, stateAt10x), isTrue);
+
+        // Transition across 0.5x down to 0.4x: child State must NOT be unmounted!
+        await tester.pumpWidget(buildAtScale(0.4));
+        final stateAt04x = tester.state(find.byType(DeferredPointerHandler));
+        expect(identical(stateAt1x, stateAt04x), isTrue);
       },
     );
   });

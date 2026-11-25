@@ -45,6 +45,7 @@ class CanvasPainter extends CustomPainter {
     required this.currentScale,
     required this.defaultTextStyle,
     this.isInfiniteCanvas = false,
+    this.viewportRect,
     int? strokesVersion,
   }) : strokesVersion = strokesVersion ?? page.strokesVersion;
 
@@ -69,6 +70,7 @@ class CanvasPainter extends CustomPainter {
   final double currentScale;
   final TextStyle defaultTextStyle;
   final bool isInfiniteCanvas;
+  final Rect? viewportRect;
 
   /// Snapshot of [EditorPage.strokesVersion] when this painter was constructed.
   final int strokesVersion;
@@ -90,10 +92,24 @@ class CanvasPainter extends CustomPainter {
   static const double _pageIndicatorPadding = 5;
   static const _zoomThreshold = 0.5;
 
+  static Rect? _quantizedHighZoomViewport(Rect? rect, double scale) {
+    if (scale <= 1.5 || rect == null || !_isValidCullRect(rect)) return null;
+    const step = 128.0;
+    final inflated = rect.inflate(128.0);
+    return Rect.fromLTRB(
+      (inflated.left / step).floorToDouble() * step,
+      (inflated.top / step).floorToDouble() * step,
+      (inflated.right / step).ceilToDouble() * step,
+      (inflated.bottom / step).ceilToDouble() * step,
+    );
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     final canvasRect = isInfiniteCanvas ? null : (Offset.zero & size);
-    final cullRect = _tryGetCullRect(canvas);
+    final cullRect =
+        _tryGetCullRect(canvas) ??
+        _quantizedHighZoomViewport(viewportRect, currentScale);
     final hasActiveOverlay =
         currentStroke != null ||
         laserStrokes.isNotEmpty ||
@@ -128,19 +144,26 @@ class CanvasPainter extends CustomPainter {
     }
   }
 
-  /// Maps [scale] into discrete visual quality buckets so continuous pinch-zoom
-  /// does not needlessly re-record static stroke DisplayLists on every frame.
+  /// Maps [scale] into coarse visual quality buckets so continuous pinch-zoom
+  /// up to `10.0x` or across `0.5x -> 0.4x` does not trigger redundant repaints.
   static int _visualScaleBucket(double scale) {
     if (!scale.isFinite || scale <= 0) return 0;
     if (scale < 0.08) return 1;
     if (scale < 0.2) return 2;
-    if (scale < _zoomThreshold) return 3;
-    return 4 + (scale.clamp(0.5, 10.0) * 2).floor();
+    if (scale <= 3.0) return 3;
+    return 4;
   }
 
   @override
   bool shouldRepaint(CanvasPainter oldDelegate) {
-    return false ||
+    final highZoomCullChanged =
+        (currentScale > 1.5 || oldDelegate.currentScale > 1.5) &&
+        _quantizedHighZoomViewport(viewportRect, currentScale) !=
+            _quantizedHighZoomViewport(
+              oldDelegate.viewportRect,
+              oldDelegate.currentScale,
+            );
+    return highZoomCullChanged ||
         // Current stroke is being drawn, so always repaint if present
         (currentStroke != null || oldDelegate.currentStroke != null) ||
         // Laser strokes are always fading out, so always repaint if present
@@ -189,14 +212,21 @@ class CanvasPainter extends CustomPainter {
     return true;
   }
 
-  static MaskFilter _getPencilMaskFilter(double size) =>
-      MaskFilter.blur(BlurStyle.normal, min(size * 0.2, 3));
+  static MaskFilter? _getPencilMaskFilter(
+    double size, [
+    double currentScale = 1.0,
+  ]) => currentScale > 3.0
+      ? null
+      : MaskFilter.blur(BlurStyle.normal, min(size * 0.2, 3));
 
   bool shouldUsePencilShader(double strokeSize) =>
       currentScale >= _zoomThreshold && (strokeSize * currentScale) >= 3;
 
-  Path _selectPath(Stroke stroke) => switch (currentScale) {
-    < _zoomThreshold => stroke.lowQualityPath,
-    _ => stroke.highQualityPath,
-  };
+  Path _selectPath(Stroke stroke) {
+    if (stroke.hasCachedHighQualityPath) return stroke.highQualityPath;
+    return switch (currentScale) {
+      < _zoomThreshold => stroke.lowQualityPath,
+      _ => stroke.highQualityPath,
+    };
+  }
 }
