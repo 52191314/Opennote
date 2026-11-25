@@ -1,4 +1,4 @@
-/// 🤖 Generated wholely or partially with Google Antigravity
+/// 🤖 Generated wholely or partially with Gemini 4 Neon (Medium); Google Antigravity
 library;
 
 import 'dart:ui';
@@ -16,9 +16,10 @@ class OpennoteGlassPill extends StatelessWidget {
     this.padding,
     this.borderRadius,
     this.backgroundColor,
+    this.borderColor,
     this.enableBlur = true,
-    this.blurSigma = 12.0,
-    this.borderAlpha = 0.28,
+    this.blurSigma = 14.0,
+    this.borderAlpha = 0.72,
     this.showShadow = true,
   });
 
@@ -34,13 +35,16 @@ class OpennoteGlassPill extends StatelessWidget {
   /// Optional custom background color before translucency is applied.
   final Color? backgroundColor;
 
+  /// Optional override color for the crisp `1px` hairline border.
+  final Color? borderColor;
+
   /// Whether to apply a `BackdropFilter` blur behind the pill.
   final bool enableBlur;
 
   /// Gaussian blur sigma when [enableBlur] is true.
   final double blurSigma;
 
-  /// Opacity multiplier for the `1px` `outlineVariant` border.
+  /// Opacity multiplier for the `1px` hairline border.
   final double borderAlpha;
 
   /// Whether to render the ambient floating shadow.
@@ -50,14 +54,22 @@ class OpennoteGlassPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.of(context);
     final isDark = colorScheme.brightness == Brightness.dark;
-    final resolvedRadius =
-        borderRadius ?? BorderRadius.circular(OpennoteTokens.radiusPill);
+    final resolvedRadius = borderRadius ?? OpennoteTokens.borderRadiusPill;
+    final baseSurface = isDark
+        ? OpennoteTokens.elevatedDarkSurface
+        : OpennoteTokens.cardLightSurface;
     final resolvedBg =
         backgroundColor ??
-        (isDark
-                ? OpennoteTokens.cardDarkSurface
-                : OpennoteTokens.cardLightSurface)
-            .withValues(alpha: enableBlur ? (isDark ? 0.82 : 0.88) : 1.0);
+        baseSurface.withValues(alpha: enableBlur ? (isDark ? 0.84 : 0.90) : 1);
+    final resolvedBorderSide = borderColor != null
+        ? BorderSide(
+            color: borderColor!.withValues(alpha: borderAlpha),
+            width: OpennoteTokens.hairlineWidth,
+          )
+        : OpennoteTokens.hairlineBorder(
+            colorScheme,
+            alpha: borderAlpha.clamp(0.0, 1.0),
+          );
 
     Widget content = child;
     if (padding != null) {
@@ -80,9 +92,7 @@ class OpennoteGlassPill extends StatelessWidget {
             decoration: BoxDecoration(
               color: resolvedBg,
               borderRadius: resolvedRadius,
-              border: Border.fromBorderSide(
-                OpennoteTokens.subtleBorder(colorScheme, borderAlpha),
-              ),
+              border: Border.fromBorderSide(resolvedBorderSide),
             ),
             child: Material(type: MaterialType.transparency, child: content),
           ),
